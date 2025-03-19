@@ -65,6 +65,17 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
   try {
     const { clientId, title, url, summary, content, customPrompt } = data;
     
+    // Check if content is properly structured
+    const validContent = content || {
+      executiveSummary: '',
+      technicalAnalysis: '',
+      contentAnalysis: '',
+      backlinksAnalysis: '',
+      recommendations: ''
+    };
+    
+    console.log('Creating new report with data:', { clientId, title, url, summary });
+    
     const { data: newReport, error } = await supabase
       .from('reports')
       .insert({
@@ -72,7 +83,7 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
         title,
         url,
         summary,
-        content,
+        content: validContent,
         custom_prompt: customPrompt,
         status: 'completed' as 'processing' | 'completed' | 'failed'
       })
@@ -80,8 +91,16 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       .single();
     
     if (error) {
+      console.error('Error in createNewReport Supabase query:', error);
       throw error;
     }
+    
+    if (!newReport) {
+      console.error('No report data returned after insert');
+      throw new Error('Error al crear informe: No se devolvieron datos');
+    }
+    
+    console.log('Report created successfully:', newReport);
     
     const formattedReport: Report = {
       id: newReport.id,

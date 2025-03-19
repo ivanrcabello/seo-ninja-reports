@@ -12,6 +12,7 @@ import FileUploader from './FileUploader';
 import BlurredCard from '../ui/BlurredCard';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
+import { useToast } from '@/hooks/use-toast';
 
 interface ReportGeneratorProps {
   clientId: string;
@@ -29,6 +30,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const { generateReport } = useReports();
   const { getClient } = useClients();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const client = getClient(clientId);
 
@@ -42,10 +44,31 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     setIsLoading(true);
     
     try {
+      console.log('Generating report for client:', clientId, 'URL:', url);
       const report = await generateReport(clientId, url, files, customPrompt);
-      navigate(`/reports/${report.id}`);
-    } catch (error) {
-      console.error('Error al generar informe:', error);
+      
+      console.log('Report generated successfully:', report);
+      
+      if (report && report.id) {
+        toast({
+          title: 'Informe creado',
+          description: 'Informe creado exitosamente',
+        });
+        
+        // Small delay to ensure the report is fully saved in the database
+        setTimeout(() => {
+          navigate(`/reports/${report.id}`);
+        }, 500);
+      } else {
+        throw new Error('El informe no tiene un ID válido');
+      }
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Error al generar informe',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }

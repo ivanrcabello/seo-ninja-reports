@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -13,6 +13,7 @@ import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
 import { Loader2, ChevronLeft, Trash2, Download, Share, FileText } from 'lucide-react';
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const ReportDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,16 @@ const ReportDetail = () => {
   const { getClient } = useClients();
   const { getReport, isLoading: reportsLoading, deleteReport } = useReports();
   const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    if (id && !reportsLoading) {
+      const report = getReport(id);
+      if (!report) {
+        console.log(`Report with ID ${id} not found in reports context`);
+      }
+    }
+  }, [id, reportsLoading, getReport]);
 
   // Redirect if not logged in
   if (!user && !authLoading) {
@@ -41,9 +52,18 @@ const ReportDetail = () => {
     setIsDeleting(true);
     try {
       await deleteReport(report.id);
+      toast({
+        title: 'Informe eliminado',
+        description: 'El informe ha sido eliminado exitosamente',
+      });
       window.location.href = client ? `/clients/${client.id}` : '/dashboard';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting report:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Error al eliminar informe',
+        variant: 'destructive',
+      });
     } finally {
       setIsDeleting(false);
     }
