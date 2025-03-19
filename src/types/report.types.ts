@@ -12,7 +12,9 @@ export interface Report {
     technicalAnalysis: string;
     contentAnalysis: string;
     backlinksAnalysis: string;
+    localSeo?: string;
     recommendations: string;
+    serviceProposal?: string;
   };
   customPrompt?: string;
 }

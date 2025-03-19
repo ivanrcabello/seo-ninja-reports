@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BlurredCard from '../ui/BlurredCard';
@@ -54,8 +55,14 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
       case 'backlinksAnalysis':
         updatedContent.backlinksAnalysis = editContent;
         break;
+      case 'localSeo':
+        updatedContent.localSeo = editContent;
+        break;
       case 'recommendations':
         updatedContent.recommendations = editContent;
+        break;
+      case 'serviceProposal':
+        updatedContent.serviceProposal = editContent;
         break;
       default:
         break;
@@ -76,13 +83,17 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
       case 'executiveSummary':
         return 'Resumen Ejecutivo';
       case 'technicalAnalysis':
-        return 'Análisis Técnico';
+        return 'SEO Técnico';
       case 'contentAnalysis':
-        return 'Análisis de Contenido';
+        return 'Contenido';
       case 'backlinksAnalysis':
-        return 'Análisis de Backlinks y Autoridad';
+        return 'Backlinks';
+      case 'localSeo':
+        return 'SEO Local';
       case 'recommendations':
-        return 'Recomendaciones y Acciones';
+        return 'Recomendaciones';
+      case 'serviceProposal':
+        return 'Propuesta de Servicios';
       default:
         return '';
     }
@@ -100,12 +111,14 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
       />
       
       <Tabs defaultValue="executive-summary" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 md:grid-cols-5 h-auto p-1 bg-gradient-to-r from-primary/5 to-background backdrop-blur-sm rounded-lg border border-primary/10">
+        <TabsList className="w-full grid grid-cols-2 md:grid-cols-7 h-auto p-1 bg-gradient-to-r from-primary/5 to-background backdrop-blur-sm rounded-lg border border-primary/10">
           <TabsTrigger value="executive-summary" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Resumen Ejecutivo</TabsTrigger>
-          <TabsTrigger value="technical" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Técnico</TabsTrigger>
+          <TabsTrigger value="technical" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">SEO Técnico</TabsTrigger>
           <TabsTrigger value="content" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Contenido</TabsTrigger>
           <TabsTrigger value="backlinks" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Backlinks</TabsTrigger>
+          <TabsTrigger value="local-seo" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">SEO Local</TabsTrigger>
           <TabsTrigger value="recommendations" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Recomendaciones</TabsTrigger>
+          <TabsTrigger value="service-proposal" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Propuesta</TabsTrigger>
         </TabsList>
         
         <TabsContent value="executive-summary">
@@ -121,7 +134,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         
         <TabsContent value="technical">
           <ReportSection
-            title="Análisis Técnico"
+            title="SEO Técnico"
             content={content.technicalAnalysis}
             sectionKey="technicalAnalysis"
             onEdit={handleEditSection}
@@ -143,9 +156,20 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         
         <TabsContent value="backlinks">
           <ReportSection
-            title="Análisis de Backlinks y Autoridad"
+            title="Análisis de Backlinks"
             content={content.backlinksAnalysis}
             sectionKey="backlinksAnalysis"
+            onEdit={handleEditSection}
+            isEditing={isEditing}
+            delay={0}
+          />
+        </TabsContent>
+        
+        <TabsContent value="local-seo">
+          <ReportSection
+            title="SEO Local"
+            content={content.localSeo || ''}
+            sectionKey="localSeo"
             onEdit={handleEditSection}
             isEditing={isEditing}
             delay={0}
@@ -161,6 +185,17 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
             isEditing={isEditing}
             delay={0}
             isRecommendations
+          />
+        </TabsContent>
+        
+        <TabsContent value="service-proposal">
+          <ReportSection
+            title="Propuesta de Servicios"
+            content={content.serviceProposal || ''}
+            sectionKey="serviceProposal"
+            onEdit={handleEditSection}
+            isEditing={isEditing}
+            delay={0}
           />
         </TabsContent>
       </Tabs>
