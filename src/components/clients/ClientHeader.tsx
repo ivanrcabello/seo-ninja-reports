@@ -1,11 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Client } from '@/types/client.types';
 import { ChevronLeft, Trash2, PenLine, Loader2 } from 'lucide-react';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
+import EditClientForm from './EditClientForm';
+import useClients from '@/hooks/useClients';
+import { toast } from 'sonner';
 
 interface ClientHeaderProps {
   client: Client;
@@ -18,6 +22,23 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({
   isDeleting,
   onDeleteClient
 }) => {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { updateClient } = useClients();
+
+  const handleEditSubmit = async (values: { name: string, website: string, industry: string }) => {
+    setIsSubmitting(true);
+    try {
+      await updateClient(client.id, values);
+      setIsEditDialogOpen(false);
+      toast.success('Cliente actualizado exitosamente');
+    } catch (error: any) {
+      toast.error(error.message || 'Error al actualizar cliente');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <AnimatedContainer animation="slide-up" className="mb-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -69,10 +90,28 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="outline" size="sm" className="gap-1">
-            <PenLine className="h-4 w-4" />
-            <span className="hidden sm:inline">Edit</span>
-          </Button>
+          
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-1"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              <PenLine className="h-4 w-4" />
+              <span className="hidden sm:inline">Edit</span>
+            </Button>
+            <DialogContent className="glass sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Editar Cliente</DialogTitle>
+              </DialogHeader>
+              <EditClientForm 
+                client={client} 
+                onSubmit={handleEditSubmit}
+                isSubmitting={isSubmitting}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </AnimatedContainer>
