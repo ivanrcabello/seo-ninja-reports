@@ -7,6 +7,7 @@ import { Store, Check, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { BusinessProfile } from '@/types/report.types';
+import { isValidGoogleBusinessUrl } from '@/services/api/businessProfile/utils';
 
 interface BusinessUrlInputProps {
   businessUrl: string;
@@ -30,6 +31,13 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
   const analyzeBusinessUrl = async () => {
     if (!businessUrl) {
       toast.error('Introduce una URL válida');
+      return;
+    }
+    
+    if (!isValidGoogleBusinessUrl(businessUrl)) {
+      toast.error('URL no válida', {
+        description: 'Debes proporcionar una URL válida de Google Maps o Google Business'
+      });
       return;
     }
     

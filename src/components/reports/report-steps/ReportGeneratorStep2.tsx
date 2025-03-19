@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2 } from 'lucide-react';
 import FileUploader from '../FileUploader';
+import BusinessUrlInput from './BusinessUrlInput';
+import { BusinessProfile } from '@/types/report.types';
 
 interface ReportGeneratorStep2Props {
   files: File[];
@@ -18,6 +20,10 @@ interface ReportGeneratorStep2Props {
   isLoading: boolean;
   previousStep: () => void;
   nextStep: () => void;
+  businessUrl: string;
+  setBusinessUrl: (url: string) => void;
+  businessProfile: Partial<BusinessProfile> | null;
+  setBusinessProfile: (profile: Partial<BusinessProfile> | null) => void;
 }
 
 const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
@@ -30,6 +36,10 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
   isLoading,
   previousStep,
   nextStep,
+  businessUrl,
+  setBusinessUrl,
+  businessProfile,
+  setBusinessProfile,
 }) => {
   const [showPromptDialog, setShowPromptDialog] = useState(false);
   
@@ -142,6 +152,15 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        <div className="mt-6 border-t border-border pt-6">
+          <BusinessUrlInput 
+            businessUrl={businessUrl}
+            setBusinessUrl={setBusinessUrl}
+            businessProfile={businessProfile}
+            setBusinessProfile={setBusinessProfile}
+          />
+        </div>
       </CardContent>
       
       <CardFooter className="flex justify-between pt-4">

@@ -11,7 +11,6 @@ import ReportGeneratorStep1 from './report-steps/ReportGeneratorStep1';
 import ReportGeneratorStep2 from './report-steps/ReportGeneratorStep2';
 import ReportGeneratorStep3 from './report-steps/ReportGeneratorStep3';
 import ReportGeneratorStep4 from './report-steps/ReportGeneratorStep4';
-import BusinessUrlInput from './report-steps/BusinessUrlInput';
 import { BusinessProfile } from '@/types/report.types';
 
 interface ReportGeneratorProps {
@@ -154,28 +153,21 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         )}
         
         {step === 2 && (
-          <>
-            <ReportGeneratorStep2
-              files={files}
-              setFiles={setFiles}
-              customPrompt={customPrompt}
-              setCustomPrompt={setCustomPrompt}
-              hasGoogleApiKey={hasGoogleApiKey}
-              pageSpeedDataFetched={!!pageSpeedData}
-              isLoading={isLoading}
-              previousStep={goToPreviousStep}
-              nextStep={goToNextStep}
-            />
-            
-            <div className="mt-6 border-t border-border pt-6">
-              <BusinessUrlInput 
-                businessUrl={businessUrl}
-                setBusinessUrl={setBusinessUrl}
-                businessProfile={businessProfile}
-                setBusinessProfile={setBusinessProfile}
-              />
-            </div>
-          </>
+          <ReportGeneratorStep2
+            files={files}
+            setFiles={setFiles}
+            customPrompt={customPrompt}
+            setCustomPrompt={setCustomPrompt}
+            hasGoogleApiKey={hasGoogleApiKey}
+            pageSpeedDataFetched={!!pageSpeedData}
+            isLoading={isLoading}
+            previousStep={goToPreviousStep}
+            nextStep={goToNextStep}
+            businessUrl={businessUrl}
+            setBusinessUrl={setBusinessUrl}
+            businessProfile={businessProfile}
+            setBusinessProfile={setBusinessProfile}
+          />
         )}
         
         {step === 3 && (
