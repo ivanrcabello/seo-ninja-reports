@@ -35,7 +35,18 @@ export const processOpenAIReport = async (
     console.log('Informe generado, actualizando base de datos...');
     console.log('Secciones disponibles:', Object.keys(sections));
     
-    // Update report with generated content and PageSpeed data
+    // Get current report content to preserve pageSpeedData
+    const { data: currentReport } = await supabase
+      .from('reports')
+      .select('content')
+      .eq('id', reportId)
+      .single();
+    
+    // Ensure content is an object
+    const currentContent = currentReport?.content || {};
+    const existingPageSpeedData = currentContent?.pageSpeedData;
+    
+    // Update report with generated content and preserve PageSpeed data
     const updateData: any = {
       content: {
         executiveSummary: sections.executiveSummary || '',
@@ -44,7 +55,8 @@ export const processOpenAIReport = async (
         backlinksAnalysis: sections.backlinksAnalysis || '',
         recommendations: sections.recommendations || '',
         localSeo: sections.localSeo || '',
-        serviceProposal: sections.serviceProposal || ''
+        serviceProposal: sections.serviceProposal || '',
+        pageSpeedData: existingPageSpeedData || pageSpeedData // Preserve pageSpeedData
       },
       summary: sections.summary || 'Análisis SEO completo del sitio web.',
       status: 'completed',
@@ -52,11 +64,6 @@ export const processOpenAIReport = async (
     };
     
     console.log('Actualización de content preparada con secciones:', Object.keys(updateData.content));
-    
-    // Add PageSpeed data if available
-    if (pageSpeedData) {
-      updateData.page_speed_data = pageSpeedData;
-    }
     
     const { data: completedReport, error: updateError } = await supabase
       .from('reports')
@@ -73,6 +80,9 @@ export const processOpenAIReport = async (
     console.log('Informe actualizado exitosamente');
     console.log('Contenido del informe:', completedReport.content);
     
+    // Extract pageSpeedData from content
+    const extractedPageSpeedData = completedReport.content?.pageSpeedData;
+    
     // Convert the database column names to camelCase for the Report interface
     const formattedCompletedReport: Report = {
       id: completedReport.id,
@@ -84,7 +94,7 @@ export const processOpenAIReport = async (
       summary: completedReport.summary,
       content: completedReport.content as Report['content'],
       customPrompt: completedReport.custom_prompt,
-      pageSpeedData: (completedReport as any).page_speed_data as Report['pageSpeedData']
+      pageSpeedData: extractedPageSpeedData
     };
     
     toast.success('Informe generado exitosamente');

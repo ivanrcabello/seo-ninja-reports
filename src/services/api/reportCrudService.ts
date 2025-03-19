@@ -37,6 +37,9 @@ export const fetchReports = async () => {
         };
       }
       
+      // Extract pageSpeedData if it exists in content
+      const pageSpeedData = formattedContent?.pageSpeedData;
+      
       return {
         id: report.id,
         clientId: report.client_id,
@@ -46,7 +49,8 @@ export const fetchReports = async () => {
         url: report.url,
         summary: report.summary,
         content: formattedContent,
-        customPrompt: report.custom_prompt
+        customPrompt: report.custom_prompt,
+        pageSpeedData: pageSpeedData
       };
     });
     
@@ -61,16 +65,24 @@ export const fetchReports = async () => {
  */
 export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status'>) => {
   try {
-    const { clientId, title, url, summary, content, customPrompt } = data;
+    const { clientId, title, url, summary, content, customPrompt, pageSpeedData } = data;
     
     // Check if content is properly structured
-    const validContent = content || {
+    let validContent: any = content || {
       executiveSummary: '',
       technicalAnalysis: '',
       contentAnalysis: '',
       backlinksAnalysis: '',
       recommendations: ''
     };
+    
+    // Add pageSpeedData to content if it exists
+    if (pageSpeedData) {
+      validContent = {
+        ...validContent,
+        pageSpeedData
+      };
+    }
     
     console.log('Creating new report with data:', { clientId, title, url, summary });
     
@@ -100,6 +112,9 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
     
     console.log('Report created successfully:', newReport);
     
+    // Extract pageSpeedData from content if it exists
+    const extractedPageSpeedData = newReport.content?.pageSpeedData;
+    
     const formattedReport: Report = {
       id: newReport.id,
       clientId: newReport.client_id,
@@ -109,7 +124,8 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       url: newReport.url,
       summary: newReport.summary,
       content: newReport.content as Report['content'],
-      customPrompt: newReport.custom_prompt
+      customPrompt: newReport.custom_prompt,
+      pageSpeedData: extractedPageSpeedData
     };
     
     toast.success('Informe creado exitosamente');
@@ -130,7 +146,16 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
     if (data.status !== undefined) dbData.status = data.status;
     if (data.url !== undefined) dbData.url = data.url;
     if (data.summary !== undefined) dbData.summary = data.summary;
-    if (data.content !== undefined) dbData.content = data.content;
+    
+    // Handle content and pageSpeedData together
+    if (data.content !== undefined || data.pageSpeedData !== undefined) {
+      const content = { ...data.content };
+      if (data.pageSpeedData) {
+        content.pageSpeedData = data.pageSpeedData;
+      }
+      dbData.content = content;
+    }
+    
     if (data.customPrompt !== undefined) dbData.custom_prompt = data.customPrompt;
     
     const { data: updatedReport, error } = await supabase
@@ -144,6 +169,9 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
       throw error;
     }
     
+    // Extract pageSpeedData from content if it exists
+    const extractedPageSpeedData = updatedReport.content?.pageSpeedData;
+    
     const formattedReport: Report = {
       id: updatedReport.id,
       clientId: updatedReport.client_id,
@@ -153,7 +181,8 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
       url: updatedReport.url,
       summary: updatedReport.summary,
       content: updatedReport.content as Report['content'],
-      customPrompt: updatedReport.custom_prompt
+      customPrompt: updatedReport.custom_prompt,
+      pageSpeedData: extractedPageSpeedData
     };
     
     toast.success('Informe actualizado exitosamente');

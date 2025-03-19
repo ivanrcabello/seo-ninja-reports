@@ -26,6 +26,22 @@ export const generateSeoReport = async (
     console.log('Iniciando generación de informe SEO para cliente:', clientId, 'URL:', url);
     console.log('¿Hay datos de PageSpeed prefetched?', !!prefetchedPageSpeedData);
 
+    // Prepare initial content object
+    const initialContent: any = {
+      executiveSummary: '',
+      technicalAnalysis: '',
+      contentAnalysis: '',
+      backlinksAnalysis: '',
+      recommendations: '',
+      localSeo: '',
+      serviceProposal: ''
+    };
+    
+    // Add PageSpeed data to content if available
+    if (prefetchedPageSpeedData) {
+      initialContent.pageSpeedData = prefetchedPageSpeedData;
+    }
+
     // Create a new report with status "processing"
     const { data: newReport, error: createError } = await supabase
       .from('reports')
@@ -36,17 +52,8 @@ export const generateSeoReport = async (
         status: 'processing',
         date: new Date().toISOString(),
         summary: 'Generating report...',
-        content: {
-          executiveSummary: '',
-          technicalAnalysis: '',
-          contentAnalysis: '',
-          backlinksAnalysis: '',
-          recommendations: '',
-          localSeo: '',
-          serviceProposal: ''
-        },
+        content: initialContent,
         custom_prompt: customPrompt || ''
-        // We'll store PageSpeed data in the content field instead
       })
       .select()
       .single();
@@ -57,23 +64,6 @@ export const generateSeoReport = async (
     }
 
     console.log('Informe inicial creado con ID:', newReport.id);
-
-    // If we have prefetched PageSpeed data, update the report content
-    if (prefetchedPageSpeedData) {
-      // Update the content field to include the PageSpeed data
-      const updatedContent = {
-        ...newReport.content,
-        pageSpeedData: prefetchedPageSpeedData
-      };
-
-      // Update the report with the PageSpeed data
-      await supabase
-        .from('reports')
-        .update({ 
-          content: updatedContent 
-        })
-        .eq('id', newReport.id);
-    }
 
     // Start the report generation process with prefetched PageSpeed data
     processReportGeneration(newReport.id, clientId, url, files, customPrompt, prefetchedPageSpeedData);
@@ -136,9 +126,12 @@ const processReportGeneration = async (
             .single();
           
           if (currentReport) {
+            // Make sure content is an object
+            const currentContent = currentReport.content || {};
+            
             // Update the content to include PageSpeed data
             const updatedContent = {
-              ...currentReport.content,
+              ...(typeof currentContent === 'object' ? currentContent : {}),
               pageSpeedData: pageSpeedData
             };
             
