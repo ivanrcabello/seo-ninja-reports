@@ -6,6 +6,7 @@ import { Report } from '@/types/report.types';
 import ReportSection from '../../report-section';
 import { PageSpeedTab } from '../pagespeed';
 import { Skeleton } from '@/components/ui/skeleton';
+import BusinessProfileSection from '../../report-section/BusinessProfileSection';
 
 interface TabContentProps {
   report: Report;
@@ -30,6 +31,9 @@ const TabContent: React.FC<TabContentProps> = ({
   
   // Decide which data to use for PageSpeed, prioritizing newly loaded data
   const pageSpeedDataToUse = pageSpeedData || content.pageSpeedData;
+  
+  // Check if we have business profile data
+  const hasBusinessProfile = content.businessProfile && !!content.businessProfile.businessUrl;
 
   return (
     <ScrollArea className="h-full pr-4">
@@ -99,6 +103,17 @@ const TabContent: React.FC<TabContentProps> = ({
             sectionKey="localSeo"
             onEdit={onEdit} 
             isEditing={isEditing} 
+          />
+        </TabsContent>
+      )}
+      
+      {hasBusinessProfile && (
+        <TabsContent value="businessProfile" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+          <BusinessProfileSection 
+            title="Ficha de Google My Business"
+            businessProfile={content.businessProfile}
+            onEdit={onEdit}
+            isEditing={isEditing}
           />
         </TabsContent>
       )}

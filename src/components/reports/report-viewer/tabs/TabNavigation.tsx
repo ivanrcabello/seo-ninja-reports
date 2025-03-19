@@ -12,7 +12,8 @@ import {
   Gauge, 
   CheckCircle2, 
   LightbulbIcon,
-  Plus
+  Plus,
+  Building
 } from 'lucide-react';
 import KeywordsDialog from '../../KeywordsDialog';
 
@@ -32,6 +33,9 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   const [keywordsDialogOpen, setKeywordsDialogOpen] = useState(false);
   
   if (!content) return null;
+
+  // Check if we have business profile data to display
+  const hasBusinessProfile = content.businessProfile && !!content.businessProfile.businessUrl;
 
   return (
     <div className="bg-background/80 backdrop-blur-sm sticky top-0 z-10 pb-2">
@@ -89,6 +93,12 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           <TabsTrigger value="localSeo" className="flex items-center gap-1 py-2">
             <Globe className="h-4 w-4" />
             <span>SEO Local</span>
+          </TabsTrigger>
+        )}
+        {hasBusinessProfile && (
+          <TabsTrigger value="businessProfile" className="flex items-center gap-1 py-2">
+            <Building className="h-4 w-4" />
+            <span>GMB</span>
           </TabsTrigger>
         )}
         {(hasPageSpeedData || isLoadingPageSpeed) && (

@@ -87,7 +87,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
           value="business-profile" 
           icon={Building} 
           label="Ficha de Negocio" 
-          shortLabel="Negocio" 
+          shortLabel="GMB" 
         />
       )}
     </TabsList>
