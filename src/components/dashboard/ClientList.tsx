@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,12 +10,27 @@ import ClientCard from './ClientCard';
 import useClients from '@/hooks/useClients';
 import AnimatedContainer from '../ui/AnimatedContainer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Client } from '@/types/client.types';
+
+type NewClientData = Omit<Client, 'id' | 'createdAt' | 'reportsCount'> & {
+  wpCredentials: {
+    username: string;
+    password: string;
+    url: string;
+  };
+  hostingCredentials: {
+    provider: string;
+    username: string;
+    password: string;
+    url: string;
+  };
+};
 
 const ClientList: React.FC = () => {
   const { clients, isLoading, addClient } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newClient, setNewClient] = useState({
+  const [newClient, setNewClient] = useState<NewClientData>({
     name: '',
     website: '',
     industry: '',
@@ -51,7 +67,7 @@ const ClientList: React.FC = () => {
       setNewClient(prev => ({
         ...prev,
         [parent]: {
-          ...(prev as any)[parent],
+          ...(prev[parent as keyof typeof prev] as Record<string, string>),
           [child]: value
         }
       }));

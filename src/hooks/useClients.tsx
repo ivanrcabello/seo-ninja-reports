@@ -9,6 +9,23 @@ import {
   updateClientInDb, 
   deleteClientFromDb 
 } from '@/services/clientService';
+import { Json } from '@/integrations/supabase/types';
+
+// Type guard to check if a value is a valid credential object
+function isWpCredentials(value: Json | null): value is { username: string; password: string; url?: string } {
+  return value !== null && 
+         typeof value === 'object' && 
+         'username' in value && 
+         'password' in value;
+}
+
+function isHostingCredentials(value: Json | null): value is { provider: string; username: string; password: string; url?: string } {
+  return value !== null && 
+         typeof value === 'object' && 
+         'provider' in value && 
+         'username' in value && 
+         'password' in value;
+}
 
 // Create context
 const ClientsContext = createContext<ClientsContextType | undefined>(undefined);
@@ -33,17 +50,22 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         const { clients: clientsData, reportCountMap } = await fetchClients(user.id);
 
         // Format clients data
-        const formattedClients = clientsData.map((client: any) => ({
-          id: client.id,
-          name: client.name,
-          website: client.website,
-          industry: client.industry || '',
-          createdAt: client.created_at,
-          reportsCount: reportCountMap[client.id] || 0,
-          phoneNumber: client.phone_number,
-          wpCredentials: client.wp_credentials ? client.wp_credentials : null,
-          hostingCredentials: client.hosting_credentials ? client.hosting_credentials : null
-        }));
+        const formattedClients = clientsData.map((client: any) => {
+          const wpCreds = client.wp_credentials;
+          const hostingCreds = client.hosting_credentials;
+          
+          return {
+            id: client.id,
+            name: client.name,
+            website: client.website,
+            industry: client.industry || '',
+            createdAt: client.created_at,
+            reportsCount: reportCountMap[client.id] || 0,
+            phoneNumber: client.phone_number,
+            wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
+            hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
+          };
+        });
         
         setClients(formattedClients);
       } catch (error: any) {
@@ -65,6 +87,10 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const newClient = await addClientToDb(data, user?.id);
       
+      // Apply the same type safety for the new client
+      const wpCreds = newClient.wp_credentials;
+      const hostingCreds = newClient.hosting_credentials;
+      
       const formattedClient: Client = {
         id: newClient.id,
         name: newClient.name,
@@ -73,8 +99,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         createdAt: newClient.created_at,
         reportsCount: 0,
         phoneNumber: newClient.phone_number,
-        wpCredentials: newClient.wp_credentials || null,
-        hostingCredentials: newClient.hosting_credentials || null
+        wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
+        hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
       };
       
       setClients(prevClients => [formattedClient, ...prevClients]);
@@ -95,6 +121,10 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('Cliente no encontrado');
       }
       
+      // Apply the same type safety for the updated client
+      const wpCreds = updatedClient.wp_credentials;
+      const hostingCreds = updatedClient.hosting_credentials;
+      
       const formattedClient: Client = {
         id: updatedClient.id,
         name: updatedClient.name,
@@ -103,8 +133,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         createdAt: updatedClient.created_at,
         reportsCount: clientToUpdate.reportsCount,
         phoneNumber: updatedClient.phone_number,
-        wpCredentials: updatedClient.wp_credentials || null,
-        hostingCredentials: updatedClient.hosting_credentials || null
+        wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
+        hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
       };
       
       setClients(prevClients => 
