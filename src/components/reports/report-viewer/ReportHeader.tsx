@@ -1,103 +1,88 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Share, Calendar, Globe, PenLine, CheckCircle, ExternalLink } from 'lucide-react';
-import BlurredCard from '@/components/ui/BlurredCard';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import ShareReportDialog from '@/components/reports/ShareReportDialog';
-import { Report } from '@/types/report.types';
+import { Edit2, ExternalLink, Share2 } from 'lucide-react';
+import ShareReportDialog from '../ShareReportDialog';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-interface ReportHeaderProps {
+export interface ReportHeaderProps {
   title: string;
   date: string;
   url?: string;
   isEditing: boolean;
   setIsEditing: (value: boolean) => void;
   reportId: string;
-  report?: Report;
 }
 
 const ReportHeader: React.FC<ReportHeaderProps> = ({ 
   title, 
   date, 
   url, 
-  isEditing, 
+  isEditing,
   setIsEditing,
-  reportId,
-  report
+  reportId
 }) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const formattedDate = new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  const toggleEditMode = () => {
+    if (isEditing) {
+      // Remove the query parameter when exiting edit mode
+      navigate(`/reports/${reportId}`);
+    } else {
+      // Add the query parameter when entering edit mode
+      navigate(`/reports/${reportId}?mode=edit`);
+    }
+    setIsEditing(!isEditing);
+  };
   
   return (
-    <BlurredCard className="w-full bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
+    <div className="w-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gradient-primary">{title}</h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-              <Calendar className="h-4 w-4" />
-              <span>{format(new Date(date), 'd MMM yyyy', { locale: es })}</span>
-            </div>
-            {url && (
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full group hover:bg-primary/20 transition-all">
-                <Globe className="h-4 w-4" />
-                <a 
-                  href={url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:text-primary transition-colors flex items-center gap-1"
-                >
-                  {url.replace(/^https?:\/\//, '').split('/')[0]}
-                  <ExternalLink className="h-3 w-3 opacity-70" />
-                </a>
-              </div>
-            )}
-          </div>
+          <h2 className="text-2xl font-semibold">{title}</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            <time dateTime={date}>{formattedDate}</time>
+          </p>
         </div>
         
-        <div className="flex gap-2 self-end md:self-auto">
+        <div className="flex items-center gap-2">
+          {url && (
+            <Button variant="outline" size="sm" onClick={() => window.open(url, '_blank')}>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Ver Sitio
+            </Button>
+          )}
+          
           <Button 
-            variant="outline" 
+            variant={isEditing ? "secondary" : "outline"} 
             size="sm" 
-            className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all"
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={toggleEditMode}
           >
-            {isEditing ? (
-              <>
-                <CheckCircle className="h-4 w-4 group-hover:text-primary-foreground" />
-                <span className="hidden sm:inline">Terminar Edición</span>
-              </>
-            ) : (
-              <>
-                <PenLine className="h-4 w-4 group-hover:text-primary-foreground" />
-                <span className="hidden sm:inline">Editar</span>
-              </>
-            )}
+            <Edit2 className="h-4 w-4 mr-2" />
+            {isEditing ? 'Guardar' : 'Editar'}
           </Button>
-          <Button variant="outline" size="sm" className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all">
-            <Download className="h-4 w-4 group-hover:text-primary-foreground" />
-            <span className="hidden sm:inline">Descargar</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all"
-            onClick={() => setShareDialogOpen(true)}
-          >
-            <Share className="h-4 w-4 group-hover:text-primary-foreground" />
-            <span className="hidden sm:inline">Compartir</span>
+          
+          <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
+            <Share2 className="h-4 w-4 mr-2" />
+            Compartir
           </Button>
         </div>
       </div>
       
       <ShareReportDialog 
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
+        open={shareDialogOpen} 
+        onOpenChange={setShareDialogOpen} 
         reportId={reportId}
-        reportTitle={title}
       />
-    </BlurredCard>
+    </div>
   );
 };
 

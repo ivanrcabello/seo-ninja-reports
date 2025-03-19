@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 
-interface MetricItemProps {
+export interface MetricItemProps {
   name: string;
   value: string;
   description: string;

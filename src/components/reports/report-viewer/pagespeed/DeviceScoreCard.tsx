@@ -29,12 +29,6 @@ const DeviceScoreCard: React.FC<DeviceScoreCardProps> = ({ title, icon, data, fo
   
   console.log(`DeviceScoreCard ${title} data:`, data);
   
-  // Format scores properly - these should already be between 0 and 1
-  const performanceScore = data.performance;
-  const accessibilityScore = data.accessibility;
-  const bestPracticesScore = data.bestPractices;
-  const seoScore = data.seo;
-  
   return (
     <Card className="overflow-hidden bg-gradient-to-br from-background via-background/95 to-background/90 backdrop-blur-sm border-primary/10">
       <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
@@ -47,22 +41,22 @@ const DeviceScoreCard: React.FC<DeviceScoreCardProps> = ({ title, icon, data, fo
         <div className="grid grid-cols-2 gap-3 mb-6">
           <ScoreCard 
             title="Rendimiento" 
-            score={performanceScore} 
+            score={data.performance} 
             description="Velocidad de carga" 
           />
           <ScoreCard 
             title="Accesibilidad" 
-            score={accessibilityScore} 
+            score={data.accessibility} 
             description="Facilidad de uso" 
           />
           <ScoreCard 
             title="Buenas Prácticas" 
-            score={bestPracticesScore} 
+            score={data.bestPractices} 
             description="Código limpio" 
           />
           <ScoreCard 
             title="SEO" 
-            score={seoScore} 
+            score={data.seo} 
             description="Optimización" 
           />
         </div>

@@ -1,55 +1,32 @@
 
-/**
- * Formats time metrics for display
- */
 export const formatTimeMetric = (time: number | undefined, unit: string = 's'): string => {
-  if (time === undefined || time === null) return '—';
+  if (time === undefined) return '—';
   
-  if (unit === 's' && typeof time === 'number') {
-    // Convert from ms to seconds if needed (PageSpeed API returns in ms)
-    const seconds = time > 1000 ? time / 1000 : time;
-    return `${seconds.toFixed(2)}${unit}`;
+  if (unit === 's') {
+    const seconds = time / 1000;
+    return `${seconds.toFixed(2)} s`;
+  } else if (unit === 'ms') {
+    return `${Math.round(time)} ms`;
   }
   
-  return `${Math.round(time)}${unit}`;
+  return `${time} ${unit}`;
 };
 
-/**
- * Ensures numeric score values are properly formatted
- */
-export const formatScoreValue = (score: number | undefined): number => {
-  if (score === undefined || score === null) return 0;
-  
-  // Some scores come as decimals between 0-1, others as percentages
-  if (score <= 1) {
-    return Math.round(score * 100);
-  }
-  
-  return Math.round(score);
+export const formatScoreValue = (score: number | undefined): string => {
+  if (score === undefined) return '—';
+  return Math.round(score * 100).toString();
 };
 
-/**
- * Gets CSS class for score color based on value
- */
-export const getScoreColorClass = (score: number | undefined): string => {
-  if (score === undefined || score === null) return 'text-gray-400';
-  
-  const normalizedScore = score <= 1 ? score * 100 : score;
-  
-  if (normalizedScore >= 90) return 'text-green-500';
-  if (normalizedScore >= 50) return 'text-yellow-500';
+// Devuelve una clase de color basada en el score (valor de 0 a 1)
+export const getScoreColorClass = (score: number): string => {
+  if (score >= 0.9) return 'text-green-500';
+  if (score >= 0.5) return 'text-amber-500';
   return 'text-red-500';
 };
 
-/**
- * Gets CSS background class for score based on value
- */
-export const getScoreBackgroundClass = (score: number | undefined): string => {
-  if (score === undefined || score === null) return 'bg-gray-100';
-  
-  const normalizedScore = score <= 1 ? score * 100 : score;
-  
-  if (normalizedScore >= 90) return 'bg-green-100 text-green-800';
-  if (normalizedScore >= 50) return 'bg-yellow-100 text-yellow-800';
-  return 'bg-red-100 text-red-800';
+// Devuelve una clase de fondo basada en el score (valor de 0 a 1)
+export const getScoreBackgroundClass = (score: number): string => {
+  if (score >= 0.9) return 'bg-green-500';
+  if (score >= 0.5) return 'bg-amber-500';
+  return 'bg-red-500';
 };

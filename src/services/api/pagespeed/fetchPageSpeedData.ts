@@ -23,7 +23,7 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
     // Desktop fetch with better error handling
     try {
       console.log('Intentando obtener datos de PageSpeed para desktop...');
-      const desktopUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=desktop`;
+      const desktopUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=desktop&category=performance&category=accessibility&category=best-practices&category=seo`;
       console.log('URL de petición desktop:', desktopUrl.replace(apiKey, 'API_KEY_REDACTED'));
       
       const desktopResponse = await fetch(desktopUrl);
@@ -36,14 +36,24 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       
       const desktopData = await desktopResponse.json();
       console.log('Datos de PageSpeed desktop obtenidos correctamente');
+      console.log('Categorías recibidas desktop:', desktopData.lighthouseResult?.categories);
       
       // Extract desktop metrics
       if (desktopData.lighthouseResult && desktopData.lighthouseResult.categories) {
         const categories = desktopData.lighthouseResult.categories;
-        results.desktop.performance = categories.performance?.score * 100 || 0;
-        results.desktop.accessibility = categories.accessibility?.score * 100 || 0;
-        results.desktop.bestPractices = categories['best-practices']?.score * 100 || 0;
-        results.desktop.seo = categories.seo?.score * 100 || 0;
+        
+        // Obtener scores de categorías (valores entre 0 y 1)
+        results.desktop.performance = categories.performance?.score || 0;
+        results.desktop.accessibility = categories.accessibility?.score || 0;
+        results.desktop.bestPractices = categories['best-practices']?.score || 0;
+        results.desktop.seo = categories.seo?.score || 0;
+        
+        console.log('Scores desktop extraídos:', {
+          performance: results.desktop.performance,
+          accessibility: results.desktop.accessibility,
+          bestPractices: results.desktop.bestPractices,
+          seo: results.desktop.seo
+        });
         
         // Extract audits if available
         const audits = desktopData.lighthouseResult.audits;
@@ -59,7 +69,7 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       
       // Mobile fetch with better error handling
       console.log('Intentando obtener datos de PageSpeed para mobile...');
-      const mobileUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=mobile`;
+      const mobileUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`;
       console.log('URL de petición mobile:', mobileUrl.replace(apiKey, 'API_KEY_REDACTED'));
       
       const mobileResponse = await fetch(mobileUrl);
@@ -72,14 +82,24 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       
       const mobileData = await mobileResponse.json();
       console.log('Datos de PageSpeed mobile obtenidos correctamente');
+      console.log('Categorías recibidas mobile:', mobileData.lighthouseResult?.categories);
       
       // Extract mobile metrics
       if (mobileData.lighthouseResult && mobileData.lighthouseResult.categories) {
         const categories = mobileData.lighthouseResult.categories;
-        results.mobile.performance = categories.performance?.score * 100 || 0;
-        results.mobile.accessibility = categories.accessibility?.score * 100 || 0;
-        results.mobile.bestPractices = categories['best-practices']?.score * 100 || 0;
-        results.mobile.seo = categories.seo?.score * 100 || 0;
+        
+        // Obtener scores de categorías (valores entre 0 y 1)
+        results.mobile.performance = categories.performance?.score || 0;
+        results.mobile.accessibility = categories.accessibility?.score || 0;
+        results.mobile.bestPractices = categories['best-practices']?.score || 0;
+        results.mobile.seo = categories.seo?.score || 0;
+        
+        console.log('Scores mobile extraídos:', {
+          performance: results.mobile.performance,
+          accessibility: results.mobile.accessibility,
+          bestPractices: results.mobile.bestPractices,
+          seo: results.mobile.seo
+        });
         
         // Extract audits if available
         const audits = mobileData.lighthouseResult.audits;

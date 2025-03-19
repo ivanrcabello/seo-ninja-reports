@@ -11,8 +11,8 @@ interface ScoreCardProps {
 const ScoreCard: React.FC<ScoreCardProps> = ({ title, score, description }) => {
   // Ensure score is a number between 0 and 100
   const displayScore = score !== undefined ? Math.round(score * 100) : 0;
-  const colorClass = getScoreColorClass(displayScore / 100);
-  const bgClass = getScoreBackgroundClass(displayScore / 100);
+  const colorClass = getScoreColorClass(score || 0);
+  const bgClass = getScoreBackgroundClass(score || 0);
   
   return (
     <div className="flex flex-col gap-1 p-3 rounded-lg bg-muted/30 border border-border/50">
