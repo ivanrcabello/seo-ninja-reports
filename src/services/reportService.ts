@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Report, PageSpeedResult } from '@/types/report.types';
 import { toast } from 'sonner';
@@ -434,7 +435,7 @@ ESCRITORIO:
       
       // Add PageSpeed data if available
       if (pageSpeedData) {
-        updateData.pagespeed_data = pageSpeedData;
+        updateData.pageSpeedData = pageSpeedData;
       }
       
       const { data: completedReport, error: updateError } = await supabase
@@ -458,7 +459,7 @@ ESCRITORIO:
         summary: completedReport.summary,
         content: completedReport.content as Report['content'],
         customPrompt: completedReport.custom_prompt,
-        pageSpeedData: completedReport.pagespeed_data
+        pageSpeedData: completedReport.pageSpeedData
       };
       
       toast.success('Informe generado exitosamente');
@@ -494,7 +495,7 @@ ESCRITORIO:
       console.error('Error updating report status to failed:', updateError);
     }
     
-    toast.error(error.message || 'Error al generar informe');
+    toast.error('Error al generar informe');
     throw error;
   }
 };

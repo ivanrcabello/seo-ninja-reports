@@ -51,8 +51,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       console.log('Report generated successfully:', report);
       
       if (report && report.id) {
-        toast({
-          title: 'Informe creado',
+        toast.success('Informe creado', {
           description: 'Informe creado exitosamente',
         });
         
@@ -65,10 +64,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       }
     } catch (error: any) {
       console.error('Error generating report:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: error.message || 'Error al generar informe',
-        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -120,7 +117,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
               </div>
               
               {!hasGoogleApiKey && (
-                <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                <Alert variant="destructive" className="bg-amber-50 border-amber-200">
                   <AlertCircle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-700">
                     No se ha configurado la API key de Google PageSpeed. Se generará el informe sin datos de rendimiento. Para incluir datos de rendimiento, configura la API key en la sección de Configuración.
