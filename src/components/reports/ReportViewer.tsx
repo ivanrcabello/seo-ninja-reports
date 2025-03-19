@@ -1,215 +1,147 @@
-
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import BlurredCard from '../ui/BlurredCard';
+import React from 'react';
 import { Report } from '@/types/report.types';
-import useReports from '@/hooks/useReports';
-import { toast } from 'sonner';
-import ReportSection from './report-section';
-import ReportHeader from './ReportHeader';
-import ReportEditDialog from './ReportEditDialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Edit, Share2 } from 'lucide-react';
+import { getFilePublicUrl } from '@/services/reportService';
 
 interface ReportViewerProps {
-  report: Report;
+  report: Report | undefined;
 }
 
 const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
-  const { id, title, date, url, content } = report;
-  const { updateReport } = useReports();
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState<string>('');
-  
-  if (!content) {
-    return (
-      <BlurredCard className="p-12 text-center">
-        <h3 className="text-xl font-medium mb-2">No hay contenido disponible</h3>
-        <p className="text-muted-foreground">Este informe aún no tiene contenido.</p>
-      </BlurredCard>
-    );
+  if (!report) {
+    return <p>Informe no encontrado.</p>;
   }
+
+  const { content } = report;
+
+  const getBadgeColor = (status: string) => {
+    switch (status) {
+      case 'processing':
+        return 'bg-blue-100 text-blue-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
   
-  const handleEditSection = (section: string, sectionContent: string) => {
-    setActiveSection(section);
-    setEditContent(sectionContent);
-    setEditDialogOpen(true);
+  const getPublicShareLink = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/shared/reports/${report.id}`;
   };
 
-  const handleSaveEdit = async () => {
-    if (!activeSection || !editContent.trim()) return;
-    
-    const updatedContent = { ...content };
-    
-    // Update the appropriate section
-    switch (activeSection) {
-      case 'executiveSummary':
-        updatedContent.executiveSummary = editContent;
-        break;
-      case 'technicalAnalysis':
-        updatedContent.technicalAnalysis = editContent;
-        break;
-      case 'contentAnalysis':
-        updatedContent.contentAnalysis = editContent;
-        break;
-      case 'backlinksAnalysis':
-        updatedContent.backlinksAnalysis = editContent;
-        break;
-      case 'localSeo':
-        updatedContent.localSeo = editContent;
-        break;
-      case 'recommendations':
-        updatedContent.recommendations = editContent;
-        break;
-      case 'serviceProposal':
-        updatedContent.serviceProposal = editContent;
-        break;
-      default:
-        break;
-    }
-    
-    try {
-      await updateReport(report.id, { content: updatedContent });
-      toast.success('Sección actualizada correctamente');
-      setEditDialogOpen(false);
-    } catch (error) {
-      toast.error('Error al actualizar la sección');
-      console.error('Error updating report section:', error);
-    }
-  };
-  
-  const getSectionTitle = (section: string): string => {
-    switch (section) {
-      case 'executiveSummary':
-        return 'Resumen Ejecutivo';
-      case 'technicalAnalysis':
-        return 'SEO Técnico';
-      case 'contentAnalysis':
-        return 'Contenido';
-      case 'backlinksAnalysis':
-        return 'Backlinks';
-      case 'localSeo':
-        return 'SEO Local';
-      case 'recommendations':
-        return 'Recomendaciones';
-      case 'serviceProposal':
-        return 'Propuesta de Servicios';
-      default:
-        return '';
-    }
-  };
-  
   return (
-    <div className="space-y-8">
-      <ReportHeader 
-        title={title} 
-        date={date} 
-        url={url} 
-        isEditing={isEditing} 
-        setIsEditing={setIsEditing}
-        reportId={id}
-      />
-      
-      <Tabs defaultValue="executive-summary" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 md:grid-cols-7 h-auto p-1 bg-gradient-to-r from-primary/5 to-background backdrop-blur-sm rounded-lg border border-primary/10">
-          <TabsTrigger value="executive-summary" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Resumen Ejecutivo</TabsTrigger>
-          <TabsTrigger value="technical" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">SEO Técnico</TabsTrigger>
-          <TabsTrigger value="content" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Contenido</TabsTrigger>
-          <TabsTrigger value="backlinks" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Backlinks</TabsTrigger>
-          <TabsTrigger value="local-seo" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">SEO Local</TabsTrigger>
-          <TabsTrigger value="recommendations" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Recomendaciones</TabsTrigger>
-          <TabsTrigger value="service-proposal" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Propuesta</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="executive-summary">
-          <ReportSection
-            title="Resumen Ejecutivo"
-            content={content.executiveSummary}
-            sectionKey="executiveSummary"
-            onEdit={handleEditSection}
-            isEditing={isEditing}
-            delay={0}
-          />
-        </TabsContent>
-        
-        <TabsContent value="technical">
-          <ReportSection
-            title="SEO Técnico"
-            content={content.technicalAnalysis}
-            sectionKey="technicalAnalysis"
-            onEdit={handleEditSection}
-            isEditing={isEditing}
-            delay={0}
-          />
-        </TabsContent>
-        
-        <TabsContent value="content">
-          <ReportSection
-            title="Análisis de Contenido"
-            content={content.contentAnalysis}
-            sectionKey="contentAnalysis"
-            onEdit={handleEditSection}
-            isEditing={isEditing}
-            delay={0}
-          />
-        </TabsContent>
-        
-        <TabsContent value="backlinks">
-          <ReportSection
-            title="Análisis de Backlinks"
-            content={content.backlinksAnalysis}
-            sectionKey="backlinksAnalysis"
-            onEdit={handleEditSection}
-            isEditing={isEditing}
-            delay={0}
-          />
-        </TabsContent>
-        
-        <TabsContent value="local-seo">
-          <ReportSection
-            title="SEO Local"
-            content={content.localSeo || ''}
-            sectionKey="localSeo"
-            onEdit={handleEditSection}
-            isEditing={isEditing}
-            delay={0}
-          />
-        </TabsContent>
-        
-        <TabsContent value="recommendations">
-          <ReportSection
-            title="Recomendaciones y Acciones"
-            content={content.recommendations}
-            sectionKey="recommendations"
-            onEdit={handleEditSection}
-            isEditing={isEditing}
-            delay={0}
-            isRecommendations
-          />
-        </TabsContent>
-        
-        <TabsContent value="service-proposal">
-          <ReportSection
-            title="Propuesta de Servicios"
-            content={content.serviceProposal || ''}
-            sectionKey="serviceProposal"
-            onEdit={handleEditSection}
-            isEditing={isEditing}
-            delay={0}
-          />
-        </TabsContent>
-      </Tabs>
-      
-      <ReportEditDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        activeSection={activeSection}
-        editContent={editContent}
-        setEditContent={setEditContent}
-        onSave={handleSaveEdit}
-        getSectionTitle={getSectionTitle}
-      />
-    </div>
+    <Card className="w-full h-full flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-2xl font-bold">
+          {report.title}
+        </CardTitle>
+        <div className="flex items-center space-x-2">
+          <Badge className={getBadgeColor(report.status)}>
+            {report.status}
+          </Badge>
+          <Link to={`/reports/${report.id}/edit`}>
+            <Button variant="ghost" size="sm">
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+          </Link>
+          <Button variant="ghost" size="sm" onClick={() => {
+            navigator.clipboard.writeText(getPublicShareLink());
+            alert('Enlace copiado al portapapeles');
+          }}>
+            <Share2 className="mr-2 h-4 w-4" />
+            Compartir
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-auto flex-1">
+        <ScrollArea className="h-full">
+          <div className="space-y-4">
+            {content?.executiveSummary && (
+              <section>
+                <h2 className="text-xl font-semibold">Resumen Ejecutivo</h2>
+                <p>{content.executiveSummary}</p>
+              </section>
+            )}
+
+            {content?.technicalAnalysis && (
+              <section>
+                <h2 className="text-xl font-semibold">Análisis Técnico</h2>
+                <p>{content.technicalAnalysis}</p>
+              </section>
+            )}
+
+            {content?.contentAnalysis && (
+              <section>
+                <h2 className="text-xl font-semibold">Análisis de Contenido</h2>
+                <p>{content.contentAnalysis}</p>
+              </section>
+            )}
+
+            {content?.backlinksAnalysis && (
+              <section>
+                <h2 className="text-xl font-semibold">Análisis de Backlinks</h2>
+                <p>{content.backlinksAnalysis}</p>
+              </section>
+            )}
+            
+            {content?.keywords && (
+              <section>
+                <h2 className="text-xl font-semibold">Palabras Clave</h2>
+                <p>{content.keywords}</p>
+              </section>
+            )}
+
+            {content?.localSeo && (
+              <section>
+                <h2 className="text-xl font-semibold">SEO Local</h2>
+                <p>{content.localSeo}</p>
+              </section>
+            )}
+
+            {content?.recommendations && (
+              <section>
+                <h2 className="text-xl font-semibold">Recomendaciones</h2>
+                <p>{content.recommendations}</p>
+              </section>
+            )}
+
+            {content?.serviceProposal && (
+              <section>
+                <h2 className="text-xl font-semibold">Propuesta de Servicios</h2>
+                <p>{content.serviceProposal}</p>
+              </section>
+            )}
+            
+            {content?.pageSpeedData && (
+              <section>
+                <h2 className="text-xl font-semibold">Datos de PageSpeed Insights</h2>
+                
+                <h3 className="text-lg font-semibold">Escritorio</h3>
+                <p>Rendimiento: {content.pageSpeedData.desktop.performance}</p>
+                <p>Accesibilidad: {content.pageSpeedData.desktop.accessibility}</p>
+                <p>Mejores Prácticas: {content.pageSpeedData.desktop.bestPractices}</p>
+                <p>SEO: {content.pageSpeedData.desktop.seo}</p>
+                
+                <h3 className="text-lg font-semibold">Móvil</h3>
+                <p>Rendimiento: {content.pageSpeedData.mobile.performance}</p>
+                <p>Accesibilidad: {content.pageSpeedData.mobile.accessibility}</p>
+                <p>Mejores Prácticas: {content.pageSpeedData.mobile.bestPractices}</p>
+                <p>SEO: {content.pageSpeedData.mobile.seo}</p>
+              </section>
+            )}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 };
 

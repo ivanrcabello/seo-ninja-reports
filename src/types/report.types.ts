@@ -15,6 +15,7 @@ export interface Report {
     localSeo?: string;
     recommendations: string;
     serviceProposal?: string;
+    keywords?: string;
     pageSpeedData?: {
       desktop: {
         performance?: number;

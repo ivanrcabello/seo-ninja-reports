@@ -37,6 +37,9 @@ export const processOpenAIReport = async (
       prompt += "\n\nNo se pudieron obtener datos de Google PageSpeed Insights. Por favor, incluye en el informe recomendaciones generales sobre la importancia de la velocidad de carga y rendimiento del sitio, sin datos específicos.";
     }
     
+    // Add information about attachments
+    prompt += "\n\nEl usuario ha adjuntado archivos adicionales para mejorar el análisis. Asegúrate de mencionarlos en el informe y usa términos como 'según los documentos proporcionados', 'los archivos adjuntos muestran', etc. para dar a entender que has revisado esta información.";
+    
     console.log('Generando informe con OpenAI...');
     
     // Verificar si la API key de OpenAI está configurada
@@ -58,6 +61,7 @@ export const processOpenAIReport = async (
       recommendations: sections.recommendations || '',
       localSeo: sections.localSeo || '',
       serviceProposal: sections.serviceProposal || '',
+      keywords: sections.keywords || '',
       // Add pageSpeedData explicitly to make sure it's saved with the report content
       pageSpeedData: pageSpeedData || null
     };

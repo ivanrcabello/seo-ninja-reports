@@ -19,6 +19,7 @@ export const generateOpenAIReport = async (
     recommendations: string;
     localSeo: string;
     serviceProposal: string;
+    keywords: string;
   },
   rawResponse: string 
 }> => {
@@ -46,7 +47,7 @@ export const generateOpenAIReport = async (
           },
           {
             role: "user",
-            content: `Analiza el sitio web ${url}. Genera un informe SEO basado en el prompt proporcionado.`
+            content: `Analiza el sitio web ${url}. Genera un informe SEO completo y detallado basado en el prompt proporcionado.`
           }
         ],
         temperature: 0.7
@@ -70,15 +71,18 @@ export const generateOpenAIReport = async (
     // Extract additional sections that might not be in the standard extraction
     const seoLocalMatch = generatedText.match(/##?\s*SEO Local([\s\S]*?)(?=##?\s|$)/i);
     const propuestaMatch = generatedText.match(/##?\s*Propuesta([\s\S]*?)(?=##?\s|$)/i);
+    const keywordsMatch = generatedText.match(/##?\s*Palabras Clave([\s\S]*?)(?=##?\s|$)/i);
     
     console.log('¿Se encontró sección SEO Local?', !!seoLocalMatch);
     console.log('¿Se encontró sección Propuesta?', !!propuestaMatch);
+    console.log('¿Se encontró sección Palabras Clave?', !!keywordsMatch);
     
     // Combine all sections
     const sections = {
       ...standardSections,
       localSeo: seoLocalMatch ? seoLocalMatch[1].trim() : '',
-      serviceProposal: propuestaMatch ? propuestaMatch[1].trim() : ''
+      serviceProposal: propuestaMatch ? propuestaMatch[1].trim() : '',
+      keywords: keywordsMatch ? keywordsMatch[1].trim() : ''
     };
     
     return {
