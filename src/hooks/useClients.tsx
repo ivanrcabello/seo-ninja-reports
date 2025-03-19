@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
 import useAuth from './useAuth';
@@ -140,5 +139,6 @@ const useClients = () => {
   return context;
 };
 
-export { Client };
+// Fix: Use 'export type' for re-exporting types when 'isolatedModules' is enabled
+export type { Client };
 export default useClients;
