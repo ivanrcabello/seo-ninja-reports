@@ -50,7 +50,7 @@ const ReportDetail = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-background/90">
       <Header />
       
       <main className="flex-1 pt-24 pb-16">
@@ -61,12 +61,12 @@ const ReportDetail = () => {
             </div>
           ) : !report ? (
             <AnimatedContainer animation="fade" className="text-center py-12">
-              <h2 className="text-2xl font-bold mb-4">Report Not Found</h2>
+              <h2 className="text-2xl font-bold mb-4">Informe No Encontrado</h2>
               <p className="text-muted-foreground mb-6">
-                The report you're looking for doesn't exist or has been removed.
+                El informe que buscas no existe o ha sido eliminado.
               </p>
               <Button asChild>
-                <Link to="/dashboard">Return to Dashboard</Link>
+                <Link to="/dashboard">Volver al Dashboard</Link>
               </Button>
             </AnimatedContainer>
           ) : (
@@ -74,48 +74,48 @@ const ReportDetail = () => {
               <AnimatedContainer animation="slide-down" className="mb-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      asChild
+                      className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
+                    >
                       <Link to={client ? `/clients/${client.id}` : '/dashboard'}>
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-5 w-5" />
                       </Link>
                     </Button>
                     <div>
                       {client && (
                         <Link to={`/clients/${client.id}`}>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary mb-1 hover:bg-primary/20 transition-colors">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary mb-1 hover:bg-primary/20 transition-colors">
                             {client.name}
                           </span>
                         </Link>
                       )}
-                      <h1 className="text-2xl sm:text-3xl font-bold">{report.title}</h1>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-auto">
-                    <Button variant="outline" size="sm" className="gap-1">
-                      <Download className="h-4 w-4" />
-                      <span className="hidden sm:inline">Download</span>
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-1">
-                      <Share className="h-4 w-4" />
-                      <span className="hidden sm:inline">Share</span>
-                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1 text-destructive">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-1 text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
+                        >
                           <Trash2 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Delete</span>
+                          <span className="hidden sm:inline">Eliminar</span>
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="glass">
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete this report.
-                            This action cannot be undone.
+                            Esto eliminará permanentemente este informe.
+                            Esta acción no puede deshacerse.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction 
                             onClick={handleDeleteReport}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -124,10 +124,10 @@ const ReportDetail = () => {
                             {isDeleting ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Deleting...
+                                Eliminando...
                               </>
                             ) : (
-                              'Delete'
+                              'Eliminar'
                             )}
                           </AlertDialogAction>
                         </AlertDialogFooter>
