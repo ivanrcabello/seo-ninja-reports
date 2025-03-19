@@ -28,24 +28,25 @@ const PublicReport = () => {
         
         console.log('Fetching public report with ID:', id);
         
-        // Use the anonymous access provided by RLS policies
-        const { data, error: fetchError } = await supabase
+        // First, try to query without using single()
+        const { data: reportData, error: fetchError } = await supabase
           .from('reports')
           .select('*, clients(name, website)')
-          .eq('id', id)
-          .single();
+          .eq('id', id);
         
         if (fetchError) {
           console.error('Error fetching public report:', fetchError);
-          throw new Error('No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
+          throw new Error(`Error: ${fetchError.message}`);
         }
         
-        if (!data) {
+        if (!reportData || reportData.length === 0) {
           console.error('No data returned for public report ID:', id);
-          throw new Error('Informe no encontrado');
+          throw new Error(`Informe con ID ${id} no encontrado`);
         }
         
-        console.log('Public report data retrieved successfully:', data);
+        console.log('Public report data retrieved successfully:', reportData[0]);
+        
+        const data = reportData[0];
         
         // Safely type check the content from the database
         let reportContent;

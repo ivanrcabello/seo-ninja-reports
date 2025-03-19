@@ -18,6 +18,9 @@ const PublicReportError: React.FC<PublicReportErrorProps> = ({ errorMessage }) =
           <p className="mt-4 text-sm text-muted-foreground">
             Si recibiste un enlace a este informe, contacta a la persona que te lo compartió.
           </p>
+          <p className="mt-2 text-xs text-muted-foreground/70">
+            Código: {typeof window !== 'undefined' && window.location.pathname.split('/').pop()}
+          </p>
         </div>
       </BlurredCard>
     </div>
