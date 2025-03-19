@@ -7,6 +7,12 @@ import { uploadReportFiles } from './reportFileService';
 import { processOpenAIReport, markReportAsFailed } from './openaiProcessingService';
 import { handleServiceError } from './baseService';
 
+interface Keyword {
+  keyword: string;
+  searchVolume?: number;
+  difficulty?: number;
+}
+
 /**
  * Generates an SEO report using OpenAI
  */
@@ -15,7 +21,9 @@ export const generateSeoReport = async (
   url: string,
   files: File[],
   customPrompt?: string,
-  prefetchedPageSpeedData?: any
+  prefetchedPageSpeedData?: any,
+  keywords?: Keyword[],
+  notes?: string
 ): Promise<Report> => {
   try {
     const session = await supabase.auth.getSession();
@@ -25,6 +33,8 @@ export const generateSeoReport = async (
 
     console.log('Iniciando generación de informe SEO para cliente:', clientId, 'URL:', url);
     console.log('¿Hay datos de PageSpeed prefetched?', !!prefetchedPageSpeedData);
+    console.log('¿Hay palabras clave?', !!keywords && keywords.length > 0);
+    console.log('¿Hay notas?', !!notes);
 
     // Prepare initial content object with properly typed structure
     const initialContent = {
@@ -35,6 +45,7 @@ export const generateSeoReport = async (
       recommendations: '',
       localSeo: '',
       serviceProposal: '',
+      keywords: '',
       // Include prefetched PageSpeed data if available
       pageSpeedData: prefetchedPageSpeedData || null
     };
@@ -50,7 +61,8 @@ export const generateSeoReport = async (
         date: new Date().toISOString(),
         summary: 'Generating report...',
         content: initialContent,
-        custom_prompt: customPrompt || ''
+        custom_prompt: customPrompt || '',
+        notes: notes || null
       })
       .select()
       .single();
@@ -66,9 +78,43 @@ export const generateSeoReport = async (
     if (prefetchedPageSpeedData) {
       await savePageSpeedData(newReport.id, url, prefetchedPageSpeedData);
     }
+    
+    // If we have keywords, save them to the database
+    if (keywords && keywords.length > 0) {
+      try {
+        const keywordsToInsert = keywords.map(kw => ({
+          report_id: newReport.id,
+          keyword: kw.keyword,
+          search_volume: kw.searchVolume || null,
+          difficulty: kw.difficulty || null
+        }));
+        
+        const { error: keywordsError } = await supabase
+          .from('keywords')
+          .insert(keywordsToInsert);
+          
+        if (keywordsError) {
+          console.error('Error al guardar palabras clave:', keywordsError);
+          // Don't stop the process if keywords insertion fails
+        } else {
+          console.log('Palabras clave guardadas correctamente:', keywords.length);
+        }
+      } catch (keywordError) {
+        console.error('Error en proceso de guardado de palabras clave:', keywordError);
+        // Don't stop the process if keywords insertion fails
+      }
+    }
 
     // Start the report generation process with prefetched PageSpeed data
-    processReportGeneration(newReport.id, clientId, url, files, customPrompt, prefetchedPageSpeedData);
+    processReportGeneration(
+      newReport.id, 
+      clientId, 
+      url, 
+      files, 
+      customPrompt, 
+      prefetchedPageSpeedData,
+      notes
+    );
 
     // Return the initial report with status "processing"
     return {
@@ -79,6 +125,7 @@ export const generateSeoReport = async (
       status: newReport.status as 'processing' | 'completed' | 'failed',
       url: newReport.url,
       summary: newReport.summary,
+      notes: newReport.notes,
       content: newReport.content && typeof newReport.content === 'object' 
         ? (newReport.content as any) as Report['content']
         : undefined,
@@ -99,7 +146,8 @@ const processReportGeneration = async (
   url: string,
   files: File[],
   customPrompt?: string,
-  prefetchedPageSpeedData?: any
+  prefetchedPageSpeedData?: any,
+  notes?: string
 ) => {
   try {
     console.log('Iniciando proceso de generación en segundo plano para reporte:', reportId);
@@ -139,7 +187,7 @@ const processReportGeneration = async (
     
     console.log('Procesando informe con OpenAI...');
     // Process the report with OpenAI
-    await processOpenAIReport(reportId, url, pageSpeedData, customPrompt);
+    await processOpenAIReport(reportId, url, pageSpeedData, customPrompt, notes);
     console.log('Procesamiento de informe completado con éxito');
     
   } catch (error: any) {

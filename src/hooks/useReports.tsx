@@ -10,6 +10,12 @@ import {
   generateSeoReport
 } from '@/services/reportService';
 
+interface Keyword {
+  keyword: string;
+  searchVolume?: number;
+  difficulty?: number;
+}
+
 interface ReportsContextType {
   reports: Report[];
   isLoading: boolean;
@@ -18,7 +24,15 @@ interface ReportsContextType {
   createReport: (data: Omit<Report, 'id' | 'date' | 'status'>) => Promise<Report>;
   updateReport: (id: string, data: Partial<Report>) => Promise<Report>;
   deleteReport: (id: string) => Promise<void>;
-  generateReport: (clientId: string, url: string, files: File[], customPrompt?: string, pageSpeedData?: any) => Promise<Report>;
+  generateReport: (
+    clientId: string, 
+    url: string, 
+    files: File[], 
+    customPrompt?: string, 
+    pageSpeedData?: any,
+    keywords?: Keyword[],
+    notes?: string
+  ) => Promise<Report>;
 }
 
 const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
@@ -78,8 +92,24 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     setReports(prevReports => prevReports.filter(report => report.id !== id));
   };
 
-  const generateReport = async (clientId: string, url: string, files: File[], customPrompt?: string, pageSpeedData?: any) => {
-    const report = await generateSeoReport(clientId, url, files, customPrompt, pageSpeedData);
+  const generateReport = async (
+    clientId: string, 
+    url: string, 
+    files: File[], 
+    customPrompt?: string, 
+    pageSpeedData?: any,
+    keywords?: Keyword[],
+    notes?: string
+  ) => {
+    const report = await generateSeoReport(
+      clientId, 
+      url, 
+      files, 
+      customPrompt, 
+      pageSpeedData,
+      keywords,
+      notes
+    );
     
     // Update reports state based on status
     if (report.status === 'processing') {

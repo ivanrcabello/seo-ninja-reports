@@ -17,7 +17,7 @@ interface ReportGeneratorStep2Props {
   pageSpeedDataFetched: boolean;
   isLoading: boolean;
   previousStep: () => void;
-  handleSubmit: (e: React.FormEvent) => Promise<void>;
+  nextStep: () => void;
 }
 
 const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
@@ -29,12 +29,32 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
   pageSpeedDataFetched,
   isLoading,
   previousStep,
-  handleSubmit,
+  nextStep,
 }) => {
   const [showPromptDialog, setShowPromptDialog] = useState(false);
   
   return (
-    <form onSubmit={handleSubmit}>
+    <div>
+      <div className="mb-6 flex items-center justify-center">
+        <div className="flex items-center justify-center space-x-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+            1
+          </div>
+          <div className="h-0.5 w-10 bg-primary"></div>
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+            2
+          </div>
+          <div className="h-0.5 w-10 bg-muted"></div>
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
+            3
+          </div>
+          <div className="h-0.5 w-10 bg-muted"></div>
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
+            4
+          </div>
+        </div>
+      </div>
+      
       <CardContent className="space-y-6 pt-4">
         <div className="space-y-2">
           <Label>Subir Archivos de Apoyo</Label>
@@ -133,20 +153,14 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
           Atrás
         </Button>
         <Button
-          type="submit"
+          type="button"
+          onClick={nextStep}
           disabled={isLoading}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generando...
-            </>
-          ) : (
-            'Generar Informe'
-          )}
+          Siguiente
         </Button>
       </CardFooter>
-    </form>
+    </div>
   );
 };
 

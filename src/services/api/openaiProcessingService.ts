@@ -12,12 +12,14 @@ export const processOpenAIReport = async (
   reportId: string,
   url: string,
   pageSpeedData: any = null,
-  customPrompt?: string
+  customPrompt?: string,
+  notes?: string
 ): Promise<Report | null> => {
   try {
     console.log('Procesando informe con OpenAI para:', url);
     console.log('ID del informe:', reportId);
     console.log('¿Hay datos de PageSpeed?', !!pageSpeedData);
+    console.log('¿Hay notas?', !!notes);
     
     let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
     prompt = prompt.replace('[DOMINIO]', new URL(url).hostname);
@@ -37,21 +39,27 @@ export const processOpenAIReport = async (
       prompt += "\n\nNo se pudieron obtener datos de Google PageSpeed Insights. Por favor, incluye en el informe recomendaciones generales sobre la importancia de la velocidad de carga y rendimiento del sitio, sin datos específicos.";
     }
     
-    // Get notes and add to prompt if available
-    try {
-      const { data: reportData, error: reportError } = await supabase
-        .from('reports')
-        .select('notes')
-        .eq('id', reportId)
-        .single();
-        
-      if (!reportError && reportData && reportData.notes) {
-        prompt += "\n\nAdicional, aquí hay algunas notas importantes sobre este proyecto que debes tener en cuenta:\n" + reportData.notes;
-        console.log('Notas añadidas al prompt');
+    // Add notes to prompt if available
+    if (notes && notes.trim()) {
+      prompt += "\n\nAquí hay algunas notas importantes sobre este proyecto que debes tener en cuenta:\n" + notes;
+      console.log('Notas añadidas al prompt del usuario');
+    } else {
+      // Get notes from database if not passed directly
+      try {
+        const { data: reportData, error: reportError } = await supabase
+          .from('reports')
+          .select('notes')
+          .eq('id', reportId)
+          .single();
+          
+        if (!reportError && reportData && reportData.notes) {
+          prompt += "\n\nAdicional, aquí hay algunas notas importantes sobre este proyecto que debes tener en cuenta:\n" + reportData.notes;
+          console.log('Notas obtenidas de la base de datos añadidas al prompt');
+        }
+      } catch (notesError) {
+        console.error('Error al obtener notas:', notesError);
+        // No need to stop the process if notes retrieval fails
       }
-    } catch (notesError) {
-      console.error('Error al obtener notas:', notesError);
-      // No need to stop the process if notes retrieval fails
     }
     
     // Get keywords and add to prompt if available

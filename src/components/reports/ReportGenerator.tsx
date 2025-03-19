@@ -9,20 +9,30 @@ import { toast } from 'sonner';
 import ReportGeneratorHeader from './report-steps/ReportGeneratorHeader';
 import ReportGeneratorStep1 from './report-steps/ReportGeneratorStep1';
 import ReportGeneratorStep2 from './report-steps/ReportGeneratorStep2';
+import ReportGeneratorStep3 from './report-steps/ReportGeneratorStep3';
+import ReportGeneratorStep4 from './report-steps/ReportGeneratorStep4';
 
 interface ReportGeneratorProps {
   clientId: string;
+}
+
+interface Keyword {
+  keyword: string;
+  searchVolume?: string;
+  difficulty?: string;
 }
 
 const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const [url, setUrl] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [pageSpeedData, setPageSpeedData] = useState<any>(null);
   const [customPrompt, setCustomPrompt] = useState(() => {
     return localStorage.getItem('default_seo_prompt') || '';
   });
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
+  const [notes, setNotes] = useState('');
   
   const { generateReport } = useReports();
   const { getClient } = useClients();
@@ -50,9 +60,26 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     try {
       console.log('Generating report for client:', clientId, 'URL:', url);
       console.log('Using PageSpeed data:', pageSpeedData);
+      console.log('Keywords:', keywords);
+      console.log('Notes:', notes);
+      
+      // Format keywords for database storage
+      const formattedKeywords = keywords.map(k => ({
+        keyword: k.keyword,
+        searchVolume: k.searchVolume ? parseInt(k.searchVolume) : undefined,
+        difficulty: k.difficulty ? parseInt(k.difficulty) : undefined
+      }));
       
       // Pass the pre-fetched PageSpeed data to the generateReport function
-      const report = await generateReport(clientId, url, files, customPrompt, pageSpeedData);
+      const report = await generateReport(
+        clientId, 
+        url, 
+        files, 
+        customPrompt, 
+        pageSpeedData, 
+        formattedKeywords,
+        notes
+      );
       
       console.log('Report generated successfully:', report);
       
@@ -78,16 +105,24 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     }
   };
 
-  const nextStep = () => {
-    if (url) {
-      setStep(2);
-    } else {
-      toast.error('Debes proporcionar una URL válida');
+  const goToNextStep = () => {
+    if (step < 4) {
+      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
     }
   };
 
-  const previousStep = () => {
-    setStep(1);
+  const goToPreviousStep = () => {
+    if (step > 1) {
+      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+    }
+  };
+
+  const nextStep = () => {
+    if (step === 1 && !url) {
+      toast.error('Debes proporcionar una URL válida');
+      return;
+    }
+    goToNextStep();
   };
 
   return (
@@ -102,7 +137,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
           </div>
         )}
         
-        {step === 1 ? (
+        {step === 1 && (
           <ReportGeneratorStep1
             url={url}
             setUrl={setUrl}
@@ -110,7 +145,9 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
             nextStep={nextStep}
             setPageSpeedData={setPageSpeedData}
           />
-        ) : (
+        )}
+        
+        {step === 2 && (
           <ReportGeneratorStep2
             files={files}
             setFiles={setFiles}
@@ -119,7 +156,27 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
             hasGoogleApiKey={hasGoogleApiKey}
             pageSpeedDataFetched={!!pageSpeedData}
             isLoading={isLoading}
-            previousStep={previousStep}
+            previousStep={goToPreviousStep}
+            nextStep={goToNextStep}
+          />
+        )}
+        
+        {step === 3 && (
+          <ReportGeneratorStep3
+            keywords={keywords}
+            setKeywords={setKeywords}
+            isLoading={isLoading}
+            previousStep={goToPreviousStep}
+            nextStep={goToNextStep}
+          />
+        )}
+        
+        {step === 4 && (
+          <ReportGeneratorStep4
+            notes={notes}
+            setNotes={setNotes}
+            isLoading={isLoading}
+            previousStep={goToPreviousStep}
             handleSubmit={handleSubmit}
           />
         )}
