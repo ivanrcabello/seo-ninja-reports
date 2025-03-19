@@ -11,7 +11,7 @@ import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import useAuth from '@/hooks/useAuth';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
-import { Loader2, ChevronLeft, Trash2, Download, Share } from 'lucide-react';
+import { Loader2, ChevronLeft, Trash2, Download, Share, FileText } from 'lucide-react';
 import { useState } from 'react';
 
 const ReportDetail = () => {
@@ -80,14 +80,24 @@ const ReportDetail = () => {
                       asChild
                       className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
                     >
-                      <Link to={client ? `/clients/${client.id}` : '/dashboard'}>
-                        <ChevronLeft className="h-5 w-5" />
-                      </Link>
+                      {client ? (
+                        <Link to={`/clients/${client.id}`}>
+                          <ChevronLeft className="h-5 w-5" />
+                        </Link>
+                      ) : (
+                        <Link to="/reports">
+                          <ChevronLeft className="h-5 w-5" />
+                        </Link>
+                      )}
                     </Button>
-                    <div>
+                    <div className="flex flex-col gap-1">
+                      <Link to="/reports" className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
+                        <FileText className="h-4 w-4" />
+                        Todos los informes
+                      </Link>
                       {client && (
                         <Link to={`/clients/${client.id}`}>
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary mb-1 hover:bg-primary/20 transition-colors">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                             {client.name}
                           </span>
                         </Link>
