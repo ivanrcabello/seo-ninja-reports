@@ -35,9 +35,9 @@ const Navbar: React.FC<{ isMobile: boolean; closeMenu?: () => void }> = ({
   ];
 
   const paquetes = [
-    { title: "Básico", description: "Ideal para pequeños negocios locales" },
-    { title: "Profesional", description: "Para empresas que buscan expandir su presencia online" },
-    { title: "Premium", description: "Servicios avanzados para máximos resultados" },
+    { title: "Plan Starter", description: "Ideal para pequeños negocios locales", href: "/packs/starter" },
+    { title: "Plan Ascenso", description: "Para empresas que buscan expandir su presencia online", href: "/packs/ascenso" },
+    { title: "Plan Master", description: "Servicios avanzados para máximos resultados", href: "/packs/master" },
   ];
 
   if (isMobile) {
@@ -161,7 +161,7 @@ const Navbar: React.FC<{ isMobile: boolean; closeMenu?: () => void }> = ({
                 <li key={paquete.title}>
                   <NavigationMenuLink asChild>
                     <Link
-                      to="/paquetes"
+                      to={paquete.href}
                       className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                     >
                       <div className="text-sm font-medium leading-none">{paquete.title}</div>

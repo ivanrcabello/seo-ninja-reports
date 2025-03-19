@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import BlurredCard from '@/components/ui/BlurredCard';
-import { Globe, Calendar, FileText, ExternalLink, Phone, Lock } from 'lucide-react';
+import { Globe, Calendar, FileText, ExternalLink, Phone } from 'lucide-react';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
+import ClientCredentials from './ClientCredentials';
+import ClientNotes from './ClientNotes';
 
 interface ClientOverviewProps {
   client: Client;
@@ -92,34 +94,13 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
             </div>
           </div>
         </BlurredCard>
-        
-        {(client.wpCredentials || client.hostingCredentials) && (
-          <BlurredCard>
-            <div className="flex items-start space-x-3">
-              <div className="p-2 bg-primary/10 rounded-full">
-                <Lock className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Credentials</h3>
-                <div className="space-y-1 mt-1">
-                  {client.wpCredentials && (
-                    <div className="flex items-center gap-1 text-sm">
-                      <span className="px-1.5 py-0.5 bg-primary/10 rounded text-xs">WordPress</span>
-                      <span className="text-muted-foreground">{client.wpCredentials.username}</span>
-                    </div>
-                  )}
-                  {client.hostingCredentials && (
-                    <div className="flex items-center gap-1 text-sm">
-                      <span className="px-1.5 py-0.5 bg-primary/10 rounded text-xs">{client.hostingCredentials.provider}</span>
-                      <span className="text-muted-foreground">{client.hostingCredentials.username}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </BlurredCard>
-        )}
       </div>
+      
+      {/* Mostrar credenciales del cliente */}
+      <ClientCredentials client={client} />
+      
+      {/* Sección de notas del cliente */}
+      <ClientNotes clientId={client.id} />
       
       <BlurredCard>
         <CardHeader>
