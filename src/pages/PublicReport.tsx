@@ -9,26 +9,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Globe, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
 
 const PublicReport = () => {
   const { id } = useParams<{ id: string }>();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchReport = async () => {
       try {
         setLoading(true);
         
-        // Fetch the report - using public access without auth
-        const { data, error } = await supabase
+        if (!id) {
+          throw new Error('ID de informe no especificado');
+        }
+        
+        // Fetch the report - using anon access without auth
+        const { data, error: fetchError } = await supabase
           .from('reports')
-          .select('*, clients(*)')
+          .select('*, clients(name, website)')
           .eq('id', id)
           .single();
         
-        if (error) throw error;
+        if (fetchError) {
+          console.error('Error fetching report:', fetchError);
+          throw new Error('No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
+        }
+        
+        if (!data) {
+          throw new Error('Informe no encontrado');
+        }
         
         // Safely type check the content from the database
         let reportContent;
@@ -64,9 +77,22 @@ const PublicReport = () => {
         };
         
         setReport(formattedReport);
+        
+        // Show success toast when report is loaded
+        toast({
+          title: 'Informe cargado',
+          description: 'El informe se ha cargado correctamente',
+        });
       } catch (err: any) {
-        console.error('Error fetching report:', err);
-        setError('No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
+        console.error('Error loading report:', err);
+        setError(err.message || 'No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
+        
+        // Show error toast
+        toast({
+          title: 'Error',
+          description: err.message || 'No se pudo cargar el informe',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
@@ -75,7 +101,7 @@ const PublicReport = () => {
     if (id) {
       fetchReport();
     }
-  }, [id]);
+  }, [id, toast]);
 
   if (loading) {
     return (
