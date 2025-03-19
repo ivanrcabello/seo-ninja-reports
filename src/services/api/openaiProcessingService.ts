@@ -35,7 +35,9 @@ export const processOpenAIReport = async (
         technicalAnalysis: sections.technicalAnalysis || '',
         contentAnalysis: sections.contentAnalysis || '',
         backlinksAnalysis: sections.backlinksAnalysis || '',
-        recommendations: sections.recommendations || ''
+        recommendations: sections.recommendations || '',
+        seoLocal: sections.seoLocal || '',
+        propuesta: sections.propuesta || ''
       },
       summary: sections.summary || 'Análisis SEO completo del sitio web.',
       status: 'completed',

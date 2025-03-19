@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,28 +10,61 @@ import { Loader2, Save, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const DEFAULT_PROMPT = `Eres un experto en SEO y marketing digital. A continuación, se te proporcionan datos extraídos de un análisis SEO del sitio web [DOMINIO] y de los documentos e imágenes proporcionados. Con base en esta información, elabora un informe SEO completo que incluya las siguientes secciones:
+const DEFAULT_PROMPT = `Genera un informe profesional de SEO para clientes de una empresa de marketing digital, claramente estructurado y formateado en secciones específicas con títulos fáciles de entender para clientes sin conocimientos técnicos profundos. Usa lenguaje sencillo, directo y con un tono profesional, asegurando claridad y precisión.
 
-1. **Resumen Ejecutivo:**  
-   Describe la situación actual del sitio en términos de SEO.
+Cada sección debe tener un título claro, y resaltar palabras clave importantes en negrita. Desarrolla cada una de las siguientes secciones detalladamente:
 
-2. **Análisis Técnico:**  
-   - Evaluación de velocidad de carga, mobile-friendliness y estructura del sitio.
-   - Comentarios sobre el uso de etiquetas HTML, optimización de imágenes, etc.
+Resumen Ejecutivo:
 
-3. **Análisis de Contenido:**  
-   - Calidad del contenido, uso y densidad de palabras clave.
-   - Recomendaciones para mejorar el contenido y la estrategia de palabras clave.
+Proporciona un resumen breve pero completo del estado actual del sitio web del cliente.
 
-4. **Backlinks y Autoridad:**  
-   - Resumen de la calidad y cantidad de backlinks (si la información está disponible).
-   - Sugerencias para mejorar la autoridad del dominio.
+Indica claramente fortalezas, debilidades y áreas de mejora del sitio.
 
-5. **Recomendaciones y Acciones:**  
-   - Pasos concretos para solucionar problemas detectados y mejorar el posicionamiento.
+Incluye recomendaciones breves sobre los próximos pasos.
 
+SEO Técnico:
 
-Elabora el informe de manera clara, estructurada y con recomendaciones prácticas.`;
+Analiza aspectos técnicos clave: velocidad de carga, optimización móvil, estructura web, URLs amigables, errores y problemas encontrados.
+
+Presenta claramente las acciones correctivas recomendadas para mejorar la experiencia del usuario y la indexación en Google.
+
+Contenido:
+
+Evalúa la calidad y relevancia del contenido actual del sitio web.
+
+Identifica oportunidades para contenido nuevo, destacando claramente palabras clave estratégicas para mejorar el posicionamiento.
+
+Sugiere mejoras concretas en la estructura del contenido, uso de encabezados (H1, H2, H3), imágenes optimizadas y enlaces internos.
+
+Backlinks:
+
+Proporciona un análisis claro del perfil actual de enlaces entrantes.
+
+Identifica calidad, cantidad y relevancia de los backlinks.
+
+Recomienda estrategias específicas para la adquisición de enlaces de calidad, indicando claramente tipos de sitios ideales para conseguir enlaces.
+
+SEO Local:
+
+Evalúa el posicionamiento actual en búsquedas locales.
+
+Sugiere claramente mejoras en la optimización de Google My Business (GMB).
+
+Recomienda acciones concretas para aumentar la visibilidad en búsquedas geolocalizadas, incluyendo palabras clave locales específicas.
+
+Recomendaciones:
+
+Proporciona un listado organizado y fácil de seguir con acciones prioritarias a corto, medio y largo plazo.
+
+Asegura que cada recomendación sea clara, accionable y orientada a resultados.
+
+Propuesta:
+
+Presenta claramente los paquetes de servicios SEO recomendados, alineados con las necesidades específicas identificadas del cliente.
+
+Incluye una breve explicación sobre beneficios y resultados esperados para cada paquete.
+
+Mantén un estilo profesional, asegurando que todo el informe sea fácil de entender, bien formateado y visualmente atractivo, con palabras clave importantes claramente destacadas en negrita.`;
 
 const ApiSettings = () => {
   const [activeTab, setActiveTab] = useState('openai');
