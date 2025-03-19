@@ -199,13 +199,14 @@ export const savePageSpeedData = async (
     console.log('Datos de PageSpeed guardados correctamente con ID:', data?.id);
     
     // Also update the report's content to include the PageSpeed data for immediate use
+    // Fixed the type issue here by using proper JSON operations
     const { error: reportUpdateError } = await supabase
       .from('reports')
       .update({
-        content: supabase.rpc('jsonb_set_nested', {
-          json_data: JSON.stringify({ pageSpeedData: results }),
-          target: 'content'
-        })
+        content: {
+          ...((await supabase.from('reports').select('content').eq('id', reportId).maybeSingle()).data?.content || {}),
+          pageSpeedData: results
+        }
       })
       .eq('id', reportId);
     
@@ -291,10 +292,10 @@ export const formatPageSpeedData = (pageSpeedData: {
 Datos de PageSpeed Insights:
 
 MÓVIL:
-- Rendimiento: ${pageSpeedData.mobile.performance.toFixed(0)}%
-- Accesibilidad: ${pageSpeedData.mobile.accessibility.toFixed(0)}%
-- Mejores Prácticas: ${pageSpeedData.mobile.bestPractices.toFixed(0)}%
-- SEO: ${pageSpeedData.mobile.seo.toFixed(0)}%
+- Rendimiento: ${pageSpeedData.mobile.performance?.toFixed(0)}%
+- Accesibilidad: ${pageSpeedData.mobile.accessibility?.toFixed(0)}%
+- Mejores Prácticas: ${pageSpeedData.mobile.bestPractices?.toFixed(0)}%
+- SEO: ${pageSpeedData.mobile.seo?.toFixed(0)}%
 - Métricas Clave: 
   * First Contentful Paint: ${(pageSpeedData.mobile.firstContentfulPaint ? (pageSpeedData.mobile.firstContentfulPaint / 1000).toFixed(2) : 'N/A')}s
   * Largest Contentful Paint: ${(pageSpeedData.mobile.largestContentfulPaint ? (pageSpeedData.mobile.largestContentfulPaint / 1000).toFixed(2) : 'N/A')}s
@@ -303,10 +304,10 @@ MÓVIL:
   * Cumulative Layout Shift: ${pageSpeedData.mobile.cumulativeLayoutShift?.toFixed(2) || 'N/A'}
 
 ESCRITORIO:
-- Rendimiento: ${pageSpeedData.desktop.performance.toFixed(0)}%
-- Accesibilidad: ${pageSpeedData.desktop.accessibility.toFixed(0)}%
-- Mejores Prácticas: ${pageSpeedData.desktop.bestPractices.toFixed(0)}%
-- SEO: ${pageSpeedData.desktop.seo.toFixed(0)}%
+- Rendimiento: ${pageSpeedData.desktop.performance?.toFixed(0)}%
+- Accesibilidad: ${pageSpeedData.desktop.accessibility?.toFixed(0)}%
+- Mejores Prácticas: ${pageSpeedData.desktop.bestPractices?.toFixed(0)}%
+- SEO: ${pageSpeedData.desktop.seo?.toFixed(0)}%
 - Métricas Clave: 
   * First Contentful Paint: ${(pageSpeedData.desktop.firstContentfulPaint ? (pageSpeedData.desktop.firstContentfulPaint / 1000).toFixed(2) : 'N/A')}s
   * Largest Contentful Paint: ${(pageSpeedData.desktop.largestContentfulPaint ? (pageSpeedData.desktop.largestContentfulPaint / 1000).toFixed(2) : 'N/A')}s
