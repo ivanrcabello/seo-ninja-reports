@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { formatReportContent, getRecommendationPriority } from '@/utils/reportUtils';
 import { ArrowUp, ArrowDown, AlertTriangle, CheckCircle, Info, MapPin, Star, FileText } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import RecommendationsList from '@/components/reports/report-section/RecommendationsList';
 
 interface ReportContentType {
   executiveSummary: string;
@@ -156,7 +155,7 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
               <AlertTriangle className="h-5 w-5 text-red-500" />
               Recomendaciones y Acciones
             </h2>
-            <RecommendationsContent content={content.recommendations} />
+            <RecommendationsList content={content.recommendations} />
           </BlurredCard>
         </TabsContent>
         
@@ -203,72 +202,6 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
         )}
       </Tabs>
     </div>
-  );
-};
-
-const RecommendationsContent: React.FC<{ content: string }> = ({ content }) => {
-  // If the content already has HTML structure
-  if (content.includes('<li') || content.includes('<p') || content.includes('<h')) {
-    return (
-      <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold" 
-           dangerouslySetInnerHTML={{ __html: formatReportContent(content) }}>
-      </div>
-    );
-  }
-  
-  // Process as plain text with recommendations
-  const recommendations = content.split('\n').filter(item => item.trim() !== '');
-  
-  return (
-    <div className="space-y-3">
-      {recommendations.map((item, i) => {
-        const itemNumber = i + 1;
-        const cleanItem = item.replace(/^\d+\.\s*/, '');
-        const priority = getRecommendationPriority(cleanItem);
-        
-        return (
-          <div 
-            key={i} 
-            className={`flex items-start gap-3 p-4 rounded-lg backdrop-blur-sm shadow-sm border hover:shadow-md transition-all ${priority.background} ${priority.color} ${priority.border}`}
-          >
-            <div className="bg-primary/10 text-primary font-medium rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
-              {itemNumber}
-            </div>
-            <div className="flex-1 flex items-start gap-2">
-              <div className="flex-grow">
-                {cleanItem}
-              </div>
-              <PriorityBadge priority={priority} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-const PriorityBadge: React.FC<{ priority: any }> = ({ priority }) => {
-  let badgeClass = "";
-  let badgeText = "";
-  
-  if (priority.color.includes("red")) {
-    badgeClass = "bg-red-100 text-red-800 border-red-200";
-    badgeText = "Alta prioridad";
-  } else if (priority.color.includes("amber")) {
-    badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
-    badgeText = "Media prioridad";
-  } else if (priority.color.includes("green")) {
-    badgeClass = "bg-green-100 text-green-800 border-green-200";
-    badgeText = "Baja prioridad";
-  } else {
-    badgeClass = "bg-blue-100 text-blue-800 border-blue-200";
-    badgeText = "Informativa";
-  }
-  
-  return (
-    <Badge className={`${badgeClass} text-xs font-medium border whitespace-nowrap self-start flex-shrink-0`}>
-      {badgeText}
-    </Badge>
   );
 };
 
