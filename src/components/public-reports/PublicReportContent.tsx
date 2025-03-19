@@ -26,7 +26,7 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
   const hasLocalSeo = content.localSeo && content.localSeo.trim() !== '';
   const hasProposal = content.serviceProposal && content.serviceProposal.trim() !== '';
   const hasKeywords = content.keywords && content.keywords.trim() !== '';
-  const hasBusinessProfile = content.businessProfile && content.businessProfile.businessUrl;
+  const hasBusinessProfile = !!content.businessProfile && !!content.businessProfile.businessUrl;
   
   // Count standard tabs (always show these 5)
   const tabCount = 5 + 

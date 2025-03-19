@@ -2,20 +2,22 @@
 import React from 'react';
 import { TabsList } from '@/components/ui/tabs';
 import TabItem from './TabItem';
-import { Info, CheckCircle, ArrowUp, ArrowDown, AlertTriangle, MapPin, Star, FileText } from 'lucide-react';
+import { Info, CheckCircle, ArrowUp, ArrowDown, AlertTriangle, MapPin, Star, FileText, Building } from 'lucide-react';
 
 interface ReportTabsProps {
   tabCount: number;
   hasLocalSeo: boolean;
   hasProposal: boolean;
   hasKeywords: boolean;
+  hasBusinessProfile: boolean;
 }
 
 const ReportTabs: React.FC<ReportTabsProps> = ({ 
   tabCount, 
   hasLocalSeo, 
   hasProposal, 
-  hasKeywords 
+  hasKeywords,
+  hasBusinessProfile 
 }) => {
   // Calculate grid columns based on tab count
   const gridCols = tabCount <= 5 ? 5 : (tabCount <= 7 ? 4 : 3);
@@ -77,6 +79,15 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
           icon={FileText} 
           label="Palabras Clave" 
           shortLabel="Keywords" 
+        />
+      )}
+      
+      {hasBusinessProfile && (
+        <TabItem 
+          value="business-profile" 
+          icon={Building} 
+          label="Ficha de Negocio" 
+          shortLabel="Negocio" 
         />
       )}
     </TabsList>

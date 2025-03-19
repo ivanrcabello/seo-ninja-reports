@@ -37,7 +37,7 @@ export const saveBusinessProfile = async (
       business_rating: businessProfile.businessRating,
       business_reviews_count: businessProfile.businessReviewsCount,
       business_website: businessProfile.businessWebsite,
-      business_hours: businessProfile.businessHours,
+      business_hours: businessProfile.businessHours ? JSON.stringify(businessProfile.businessHours) : null,
       updated_at: new Date().toISOString()
     };
     
@@ -75,6 +75,12 @@ export const saveBusinessProfile = async (
     }
     
     // Transformar el resultado a formato de frontend
+    const businessHours = result.business_hours ? 
+      (typeof result.business_hours === 'string' ? 
+        JSON.parse(result.business_hours) : 
+        result.business_hours) : 
+      {};
+      
     return {
       id: result.id,
       reportId: result.report_id,
@@ -86,7 +92,7 @@ export const saveBusinessProfile = async (
       businessRating: result.business_rating,
       businessReviewsCount: result.business_reviews_count,
       businessWebsite: result.business_website,
-      businessHours: result.business_hours,
+      businessHours: businessHours as Record<string, string>,
       createdAt: result.created_at,
       updatedAt: result.updated_at
     };
@@ -119,6 +125,12 @@ export const getBusinessProfile = async (reportId: string): Promise<BusinessProf
     if (!data) return null;
     
     // Transformar el resultado a formato de frontend
+    const businessHours = data.business_hours ? 
+      (typeof data.business_hours === 'string' ? 
+        JSON.parse(data.business_hours) : 
+        data.business_hours) : 
+      {};
+      
     return {
       id: data.id,
       reportId: data.report_id,
@@ -130,7 +142,7 @@ export const getBusinessProfile = async (reportId: string): Promise<BusinessProf
       businessRating: data.business_rating,
       businessReviewsCount: data.business_reviews_count,
       businessWebsite: data.business_website,
-      businessHours: data.business_hours,
+      businessHours: businessHours as Record<string, string>,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };

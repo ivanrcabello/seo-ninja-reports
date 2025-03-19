@@ -1,7 +1,8 @@
 
 import React from 'react';
 import ContentTab from './ContentTab';
-import { Info, CheckCircle, ArrowUp, ArrowDown, AlertTriangle, MapPin, Star, FileText } from 'lucide-react';
+import { Info, CheckCircle, ArrowUp, ArrowDown, AlertTriangle, MapPin, Star, FileText, Building } from 'lucide-react';
+import { BusinessProfile } from '@/types/report.types';
 
 interface ReportContentsProps {
   content: {
@@ -13,17 +14,20 @@ interface ReportContentsProps {
     localSeo?: string;
     serviceProposal?: string;
     keywords?: string;
+    businessProfile?: BusinessProfile;
   };
   hasLocalSeo: boolean;
   hasProposal: boolean;
   hasKeywords: boolean;
+  hasBusinessProfile: boolean;
 }
 
 const ReportContents: React.FC<ReportContentsProps> = ({ 
   content, 
   hasLocalSeo, 
   hasProposal, 
-  hasKeywords 
+  hasKeywords,
+  hasBusinessProfile
 }) => {
   return (
     <>
@@ -95,6 +99,18 @@ const ReportContents: React.FC<ReportContentsProps> = ({
           content={content.keywords || ''} 
           icon={FileText} 
           iconColor="text-teal-500" 
+        />
+      )}
+      
+      {hasBusinessProfile && content.businessProfile && (
+        <ContentTab 
+          value="business-profile" 
+          title="Ficha de Negocio" 
+          content={content.businessProfile.businessUrl}
+          icon={Building} 
+          iconColor="text-gray-500" 
+          isBusinessProfile={true}
+          businessProfile={content.businessProfile}
         />
       )}
     </>
