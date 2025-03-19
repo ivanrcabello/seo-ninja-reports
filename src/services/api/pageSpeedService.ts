@@ -1,11 +1,12 @@
 
 import { PageSpeedResult } from '@/types/report.types';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 /**
  * Fetches PageSpeed Insights data from Google API
  */
-export const fetchPageSpeedData = async (url: string) => {
+export const fetchPageSpeedData = async (url: string, reportId?: string) => {
   try {
     const apiKey = localStorage.getItem('google_pagespeed_api_key');
     
@@ -90,6 +91,11 @@ export const fetchPageSpeedData = async (url: string) => {
         }
       }
       
+      // Save PageSpeed data to dedicated table if reportId is provided
+      if (reportId) {
+        await savePageSpeedData(reportId, url, results, { desktop: desktopData, mobile: mobileData });
+      }
+      
       return results;
     } catch (apiError: any) {
       console.error('Error específico de la API de PageSpeed:', apiError.message);
@@ -102,6 +108,124 @@ export const fetchPageSpeedData = async (url: string) => {
   } catch (error: any) {
     console.error('Error fetching PageSpeed data:', error);
     // No lanzamos el error para que no interrumpa el proceso
+    return null;
+  }
+};
+
+/**
+ * Saves PageSpeed data to the database
+ */
+export const savePageSpeedData = async (
+  reportId: string,
+  url: string,
+  results: {
+    desktop: PageSpeedResult;
+    mobile: PageSpeedResult;
+  },
+  rawData?: any
+) => {
+  try {
+    console.log('Guardando datos de PageSpeed en la base de datos para el reporte:', reportId);
+    
+    const { data, error } = await supabase
+      .from('pagespeed_data')
+      .insert({
+        report_id: reportId,
+        url: url,
+        desktop_performance: results.desktop.performance,
+        desktop_accessibility: results.desktop.accessibility,
+        desktop_best_practices: results.desktop.bestPractices,
+        desktop_seo: results.desktop.seo,
+        desktop_first_contentful_paint: results.desktop.firstContentfulPaint,
+        desktop_speed_index: results.desktop.speedIndex,
+        desktop_largest_contentful_paint: results.desktop.largestContentfulPaint,
+        desktop_time_to_interactive: results.desktop.timeToInteractive,
+        desktop_total_blocking_time: results.desktop.totalBlockingTime,
+        desktop_cumulative_layout_shift: results.desktop.cumulativeLayoutShift,
+        mobile_performance: results.mobile.performance,
+        mobile_accessibility: results.mobile.accessibility,
+        mobile_best_practices: results.mobile.bestPractices,
+        mobile_seo: results.mobile.seo,
+        mobile_first_contentful_paint: results.mobile.firstContentfulPaint,
+        mobile_speed_index: results.mobile.speedIndex,
+        mobile_largest_contentful_paint: results.mobile.largestContentfulPaint,
+        mobile_time_to_interactive: results.mobile.timeToInteractive,
+        mobile_total_blocking_time: results.mobile.totalBlockingTime,
+        mobile_cumulative_layout_shift: results.mobile.cumulativeLayoutShift,
+        raw_data: rawData || null
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error al guardar datos de PageSpeed:', error);
+      throw error;
+    }
+    
+    console.log('Datos de PageSpeed guardados correctamente con ID:', data.id);
+    return data;
+  } catch (error) {
+    console.error('Error guardando datos de PageSpeed:', error);
+    // No lanzamos el error para que no interrumpa el proceso
+    return null;
+  }
+};
+
+/**
+ * Retrieves PageSpeed data from the database for a specific report
+ */
+export const getPageSpeedData = async (reportId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('pagespeed_data')
+      .select('*')
+      .eq('report_id', reportId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error al obtener datos de PageSpeed:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.log('No se encontraron datos de PageSpeed para el reporte:', reportId);
+      return null;
+    }
+    
+    console.log('Datos de PageSpeed obtenidos correctamente para el reporte:', reportId);
+    
+    // Transform data back to the format used in the application
+    return {
+      desktop: {
+        performance: data.desktop_performance,
+        accessibility: data.desktop_accessibility,
+        bestPractices: data.desktop_best_practices,
+        seo: data.desktop_seo,
+        firstContentfulPaint: data.desktop_first_contentful_paint,
+        speedIndex: data.desktop_speed_index,
+        largestContentfulPaint: data.desktop_largest_contentful_paint,
+        timeToInteractive: data.desktop_time_to_interactive,
+        totalBlockingTime: data.desktop_total_blocking_time,
+        cumulativeLayoutShift: data.desktop_cumulative_layout_shift
+      },
+      mobile: {
+        performance: data.mobile_performance,
+        accessibility: data.mobile_accessibility,
+        bestPractices: data.mobile_best_practices,
+        seo: data.mobile_seo,
+        firstContentfulPaint: data.mobile_first_contentful_paint,
+        speedIndex: data.mobile_speed_index,
+        largestContentfulPaint: data.mobile_largest_contentful_paint,
+        timeToInteractive: data.mobile_time_to_interactive,
+        totalBlockingTime: data.mobile_total_blocking_time,
+        cumulativeLayoutShift: data.mobile_cumulative_layout_shift
+      },
+      rawData: data.raw_data
+    };
+  } catch (error) {
+    console.error('Error retrieving PageSpeed data:', error);
     return null;
   }
 };

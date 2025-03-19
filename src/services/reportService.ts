@@ -1,4 +1,5 @@
 
+
 import { Report } from '@/types/report.types';
 // Export the CRUD operations
 export { 
@@ -12,7 +13,12 @@ export {
 export { generateSeoReport } from './api/reportGenerationService';
 
 // Export PageSpeed service
-export { fetchPageSpeedData } from './api/pageSpeedService';
+export { 
+  fetchPageSpeedData,
+  getPageSpeedData,
+  savePageSpeedData,
+  formatPageSpeedData
+} from './api/pageSpeedService';
 
 // Export file handling functionality
 export { 
@@ -26,3 +32,4 @@ export {
   processOpenAIReport,
   markReportAsFailed
 } from './api/openaiProcessingService';
+

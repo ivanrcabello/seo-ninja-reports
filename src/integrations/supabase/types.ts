@@ -48,6 +48,105 @@ export type Database = {
         }
         Relationships: []
       }
+      pagespeed_data: {
+        Row: {
+          created_at: string | null
+          desktop_accessibility: number | null
+          desktop_best_practices: number | null
+          desktop_cumulative_layout_shift: number | null
+          desktop_first_contentful_paint: number | null
+          desktop_largest_contentful_paint: number | null
+          desktop_performance: number | null
+          desktop_seo: number | null
+          desktop_speed_index: number | null
+          desktop_time_to_interactive: number | null
+          desktop_total_blocking_time: number | null
+          id: string
+          mobile_accessibility: number | null
+          mobile_best_practices: number | null
+          mobile_cumulative_layout_shift: number | null
+          mobile_first_contentful_paint: number | null
+          mobile_largest_contentful_paint: number | null
+          mobile_performance: number | null
+          mobile_seo: number | null
+          mobile_speed_index: number | null
+          mobile_time_to_interactive: number | null
+          mobile_total_blocking_time: number | null
+          raw_data: Json | null
+          report_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          desktop_accessibility?: number | null
+          desktop_best_practices?: number | null
+          desktop_cumulative_layout_shift?: number | null
+          desktop_first_contentful_paint?: number | null
+          desktop_largest_contentful_paint?: number | null
+          desktop_performance?: number | null
+          desktop_seo?: number | null
+          desktop_speed_index?: number | null
+          desktop_time_to_interactive?: number | null
+          desktop_total_blocking_time?: number | null
+          id?: string
+          mobile_accessibility?: number | null
+          mobile_best_practices?: number | null
+          mobile_cumulative_layout_shift?: number | null
+          mobile_first_contentful_paint?: number | null
+          mobile_largest_contentful_paint?: number | null
+          mobile_performance?: number | null
+          mobile_seo?: number | null
+          mobile_speed_index?: number | null
+          mobile_time_to_interactive?: number | null
+          mobile_total_blocking_time?: number | null
+          raw_data?: Json | null
+          report_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          desktop_accessibility?: number | null
+          desktop_best_practices?: number | null
+          desktop_cumulative_layout_shift?: number | null
+          desktop_first_contentful_paint?: number | null
+          desktop_largest_contentful_paint?: number | null
+          desktop_performance?: number | null
+          desktop_seo?: number | null
+          desktop_speed_index?: number | null
+          desktop_time_to_interactive?: number | null
+          desktop_total_blocking_time?: number | null
+          id?: string
+          mobile_accessibility?: number | null
+          mobile_best_practices?: number | null
+          mobile_cumulative_layout_shift?: number | null
+          mobile_first_contentful_paint?: number | null
+          mobile_largest_contentful_paint?: number | null
+          mobile_performance?: number | null
+          mobile_seo?: number | null
+          mobile_speed_index?: number | null
+          mobile_time_to_interactive?: number | null
+          mobile_total_blocking_time?: number | null
+          raw_data?: Json | null
+          report_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagespeed_data_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "public_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagespeed_data_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

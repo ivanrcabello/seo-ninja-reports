@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Report } from '@/types/report.types';
 import { toast } from 'sonner';
-import { formatPageSpeedData } from './pageSpeedService';
+import { formatPageSpeedData, getPageSpeedData } from './pageSpeedService';
 import { generateOpenAIReport } from './openaiService';
 
 /**
@@ -21,6 +21,13 @@ export const processOpenAIReport = async (
     
     let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
     prompt = prompt.replace('[DOMINIO]', new URL(url).hostname);
+    
+    // If no PageSpeed data is provided, try to retrieve it from the database
+    if (!pageSpeedData) {
+      console.log('Intentando obtener datos de PageSpeed de la base de datos...');
+      pageSpeedData = await getPageSpeedData(reportId);
+      console.log('¿Se encontraron datos de PageSpeed en la base de datos?', !!pageSpeedData);
+    }
     
     // Add PageSpeed data to prompt if available
     if (pageSpeedData) {
@@ -55,16 +62,14 @@ export const processOpenAIReport = async (
       backlinksAnalysis: sections.backlinksAnalysis || '',
       recommendations: sections.recommendations || '',
       localSeo: sections.localSeo || '',
-      serviceProposal: sections.serviceProposal || '',
-      // Add pageSpeedData to content
-      pageSpeedData: pageSpeedData || undefined
+      serviceProposal: sections.serviceProposal || ''
     };
     
     console.log('Actualización de content preparada con secciones:', Object.keys(reportContent));
     
     // Update report with generated content
     const updateData = {
-      content: reportContent,
+      content: reportContent as any,
       summary: sections.summary || 'Análisis SEO completo del sitio web.',
       status: 'completed',
       updated_at: new Date().toISOString()

@@ -36,10 +36,17 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
     if (hasGoogleApiKey) {
       setIsLoadingPageSpeed(true);
       try {
+        // We don't have reportId at this point, so we'll just fetch the data
+        // and the reportId will be assigned when creating the report
         const pageSpeedResult = await fetchPageSpeedData(url);
-        setPageSpeedData(pageSpeedResult);
         
+        // Mark the pageSpeedData as not saved to db yet
         if (pageSpeedResult) {
+          setPageSpeedData({
+            ...pageSpeedResult,
+            saved: false
+          });
+          
           toast.success('Datos de PageSpeed obtenidos correctamente');
         } else {
           toast.warning('No se pudieron obtener datos de PageSpeed, continuando sin esta información');

@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Report } from '@/types/report.types';
 import { toast } from 'sonner';
-import { fetchPageSpeedData } from './pageSpeedService';
+import { fetchPageSpeedData, savePageSpeedData } from './pageSpeedService';
 import { uploadReportFiles } from './reportFileService';
 import { processOpenAIReport, markReportAsFailed } from './openaiProcessingService';
 import { handleServiceError } from './baseService';
@@ -36,11 +36,6 @@ export const generateSeoReport = async (
       localSeo: '',
       serviceProposal: ''
     };
-    
-    // Add PageSpeed data to content if available
-    if (prefetchedPageSpeedData) {
-      initialContent['pageSpeedData'] = prefetchedPageSpeedData;
-    }
 
     // Create a new report with status "processing"
     const { data: newReport, error: createError } = await supabase
@@ -64,6 +59,11 @@ export const generateSeoReport = async (
     }
 
     console.log('Informe inicial creado con ID:', newReport.id);
+
+    // If we have prefetched PageSpeed data, save it to the database
+    if (prefetchedPageSpeedData) {
+      await savePageSpeedData(newReport.id, url, prefetchedPageSpeedData);
+    }
 
     // Start the report generation process with prefetched PageSpeed data
     processReportGeneration(newReport.id, clientId, url, files, customPrompt, prefetchedPageSpeedData);
@@ -114,37 +114,10 @@ const processReportGeneration = async (
     if (!pageSpeedData) {
       try {
         console.log('No hay datos prefetched, intentando obtener datos de PageSpeed para:', url);
-        pageSpeedData = await fetchPageSpeedData(url);
+        pageSpeedData = await fetchPageSpeedData(url, reportId);
         
         if (pageSpeedData) {
           console.log('Datos de PageSpeed obtenidos correctamente');
-          
-          // Get current report content
-          const { data: currentReport } = await supabase
-            .from('reports')
-            .select('content')
-            .eq('id', reportId)
-            .single();
-          
-          if (currentReport && currentReport.content) {
-            // Make sure content is an object
-            const currentContent = typeof currentReport.content === 'object' 
-              ? currentReport.content 
-              : {};
-            
-            // Update the content to include PageSpeed data
-            const updatedContent = {
-              ...currentContent,
-              pageSpeedData: pageSpeedData
-            };
-            
-            // Update the report with the PageSpeed data
-            await supabase
-              .from('reports')
-              .update({ content: updatedContent as any })
-              .eq('id', reportId);
-          }
-            
           toast.success('Datos de PageSpeed obtenidos correctamente');
         } else {
           console.log('No se pudieron obtener datos de PageSpeed, continuando sin ellos');
@@ -155,6 +128,10 @@ const processReportGeneration = async (
         toast.error('Error al obtener datos de PageSpeed, continuando sin esta información');
       }
     } else {
+      // If we have prefetched data but haven't saved it yet, do it now
+      if (!prefetchedPageSpeedData.saved) {
+        await savePageSpeedData(reportId, url, prefetchedPageSpeedData);
+      }
       console.log('Usando datos de PageSpeed prefetched');
     }
     
