@@ -31,7 +31,7 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
         <TabsContent value="executive-summary">
           <BlurredCard className="p-6">
             <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Resumen Ejecutivo</h2>
-            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none" 
+            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold"
                  dangerouslySetInnerHTML={{ __html: formatReportContent(content.executiveSummary) }}>
             </div>
           </BlurredCard>
@@ -40,7 +40,7 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
         <TabsContent value="technical">
           <BlurredCard className="p-6">
             <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis Técnico</h2>
-            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none"
+            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold"
                  dangerouslySetInnerHTML={{ __html: formatReportContent(content.technicalAnalysis) }}>
             </div>
           </BlurredCard>
@@ -49,7 +49,7 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
         <TabsContent value="content">
           <BlurredCard className="p-6">
             <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis de Contenido</h2>
-            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none"
+            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold"
                  dangerouslySetInnerHTML={{ __html: formatReportContent(content.contentAnalysis) }}>
             </div>
           </BlurredCard>
@@ -58,7 +58,7 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
         <TabsContent value="backlinks">
           <BlurredCard className="p-6">
             <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis de Backlinks y Autoridad</h2>
-            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none"
+            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold"
                  dangerouslySetInnerHTML={{ __html: formatReportContent(content.backlinksAnalysis) }}>
             </div>
           </BlurredCard>
@@ -67,7 +67,7 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
         <TabsContent value="recommendations">
           <BlurredCard className="p-6">
             <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Recomendaciones y Acciones</h2>
-            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none"
+            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold"
                  dangerouslySetInnerHTML={{ __html: formatReportContent(content.recommendations) }}>
             </div>
           </BlurredCard>

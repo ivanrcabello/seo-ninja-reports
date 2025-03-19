@@ -57,7 +57,7 @@ export const formatReportContent = (text: string) => {
   if (!text) return '';
   
   // Check if content already contains HTML tags
-  if (text.includes('<li class=') || text.includes('<p class=')) {
+  if (text.includes('<li class=') || text.includes('<p class=') || text.includes('<h3') || text.includes('<ul')) {
     // Content is already HTML formatted, just wrap lists properly
     let formattedHtml = text;
     
@@ -93,28 +93,53 @@ export const formatReportContent = (text: string) => {
     return formattedHtml;
   }
   
-  // Original markdown-to-HTML conversion logic
-  // Replace headers
-  let formattedText = text
-    .replace(/# (.*?)(\n|$)/g, '<h3 class="text-xl font-semibold mb-3 text-primary">$1</h3>')
-    .replace(/## (.*?)(\n|$)/g, '<h4 class="text-lg font-medium mb-2 text-primary/90">$1</h4>');
+  // Process markdown-style text (ChatGPT output)
+  let formattedText = text;
   
-  // Replace bullet points
-  formattedText = formattedText.replace(/- (.*?)(\n|$)/g, '<li class="mb-1 flex items-center gap-2 before:content-[\'•\'] before:text-primary before:inline-block before:mr-2">$1</li>');
+  // Process bold text with double asterisks or double underscores
+  formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
+  formattedText = formattedText.replace(/\_\_(.*?)\_\_/g, '<strong class="font-semibold">$1</strong>');
+  
+  // Process bold text with ChatGPT's double quotes format (**Text:**)
+  formattedText = formattedText.replace(/\*\*(.*?):\*\*/g, '<strong class="font-semibold text-primary">$1:</strong>');
+  
+  // Replace markdown headers with proper HTML headers
+  formattedText = formattedText
+    .replace(/^# (.*?)$/gm, '<h3 class="text-xl font-semibold mb-3 text-primary">$1</h3>')
+    .replace(/^## (.*?)$/gm, '<h4 class="text-lg font-medium mb-2 text-primary/90">$1</h4>')
+    .replace(/^### (.*?)$/gm, '<h5 class="text-base font-medium mb-2 text-primary/80">$1</h5>');
+  
+  // Replace bullet points with formatted list items
+  formattedText = formattedText.replace(/^- (.*?)$/gm, '<li class="mb-1 flex items-start gap-2 before:content-[\'•\'] before:text-primary before:inline-block before:mr-2">$1</li>');
+  formattedText = formattedText.replace(/^\* (.*?)$/gm, '<li class="mb-1 flex items-start gap-2 before:content-[\'•\'] before:text-primary before:inline-block before:mr-2">$1</li>');
+  
+  // Replace numbered lists
+  formattedText = formattedText.replace(/^\d+\.\s+(.*?)$/gm, '<li class="mb-1 list-decimal ml-5">$1</li>');
+  
+  // Process horizontal rules
+  formattedText = formattedText.replace(/^---+$/gm, '<hr class="my-4 border-t border-primary/20" />');
+  formattedText = formattedText.replace(/^####+$/gm, '<hr class="my-4 border-t border-primary/20" />');
   
   // Split into paragraphs
-  const paragraphs = formattedText.split('\n\n');
+  const paragraphs = formattedText.split(/\n\n+/);
   
   return paragraphs
     .map(p => {
       if (p.trim() === '') return '';
       
-      if (p.startsWith('<h3') || p.startsWith('<h4')) {
+      if (p.startsWith('<h3') || p.startsWith('<h4') || p.startsWith('<h5') || p.startsWith('<hr')) {
         return p;
       }
-      if (p.includes('<li>')) {
+      
+      // Handle consecutive list items
+      if (p.includes('<li')) {
+        // Check if it's a numbered list
+        if (p.includes('list-decimal')) {
+          return `<ol class="list-decimal pl-0 mb-4 space-y-1">${p}</ol>`;
+        }
         return `<ul class="list-none pl-0 mb-4 space-y-1">${p}</ul>`;
       }
+      
       return `<p class="mb-4 leading-relaxed">${p}</p>`;
     })
     .join('');

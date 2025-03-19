@@ -68,10 +68,16 @@ const ReportSection: React.FC<ReportSectionProps> = ({
 
 const FormattedContent: React.FC<{ content: string }> = ({ content }) => {
   const formattedHtml = formatReportContent(content);
-  return <div dangerouslySetInnerHTML={{ __html: formattedHtml }} />;
+  return <div dangerouslySetInnerHTML={{ __html: formattedHtml }} className="prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold prose-li:my-1" />;
 };
 
 const RecommendationsList: React.FC<{ content: string }> = ({ content }) => {
+  // If content is already HTML formatted
+  if (content.includes('<li') || content.includes('<p') || content.includes('<h')) {
+    return <div dangerouslySetInnerHTML={{ __html: formatReportContent(content) }} className="prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold" />;
+  }
+  
+  // Original recommendations list processing
   const recommendations = content.split('\n').filter(item => item.trim() !== '');
   
   return (
