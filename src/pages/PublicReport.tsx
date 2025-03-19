@@ -27,7 +27,9 @@ const PublicReport = () => {
           throw new Error('ID de informe no especificado');
         }
         
-        // Fetch the report using the public anon access
+        console.log('Fetching report with ID:', id);
+        
+        // Use the anon key explicitly to ensure public access
         const { data, error: fetchError } = await supabase
           .from('reports')
           .select('*, clients(name, website)')
@@ -40,8 +42,11 @@ const PublicReport = () => {
         }
         
         if (!data) {
+          console.error('No data returned for report ID:', id);
           throw new Error('Informe no encontrado');
         }
+        
+        console.log('Report data retrieved:', data);
         
         // Safely type check the content from the database
         let reportContent;
