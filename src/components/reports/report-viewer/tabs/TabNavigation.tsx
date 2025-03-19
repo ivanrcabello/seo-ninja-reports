@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Report } from '@/types/report.types';
 import { 
@@ -11,20 +11,26 @@ import {
   Globe, 
   Gauge, 
   CheckCircle2, 
-  LightbulbIcon 
+  LightbulbIcon,
+  Plus
 } from 'lucide-react';
+import KeywordsDialog from '../../KeywordsDialog';
 
 interface TabNavigationProps {
   content: Report['content'];
   hasPageSpeedData: boolean;
   isLoadingPageSpeed: boolean;
+  reportId: string;
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ 
   content, 
   hasPageSpeedData, 
-  isLoadingPageSpeed 
+  isLoadingPageSpeed,
+  reportId
 }) => {
+  const [keywordsDialogOpen, setKeywordsDialogOpen] = useState(false);
+  
   if (!content) return null;
 
   return (
@@ -42,12 +48,31 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
             <span>SEO Técnico</span>
           </TabsTrigger>
         )}
-        {content.keywords && (
-          <TabsTrigger value="keywords" className="flex items-center gap-1 py-2">
-            <KeyRound className="h-4 w-4" />
-            <span>Palabras Clave</span>
-          </TabsTrigger>
-        )}
+        
+        <TabsTrigger 
+          value="keywords" 
+          className="flex items-center gap-1 py-2"
+          onClick={(e) => {
+            // If keywords content doesn't exist, open the dialog
+            if (!content.keywords) {
+              e.preventDefault();
+              setKeywordsDialogOpen(true);
+            }
+          }}
+        >
+          <KeyRound className="h-4 w-4" />
+          <span>Palabras Clave</span>
+          <button 
+            className="ml-1 rounded-full hover:bg-primary/20 p-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              setKeywordsDialogOpen(true);
+            }}
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+        </TabsTrigger>
+        
         {content.contentAnalysis && (
           <TabsTrigger value="contentAnalysis" className="flex items-center gap-1 py-2">
             <FileText className="h-4 w-4" />
@@ -85,6 +110,12 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           </TabsTrigger>
         )}
       </TabsList>
+      
+      <KeywordsDialog
+        open={keywordsDialogOpen}
+        onOpenChange={setKeywordsDialogOpen}
+        reportId={reportId}
+      />
     </div>
   );
 };

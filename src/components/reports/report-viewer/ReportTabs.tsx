@@ -36,7 +36,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
       <TabNavigation 
         content={content} 
         hasPageSpeedData={!!hasPageSpeedData} 
-        isLoadingPageSpeed={isLoadingPageSpeed} 
+        isLoadingPageSpeed={isLoadingPageSpeed}
+        reportId={report.id} 
       />
       
       {/* Tabs Content */}

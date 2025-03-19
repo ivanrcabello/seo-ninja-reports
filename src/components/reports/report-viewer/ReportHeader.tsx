@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit2, ExternalLink, Share2 } from 'lucide-react';
+import { Edit2, ExternalLink, Share2, FileText } from 'lucide-react';
 import ShareReportDialog from '../ShareReportDialog';
 import { useNavigate, useLocation } from 'react-router-dom';
+import NotesDialog from '../NotesDialog';
 
 export interface ReportHeaderProps {
   title: string;
@@ -23,6 +24,7 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
   reportId
 }) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -70,6 +72,11 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
             {isEditing ? 'Guardar' : 'Editar'}
           </Button>
           
+          <Button variant="outline" size="sm" onClick={() => setNotesDialogOpen(true)}>
+            <FileText className="h-4 w-4 mr-2" />
+            Notas
+          </Button>
+          
           <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
             <Share2 className="h-4 w-4 mr-2" />
             Compartir
@@ -82,6 +89,12 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
         onOpenChange={setShareDialogOpen} 
         reportId={reportId}
         reportTitle={title}
+      />
+      
+      <NotesDialog
+        open={notesDialogOpen}
+        onOpenChange={setNotesDialogOpen}
+        reportId={reportId}
       />
     </div>
   );

@@ -7,6 +7,7 @@ export interface Report {
   clientId: string;
   url?: string;
   status: "processing" | "completed" | "failed";
+  notes?: string;
   content?: {
     executiveSummary: string;
     technicalAnalysis: string;
@@ -57,4 +58,13 @@ export interface PageSpeedResult {
   timeToInteractive?: number;
   totalBlockingTime?: number;
   cumulativeLayoutShift?: number;
+}
+
+export interface Keyword {
+  id: string;
+  reportId: string;
+  keyword: string;
+  searchVolume?: number;
+  difficulty?: number;
+  createdAt: string;
 }

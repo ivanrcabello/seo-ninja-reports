@@ -48,6 +48,48 @@ export type Database = {
         }
         Relationships: []
       }
+      keywords: {
+        Row: {
+          created_at: string | null
+          difficulty: number | null
+          id: string
+          keyword: string
+          report_id: string
+          search_volume: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          difficulty?: number | null
+          id?: string
+          keyword: string
+          report_id: string
+          search_volume?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          difficulty?: number | null
+          id?: string
+          keyword?: string
+          report_id?: string
+          search_volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keywords_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "public_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keywords_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pagespeed_data: {
         Row: {
           created_at: string | null
@@ -179,6 +221,7 @@ export type Database = {
           custom_prompt: string | null
           date: string
           id: string
+          notes: string | null
           status: string
           summary: string | null
           title: string
@@ -192,6 +235,7 @@ export type Database = {
           custom_prompt?: string | null
           date?: string
           id?: string
+          notes?: string | null
           status?: string
           summary?: string | null
           title: string
@@ -205,6 +249,7 @@ export type Database = {
           custom_prompt?: string | null
           date?: string
           id?: string
+          notes?: string | null
           status?: string
           summary?: string | null
           title?: string

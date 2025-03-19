@@ -37,6 +37,48 @@ export const processOpenAIReport = async (
       prompt += "\n\nNo se pudieron obtener datos de Google PageSpeed Insights. Por favor, incluye en el informe recomendaciones generales sobre la importancia de la velocidad de carga y rendimiento del sitio, sin datos específicos.";
     }
     
+    // Get notes and add to prompt if available
+    try {
+      const { data: reportData, error: reportError } = await supabase
+        .from('reports')
+        .select('notes')
+        .eq('id', reportId)
+        .single();
+        
+      if (!reportError && reportData && reportData.notes) {
+        prompt += "\n\nAdicional, aquí hay algunas notas importantes sobre este proyecto que debes tener en cuenta:\n" + reportData.notes;
+        console.log('Notas añadidas al prompt');
+      }
+    } catch (notesError) {
+      console.error('Error al obtener notas:', notesError);
+      // No need to stop the process if notes retrieval fails
+    }
+    
+    // Get keywords and add to prompt if available
+    try {
+      const { data: keywordsData, error: keywordsError } = await supabase
+        .from('keywords')
+        .select('keyword, search_volume, difficulty')
+        .eq('report_id', reportId);
+        
+      if (!keywordsError && keywordsData && keywordsData.length > 0) {
+        let keywordsPrompt = "\n\nAquí tienes una lista de palabras clave importantes para este sitio web. Enfoca tu análisis en estas palabras clave y sugiere formas de mejorar el posicionamiento para ellas:\n";
+        
+        keywordsData.forEach((kw: any) => {
+          let kwText = `- ${kw.keyword}`;
+          if (kw.search_volume) kwText += ` (Volumen de búsqueda: ${kw.search_volume})`;
+          if (kw.difficulty) kwText += ` (Dificultad: ${kw.difficulty}/100)`;
+          keywordsPrompt += kwText + "\n";
+        });
+        
+        prompt += keywordsPrompt;
+        console.log('Palabras clave añadidas al prompt');
+      }
+    } catch (keywordsError) {
+      console.error('Error al obtener palabras clave:', keywordsError);
+      // No need to stop the process if keywords retrieval fails
+    }
+    
     // Add information about attachments
     prompt += "\n\nEl usuario ha adjuntado archivos adicionales para mejorar el análisis. Asegúrate de mencionarlos en el informe y usa términos como 'según los documentos proporcionados', 'los archivos adjuntos muestran', etc. para dar a entender que has revisado esta información.";
     
@@ -100,7 +142,8 @@ export const processOpenAIReport = async (
       content: completedReport.content && typeof completedReport.content === 'object' 
         ? (completedReport.content as any) as Report['content']
         : undefined,
-      customPrompt: completedReport.custom_prompt
+      customPrompt: completedReport.custom_prompt,
+      notes: completedReport.notes
     };
     
     toast.success('Informe generado exitosamente');

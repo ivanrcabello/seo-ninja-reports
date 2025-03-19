@@ -57,17 +57,15 @@ const TabContent: React.FC<TabContentProps> = ({
         </TabsContent>
       )}
       
-      {content.keywords && (
-        <TabsContent value="keywords" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <ReportSection 
-            title="Palabras Clave" 
-            content={content.keywords} 
-            sectionKey="keywords"
-            onEdit={onEdit} 
-            isEditing={isEditing} 
-          />
-        </TabsContent>
-      )}
+      <TabsContent value="keywords" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+        <ReportSection 
+          title="Palabras Clave" 
+          content={content.keywords || 'No hay palabras clave definidas aún. Utilice el botón "+" para añadir palabras clave.'} 
+          sectionKey="keywords"
+          onEdit={onEdit} 
+          isEditing={isEditing} 
+        />
+      </TabsContent>
       
       {content.contentAnalysis && (
         <TabsContent value="contentAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
