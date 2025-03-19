@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Report } from '@/types/report.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +8,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Edit, Share2 } from 'lucide-react';
 import { getFilePublicUrl } from '@/services/reportService';
+import ReportSection from './report-section';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ReportViewerProps {
   report: Report | undefined;
@@ -63,83 +66,214 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         </div>
       </CardHeader>
       <CardContent className="overflow-auto flex-1">
-        <ScrollArea className="h-full">
-          <div className="space-y-4">
+        <Tabs defaultValue="executiveSummary" className="w-full">
+          <TabsList className="mb-4 flex justify-start overflow-x-auto pb-px w-full">
             {content?.executiveSummary && (
-              <section>
-                <h2 className="text-xl font-semibold">Resumen Ejecutivo</h2>
-                <p>{content.executiveSummary}</p>
-              </section>
+              <TabsTrigger value="executiveSummary">Resumen Ejecutivo</TabsTrigger>
             )}
-
             {content?.technicalAnalysis && (
-              <section>
-                <h2 className="text-xl font-semibold">Análisis Técnico</h2>
-                <p>{content.technicalAnalysis}</p>
-              </section>
+              <TabsTrigger value="technicalAnalysis">Análisis Técnico</TabsTrigger>
             )}
-
             {content?.contentAnalysis && (
-              <section>
-                <h2 className="text-xl font-semibold">Análisis de Contenido</h2>
-                <p>{content.contentAnalysis}</p>
-              </section>
+              <TabsTrigger value="contentAnalysis">Análisis de Contenido</TabsTrigger>
             )}
-
             {content?.backlinksAnalysis && (
-              <section>
-                <h2 className="text-xl font-semibold">Análisis de Backlinks</h2>
-                <p>{content.backlinksAnalysis}</p>
-              </section>
+              <TabsTrigger value="backlinksAnalysis">Análisis de Backlinks</TabsTrigger>
+            )}
+            {content?.keywords && (
+              <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
+            )}
+            {content?.localSeo && (
+              <TabsTrigger value="localSeo">SEO Local</TabsTrigger>
+            )}
+            {content?.recommendations && (
+              <TabsTrigger value="recommendations">Recomendaciones</TabsTrigger>
+            )}
+            {content?.serviceProposal && (
+              <TabsTrigger value="serviceProposal">Propuesta de Servicios</TabsTrigger>
+            )}
+            {content?.pageSpeedData && (
+              <TabsTrigger value="pageSpeedData">PageSpeed Insights</TabsTrigger>
+            )}
+          </TabsList>
+          
+          <ScrollArea className="h-full">
+            {content?.executiveSummary && (
+              <TabsContent value="executiveSummary">
+                <ReportSection 
+                  title="Resumen Ejecutivo" 
+                  content={content.executiveSummary} 
+                  sectionKey="executiveSummary"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
+              </TabsContent>
+            )}
+            
+            {content?.technicalAnalysis && (
+              <TabsContent value="technicalAnalysis">
+                <ReportSection 
+                  title="Análisis Técnico" 
+                  content={content.technicalAnalysis} 
+                  sectionKey="technicalAnalysis"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
+              </TabsContent>
+            )}
+            
+            {content?.contentAnalysis && (
+              <TabsContent value="contentAnalysis">
+                <ReportSection 
+                  title="Análisis de Contenido" 
+                  content={content.contentAnalysis} 
+                  sectionKey="contentAnalysis"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
+              </TabsContent>
+            )}
+            
+            {content?.backlinksAnalysis && (
+              <TabsContent value="backlinksAnalysis">
+                <ReportSection 
+                  title="Análisis de Backlinks" 
+                  content={content.backlinksAnalysis} 
+                  sectionKey="backlinksAnalysis"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
+              </TabsContent>
             )}
             
             {content?.keywords && (
-              <section>
-                <h2 className="text-xl font-semibold">Palabras Clave</h2>
-                <p>{content.keywords}</p>
-              </section>
+              <TabsContent value="keywords">
+                <ReportSection 
+                  title="Palabras Clave" 
+                  content={content.keywords} 
+                  sectionKey="keywords"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
+              </TabsContent>
             )}
-
+            
             {content?.localSeo && (
-              <section>
-                <h2 className="text-xl font-semibold">SEO Local</h2>
-                <p>{content.localSeo}</p>
-              </section>
+              <TabsContent value="localSeo">
+                <ReportSection 
+                  title="SEO Local" 
+                  content={content.localSeo} 
+                  sectionKey="localSeo"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
+              </TabsContent>
             )}
-
+            
             {content?.recommendations && (
-              <section>
-                <h2 className="text-xl font-semibold">Recomendaciones</h2>
-                <p>{content.recommendations}</p>
-              </section>
+              <TabsContent value="recommendations">
+                <ReportSection 
+                  title="Recomendaciones" 
+                  content={content.recommendations} 
+                  sectionKey="recommendations"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                  isRecommendations={true}
+                />
+              </TabsContent>
             )}
-
+            
             {content?.serviceProposal && (
-              <section>
-                <h2 className="text-xl font-semibold">Propuesta de Servicios</h2>
-                <p>{content.serviceProposal}</p>
-              </section>
+              <TabsContent value="serviceProposal">
+                <ReportSection 
+                  title="Propuesta de Servicios" 
+                  content={content.serviceProposal} 
+                  sectionKey="serviceProposal"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
+              </TabsContent>
             )}
             
             {content?.pageSpeedData && (
-              <section>
-                <h2 className="text-xl font-semibold">Datos de PageSpeed Insights</h2>
-                
-                <h3 className="text-lg font-semibold">Escritorio</h3>
-                <p>Rendimiento: {content.pageSpeedData.desktop.performance}</p>
-                <p>Accesibilidad: {content.pageSpeedData.desktop.accessibility}</p>
-                <p>Mejores Prácticas: {content.pageSpeedData.desktop.bestPractices}</p>
-                <p>SEO: {content.pageSpeedData.desktop.seo}</p>
-                
-                <h3 className="text-lg font-semibold">Móvil</h3>
-                <p>Rendimiento: {content.pageSpeedData.mobile.performance}</p>
-                <p>Accesibilidad: {content.pageSpeedData.mobile.accessibility}</p>
-                <p>Mejores Prácticas: {content.pageSpeedData.mobile.bestPractices}</p>
-                <p>SEO: {content.pageSpeedData.mobile.seo}</p>
-              </section>
+              <TabsContent value="pageSpeedData">
+                <section>
+                  <h2 className="text-xl font-semibold mb-4">Datos de PageSpeed Insights</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-card p-4 rounded-lg border">
+                      <h3 className="text-lg font-semibold mb-3">Escritorio</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Rendimiento:</span>
+                          <span className="font-medium">{content.pageSpeedData.desktop.performance}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Accesibilidad:</span>
+                          <span className="font-medium">{content.pageSpeedData.desktop.accessibility}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Mejores Prácticas:</span>
+                          <span className="font-medium">{content.pageSpeedData.desktop.bestPractices}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>SEO:</span>
+                          <span className="font-medium">{content.pageSpeedData.desktop.seo}</span>
+                        </div>
+                        {content.pageSpeedData.desktop.firstContentfulPaint && (
+                          <div className="flex justify-between">
+                            <span>First Contentful Paint:</span>
+                            <span className="font-medium">{content.pageSpeedData.desktop.firstContentfulPaint}s</span>
+                          </div>
+                        )}
+                        {content.pageSpeedData.desktop.speedIndex && (
+                          <div className="flex justify-between">
+                            <span>Speed Index:</span>
+                            <span className="font-medium">{content.pageSpeedData.desktop.speedIndex}s</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-card p-4 rounded-lg border">
+                      <h3 className="text-lg font-semibold mb-3">Móvil</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Rendimiento:</span>
+                          <span className="font-medium">{content.pageSpeedData.mobile.performance}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Accesibilidad:</span>
+                          <span className="font-medium">{content.pageSpeedData.mobile.accessibility}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Mejores Prácticas:</span>
+                          <span className="font-medium">{content.pageSpeedData.mobile.bestPractices}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>SEO:</span>
+                          <span className="font-medium">{content.pageSpeedData.mobile.seo}</span>
+                        </div>
+                        {content.pageSpeedData.mobile.firstContentfulPaint && (
+                          <div className="flex justify-between">
+                            <span>First Contentful Paint:</span>
+                            <span className="font-medium">{content.pageSpeedData.mobile.firstContentfulPaint}s</span>
+                          </div>
+                        )}
+                        {content.pageSpeedData.mobile.speedIndex && (
+                          <div className="flex justify-between">
+                            <span>Speed Index:</span>
+                            <span className="font-medium">{content.pageSpeedData.mobile.speedIndex}s</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </TabsContent>
             )}
-          </div>
-        </ScrollArea>
+          </ScrollArea>
+        </Tabs>
       </CardContent>
     </Card>
   );
