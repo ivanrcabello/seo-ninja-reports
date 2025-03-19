@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings2 } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
 
 const Header: React.FC = () => {
@@ -64,6 +63,17 @@ const Header: React.FC = () => {
                   {item.label}
                 </Link>
               ))}
+              <Link
+                to="/settings"
+                className={cn(
+                  'flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors',
+                  'hover:text-foreground',
+                  location.pathname === '/settings' ? 'text-foreground' : 'text-muted-foreground'
+                )}
+              >
+                <Settings2 className="h-4 w-4" />
+                <span>Configuración</span>
+              </Link>
               {user ? (
                 <div className="flex items-center space-x-4">
                   <span className="text-sm font-medium text-primary">

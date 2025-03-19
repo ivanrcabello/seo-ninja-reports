@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, FileText, Globe, ArrowRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Loader2, FileText, Globe, ArrowRight, Wand2 } from 'lucide-react';
 import FileUploader from './FileUploader';
 import BlurredCard from '../ui/BlurredCard';
 import useReports from '@/hooks/useReports';
@@ -20,6 +22,10 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState(() => {
+    return localStorage.getItem('default_seo_prompt') || '';
+  });
   const { generateReport } = useReports();
   const { getClient } = useClients();
   const navigate = useNavigate();
@@ -36,7 +42,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     setIsLoading(true);
     
     try {
-      const report = await generateReport(clientId, url, files);
+      const report = await generateReport(clientId, url, files, customPrompt);
       navigate(`/reports/${report.id}`);
     } catch (error) {
       console.error('Error al generar informe:', error);
@@ -136,6 +142,45 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
                   Sube exportaciones de analytics, informes anteriores, capturas de pantalla u otros documentos para mejorar tu análisis
                 </p>
               </div>
+              
+              <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full flex justify-between items-center"
+                  >
+                    <span>Personalizar prompt de generación</span>
+                    <Wand2 className="h-4 w-4 ml-2" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-2xl glass">
+                  <DialogHeader>
+                    <DialogTitle>Personalizar Prompt de Generación</DialogTitle>
+                    <DialogDescription>
+                      Personaliza el prompt que se utilizará para generar el informe SEO con la API de OpenAI.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <Textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Introduce el prompt personalizado..."
+                      className="min-h-[300px]"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Utiliza [DOMINIO] para referirte al dominio del sitio web que se está analizando.
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      onClick={() => setShowPromptDialog(false)}
+                    >
+                      Guardar Prompt
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
             
             <CardFooter className="flex justify-between pt-4">

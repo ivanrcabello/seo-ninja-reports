@@ -3,23 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import useAuth from './useAuth';
-
-export interface Report {
-  id: string;
-  clientId: string;
-  title: string;
-  date: string;
-  status: 'processing' | 'completed' | 'failed';
-  url?: string;
-  summary?: string;
-  content?: {
-    executiveSummary: string;
-    technicalAnalysis: string;
-    contentAnalysis: string;
-    backlinksAnalysis: string;
-    recommendations: string;
-  };
-}
+import { Report } from '@/types/report.types';
 
 interface ReportsContextType {
   reports: Report[];
@@ -29,7 +13,7 @@ interface ReportsContextType {
   createReport: (data: Omit<Report, 'id' | 'date' | 'status'>) => Promise<Report>;
   updateReport: (id: string, data: Partial<Report>) => Promise<Report>;
   deleteReport: (id: string) => Promise<void>;
-  generateReport: (clientId: string, url: string, files: File[]) => Promise<Report>;
+  generateReport: (clientId: string, url: string, files: File[], customPrompt?: string) => Promise<Report>;
 }
 
 // Create context
@@ -92,7 +76,8 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
             status: report.status as 'processing' | 'completed' | 'failed',
             url: report.url,
             summary: report.summary,
-            content: formattedContent
+            content: formattedContent,
+            customPrompt: report.custom_prompt
           };
         });
         
@@ -118,7 +103,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
 
   const createReport = async (data: Omit<Report, 'id' | 'date' | 'status'>) => {
     try {
-      const { clientId, title, url, summary, content } = data;
+      const { clientId, title, url, summary, content, customPrompt } = data;
       
       const { data: newReport, error } = await supabase
         .from('reports')
@@ -128,6 +113,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
           url,
           summary,
           content,
+          custom_prompt: customPrompt,
           status: 'completed' as 'processing' | 'completed' | 'failed'
         })
         .select()
@@ -145,7 +131,8 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         status: newReport.status as 'processing' | 'completed' | 'failed',
         url: newReport.url,
         summary: newReport.summary,
-        content: newReport.content as Report['content']
+        content: newReport.content as Report['content'],
+        customPrompt: newReport.custom_prompt
       };
       
       setReports(prevReports => [formattedReport, ...prevReports]);
@@ -169,6 +156,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       if (data.url !== undefined) dbData.url = data.url;
       if (data.summary !== undefined) dbData.summary = data.summary;
       if (data.content !== undefined) dbData.content = data.content;
+      if (data.customPrompt !== undefined) dbData.custom_prompt = data.customPrompt;
       
       const { data: updatedReport, error } = await supabase
         .from('reports')
@@ -189,7 +177,8 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         status: updatedReport.status as 'processing' | 'completed' | 'failed',
         url: updatedReport.url,
         summary: updatedReport.summary,
-        content: updatedReport.content as Report['content']
+        content: updatedReport.content as Report['content'],
+        customPrompt: updatedReport.custom_prompt
       };
       
       setReports(prevReports => 
@@ -225,9 +214,17 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Generate a new report
-  const generateReport = async (clientId: string, url: string, files: File[]): Promise<Report> => {
+  // Generate a new report using ChatGPT API
+  const generateReport = async (clientId: string, url: string, files: File[], customPrompt?: string): Promise<Report> => {
     try {
+      // Get the OpenAI API key from localStorage
+      const apiKey = localStorage.getItem('openai_api_key') || '';
+      
+      if (!apiKey) {
+        toast.error('No se ha configurado la API key de OpenAI');
+        throw new Error('No se ha configurado la API key de OpenAI');
+      }
+      
       // Create a new report in processing state
       const { data: newReport, error } = await supabase
         .from('reports')
@@ -235,6 +232,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
           client_id: clientId,
           title: `Análisis SEO - ${new URL(url).hostname}`,
           url,
+          custom_prompt: customPrompt,
           status: 'processing' as 'processing' | 'completed' | 'failed'
         })
         .select()
@@ -250,7 +248,8 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         title: newReport.title,
         date: newReport.date,
         status: newReport.status as 'processing' | 'completed' | 'failed',
-        url: newReport.url
+        url: newReport.url,
+        customPrompt: newReport.custom_prompt
       };
       
       setReports(prevReports => [processingReport, ...prevReports]);
@@ -272,50 +271,113 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
-      // Simulate processing time (replace with actual processing later)
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Prepare prompt for ChatGPT
+      let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
+      prompt = prompt.replace('[DOMINIO]', new URL(url).hostname);
       
-      // Crear el contenido del informe con la estructura correcta
-      const demoContent = {
-        executiveSummary: 'El sitio web demuestra buenos fundamentos técnicos con buena velocidad de carga y capacidad de respuesta móvil. La calidad del contenido es alta pero la cantidad podría mejorarse, especialmente para apuntar a palabras clave de cola larga. El perfil de backlinks muestra espacio para crecer.',
-        technicalAnalysis: 'Puntuación móvil: 85/100\nPuntuación de escritorio: 92/100\nEl sitio se carga en 2,4 segundos en promedio.\nNo se detectaron errores de rastreo importantes.\n4 advertencias menores de contenido mixto en las páginas del blog.',
-        contentAnalysis: 'Contenido bien estructurado con encabezados claros y buena legibilidad. La densidad de palabras clave es apropiada pero podría mejorarse en ciertas secciones. La frecuencia del blog está por debajo del promedio de la industria con 2 publicaciones/mes frente a las 6-8 recomendadas.',
-        backlinksAnalysis: '137 backlinks de 48 dominios de referencia. La autoridad de dominio es 38/100, lo que es bueno pero por debajo de los principales competidores (promedio 45). El perfil de enlaces es limpio sin enlaces tóxicos detectados.',
-        recommendations: '1. Aumentar la frecuencia de publicación de contenido a 6-8 publicaciones/mes\n2. Corregir las advertencias de contenido mixto en el blog\n3. Apuntar a 5 palabras clave de cola larga identificadas\n4. Implementar marcado de esquema para obtener mejores fragmentos enriquecidos\n5. Desarrollar una campaña de divulgación para mejorar el perfil de backlinks'
-      };
-      
-      const { data: completedReport, error: updateError } = await supabase
-        .from('reports')
-        .update({
-          status: 'completed' as 'processing' | 'completed' | 'failed',
-          summary: 'El análisis muestra buenos fundamentos técnicos pero oportunidades de mejora en el contenido.',
-          content: demoContent
-        })
-        .eq('id', newReport.id)
-        .select()
-        .single();
+      // Call OpenAI API to generate the report
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: prompt
+              },
+              {
+                role: "user",
+                content: `Analiza el sitio web ${url}. Genera un informe SEO basado en el prompt proporcionado.`
+              }
+            ],
+            temperature: 0.7
+          })
+        });
         
-      if (updateError) {
-        throw updateError;
+        if (!response.ok) {
+          throw new Error(`Error en la API de OpenAI: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const generatedText = data.choices[0].message.content;
+        
+        // Extract sections from the generated text
+        const sections = extractSectionsFromText(generatedText);
+        
+        // Update the report with the generated content
+        const { data: completedReport, error: updateError } = await supabase
+          .from('reports')
+          .update({
+            status: 'completed' as 'processing' | 'completed' | 'failed',
+            summary: sections.summary || 'Análisis SEO completo del sitio web.',
+            content: {
+              executiveSummary: sections.executiveSummary || '',
+              technicalAnalysis: sections.technicalAnalysis || '',
+              contentAnalysis: sections.contentAnalysis || '',
+              backlinksAnalysis: sections.backlinksAnalysis || '',
+              recommendations: sections.recommendations || ''
+            }
+          })
+          .eq('id', newReport.id)
+          .select()
+          .single();
+          
+        if (updateError) {
+          throw updateError;
+        }
+        
+        const formattedCompletedReport: Report = {
+          id: completedReport.id,
+          clientId: completedReport.client_id,
+          title: completedReport.title,
+          date: completedReport.date,
+          status: completedReport.status as 'processing' | 'completed' | 'failed',
+          url: completedReport.url,
+          summary: completedReport.summary,
+          content: completedReport.content as Report['content'],
+          customPrompt: completedReport.custom_prompt
+        };
+        
+        setReports(prevReports => 
+          prevReports.map(report => report.id === newReport.id ? formattedCompletedReport : report)
+        );
+        
+        toast.success('Informe generado exitosamente');
+        return formattedCompletedReport;
+        
+      } catch (apiError: any) {
+        console.error('Error calling OpenAI API:', apiError);
+        
+        // Update report to failed state
+        await supabase
+          .from('reports')
+          .update({ 
+            status: 'failed' as 'processing' | 'completed' | 'failed',
+            summary: `Error: ${apiError.message}`
+          })
+          .eq('id', newReport.id);
+          
+        setReports(prevReports => 
+          prevReports.map(report => 
+            report.id === newReport.id 
+              ? { 
+                  ...report, 
+                  status: 'failed' as const,
+                  summary: `Error: ${apiError.message}`
+                } 
+              : report
+          )
+        );
+        
+        toast.error('Error al generar el informe con la API de OpenAI');
+        throw apiError;
       }
       
-      const formattedCompletedReport: Report = {
-        id: completedReport.id,
-        clientId: completedReport.client_id,
-        title: completedReport.title,
-        date: completedReport.date,
-        status: completedReport.status as 'processing' | 'completed' | 'failed',
-        url: completedReport.url,
-        summary: completedReport.summary,
-        content: completedReport.content as Report['content']
-      };
-      
-      setReports(prevReports => 
-        prevReports.map(report => report.id === newReport.id ? formattedCompletedReport : report)
-      );
-      
-      toast.success('Informe generado exitosamente');
-      return formattedCompletedReport;
     } catch (error: any) {
       console.error('Error generating report:', error);
       
@@ -342,6 +404,56 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       toast.error(error.message || 'Error al generar informe');
       throw error;
     }
+  };
+
+  // Helper function to extract sections from the generated text
+  const extractSectionsFromText = (text: string) => {
+    // Default structure for the content
+    const sections = {
+      summary: '',
+      executiveSummary: '',
+      technicalAnalysis: '',
+      contentAnalysis: '',
+      backlinksAnalysis: '',
+      recommendations: ''
+    };
+
+    // Extract Resumen Ejecutivo (Executive Summary)
+    const execSummaryMatch = text.match(/(?:Resumen Ejecutivo|Executive Summary)(?:[\s\S]*?)(?=(?:Análisis Técnico|Technical Analysis|2\.|$))/i);
+    if (execSummaryMatch) {
+      sections.executiveSummary = execSummaryMatch[0].replace(/(?:Resumen Ejecutivo|Executive Summary)(?:\s*):?/i, '').trim();
+      // Use the first paragraph of executive summary as the overall summary
+      const summaryParagraph = sections.executiveSummary.split('\n\n')[0];
+      if (summaryParagraph) {
+        sections.summary = summaryParagraph;
+      }
+    }
+
+    // Extract Análisis Técnico (Technical Analysis)
+    const techAnalysisMatch = text.match(/(?:Análisis Técnico|Technical Analysis)(?:[\s\S]*?)(?=(?:Análisis de Contenido|Content Analysis|3\.|$))/i);
+    if (techAnalysisMatch) {
+      sections.technicalAnalysis = techAnalysisMatch[0].replace(/(?:Análisis Técnico|Technical Analysis)(?:\s*):?/i, '').trim();
+    }
+
+    // Extract Análisis de Contenido (Content Analysis)
+    const contentAnalysisMatch = text.match(/(?:Análisis de Contenido|Content Analysis)(?:[\s\S]*?)(?=(?:Backlinks y Autoridad|Backlinks and Authority|4\.|$))/i);
+    if (contentAnalysisMatch) {
+      sections.contentAnalysis = contentAnalysisMatch[0].replace(/(?:Análisis de Contenido|Content Analysis)(?:\s*):?/i, '').trim();
+    }
+
+    // Extract Backlinks y Autoridad (Backlinks and Authority)
+    const backlinksMatch = text.match(/(?:Backlinks y Autoridad|Backlinks and Authority)(?:[\s\S]*?)(?=(?:Recomendaciones|Recommendations|5\.|$))/i);
+    if (backlinksMatch) {
+      sections.backlinksAnalysis = backlinksMatch[0].replace(/(?:Backlinks y Autoridad|Backlinks and Authority)(?:\s*):?/i, '').trim();
+    }
+
+    // Extract Recomendaciones (Recommendations)
+    const recommendationsMatch = text.match(/(?:Recomendaciones|Recommendations)(?:[\s\S]*?)(?=$)/i);
+    if (recommendationsMatch) {
+      sections.recommendations = recommendationsMatch[0].replace(/(?:Recomendaciones|Recommendations)(?:\s*):?/i, '').trim();
+    }
+
+    return sections;
   };
 
   const value = {

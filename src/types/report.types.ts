@@ -14,4 +14,5 @@ export interface Report {
     backlinksAnalysis: string;
     recommendations: string;
   };
+  customPrompt?: string;
 }
