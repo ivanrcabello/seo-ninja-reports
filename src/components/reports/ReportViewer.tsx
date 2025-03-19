@@ -1,20 +1,13 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Download, Share, Calendar, Globe, Activity, PenLine, Save, CheckCircle, ExternalLink } from 'lucide-react';
 import BlurredCard from '../ui/BlurredCard';
-import AnimatedContainer from '../ui/AnimatedContainer';
 import { Report } from '@/types/report.types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import useReports from '@/hooks/useReports';
 import { toast } from 'sonner';
-import { extractSectionsFromText } from '@/utils/reportUtils';
+import ReportSection from './ReportSection';
+import ReportHeader from './ReportHeader';
+import ReportEditDialog from './ReportEditDialog';
 
 interface ReportViewerProps {
   report: Report;
@@ -98,62 +91,13 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
   
   return (
     <div className="space-y-8">
-      <BlurredCard className="w-full bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gradient-primary">{title}</h1>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-                <Calendar className="h-4 w-4" />
-                <span>{format(new Date(date), 'd MMM yyyy', { locale: es })}</span>
-              </div>
-              {url && (
-                <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full group hover:bg-primary/20 transition-all">
-                  <Globe className="h-4 w-4" />
-                  <a 
-                    href={url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="hover:text-primary transition-colors flex items-center gap-1"
-                  >
-                    {url.replace(/^https?:\/\//, '').split('/')[0]}
-                    <ExternalLink className="h-3 w-3 opacity-70" />
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex gap-2 self-end md:self-auto">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              {isEditing ? (
-                <>
-                  <CheckCircle className="h-4 w-4 group-hover:text-primary-foreground" />
-                  <span className="hidden sm:inline">Terminar Edición</span>
-                </>
-              ) : (
-                <>
-                  <PenLine className="h-4 w-4 group-hover:text-primary-foreground" />
-                  <span className="hidden sm:inline">Editar</span>
-                </>
-              )}
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all">
-              <Download className="h-4 w-4 group-hover:text-primary-foreground" />
-              <span className="hidden sm:inline">Descargar</span>
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all">
-              <Share className="h-4 w-4 group-hover:text-primary-foreground" />
-              <span className="hidden sm:inline">Compartir</span>
-            </Button>
-          </div>
-        </div>
-      </BlurredCard>
+      <ReportHeader 
+        title={title} 
+        date={date} 
+        url={url} 
+        isEditing={isEditing} 
+        setIsEditing={setIsEditing} 
+      />
       
       <Tabs defaultValue="executive-summary" className="w-full">
         <TabsList className="w-full grid grid-cols-2 md:grid-cols-5 h-auto p-1 bg-gradient-to-r from-primary/5 to-background backdrop-blur-sm rounded-lg border border-primary/10">
@@ -221,150 +165,16 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         </TabsContent>
       </Tabs>
       
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-2xl glass">
-          <DialogHeader>
-            <DialogTitle>Editar {activeSection ? getSectionTitle(activeSection) : ''}</DialogTitle>
-            <DialogDescription>
-              Modifica el contenido de esta sección del informe.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[300px]"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit}>Guardar cambios</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReportEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        activeSection={activeSection}
+        editContent={editContent}
+        setEditContent={setEditContent}
+        onSave={handleSaveEdit}
+        getSectionTitle={getSectionTitle}
+      />
     </div>
-  );
-};
-
-interface ReportSectionProps {
-  title: string;
-  content: string;
-  sectionKey: string;
-  onEdit: (section: string, content: string) => void;
-  isEditing: boolean;
-  delay?: number;
-  isRecommendations?: boolean;
-}
-
-const ReportSection: React.FC<ReportSectionProps> = ({
-  title,
-  content,
-  sectionKey,
-  onEdit,
-  isEditing,
-  delay = 0,
-  isRecommendations = false
-}) => {
-  const processRegularContent = (text: string) => {
-    return text.split('\n').map((paragraph, i) => {
-      if (!paragraph.trim()) return null;
-      
-      // Check if this is a heading (starts with # or ##)
-      if (paragraph.startsWith('# ')) {
-        return (
-          <h3 key={i} className="text-xl font-semibold text-primary my-4 first:mt-0">
-            {paragraph.replace(/^# /, '')}
-          </h3>
-        );
-      } else if (paragraph.startsWith('## ')) {
-        return (
-          <h4 key={i} className="text-lg font-medium text-primary/90 my-3">
-            {paragraph.replace(/^## /, '')}
-          </h4>
-        );
-      } else if (paragraph.startsWith('- ')) {
-        // This is a bullet point
-        return (
-          <div key={i} className="flex items-start gap-2 mb-2">
-            <div className="text-primary mt-1.5">•</div>
-            <p className="flex-1">{paragraph.replace(/^- /, '')}</p>
-          </div>
-        );
-      } else {
-        // Regular paragraph
-        return (
-          <p key={i} className="mb-4 last:mb-0 leading-relaxed">
-            {paragraph}
-          </p>
-        );
-      }
-    }).filter(Boolean);
-  };
-
-  const processRecommendations = (text: string) => {
-    return text.split('\n').map((item, i) => {
-      if (!item.trim()) return null;
-      
-      const itemNumber = i + 1;
-      const cleanItem = item.replace(/^\d+\.\s*/, '');
-      
-      // Determine priority level (for color coding)
-      let priorityClass = "bg-blue-500/10 text-blue-600 border-blue-500/20";
-      
-      if (cleanItem.toLowerCase().includes("alta") || 
-          cleanItem.toLowerCase().includes("crítica") || 
-          cleanItem.toLowerCase().includes("urgente")) {
-        priorityClass = "bg-red-500/10 text-red-600 border-red-500/20";
-      } else if (cleanItem.toLowerCase().includes("media")) {
-        priorityClass = "bg-amber-500/10 text-amber-600 border-amber-500/20";
-      } else if (cleanItem.toLowerCase().includes("baja")) {
-        priorityClass = "bg-green-500/10 text-green-600 border-green-500/20";
-      }
-      
-      return (
-        <div 
-          key={i} 
-          className={`flex items-start gap-3 p-4 rounded-lg mb-3 backdrop-blur-sm shadow-sm border hover:shadow-md transition-all ${priorityClass}`}
-        >
-          <div className="bg-primary/10 text-primary font-medium rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
-            {itemNumber}
-          </div>
-          <div className="flex-1">{cleanItem}</div>
-        </div>
-      );
-    }).filter(Boolean);
-  };
-
-  // Format content based on type
-  const formattedContent = isRecommendations
-    ? processRecommendations(content)
-    : processRegularContent(content);
-
-  return (
-    <AnimatedContainer animation="fade" delay={delay} className="mt-4">
-      <BlurredCard className="glass-card bg-gradient-to-br from-background/90 via-background/80 to-background/70">
-        <CardHeader className="pb-2 flex flex-row justify-between items-center">
-          <CardTitle className="text-xl font-semibold text-gradient-primary">{title}</CardTitle>
-          {isEditing && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-primary hover:text-primary hover:bg-primary/10"
-              onClick={() => onEdit(sectionKey, content)}
-            >
-              <PenLine className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
-          )}
-        </CardHeader>
-        <Separator className="bg-primary/10" />
-        <CardContent className="pt-6">
-          <div className="prose prose-sm md:prose-base max-w-none">
-            {formattedContent}
-          </div>
-        </CardContent>
-      </BlurredCard>
-    </AnimatedContainer>
   );
 };
 
