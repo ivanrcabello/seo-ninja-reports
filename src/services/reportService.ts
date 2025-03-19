@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Report, PageSpeedResult } from '@/types/report.types';
 import { toast } from 'sonner';
