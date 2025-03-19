@@ -6,6 +6,18 @@ export interface Client {
   industry: string;
   createdAt: string;
   reportsCount: number;
+  phoneNumber?: string;
+  wpCredentials?: {
+    username: string;
+    password: string;
+    url?: string;
+  };
+  hostingCredentials?: {
+    provider: string;
+    username: string;
+    password: string;
+    url?: string;
+  };
 }
 
 export interface ClientsContextType {

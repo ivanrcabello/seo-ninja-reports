@@ -60,7 +60,7 @@ export async function addClientToDb(
   }
 
   try {
-    const { name, website, industry } = data;
+    const { name, website, industry, phoneNumber, wpCredentials, hostingCredentials } = data;
     
     const { data: newClient, error } = await supabase
       .from('clients')
@@ -68,7 +68,10 @@ export async function addClientToDb(
         name,
         website,
         industry,
-        user_id: userId
+        user_id: userId,
+        phone_number: phoneNumber,
+        wp_credentials: wpCredentials,
+        hosting_credentials: hostingCredentials
       })
       .select()
       .single();
@@ -90,9 +93,18 @@ export async function updateClientInDb(
   data: Partial<Omit<Client, 'id' | 'createdAt' | 'reportsCount'>>
 ) {
   try {
+    // Transform camelCase to snake_case for Supabase
+    const transformedData: any = {};
+    if (data.name !== undefined) transformedData.name = data.name;
+    if (data.website !== undefined) transformedData.website = data.website;
+    if (data.industry !== undefined) transformedData.industry = data.industry;
+    if (data.phoneNumber !== undefined) transformedData.phone_number = data.phoneNumber;
+    if (data.wpCredentials !== undefined) transformedData.wp_credentials = data.wpCredentials;
+    if (data.hostingCredentials !== undefined) transformedData.hosting_credentials = data.hostingCredentials;
+    
     const { data: updatedClient, error } = await supabase
       .from('clients')
-      .update(data)
+      .update(transformedData)
       .eq('id', id)
       .select()
       .single();

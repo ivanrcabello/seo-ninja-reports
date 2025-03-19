@@ -9,11 +9,28 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { Client } from '@/types/client.types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+const wpCredentialsSchema = z.object({
+  username: z.string().optional(),
+  password: z.string().optional(),
+  url: z.string().url({ message: 'Debe ser una URL válida' }).optional().or(z.literal(''))
+}).optional();
+
+const hostingCredentialsSchema = z.object({
+  provider: z.string().optional(),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  url: z.string().url({ message: 'Debe ser una URL válida' }).optional().or(z.literal(''))
+}).optional();
 
 const clientSchema = z.object({
   name: z.string().min(1, { message: 'El nombre es requerido' }),
   website: z.string().url({ message: 'Debe ser una URL válida' }),
   industry: z.string().min(1, { message: 'Seleccione una industria' }),
+  phoneNumber: z.string().optional(),
+  wpCredentials: wpCredentialsSchema,
+  hostingCredentials: hostingCredentialsSchema
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -31,6 +48,18 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, isSub
       name: client.name,
       website: client.website,
       industry: client.industry || '',
+      phoneNumber: client.phoneNumber || '',
+      wpCredentials: client.wpCredentials || {
+        username: '',
+        password: '',
+        url: ''
+      },
+      hostingCredentials: client.hostingCredentials || {
+        provider: '',
+        username: '',
+        password: '',
+        url: ''
+      }
     },
   });
 
@@ -67,6 +96,20 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, isSub
         
         <FormField
           control={form.control}
+          name="phoneNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Teléfono</FormLabel>
+              <FormControl>
+                <Input placeholder="+34 600 000 000" {...field} className="glass-input" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
           name="industry"
           render={({ field }) => (
             <FormItem>
@@ -93,6 +136,120 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, isSub
             </FormItem>
           )}
         />
+        
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="wordpress">
+            <AccordionTrigger>Credenciales de WordPress</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid gap-3 mt-2">
+                <FormField
+                  control={form.control}
+                  name="wpCredentials.username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre de Usuario</FormLabel>
+                      <FormControl>
+                        <Input placeholder="admin" {...field} className="glass-input" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="wpCredentials.password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contraseña</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} className="glass-input" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="wpCredentials.url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL de Admin</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://ejemplo.com/wp-admin" {...field} className="glass-input" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          
+          <AccordionItem value="hosting">
+            <AccordionTrigger>Credenciales de Hosting</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid gap-3 mt-2">
+                <FormField
+                  control={form.control}
+                  name="hostingCredentials.provider"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Proveedor</FormLabel>
+                      <FormControl>
+                        <Input placeholder="cPanel, Plesk, etc." {...field} className="glass-input" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="hostingCredentials.username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre de Usuario</FormLabel>
+                      <FormControl>
+                        <Input placeholder="usuario" {...field} className="glass-input" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="hostingCredentials.password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contraseña</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} className="glass-input" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="hostingCredentials.url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL del Panel</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://ejemplo.com:2083" {...field} className="glass-input" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? (

@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
 import useAuth from './useAuth';
@@ -38,7 +39,10 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
           website: client.website,
           industry: client.industry || '',
           createdAt: client.created_at,
-          reportsCount: reportCountMap[client.id] || 0
+          reportsCount: reportCountMap[client.id] || 0,
+          phoneNumber: client.phone_number,
+          wpCredentials: client.wp_credentials,
+          hostingCredentials: client.hosting_credentials
         }));
         
         setClients(formattedClients);
@@ -67,7 +71,10 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         website: newClient.website,
         industry: newClient.industry || '',
         createdAt: newClient.created_at,
-        reportsCount: 0
+        reportsCount: 0,
+        phoneNumber: newClient.phone_number,
+        wpCredentials: newClient.wp_credentials,
+        hostingCredentials: newClient.hosting_credentials
       };
       
       setClients(prevClients => [formattedClient, ...prevClients]);
@@ -94,7 +101,10 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         website: updatedClient.website,
         industry: updatedClient.industry || '',
         createdAt: updatedClient.created_at,
-        reportsCount: clientToUpdate.reportsCount
+        reportsCount: clientToUpdate.reportsCount,
+        phoneNumber: updatedClient.phone_number,
+        wpCredentials: updatedClient.wp_credentials,
+        hostingCredentials: updatedClient.hosting_credentials
       };
       
       setClients(prevClients => 

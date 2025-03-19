@@ -1,13 +1,16 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Loader2 } from 'lucide-react';
+import { Plus, Search, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import ClientCard from './ClientCard';
 import useClients from '@/hooks/useClients';
 import AnimatedContainer from '../ui/AnimatedContainer';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Textarea } from "@/components/ui/textarea";
 
 const ClientList: React.FC = () => {
   const { clients, isLoading, addClient } = useClients();
@@ -16,7 +19,19 @@ const ClientList: React.FC = () => {
   const [newClient, setNewClient] = useState({
     name: '',
     website: '',
-    industry: ''
+    industry: '',
+    phoneNumber: '',
+    wpCredentials: {
+      username: '',
+      password: '',
+      url: ''
+    },
+    hostingCredentials: {
+      provider: '',
+      username: '',
+      password: '',
+      url: ''
+    }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,9 +44,22 @@ const ClientList: React.FC = () => {
     );
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setNewClient(prev => ({ ...prev, [name]: value }));
+    
+    if (name.includes('.')) {
+      // Handle nested properties
+      const [parent, child] = name.split('.');
+      setNewClient(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent as keyof typeof prev],
+          [child]: value
+        }
+      }));
+    } else {
+      setNewClient(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleIndustryChange = (value: string) => {
@@ -48,8 +76,39 @@ const ClientList: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      await addClient(newClient);
-      setNewClient({ name: '', website: '', industry: '' });
+      // Clean up credentials objects if they're empty
+      const clientToAdd = { ...newClient };
+      
+      // Only include WordPress credentials if at least username is provided
+      if (!clientToAdd.wpCredentials.username) {
+        delete clientToAdd.wpCredentials;
+      }
+      
+      // Only include hosting credentials if at least provider and username are provided
+      if (!clientToAdd.hostingCredentials.provider || !clientToAdd.hostingCredentials.username) {
+        delete clientToAdd.hostingCredentials;
+      }
+      
+      await addClient(clientToAdd);
+      
+      // Reset form
+      setNewClient({
+        name: '',
+        website: '',
+        industry: '',
+        phoneNumber: '',
+        wpCredentials: {
+          username: '',
+          password: '',
+          url: ''
+        },
+        hostingCredentials: {
+          provider: '',
+          username: '',
+          password: '',
+          url: ''
+        }
+      });
       setIsDialogOpen(false);
     } catch (error) {
       console.error('Error al añadir cliente:', error);
@@ -86,7 +145,7 @@ const ClientList: React.FC = () => {
               <span>Añadir Cliente</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] glass">
+          <DialogContent className="sm:max-w-[550px] glass">
             <form onSubmit={handleAddClient}>
               <DialogHeader>
                 <DialogTitle>Añadir Nuevo Cliente</DialogTitle>
@@ -94,7 +153,7 @@ const ClientList: React.FC = () => {
                   Completa el formulario para añadir un nuevo cliente a tu panel.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div className="grid gap-2">
                   <Label htmlFor="name">Nombre del Cliente</Label>
                   <Input
@@ -107,6 +166,7 @@ const ClientList: React.FC = () => {
                     required
                   />
                 </div>
+                
                 <div className="grid gap-2">
                   <Label htmlFor="website">Sitio Web</Label>
                   <Input
@@ -119,6 +179,19 @@ const ClientList: React.FC = () => {
                     required
                   />
                 </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="phoneNumber">Teléfono</Label>
+                  <Input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={newClient.phoneNumber}
+                    onChange={handleInputChange}
+                    placeholder="+34 600 000 000"
+                    className="glass-input"
+                  />
+                </div>
+                
                 <div className="grid gap-2">
                   <Label htmlFor="industry">Industria</Label>
                   <Select
@@ -142,6 +215,107 @@ const ClientList: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="wordpress">
+                    <AccordionTrigger className="py-2">
+                      Credenciales de WordPress
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="grid gap-3 mt-2">
+                        <div>
+                          <Label htmlFor="wpUsername">Nombre de Usuario</Label>
+                          <Input
+                            id="wpUsername"
+                            name="wpCredentials.username"
+                            value={newClient.wpCredentials.username}
+                            onChange={handleInputChange}
+                            placeholder="admin"
+                            className="glass-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="wpPassword">Contraseña</Label>
+                          <Input
+                            id="wpPassword"
+                            name="wpCredentials.password"
+                            type="password"
+                            value={newClient.wpCredentials.password}
+                            onChange={handleInputChange}
+                            placeholder="••••••••"
+                            className="glass-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="wpUrl">URL de Admin</Label>
+                          <Input
+                            id="wpUrl"
+                            name="wpCredentials.url"
+                            value={newClient.wpCredentials.url}
+                            onChange={handleInputChange}
+                            placeholder="https://ejemplo.com/wp-admin"
+                            className="glass-input mt-1"
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  <AccordionItem value="hosting">
+                    <AccordionTrigger className="py-2">
+                      Credenciales de Hosting
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="grid gap-3 mt-2">
+                        <div>
+                          <Label htmlFor="hostingProvider">Proveedor</Label>
+                          <Input
+                            id="hostingProvider"
+                            name="hostingCredentials.provider"
+                            value={newClient.hostingCredentials.provider}
+                            onChange={handleInputChange}
+                            placeholder="cPanel, Plesk, etc."
+                            className="glass-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="hostingUsername">Nombre de Usuario</Label>
+                          <Input
+                            id="hostingUsername"
+                            name="hostingCredentials.username"
+                            value={newClient.hostingCredentials.username}
+                            onChange={handleInputChange}
+                            placeholder="usuario"
+                            className="glass-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="hostingPassword">Contraseña</Label>
+                          <Input
+                            id="hostingPassword"
+                            name="hostingCredentials.password"
+                            type="password"
+                            value={newClient.hostingCredentials.password}
+                            onChange={handleInputChange}
+                            placeholder="••••••••"
+                            className="glass-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="hostingUrl">URL del Panel</Label>
+                          <Input
+                            id="hostingUrl"
+                            name="hostingCredentials.url"
+                            value={newClient.hostingCredentials.url}
+                            onChange={handleInputChange}
+                            placeholder="https://ejemplo.com:2083"
+                            className="glass-input mt-1"
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={isSubmitting}>

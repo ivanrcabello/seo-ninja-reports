@@ -12,30 +12,39 @@ export type Database = {
       clients: {
         Row: {
           created_at: string
+          hosting_credentials: Json | null
           id: string
           industry: string | null
           name: string
+          phone_number: string | null
           updated_at: string
           user_id: string
           website: string
+          wp_credentials: Json | null
         }
         Insert: {
           created_at?: string
+          hosting_credentials?: Json | null
           id?: string
           industry?: string | null
           name: string
+          phone_number?: string | null
           updated_at?: string
           user_id: string
           website: string
+          wp_credentials?: Json | null
         }
         Update: {
           created_at?: string
+          hosting_credentials?: Json | null
           id?: string
           industry?: string | null
           name?: string
+          phone_number?: string | null
           updated_at?: string
           user_id?: string
           website?: string
+          wp_credentials?: Json | null
         }
         Relationships: []
       }

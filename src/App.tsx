@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import ClientDetail from "./pages/ClientDetail";
 import ReportDetail from "./pages/ReportDetail";
 import AllReports from "./pages/AllReports";
+import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
 import Settings from '@/pages/Settings';
 
@@ -34,6 +35,7 @@ const App = () => (
                 <Route path="/clients/:id" element={<ClientDetail />} />
                 <Route path="/reports" element={<AllReports />} />
                 <Route path="/reports/:id" element={<ReportDetail />} />
+                <Route path="/activity" element={<Activity />} />
                 <Route path="/settings" element={<Settings />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

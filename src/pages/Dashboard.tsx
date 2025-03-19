@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -22,6 +22,11 @@ const Dashboard = () => {
   }
 
   const isLoading = authLoading || clientsLoading || reportsLoading;
+  
+  // Get reports created in the last 7 days
+  const recentReportsCount = reports.filter(
+    r => new Date(r.date) > new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
+  ).length;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -60,7 +65,7 @@ const Dashboard = () => {
                   />
                   <DashboardCard
                     title="Actividad Reciente"
-                    value={reports.filter(r => new Date(r.date) > new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)).length}
+                    value={recentReportsCount}
                     description="Informes creados en los últimos 7 días"
                     linkText="Ver actividad reciente"
                     linkUrl="/activity"
@@ -102,7 +107,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, description
       <p className="text-3xl font-bold mb-2">{value}</p>
       <p className="text-sm text-muted-foreground mb-4">{description}</p>
       <Button variant="link" className="p-0 h-auto text-primary" asChild>
-        <a href={linkUrl}>{linkText}</a>
+        <Link to={linkUrl}>{linkText}</Link>
       </Button>
     </div>
   );
