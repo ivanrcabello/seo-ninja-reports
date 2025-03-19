@@ -199,12 +199,28 @@ export const savePageSpeedData = async (
     console.log('Datos de PageSpeed guardados correctamente con ID:', data?.id);
     
     // Also update the report's content to include the PageSpeed data for immediate use
-    // Fixed the type issue here by using proper JSON operations
+    // First, get the current content
+    const { data: reportData, error: selectError } = await supabase
+      .from('reports')
+      .select('content')
+      .eq('id', reportId)
+      .maybeSingle();
+    
+    if (selectError) {
+      console.error('Error al obtener el contenido actual del informe:', selectError);
+    }
+    
+    // Ensure we have a valid content object to work with
+    const currentContent = reportData?.content && typeof reportData.content === 'object' 
+      ? reportData.content 
+      : {};
+    
+    // Now update with the PageSpeed data
     const { error: reportUpdateError } = await supabase
       .from('reports')
       .update({
         content: {
-          ...((await supabase.from('reports').select('content').eq('id', reportId).maybeSingle()).data?.content || {}),
+          ...currentContent,
           pageSpeedData: results
         }
       })
