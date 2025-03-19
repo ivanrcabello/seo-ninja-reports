@@ -19,26 +19,19 @@ export const fetchReports = async () => {
     }
 
     const formattedReports: Report[] = reportsData.map((report: any) => {
-      let formattedContent = report.content;
+      // Safely handle content object
+      const reportContent = report.content && typeof report.content === 'object' 
+        ? report.content 
+        : {
+            executiveSummary: '',
+            technicalAnalysis: '',
+            contentAnalysis: '',
+            backlinksAnalysis: '',
+            recommendations: ''
+          };
       
-      if (report.content && (
-        typeof report.content.executiveSummary !== 'string' ||
-        typeof report.content.technicalAnalysis !== 'string' ||
-        typeof report.content.contentAnalysis !== 'string' ||
-        typeof report.content.backlinksAnalysis !== 'string' ||
-        typeof report.content.recommendations !== 'string'
-      )) {
-        formattedContent = {
-          executiveSummary: '',
-          technicalAnalysis: '',
-          contentAnalysis: '',
-          backlinksAnalysis: '',
-          recommendations: ''
-        };
-      }
-      
-      // Extract pageSpeedData if it exists in content
-      const pageSpeedData = formattedContent?.pageSpeedData;
+      // Extract pageSpeedData from content if it exists
+      const pageSpeedData = reportContent.pageSpeedData;
       
       return {
         id: report.id,
@@ -48,7 +41,7 @@ export const fetchReports = async () => {
         status: report.status as 'processing' | 'completed' | 'failed',
         url: report.url,
         summary: report.summary,
-        content: formattedContent,
+        content: reportContent,
         customPrompt: report.custom_prompt,
         pageSpeedData: pageSpeedData
       };
@@ -67,8 +60,8 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
   try {
     const { clientId, title, url, summary, content, customPrompt, pageSpeedData } = data;
     
-    // Check if content is properly structured
-    let validContent: any = content || {
+    // Prepare a properly structured content object
+    let validContent = content || {
       executiveSummary: '',
       technicalAnalysis: '',
       contentAnalysis: '',
@@ -113,7 +106,9 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
     console.log('Report created successfully:', newReport);
     
     // Extract pageSpeedData from content if it exists
-    const extractedPageSpeedData = newReport.content?.pageSpeedData;
+    const extractedPageSpeedData = newReport.content && typeof newReport.content === 'object'
+      ? newReport.content.pageSpeedData
+      : null;
     
     const formattedReport: Report = {
       id: newReport.id,
@@ -123,7 +118,9 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       status: newReport.status as 'processing' | 'completed' | 'failed',
       url: newReport.url,
       summary: newReport.summary,
-      content: newReport.content as Report['content'],
+      content: typeof newReport.content === 'object' 
+        ? newReport.content as Report['content']
+        : undefined,
       customPrompt: newReport.custom_prompt,
       pageSpeedData: extractedPageSpeedData
     };
@@ -149,10 +146,14 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
     
     // Handle content and pageSpeedData together
     if (data.content !== undefined || data.pageSpeedData !== undefined) {
+      // Start with existing content or empty object
       const content = { ...data.content };
+      
+      // Add pageSpeedData to content if provided
       if (data.pageSpeedData) {
         content.pageSpeedData = data.pageSpeedData;
       }
+      
       dbData.content = content;
     }
     
@@ -170,7 +171,9 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
     }
     
     // Extract pageSpeedData from content if it exists
-    const extractedPageSpeedData = updatedReport.content?.pageSpeedData;
+    const extractedPageSpeedData = updatedReport.content && typeof updatedReport.content === 'object'
+      ? updatedReport.content.pageSpeedData
+      : null;
     
     const formattedReport: Report = {
       id: updatedReport.id,
@@ -180,7 +183,9 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
       status: updatedReport.status as 'processing' | 'completed' | 'failed',
       url: updatedReport.url,
       summary: updatedReport.summary,
-      content: updatedReport.content as Report['content'],
+      content: typeof updatedReport.content === 'object' 
+        ? updatedReport.content as Report['content']
+        : undefined,
       customPrompt: updatedReport.custom_prompt,
       pageSpeedData: extractedPageSpeedData
     };

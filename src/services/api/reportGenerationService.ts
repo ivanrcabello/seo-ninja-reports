@@ -26,8 +26,8 @@ export const generateSeoReport = async (
     console.log('Iniciando generación de informe SEO para cliente:', clientId, 'URL:', url);
     console.log('¿Hay datos de PageSpeed prefetched?', !!prefetchedPageSpeedData);
 
-    // Prepare initial content object
-    const initialContent: any = {
+    // Prepare initial content object with properly typed structure
+    const initialContent = {
       executiveSummary: '',
       technicalAnalysis: '',
       contentAnalysis: '',
@@ -68,6 +68,11 @@ export const generateSeoReport = async (
     // Start the report generation process with prefetched PageSpeed data
     processReportGeneration(newReport.id, clientId, url, files, customPrompt, prefetchedPageSpeedData);
 
+    // Safely extract pageSpeedData from content if it exists
+    const extractedPageSpeedData = newReport.content && typeof newReport.content === 'object'
+      ? newReport.content.pageSpeedData
+      : null;
+
     // Return the initial report with status "processing"
     return {
       id: newReport.id,
@@ -77,9 +82,11 @@ export const generateSeoReport = async (
       status: newReport.status as 'processing' | 'completed' | 'failed',
       url: newReport.url,
       summary: newReport.summary,
-      content: newReport.content as Report['content'],
+      content: typeof newReport.content === 'object' 
+        ? newReport.content as Report['content']
+        : undefined,
       customPrompt: newReport.custom_prompt,
-      pageSpeedData: prefetchedPageSpeedData
+      pageSpeedData: extractedPageSpeedData
     };
   } catch (error: any) {
     console.error('Error al iniciar generación del informe:', error);
@@ -125,13 +132,15 @@ const processReportGeneration = async (
             .eq('id', reportId)
             .single();
           
-          if (currentReport) {
+          if (currentReport && currentReport.content) {
             // Make sure content is an object
-            const currentContent = currentReport.content || {};
+            const currentContent = typeof currentReport.content === 'object' 
+              ? currentReport.content 
+              : {};
             
             // Update the content to include PageSpeed data
             const updatedContent = {
-              ...(typeof currentContent === 'object' ? currentContent : {}),
+              ...currentContent,
               pageSpeedData: pageSpeedData
             };
             

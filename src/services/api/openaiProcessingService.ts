@@ -35,7 +35,7 @@ export const processOpenAIReport = async (
     console.log('Informe generado, actualizando base de datos...');
     console.log('Secciones disponibles:', Object.keys(sections));
     
-    // Get current report content to preserve pageSpeedData
+    // Get current report content to preserve any existing data
     const { data: currentReport } = await supabase
       .from('reports')
       .select('content')
@@ -44,26 +44,31 @@ export const processOpenAIReport = async (
     
     // Ensure content is an object
     const currentContent = currentReport?.content || {};
-    const existingPageSpeedData = currentContent?.pageSpeedData;
     
-    // Update report with generated content and preserve PageSpeed data
-    const updateData: any = {
-      content: {
-        executiveSummary: sections.executiveSummary || '',
-        technicalAnalysis: sections.technicalAnalysis || '',
-        contentAnalysis: sections.contentAnalysis || '',
-        backlinksAnalysis: sections.backlinksAnalysis || '',
-        recommendations: sections.recommendations || '',
-        localSeo: sections.localSeo || '',
-        serviceProposal: sections.serviceProposal || '',
-        pageSpeedData: existingPageSpeedData || pageSpeedData // Preserve pageSpeedData
-      },
+    // Create properly typed content object
+    const reportContent = {
+      executiveSummary: sections.executiveSummary || '',
+      technicalAnalysis: sections.technicalAnalysis || '',
+      contentAnalysis: sections.contentAnalysis || '',
+      backlinksAnalysis: sections.backlinksAnalysis || '',
+      recommendations: sections.recommendations || '',
+      localSeo: sections.localSeo || '',
+      serviceProposal: sections.serviceProposal || '',
+      // If current content has pageSpeedData, preserve it, otherwise use the new pageSpeedData
+      pageSpeedData: typeof currentContent === 'object' && currentContent.pageSpeedData 
+        ? currentContent.pageSpeedData 
+        : pageSpeedData
+    };
+    
+    console.log('Actualización de content preparada con secciones:', Object.keys(reportContent));
+    
+    // Update report with generated content
+    const updateData = {
+      content: reportContent,
       summary: sections.summary || 'Análisis SEO completo del sitio web.',
       status: 'completed',
       updated_at: new Date().toISOString()
     };
-    
-    console.log('Actualización de content preparada con secciones:', Object.keys(updateData.content));
     
     const { data: completedReport, error: updateError } = await supabase
       .from('reports')
@@ -78,10 +83,11 @@ export const processOpenAIReport = async (
     }
     
     console.log('Informe actualizado exitosamente');
-    console.log('Contenido del informe:', completedReport.content);
     
     // Extract pageSpeedData from content
-    const extractedPageSpeedData = completedReport.content?.pageSpeedData;
+    const extractedPageSpeedData = completedReport.content && typeof completedReport.content === 'object'
+      ? completedReport.content.pageSpeedData
+      : null;
     
     // Convert the database column names to camelCase for the Report interface
     const formattedCompletedReport: Report = {
@@ -92,7 +98,9 @@ export const processOpenAIReport = async (
       status: completedReport.status as 'processing' | 'completed' | 'failed',
       url: completedReport.url,
       summary: completedReport.summary,
-      content: completedReport.content as Report['content'],
+      content: typeof completedReport.content === 'object' 
+        ? completedReport.content as Report['content']
+        : undefined,
       customPrompt: completedReport.custom_prompt,
       pageSpeedData: extractedPageSpeedData
     };
