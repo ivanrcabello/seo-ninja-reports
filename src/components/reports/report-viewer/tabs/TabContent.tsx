@@ -1,168 +1,174 @@
 
 import React from 'react';
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { TabsContent } from "@/components/ui/tabs";
 import { Report } from '@/types/report.types';
-import ReportSection from '../../report-section';
+import { TabsContent } from "@/components/ui/tabs";
+import { 
+  ReportSection, 
+  FormattedContent, 
+  RecommendationsList,
+  BusinessProfileSection
+} from '../../report-section';
 import { PageSpeedTab } from '../pagespeed';
-import { Skeleton } from '@/components/ui/skeleton';
-import BusinessProfileSection from '../../report-section/BusinessProfileSection';
+import KeywordsSection from '../keywords/KeywordsSection';
+import { getKeywords } from '@/services/api/keywordsService';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
 
 interface TabContentProps {
   report: Report;
-  pageSpeedData: any;
-  isLoadingPageSpeed: boolean;
-  isEditing: boolean;
-  onEdit: (sectionKey: string, content: string) => void;
+  pageSpeedData?: any;
+  isLoadingPageSpeed?: boolean;
+  isEditing?: boolean;
+  onEdit?: (sectionKey: string, content: string) => void;
 }
 
-const TabContent: React.FC<TabContentProps> = ({
-  report,
+const TabContent: React.FC<TabContentProps> = ({ 
+  report, 
   pageSpeedData,
-  isLoadingPageSpeed,
-  isEditing,
-  onEdit
+  isLoadingPageSpeed = false,
+  isEditing = false,
+  onEdit = () => {}
 }) => {
   const { content } = report;
-  if (!content) return null;
-
-  // Check if we have PageSpeed data from either source
-  const hasPageSpeedData = pageSpeedData || content.pageSpeedData;
   
-  // Decide which data to use for PageSpeed, prioritizing newly loaded data
-  const pageSpeedDataToUse = pageSpeedData || content.pageSpeedData;
+  // Query to fetch keywords for the report
+  const { data: keywords, isLoading: isLoadingKeywords } = useQuery({
+    queryKey: ['keywords', report.id],
+    queryFn: () => getKeywords(report.id),
+    enabled: !!report.id,
+  });
   
-  // Check if we have business profile data
-  const hasBusinessProfile = content.businessProfile && !!content.businessProfile.businessUrl;
-
+  if (!content) {
+    return <p>No hay contenido disponible.</p>;
+  }
+  
+  // Use pageSpeed data from the passed props or from the report content
+  const pageSpeedDataToUse = pageSpeedData || content?.pageSpeedData;
+  
   return (
-    <ScrollArea className="h-full pr-4">
-      {content.executiveSummary && (
-        <TabsContent value="executiveSummary" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <ReportSection 
-            title="Resumen Ejecutivo" 
-            content={content.executiveSummary} 
-            sectionKey="executiveSummary"
-            onEdit={onEdit} 
-            isEditing={isEditing} 
-          />
-        </TabsContent>
-      )}
-      
-      {content.technicalAnalysis && (
-        <TabsContent value="technicalAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <ReportSection 
-            title="Análisis Técnico SEO" 
-            content={content.technicalAnalysis} 
-            sectionKey="technicalAnalysis"
-            onEdit={onEdit} 
-            isEditing={isEditing} 
-          />
-        </TabsContent>
-      )}
-      
-      <TabsContent value="keywords" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+    <div className="p-4 mt-4">
+      {/* Executive Summary Tab */}
+      <TabsContent value="executiveSummary" className="focus-visible:outline-none">
         <ReportSection 
-          title="Palabras Clave" 
-          content={content.keywords || 'No hay palabras clave definidas aún. Utilice el botón "+" para añadir palabras clave.'} 
-          sectionKey="keywords"
-          onEdit={onEdit} 
-          isEditing={isEditing} 
+          title="Resumen Ejecutivo" 
+          content={content.executiveSummary} 
+          sectionKey="executiveSummary"
+          isEditing={isEditing}
+          onEdit={onEdit}
         />
       </TabsContent>
       
-      {content.contentAnalysis && (
-        <TabsContent value="contentAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <ReportSection 
-            title="Análisis de Contenido" 
-            content={content.contentAnalysis} 
-            sectionKey="contentAnalysis"
-            onEdit={onEdit} 
-            isEditing={isEditing} 
-          />
-        </TabsContent>
-      )}
+      {/* Technical Analysis Tab */}
+      <TabsContent value="technicalAnalysis" className="focus-visible:outline-none">
+        <ReportSection 
+          title="Análisis Técnico SEO" 
+          content={content.technicalAnalysis} 
+          sectionKey="technicalAnalysis"
+          isEditing={isEditing}
+          onEdit={onEdit}
+        />
+      </TabsContent>
       
-      {content.backlinksAnalysis && (
-        <TabsContent value="backlinksAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <ReportSection 
-            title="Análisis de Backlinks" 
-            content={content.backlinksAnalysis} 
-            sectionKey="backlinksAnalysis"
-            onEdit={onEdit} 
-            isEditing={isEditing} 
-          />
-        </TabsContent>
-      )}
-      
-      {content.localSeo && (
-        <TabsContent value="localSeo" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <ReportSection 
-            title="SEO Local" 
-            content={content.localSeo} 
-            sectionKey="localSeo"
-            onEdit={onEdit} 
-            isEditing={isEditing} 
-          />
-        </TabsContent>
-      )}
-      
-      {hasBusinessProfile && (
-        <TabsContent value="businessProfile" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <BusinessProfileSection 
-            title="Ficha de Google My Business"
-            businessProfile={content.businessProfile}
-            onEdit={onEdit}
+      {/* Keywords Tab */}
+      <TabsContent value="keywords" className="focus-visible:outline-none">
+        {isLoadingKeywords ? (
+          <div className="py-12 flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <KeywordsSection 
+            keywordsContent={content.keywords} 
+            keywords={keywords || []}
+            reportId={report.id}
             isEditing={isEditing}
+            onEdit={(newContent) => onEdit('keywords', newContent)}
           />
-        </TabsContent>
-      )}
+        )}
+      </TabsContent>
       
-      {(hasPageSpeedData || isLoadingPageSpeed) && (
-        <TabsContent value="pageSpeedData" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          {isLoadingPageSpeed ? (
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-56" />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-              </div>
-            </div>
-          ) : pageSpeedDataToUse ? (
-            <PageSpeedTab data={pageSpeedDataToUse} />
-          ) : (
-            <div className="p-8 text-center">
-              <p>No hay datos de PageSpeed disponibles para este informe.</p>
-            </div>
-          )}
-        </TabsContent>
-      )}
+      {/* Content Analysis Tab */}
+      <TabsContent value="contentAnalysis" className="focus-visible:outline-none">
+        <ReportSection 
+          title="Análisis de Contenido" 
+          content={content.contentAnalysis} 
+          sectionKey="contentAnalysis"
+          isEditing={isEditing}
+          onEdit={onEdit}
+        />
+      </TabsContent>
       
-      {content.recommendations && (
-        <TabsContent value="recommendations" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+      {/* Backlinks Analysis Tab */}
+      <TabsContent value="backlinksAnalysis" className="focus-visible:outline-none">
+        <ReportSection 
+          title="Análisis de Backlinks" 
+          content={content.backlinksAnalysis} 
+          sectionKey="backlinksAnalysis"
+          isEditing={isEditing}
+          onEdit={onEdit}
+        />
+      </TabsContent>
+      
+      {/* Local SEO Tab */}
+      <TabsContent value="localSeo" className="focus-visible:outline-none">
+        <ReportSection 
+          title="SEO Local" 
+          content={content.localSeo} 
+          sectionKey="localSeo"
+          isEditing={isEditing}
+          onEdit={onEdit}
+        />
+      </TabsContent>
+      
+      {/* Business Profile Tab */}
+      <TabsContent value="businessProfile" className="focus-visible:outline-none">
+        {content.businessProfile ? (
+          <BusinessProfileSection businessProfile={content.businessProfile} view="full" />
+        ) : (
+          <p className="text-muted-foreground">No hay información de ficha de negocio disponible.</p>
+        )}
+      </TabsContent>
+      
+      {/* PageSpeed Tab */}
+      <TabsContent value="pageSpeedData" className="focus-visible:outline-none">
+        {isLoadingPageSpeed ? (
+          <div className="py-12 flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <PageSpeedTab data={pageSpeedDataToUse} />
+        )}
+      </TabsContent>
+      
+      {/* Recommendations Tab */}
+      <TabsContent value="recommendations" className="focus-visible:outline-none">
+        {content.recommendations?.includes('<recommendation>') ? (
+          <RecommendationsList 
+            content={content.recommendations} 
+            isEditing={isEditing}
+            onEdit={(newContent) => onEdit('recommendations', newContent)}
+          />
+        ) : (
           <ReportSection 
             title="Recomendaciones" 
             content={content.recommendations} 
             sectionKey="recommendations"
-            onEdit={onEdit} 
-            isEditing={isEditing} 
-            isRecommendations={true}
+            isEditing={isEditing}
+            onEdit={onEdit}
           />
-        </TabsContent>
-      )}
+        )}
+      </TabsContent>
       
-      {content.serviceProposal && (
-        <TabsContent value="serviceProposal" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <ReportSection 
-            title="Propuesta de Servicios" 
-            content={content.serviceProposal} 
-            sectionKey="serviceProposal"
-            onEdit={onEdit} 
-            isEditing={isEditing} 
-          />
-        </TabsContent>
-      )}
-    </ScrollArea>
+      {/* Service Proposal Tab */}
+      <TabsContent value="serviceProposal" className="focus-visible:outline-none">
+        <ReportSection 
+          title="Propuesta de Servicios" 
+          content={content.serviceProposal} 
+          sectionKey="serviceProposal"
+          isEditing={isEditing}
+          onEdit={onEdit}
+        />
+      </TabsContent>
+    </div>
   );
 };
 

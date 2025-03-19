@@ -1,164 +1,115 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { PenLine, ExternalLink } from 'lucide-react';
-import BlurredCard from '../../ui/BlurredCard';
-import AnimatedContainer from '../../ui/AnimatedContainer';
-import SectionIcon from './SectionIcon';
 import { BusinessProfile } from '@/types/report.types';
+import { Building, Clock, MapPin, Phone, Star, LinkIcon } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import BusinessProfileTable from '../report-viewer/business-profile/BusinessProfileTable';
 
 interface BusinessProfileSectionProps {
-  title: string;
   businessProfile: BusinessProfile;
-  onEdit?: (section: string, content: string) => void;
-  isEditing?: boolean;
-  delay?: number;
+  view?: 'card' | 'full';
 }
 
-const BusinessProfileSection: React.FC<BusinessProfileSectionProps> = ({
-  title,
+const BusinessProfileSection: React.FC<BusinessProfileSectionProps> = ({ 
   businessProfile,
-  onEdit,
-  isEditing = false,
-  delay = 0,
+  view = 'full'
 }) => {
-  if (!businessProfile || !businessProfile.businessUrl) {
+  if (!businessProfile) return null;
+  
+  if (view === 'card') {
+    // Compact view shows summary info in a card
     return (
-      <AnimatedContainer animation="fade" delay={delay} className="mt-4">
-        <BlurredCard className="p-8 text-center">
-          <h3 className="text-xl font-medium mb-2">No hay información de GMB disponible</h3>
-          <p className="text-muted-foreground">No se ha configurado un perfil de Google My Business para este informe.</p>
-        </BlurredCard>
-      </AnimatedContainer>
-    );
-  }
-
-  return (
-    <AnimatedContainer animation="fade" delay={delay} className="mt-4">
-      <BlurredCard className="glass-card bg-gradient-to-br from-background/90 via-background/80 to-background/70">
-        <CardHeader className="pb-2 flex flex-row justify-between items-center">
-          <CardTitle className="text-xl font-semibold text-gradient-primary flex items-center gap-2">
-            <SectionIcon sectionKey="businessProfile" />
-            {title}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-primary/5 pb-2">
+          <CardTitle className="text-lg font-medium flex items-center gap-2">
+            <Building className="h-5 w-5 text-primary" />
+            {businessProfile.businessName || "Perfil de Negocio"}
           </CardTitle>
-          {isEditing && onEdit && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-primary hover:text-primary hover:bg-primary/10"
-              onClick={() => onEdit('businessProfile', JSON.stringify(businessProfile))}
-            >
-              <PenLine className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
-          )}
         </CardHeader>
-        <Separator className="bg-primary/10" />
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {businessProfile.businessName && (
-                <div className="bg-primary/5 p-3 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Nombre</p>
-                  <p className="font-medium">{businessProfile.businessName}</p>
-                </div>
-              )}
-              
-              {businessProfile.businessAddress && (
-                <div className="bg-primary/5 p-3 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Dirección</p>
-                  <p className="font-medium">{businessProfile.businessAddress}</p>
-                </div>
-              )}
-              
-              {businessProfile.businessPhone && (
-                <div className="bg-primary/5 p-3 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Teléfono</p>
-                  <p className="font-medium">{businessProfile.businessPhone}</p>
-                </div>
-              )}
-              
-              {businessProfile.businessCategory && (
-                <div className="bg-primary/5 p-3 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Categoría</p>
-                  <p className="font-medium">{businessProfile.businessCategory}</p>
-                </div>
-              )}
-              
-              {businessProfile.businessRating !== undefined && (
-                <div className="bg-primary/5 p-3 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Valoración</p>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{businessProfile.businessRating}/5</p>
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <svg 
-                          key={i} 
-                          className={`w-4 h-4 ${i < Math.floor(businessProfile.businessRating || 0) ? 'text-yellow-500' : 'text-gray-300'}`} 
-                          fill="currentColor" 
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
-                    {businessProfile.businessReviewsCount && (
-                      <span className="text-sm text-muted-foreground">
-                        ({businessProfile.businessReviewsCount} reseñas)
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {businessProfile.businessWebsite && (
-                <div className="bg-primary/5 p-3 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Sitio web</p>
-                  <a 
-                    href={businessProfile.businessWebsite} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="font-medium text-primary hover:underline flex items-center gap-1"
-                  >
-                    {businessProfile.businessWebsite}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              )}
+        <CardContent className="pt-4 space-y-3">
+          {businessProfile.businessCategory && (
+            <div className="text-sm">
+              <span className="font-medium">Categoría:</span> {businessProfile.businessCategory}
             </div>
-            
-            <div className="mt-4 bg-primary/5 p-3 rounded-lg">
-              <p className="text-sm text-muted-foreground">URL de Google My Business</p>
+          )}
+          
+          {businessProfile.businessAddress && (
+            <div className="flex items-start text-sm gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <span>{businessProfile.businessAddress}</span>
+            </div>
+          )}
+          
+          {businessProfile.businessPhone && (
+            <div className="flex items-center text-sm gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span>{businessProfile.businessPhone}</span>
+            </div>
+          )}
+          
+          {businessProfile.businessRating && (
+            <div className="flex items-center text-sm gap-2">
+              <Star className="h-4 w-4 text-yellow-500" fill="currentColor" />
+              <span>
+                {businessProfile.businessRating.toFixed(1)} 
+                {businessProfile.businessReviewsCount && (
+                  <span className="text-muted-foreground text-xs ml-1">
+                    ({businessProfile.businessReviewsCount} reseñas)
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+          
+          {businessProfile.businessWebsite && (
+            <div className="flex items-center text-sm gap-2">
+              <LinkIcon className="h-4 w-4 text-muted-foreground" />
               <a 
-                href={businessProfile.businessUrl} 
+                href={businessProfile.businessWebsite} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="font-medium text-primary hover:underline flex items-center gap-1"
+                className="text-primary hover:underline truncate max-w-[200px]"
               >
-                {businessProfile.businessUrl}
-                <ExternalLink className="h-3 w-3" />
+                {businessProfile.businessWebsite}
               </a>
             </div>
-            
-            {businessProfile.businessHours && Object.keys(businessProfile.businessHours).length > 0 && (
-              <div className="mt-4 bg-primary/5 p-3 rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">Horario</p>
-                <ul className="space-y-1">
-                  {Object.entries(businessProfile.businessHours).map(([day, hours]) => (
-                    <li key={day} className="flex justify-between text-sm">
-                      <span className="font-medium">{day}</span>
-                      <span>{hours}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+          )}
         </CardContent>
-      </BlurredCard>
-    </AnimatedContainer>
+      </Card>
+    );
+  }
+  
+  // Full view shows all information in a detailed format
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <Building className="h-6 w-6 text-primary" />
+            {businessProfile.businessName || "Perfil de Google Business"}
+          </h2>
+          {businessProfile.businessCategory && (
+            <p className="text-muted-foreground mt-1">{businessProfile.businessCategory}</p>
+          )}
+        </div>
+        
+        {businessProfile.businessRating && (
+          <div className="bg-primary/10 px-4 py-2 rounded-lg flex items-center gap-2">
+            <Star className="h-5 w-5 text-yellow-500" fill="currentColor" />
+            <div>
+              <span className="font-bold text-lg">{businessProfile.businessRating.toFixed(1)}</span>
+              {businessProfile.businessReviewsCount && (
+                <span className="text-muted-foreground text-sm ml-1">
+                  ({businessProfile.businessReviewsCount} reseñas)
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <BusinessProfileTable businessProfile={businessProfile} />
+    </div>
   );
 };
 
