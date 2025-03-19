@@ -63,16 +63,38 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         }
 
         // Format reports data
-        const formattedReports: Report[] = reportsData.map((report: any) => ({
-          id: report.id,
-          clientId: report.client_id,
-          title: report.title,
-          date: report.date,
-          status: report.status,
-          url: report.url,
-          summary: report.summary,
-          content: report.content
-        }));
+        const formattedReports: Report[] = reportsData.map((report: any) => {
+          // Asegurar que content tiene la estructura correcta
+          let formattedContent = report.content;
+          
+          // Si content existe pero no tiene la estructura correcta, formatearlo
+          if (report.content && (
+            typeof report.content.executiveSummary !== 'string' ||
+            typeof report.content.technicalAnalysis !== 'string' ||
+            typeof report.content.contentAnalysis !== 'string' ||
+            typeof report.content.backlinksAnalysis !== 'string' ||
+            typeof report.content.recommendations !== 'string'
+          )) {
+            formattedContent = {
+              executiveSummary: '',
+              technicalAnalysis: '',
+              contentAnalysis: '',
+              backlinksAnalysis: '',
+              recommendations: ''
+            };
+          }
+          
+          return {
+            id: report.id,
+            clientId: report.client_id,
+            title: report.title,
+            date: report.date,
+            status: report.status as 'processing' | 'completed' | 'failed',
+            url: report.url,
+            summary: report.summary,
+            content: formattedContent
+          };
+        });
         
         setReports(formattedReports);
       } catch (error: any) {
@@ -106,7 +128,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
           url,
           summary,
           content,
-          status: 'completed'
+          status: 'completed' as 'processing' | 'completed' | 'failed'
         })
         .select()
         .single();
@@ -120,10 +142,10 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         clientId: newReport.client_id,
         title: newReport.title,
         date: newReport.date,
-        status: newReport.status,
+        status: newReport.status as 'processing' | 'completed' | 'failed',
         url: newReport.url,
         summary: newReport.summary,
-        content: newReport.content
+        content: newReport.content as Report['content']
       };
       
       setReports(prevReports => [formattedReport, ...prevReports]);
@@ -164,10 +186,10 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         clientId: updatedReport.client_id,
         title: updatedReport.title,
         date: updatedReport.date,
-        status: updatedReport.status,
+        status: updatedReport.status as 'processing' | 'completed' | 'failed',
         url: updatedReport.url,
         summary: updatedReport.summary,
-        content: updatedReport.content
+        content: updatedReport.content as Report['content']
       };
       
       setReports(prevReports => 
@@ -213,7 +235,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
           client_id: clientId,
           title: `Análisis SEO - ${new URL(url).hostname}`,
           url,
-          status: 'processing'
+          status: 'processing' as 'processing' | 'completed' | 'failed'
         })
         .select()
         .single();
@@ -227,7 +249,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         clientId: newReport.client_id,
         title: newReport.title,
         date: newReport.date,
-        status: newReport.status as 'processing',
+        status: newReport.status as 'processing' | 'completed' | 'failed',
         url: newReport.url
       };
       
@@ -253,7 +275,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       // Simulate processing time (replace with actual processing later)
       await new Promise(resolve => setTimeout(resolve, 5000));
       
-      // Update with generated content
+      // Crear el contenido del informe con la estructura correcta
       const demoContent = {
         executiveSummary: 'El sitio web demuestra buenos fundamentos técnicos con buena velocidad de carga y capacidad de respuesta móvil. La calidad del contenido es alta pero la cantidad podría mejorarse, especialmente para apuntar a palabras clave de cola larga. El perfil de backlinks muestra espacio para crecer.',
         technicalAnalysis: 'Puntuación móvil: 85/100\nPuntuación de escritorio: 92/100\nEl sitio se carga en 2,4 segundos en promedio.\nNo se detectaron errores de rastreo importantes.\n4 advertencias menores de contenido mixto en las páginas del blog.',
@@ -265,7 +287,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       const { data: completedReport, error: updateError } = await supabase
         .from('reports')
         .update({
-          status: 'completed',
+          status: 'completed' as 'processing' | 'completed' | 'failed',
           summary: 'El análisis muestra buenos fundamentos técnicos pero oportunidades de mejora en el contenido.',
           content: demoContent
         })
@@ -282,10 +304,10 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         clientId: completedReport.client_id,
         title: completedReport.title,
         date: completedReport.date,
-        status: completedReport.status as 'completed',
+        status: completedReport.status as 'processing' | 'completed' | 'failed',
         url: completedReport.url,
         summary: completedReport.summary,
-        content: completedReport.content
+        content: completedReport.content as Report['content']
       };
       
       setReports(prevReports => 
@@ -302,7 +324,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         if (error.reportId) {
           await supabase
             .from('reports')
-            .update({ status: 'failed' })
+            .update({ status: 'failed' as 'processing' | 'completed' | 'failed' })
             .eq('id', error.reportId);
             
           setReports(prevReports => 

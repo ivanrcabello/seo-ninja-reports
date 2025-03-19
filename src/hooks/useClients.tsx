@@ -52,11 +52,11 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
           throw error;
         }
 
-        // Get reports count for each client
-        const { data: reportsCountData, error: reportsError } = await supabase
+        // Get reports count for each client using count aggregate
+        const { data: reportsData, error: reportsError } = await supabase
           .from('reports')
           .select('client_id, count')
-          .select('client_id, count(*)', { count: 'exact' })
+          .count()
           .group('client_id');
 
         if (reportsError) {
@@ -65,8 +65,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
 
         // Create a mapping of client_id to report count
         const reportCountMap: Record<string, number> = {};
-        if (reportsCountData) {
-          reportsCountData.forEach((item: any) => {
+        if (reportsData) {
+          reportsData.forEach((item: any) => {
             reportCountMap[item.client_id] = Number(item.count);
           });
         }
@@ -101,12 +101,14 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { name, website, industry } = data;
       
+      // Añadir el user_id al insertar cliente
       const { data: newClient, error } = await supabase
         .from('clients')
         .insert({
           name,
           website,
-          industry
+          industry,
+          user_id: user?.id // Añadir el ID del usuario actual
         })
         .select()
         .single();
