@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +29,15 @@ const PublicReport = () => {
         
         if (error) throw error;
         
+        // Process the content to ensure it has the correct structure
+        const reportContent = data.content ? {
+          executiveSummary: data.content.executiveSummary || '',
+          technicalAnalysis: data.content.technicalAnalysis || '',
+          contentAnalysis: data.content.contentAnalysis || '',
+          backlinksAnalysis: data.content.backlinksAnalysis || '',
+          recommendations: data.content.recommendations || ''
+        } : undefined;
+        
         const formattedReport: Report = {
           id: data.id,
           clientId: data.client_id,
@@ -38,7 +46,7 @@ const PublicReport = () => {
           status: data.status as 'processing' | 'completed' | 'failed',
           url: data.url,
           summary: data.summary,
-          content: data.content,
+          content: reportContent,
           customPrompt: data.custom_prompt
         };
         
