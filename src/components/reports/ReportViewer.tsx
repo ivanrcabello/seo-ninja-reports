@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BlurredCard from '../ui/BlurredCard';
 import { Report } from '@/types/report.types';
 import useReports from '@/hooks/useReports';
 import { toast } from 'sonner';
-import ReportSection from './ReportSection';
+import ReportSection from './report-section';
 import ReportHeader from './ReportHeader';
 import ReportEditDialog from './ReportEditDialog';
 
