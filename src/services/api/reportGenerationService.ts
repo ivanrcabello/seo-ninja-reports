@@ -262,7 +262,12 @@ export const retryFailedReport = async (reportId: string): Promise<boolean> => {
     await updateReportStatus(reportId, 'processing', 'Reintentando generación de informe...');
     
     // Get PageSpeed data if available
-    const pageSpeedData = report.content?.pageSpeedData || null;
+    let pageSpeedData = null;
+    
+    // Check if content exists and is an object before trying to access pageSpeedData
+    if (report.content && typeof report.content === 'object') {
+      pageSpeedData = (report.content as any).pageSpeedData || null;
+    }
     
     // Process with OpenAI
     await processOpenAIReport(

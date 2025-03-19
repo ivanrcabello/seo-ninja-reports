@@ -54,7 +54,16 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
     <>
       <AnimatedContainer animation="slide-down" className="mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <ReportDetailHeader client={client} />
+          <ReportDetailHeader 
+            title={report.title}
+            date={report.date}
+            url={report.url || ''}
+            status={report.status}
+            clientId={report.clientId}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            reportId={report.id}
+          />
           <ReportDetailActions onDeleteReport={handleDeleteReport} />
         </div>
       </AnimatedContainer>
