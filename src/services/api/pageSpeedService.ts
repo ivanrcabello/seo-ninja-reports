@@ -93,7 +93,8 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       
       // Save PageSpeed data to dedicated table if reportId is provided
       if (reportId) {
-        await savePageSpeedData(reportId, url, results, { desktop: desktopData, mobile: mobileData });
+        const rawData = { desktop: desktopData, mobile: mobileData };
+        await savePageSpeedData(reportId, url, results, rawData);
       }
       
       return results;
@@ -127,42 +128,91 @@ export const savePageSpeedData = async (
   try {
     console.log('Guardando datos de PageSpeed en la base de datos para el reporte:', reportId);
     
-    const { data, error } = await supabase
+    // Check if a record already exists for this report
+    const { data: existing, error: checkError } = await supabase
       .from('pagespeed_data')
-      .insert({
-        report_id: reportId,
-        url: url,
-        desktop_performance: results.desktop.performance,
-        desktop_accessibility: results.desktop.accessibility,
-        desktop_best_practices: results.desktop.bestPractices,
-        desktop_seo: results.desktop.seo,
-        desktop_first_contentful_paint: results.desktop.firstContentfulPaint,
-        desktop_speed_index: results.desktop.speedIndex,
-        desktop_largest_contentful_paint: results.desktop.largestContentfulPaint,
-        desktop_time_to_interactive: results.desktop.timeToInteractive,
-        desktop_total_blocking_time: results.desktop.totalBlockingTime,
-        desktop_cumulative_layout_shift: results.desktop.cumulativeLayoutShift,
-        mobile_performance: results.mobile.performance,
-        mobile_accessibility: results.mobile.accessibility,
-        mobile_best_practices: results.mobile.bestPractices,
-        mobile_seo: results.mobile.seo,
-        mobile_first_contentful_paint: results.mobile.firstContentfulPaint,
-        mobile_speed_index: results.mobile.speedIndex,
-        mobile_largest_contentful_paint: results.mobile.largestContentfulPaint,
-        mobile_time_to_interactive: results.mobile.timeToInteractive,
-        mobile_total_blocking_time: results.mobile.totalBlockingTime,
-        mobile_cumulative_layout_shift: results.mobile.cumulativeLayoutShift,
-        raw_data: rawData || null
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('report_id', reportId)
+      .maybeSingle();
+    
+    if (checkError) {
+      console.error('Error al verificar existencia de datos de PageSpeed:', checkError);
+    }
+    
+    let data;
+    let error;
+    
+    // Create the PageSpeed data object
+    const pageSpeedData = {
+      report_id: reportId,
+      url: url,
+      desktop_performance: results.desktop.performance || 0,
+      desktop_accessibility: results.desktop.accessibility || 0,
+      desktop_best_practices: results.desktop.bestPractices || 0,
+      desktop_seo: results.desktop.seo || 0,
+      desktop_first_contentful_paint: results.desktop.firstContentfulPaint || null,
+      desktop_speed_index: results.desktop.speedIndex || null,
+      desktop_largest_contentful_paint: results.desktop.largestContentfulPaint || null,
+      desktop_time_to_interactive: results.desktop.timeToInteractive || null,
+      desktop_total_blocking_time: results.desktop.totalBlockingTime || null,
+      desktop_cumulative_layout_shift: results.desktop.cumulativeLayoutShift || null,
+      mobile_performance: results.mobile.performance || 0,
+      mobile_accessibility: results.mobile.accessibility || 0,
+      mobile_best_practices: results.mobile.bestPractices || 0,
+      mobile_seo: results.mobile.seo || 0,
+      mobile_first_contentful_paint: results.mobile.firstContentfulPaint || null,
+      mobile_speed_index: results.mobile.speedIndex || null,
+      mobile_largest_contentful_paint: results.mobile.largestContentfulPaint || null,
+      mobile_time_to_interactive: results.mobile.timeToInteractive || null,
+      mobile_total_blocking_time: results.mobile.totalBlockingTime || null,
+      mobile_cumulative_layout_shift: results.mobile.cumulativeLayoutShift || null,
+      raw_data: rawData || null
+    };
+    
+    // If a record exists, update it; otherwise, insert a new one
+    if (existing?.id) {
+      const result = await supabase
+        .from('pagespeed_data')
+        .update(pageSpeedData)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      
+      data = result.data;
+      error = result.error;
+    } else {
+      const result = await supabase
+        .from('pagespeed_data')
+        .insert(pageSpeedData)
+        .select()
+        .single();
+      
+      data = result.data;
+      error = result.error;
+    }
     
     if (error) {
       console.error('Error al guardar datos de PageSpeed:', error);
       throw error;
     }
     
-    console.log('Datos de PageSpeed guardados correctamente con ID:', data.id);
+    console.log('Datos de PageSpeed guardados correctamente con ID:', data?.id);
+    
+    // Also update the report's content to include the PageSpeed data for immediate use
+    const { error: reportUpdateError } = await supabase
+      .from('reports')
+      .update({
+        content: supabase.rpc('jsonb_set_nested', {
+          json_data: JSON.stringify({ pageSpeedData: results }),
+          target: 'content'
+        })
+      })
+      .eq('id', reportId);
+    
+    if (reportUpdateError) {
+      console.error('Error al actualizar el informe con datos de PageSpeed:', reportUpdateError);
+    }
+    
     return data;
   } catch (error) {
     console.error('Error guardando datos de PageSpeed:', error);

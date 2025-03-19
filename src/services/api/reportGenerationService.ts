@@ -34,7 +34,9 @@ export const generateSeoReport = async (
       backlinksAnalysis: '',
       recommendations: '',
       localSeo: '',
-      serviceProposal: ''
+      serviceProposal: '',
+      // Include prefetched PageSpeed data if available
+      pageSpeedData: prefetchedPageSpeedData || null
     };
 
     // Create a new report with status "processing"
@@ -47,7 +49,7 @@ export const generateSeoReport = async (
         status: 'processing',
         date: new Date().toISOString(),
         summary: 'Generating report...',
-        content: initialContent as any,
+        content: initialContent,
         custom_prompt: customPrompt || ''
       })
       .select()

@@ -32,13 +32,20 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
       return;
     }
 
+    // Add protocol if missing
+    let processedUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      processedUrl = 'https://' + url;
+      setUrl(processedUrl);
+    }
+
     // If Google API key is available, try to fetch PageSpeed data
     if (hasGoogleApiKey) {
       setIsLoadingPageSpeed(true);
       try {
         // We don't have reportId at this point, so we'll just fetch the data
         // and the reportId will be assigned when creating the report
-        const pageSpeedResult = await fetchPageSpeedData(url);
+        const pageSpeedResult = await fetchPageSpeedData(processedUrl);
         
         // Mark the pageSpeedData as not saved to db yet
         if (pageSpeedResult) {

@@ -42,18 +42,6 @@ export const processOpenAIReport = async (
     console.log('Informe generado, actualizando base de datos...');
     console.log('Secciones disponibles:', Object.keys(sections));
     
-    // Get current report content to preserve any existing data
-    const { data: currentReport } = await supabase
-      .from('reports')
-      .select('content')
-      .eq('id', reportId)
-      .single();
-    
-    // Ensure content is an object
-    const currentContent = currentReport?.content ? 
-      (typeof currentReport.content === 'object' ? currentReport.content : {}) : 
-      {};
-    
     // Create properly typed content object
     const reportContent = {
       executiveSummary: sections.executiveSummary || '',
@@ -62,22 +50,22 @@ export const processOpenAIReport = async (
       backlinksAnalysis: sections.backlinksAnalysis || '',
       recommendations: sections.recommendations || '',
       localSeo: sections.localSeo || '',
-      serviceProposal: sections.serviceProposal || ''
+      serviceProposal: sections.serviceProposal || '',
+      // Add pageSpeedData explicitly to make sure it's saved with the report content
+      pageSpeedData: pageSpeedData || null
     };
     
     console.log('Actualización de content preparada con secciones:', Object.keys(reportContent));
     
     // Update report with generated content
-    const updateData = {
-      content: reportContent as any,
-      summary: sections.summary || 'Análisis SEO completo del sitio web.',
-      status: 'completed',
-      updated_at: new Date().toISOString()
-    };
-    
     const { data: completedReport, error: updateError } = await supabase
       .from('reports')
-      .update(updateData)
+      .update({
+        content: reportContent,
+        summary: sections.summary || 'Análisis SEO completo del sitio web.',
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      })
       .eq('id', reportId)
       .select()
       .single();

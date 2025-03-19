@@ -16,8 +16,8 @@ export interface Report {
     recommendations: string;
     serviceProposal?: string;
     pageSpeedData?: {
-      desktop?: PageSpeedResult;
-      mobile?: PageSpeedResult;
+      desktop: PageSpeedResult;
+      mobile: PageSpeedResult;
     };
   };
   customPrompt?: string;
