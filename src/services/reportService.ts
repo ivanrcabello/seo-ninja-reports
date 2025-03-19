@@ -1,5 +1,4 @@
 
-
 import { Report } from '@/types/report.types';
 // Export the CRUD operations
 export { 
@@ -32,4 +31,3 @@ export {
   processOpenAIReport,
   markReportAsFailed
 } from './api/openaiProcessingService';
-
