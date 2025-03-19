@@ -27,7 +27,7 @@ const PublicReport = () => {
           throw new Error('ID de informe no especificado');
         }
         
-        // Fetch the report - using anon access without auth
+        // Fetch the report using the public anon access
         const { data, error: fetchError } = await supabase
           .from('reports')
           .select('*, clients(name, website)')
