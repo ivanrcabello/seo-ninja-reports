@@ -1,28 +1,30 @@
 
 import React from 'react';
+import { getScoreColorClass, getScoreBackgroundClass } from './utils';
 
 interface ScoreCardProps {
-  label: string;
-  score?: number;
-  icon: React.ReactNode;
+  title: string;
+  score: number | undefined;
+  description: string;
 }
 
-const ScoreCard: React.FC<ScoreCardProps> = ({ label, score, icon }) => {
-  const getScoreColor = (score: number | undefined) => {
-    if (score === undefined || score === null) return 'bg-gray-100 text-gray-500';
-    if (score >= 90) return 'bg-green-100 text-green-700';
-    if (score >= 50) return 'bg-yellow-100 text-yellow-700';
-    return 'bg-red-100 text-red-700';
-  };
-
+const ScoreCard: React.FC<ScoreCardProps> = ({ title, score, description }) => {
+  const displayScore = score !== undefined ? score : 0;
+  const colorClass = getScoreColorClass(score);
+  const bgClass = getScoreBackgroundClass(score);
+  
   return (
-    <div className="flex flex-col items-center p-3 rounded-lg bg-card border">
-      <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${getScoreColor(score)}`}>
-        <span className="text-lg font-bold">{score === undefined || score === null ? '—' : Math.round(score)}</span>
+    <div className="flex flex-col gap-1 p-3 rounded-lg bg-muted/30 border border-border/50">
+      <div className="flex justify-between items-center">
+        <h4 className="text-sm font-medium">{title}</h4>
+        <div className={`text-xl font-bold ${colorClass}`}>{displayScore}</div>
       </div>
-      <div className="flex items-center gap-1 text-xs text-center font-medium text-muted-foreground">
-        {icon}
-        <span>{label}</span>
+      <p className="text-xs text-muted-foreground">{description}</p>
+      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+        <div 
+          className={`h-1.5 rounded-full ${colorClass.replace('text-', 'bg-')}`} 
+          style={{ width: `${displayScore}%` }}
+        ></div>
       </div>
     </div>
   );

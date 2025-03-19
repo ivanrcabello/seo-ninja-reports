@@ -11,7 +11,7 @@ interface ReportTabsProps {
   pageSpeedData?: any;
   isLoadingPageSpeed?: boolean;
   isEditing?: boolean;
-  onEdit?: (sectionKey: string) => void;
+  onEdit?: (sectionKey: string, content: string) => void;
 }
 
 const ReportTabs: React.FC<ReportTabsProps> = ({ 

@@ -12,7 +12,7 @@ interface TabContentProps {
   pageSpeedData: any;
   isLoadingPageSpeed: boolean;
   isEditing: boolean;
-  onEdit: (sectionKey: string) => void;
+  onEdit: (sectionKey: string, content: string) => void;
 }
 
 const TabContent: React.FC<TabContentProps> = ({
@@ -39,7 +39,7 @@ const TabContent: React.FC<TabContentProps> = ({
             title="Resumen Ejecutivo" 
             content={content.executiveSummary} 
             sectionKey="executiveSummary"
-            onEdit={() => onEdit("executiveSummary")} 
+            onEdit={onEdit} 
             isEditing={isEditing} 
           />
         </TabsContent>
@@ -51,7 +51,7 @@ const TabContent: React.FC<TabContentProps> = ({
             title="Análisis Técnico SEO" 
             content={content.technicalAnalysis} 
             sectionKey="technicalAnalysis"
-            onEdit={() => onEdit("technicalAnalysis")} 
+            onEdit={onEdit} 
             isEditing={isEditing} 
           />
         </TabsContent>
@@ -63,7 +63,7 @@ const TabContent: React.FC<TabContentProps> = ({
             title="Palabras Clave" 
             content={content.keywords} 
             sectionKey="keywords"
-            onEdit={() => onEdit("keywords")} 
+            onEdit={onEdit} 
             isEditing={isEditing} 
           />
         </TabsContent>
@@ -75,7 +75,7 @@ const TabContent: React.FC<TabContentProps> = ({
             title="Análisis de Contenido" 
             content={content.contentAnalysis} 
             sectionKey="contentAnalysis"
-            onEdit={() => onEdit("contentAnalysis")} 
+            onEdit={onEdit} 
             isEditing={isEditing} 
           />
         </TabsContent>
@@ -87,7 +87,7 @@ const TabContent: React.FC<TabContentProps> = ({
             title="Análisis de Backlinks" 
             content={content.backlinksAnalysis} 
             sectionKey="backlinksAnalysis"
-            onEdit={() => onEdit("backlinksAnalysis")} 
+            onEdit={onEdit} 
             isEditing={isEditing} 
           />
         </TabsContent>
@@ -99,7 +99,7 @@ const TabContent: React.FC<TabContentProps> = ({
             title="SEO Local" 
             content={content.localSeo} 
             sectionKey="localSeo"
-            onEdit={() => onEdit("localSeo")} 
+            onEdit={onEdit} 
             isEditing={isEditing} 
           />
         </TabsContent>
@@ -131,7 +131,7 @@ const TabContent: React.FC<TabContentProps> = ({
             title="Recomendaciones" 
             content={content.recommendations} 
             sectionKey="recommendations"
-            onEdit={() => onEdit("recommendations")} 
+            onEdit={onEdit} 
             isEditing={isEditing} 
             isRecommendations={true}
           />
@@ -144,7 +144,7 @@ const TabContent: React.FC<TabContentProps> = ({
             title="Propuesta de Servicios" 
             content={content.serviceProposal} 
             sectionKey="serviceProposal"
-            onEdit={() => onEdit("serviceProposal")} 
+            onEdit={onEdit} 
             isEditing={isEditing} 
           />
         </TabsContent>
