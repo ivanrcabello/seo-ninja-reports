@@ -16,8 +16,30 @@ export interface Report {
     recommendations: string;
     serviceProposal?: string;
     pageSpeedData?: {
-      desktop: PageSpeedResult;
-      mobile: PageSpeedResult;
+      desktop: {
+        performance?: number;
+        accessibility?: number;
+        bestPractices?: number;
+        seo?: number;
+        firstContentfulPaint?: number;
+        speedIndex?: number;
+        largestContentfulPaint?: number;
+        timeToInteractive?: number;
+        totalBlockingTime?: number;
+        cumulativeLayoutShift?: number;
+      };
+      mobile: {
+        performance?: number;
+        accessibility?: number;
+        bestPractices?: number;
+        seo?: number;
+        firstContentfulPaint?: number;
+        speedIndex?: number;
+        largestContentfulPaint?: number;
+        timeToInteractive?: number;
+        totalBlockingTime?: number;
+        cumulativeLayoutShift?: number;
+      };
     };
   };
   customPrompt?: string;

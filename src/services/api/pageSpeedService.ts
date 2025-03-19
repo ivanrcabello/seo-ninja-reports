@@ -198,7 +198,6 @@ export const savePageSpeedData = async (
     
     console.log('Datos de PageSpeed guardados correctamente con ID:', data?.id);
     
-    // Also update the report's content to include the PageSpeed data for immediate use
     // First, get the current content
     const { data: reportData, error: selectError } = await supabase
       .from('reports')
@@ -215,13 +214,41 @@ export const savePageSpeedData = async (
       ? reportData.content 
       : {};
     
+    // Convert PageSpeed results to a format compatible with Json type (plain objects)
+    const jsonCompatiblePageSpeedData = {
+      desktop: {
+        performance: results.desktop.performance,
+        accessibility: results.desktop.accessibility,
+        bestPractices: results.desktop.bestPractices,
+        seo: results.desktop.seo,
+        firstContentfulPaint: results.desktop.firstContentfulPaint,
+        speedIndex: results.desktop.speedIndex,
+        largestContentfulPaint: results.desktop.largestContentfulPaint,
+        timeToInteractive: results.desktop.timeToInteractive,
+        totalBlockingTime: results.desktop.totalBlockingTime,
+        cumulativeLayoutShift: results.desktop.cumulativeLayoutShift
+      },
+      mobile: {
+        performance: results.mobile.performance,
+        accessibility: results.mobile.accessibility,
+        bestPractices: results.mobile.bestPractices,
+        seo: results.mobile.seo,
+        firstContentfulPaint: results.mobile.firstContentfulPaint,
+        speedIndex: results.mobile.speedIndex,
+        largestContentfulPaint: results.mobile.largestContentfulPaint,
+        timeToInteractive: results.mobile.timeToInteractive,
+        totalBlockingTime: results.mobile.totalBlockingTime,
+        cumulativeLayoutShift: results.mobile.cumulativeLayoutShift
+      }
+    };
+    
     // Now update with the PageSpeed data
     const { error: reportUpdateError } = await supabase
       .from('reports')
       .update({
         content: {
           ...currentContent,
-          pageSpeedData: results
+          pageSpeedData: jsonCompatiblePageSpeedData
         }
       })
       .eq('id', reportId);
