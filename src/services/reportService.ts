@@ -35,3 +35,10 @@ export {
   markReportAsFailed,
   checkAndFixStuckReports
 } from './api/openaiProcessingService';
+
+// Export Business Profile service
+export {
+  saveBusinessProfile,
+  getBusinessProfile,
+  extractBusinessInfo
+} from './api/businessProfileService';

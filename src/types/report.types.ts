@@ -8,6 +8,7 @@ export interface Report {
   url?: string;
   status: "processing" | "completed" | "failed";
   notes?: string;
+  hasBusinessProfile?: boolean;
   content?: {
     executiveSummary: string;
     technicalAnalysis: string;
@@ -43,6 +44,7 @@ export interface Report {
         cumulativeLayoutShift?: number;
       };
     };
+    businessProfile?: BusinessProfile;
   };
   customPrompt?: string;
 }
@@ -67,4 +69,20 @@ export interface Keyword {
   searchVolume?: number;
   difficulty?: number;
   createdAt: string;
+}
+
+export interface BusinessProfile {
+  id?: string;
+  reportId?: string;
+  businessUrl: string;
+  businessName?: string;
+  businessAddress?: string;
+  businessPhone?: string;
+  businessCategory?: string;
+  businessRating?: number;
+  businessReviewsCount?: number;
+  businessWebsite?: string;
+  businessHours?: Record<string, string>;
+  createdAt?: string;
+  updatedAt?: string;
 }

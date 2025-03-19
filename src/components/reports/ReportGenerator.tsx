@@ -11,6 +11,8 @@ import ReportGeneratorStep1 from './report-steps/ReportGeneratorStep1';
 import ReportGeneratorStep2 from './report-steps/ReportGeneratorStep2';
 import ReportGeneratorStep3 from './report-steps/ReportGeneratorStep3';
 import ReportGeneratorStep4 from './report-steps/ReportGeneratorStep4';
+import BusinessUrlInput from './report-steps/BusinessUrlInput';
+import { BusinessProfile } from '@/types/report.types';
 
 interface ReportGeneratorProps {
   clientId: string;
@@ -33,6 +35,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   });
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [notes, setNotes] = useState('');
+  const [businessUrl, setBusinessUrl] = useState('');
+  const [businessProfile, setBusinessProfile] = useState<Partial<BusinessProfile> | null>(null);
   
   const { generateReport } = useReports();
   const { getClient } = useClients();
@@ -62,6 +66,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       console.log('Using PageSpeed data:', pageSpeedData);
       console.log('Keywords:', keywords);
       console.log('Notes:', notes);
+      console.log('Business Profile:', businessProfile);
       
       // Format keywords for database storage
       const formattedKeywords = keywords.map(k => ({
@@ -78,7 +83,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         customPrompt, 
         pageSpeedData, 
         formattedKeywords,
-        notes
+        notes,
+        businessProfile
       );
       
       console.log('Report generated successfully:', report);
@@ -148,17 +154,28 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         )}
         
         {step === 2 && (
-          <ReportGeneratorStep2
-            files={files}
-            setFiles={setFiles}
-            customPrompt={customPrompt}
-            setCustomPrompt={setCustomPrompt}
-            hasGoogleApiKey={hasGoogleApiKey}
-            pageSpeedDataFetched={!!pageSpeedData}
-            isLoading={isLoading}
-            previousStep={goToPreviousStep}
-            nextStep={goToNextStep}
-          />
+          <>
+            <ReportGeneratorStep2
+              files={files}
+              setFiles={setFiles}
+              customPrompt={customPrompt}
+              setCustomPrompt={setCustomPrompt}
+              hasGoogleApiKey={hasGoogleApiKey}
+              pageSpeedDataFetched={!!pageSpeedData}
+              isLoading={isLoading}
+              previousStep={goToPreviousStep}
+              nextStep={goToNextStep}
+            />
+            
+            <div className="mt-6 border-t border-border pt-6">
+              <BusinessUrlInput 
+                businessUrl={businessUrl}
+                setBusinessUrl={setBusinessUrl}
+                businessProfile={businessProfile}
+                setBusinessProfile={setBusinessProfile}
+              />
+            </div>
+          </>
         )}
         
         {step === 3 && (

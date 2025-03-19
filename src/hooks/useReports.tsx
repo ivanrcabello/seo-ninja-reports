@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Report } from '@/types/report.types';
+import { Report, BusinessProfile } from '@/types/report.types';
 import useAuth from './useAuth';
 import { 
   fetchReports, 
@@ -9,7 +9,8 @@ import {
   deleteReportById,
   generateSeoReport,
   retryFailedReport,
-  checkAndFixStuckReports
+  checkAndFixStuckReports,
+  saveBusinessProfile
 } from '@/services/reportService';
 
 interface Keyword {
@@ -33,7 +34,8 @@ interface ReportsContextType {
     customPrompt?: string, 
     pageSpeedData?: any,
     keywords?: Keyword[],
-    notes?: string
+    notes?: string,
+    businessProfile?: Partial<BusinessProfile> | null
   ) => Promise<Report>;
   retryReport: (id: string) => Promise<boolean>;
   checkForStuckReports: () => Promise<void>;
@@ -124,7 +126,8 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     customPrompt?: string, 
     pageSpeedData?: any,
     keywords?: Keyword[],
-    notes?: string
+    notes?: string,
+    businessProfile?: Partial<BusinessProfile> | null
   ) => {
     const report = await generateSeoReport(
       clientId, 
@@ -135,6 +138,30 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       keywords,
       notes
     );
+    
+    // Si tenemos información de perfil de negocio, la guardamos después
+    // de que se haya creado el informe
+    if (businessProfile && report.id) {
+      try {
+        await saveBusinessProfile(report.id, {
+          businessUrl: businessProfile.businessUrl || '',
+          businessName: businessProfile.businessName,
+          businessAddress: businessProfile.businessAddress,
+          businessPhone: businessProfile.businessPhone,
+          businessCategory: businessProfile.businessCategory,
+          businessRating: businessProfile.businessRating,
+          businessReviewsCount: businessProfile.businessReviewsCount,
+          businessWebsite: businessProfile.businessWebsite,
+          businessHours: businessProfile.businessHours
+        });
+        
+        // Actualizar el reporte en el estado para incluir hasBusinessProfile
+        report.hasBusinessProfile = true;
+      } catch (error) {
+        console.error('Error al guardar perfil de negocio:', error);
+        // No detenemos la generación del informe si falla el guardado del perfil
+      }
+    }
     
     // Update reports state based on status
     if (report.status === 'processing') {

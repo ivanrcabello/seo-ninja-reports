@@ -9,6 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      business_profiles: {
+        Row: {
+          business_address: string | null
+          business_category: string | null
+          business_hours: Json | null
+          business_name: string | null
+          business_phone: string | null
+          business_rating: number | null
+          business_reviews_count: number | null
+          business_url: string
+          business_website: string | null
+          created_at: string | null
+          id: string
+          report_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_address?: string | null
+          business_category?: string | null
+          business_hours?: Json | null
+          business_name?: string | null
+          business_phone?: string | null
+          business_rating?: number | null
+          business_reviews_count?: number | null
+          business_url: string
+          business_website?: string | null
+          created_at?: string | null
+          id?: string
+          report_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_address?: string | null
+          business_category?: string | null
+          business_hours?: Json | null
+          business_name?: string | null
+          business_phone?: string | null
+          business_rating?: number | null
+          business_reviews_count?: number | null
+          business_url?: string
+          business_website?: string | null
+          created_at?: string | null
+          id?: string
+          report_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_profiles_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "public_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_profiles_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           client_id: string
@@ -252,6 +315,7 @@ export type Database = {
           created_at: string
           custom_prompt: string | null
           date: string
+          has_business_profile: boolean | null
           id: string
           notes: string | null
           status: string
@@ -266,6 +330,7 @@ export type Database = {
           created_at?: string
           custom_prompt?: string | null
           date?: string
+          has_business_profile?: boolean | null
           id?: string
           notes?: string | null
           status?: string
@@ -280,6 +345,7 @@ export type Database = {
           created_at?: string
           custom_prompt?: string | null
           date?: string
+          has_business_profile?: boolean | null
           id?: string
           notes?: string | null
           status?: string
