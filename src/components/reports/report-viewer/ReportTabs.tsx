@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Report } from '@/types/report.types';
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -6,12 +5,15 @@ import ReportSection from '../report-section';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageSpeedTab from './PageSpeedTab';
 import { FileBarChart, Layers, SearchCode, KeyRound, FileText, Globe, Gauge, CheckCircle2, LightbulbIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReportTabsProps {
   report: Report;
+  pageSpeedData?: any;
+  isLoadingPageSpeed?: boolean;
 }
 
-const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
+const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadingPageSpeed = false }) => {
   const { content } = report;
 
   if (!content) {
@@ -31,6 +33,12 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
     if (content?.serviceProposal) return "serviceProposal";
     return "executiveSummary";
   };
+
+  // Verificamos si hay datos de PageSpeed, ya sea de la base de datos o del contenido del informe
+  const hasPageSpeedData = pageSpeedData || content?.pageSpeedData;
+  
+  // Decidir qué datos usar para PageSpeed, priorizando los datos recién cargados
+  const pageSpeedDataToUse = pageSpeedData || content?.pageSpeedData;
 
   return (
     <Tabs defaultValue={getDefaultTab()} className="w-full">
@@ -73,7 +81,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
               <span>SEO Local</span>
             </TabsTrigger>
           )}
-          {content?.pageSpeedData && (
+          {(hasPageSpeedData || isLoadingPageSpeed) && (
             <TabsTrigger value="pageSpeedData" className="flex items-center gap-1 py-2">
               <Gauge className="h-4 w-4" />
               <span>PageSpeed</span>
@@ -167,9 +175,23 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
           </TabsContent>
         )}
         
-        {content?.pageSpeedData && (
+        {(hasPageSpeedData || isLoadingPageSpeed) && (
           <TabsContent value="pageSpeedData" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-            <PageSpeedTab data={content.pageSpeedData} />
+            {isLoadingPageSpeed ? (
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-56" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              </div>
+            ) : pageSpeedDataToUse ? (
+              <PageSpeedTab data={pageSpeedDataToUse} />
+            ) : (
+              <div className="p-8 text-center">
+                <p>No hay datos de PageSpeed disponibles para este informe.</p>
+              </div>
+            )}
           </TabsContent>
         )}
         
