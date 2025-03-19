@@ -13,3 +13,10 @@ export { generateSeoReport } from './api/reportGenerationService';
 
 // Export PageSpeed service
 export { fetchPageSpeedData } from './api/pageSpeedService';
+
+// Export file handling functionality
+export { 
+  uploadReportFiles,
+  getFilePublicUrl,
+  deleteReportFiles
+} from './api/reportFileService';

@@ -4,6 +4,8 @@ import { Report } from '@/types/report.types';
 import { toast } from 'sonner';
 import { fetchPageSpeedData, formatPageSpeedData } from './pageSpeedService';
 import { generateOpenAIReport } from './openaiService';
+import { uploadReportFiles } from './reportFileService';
+import { handleServiceError } from './baseService';
 
 /**
  * Generates an SEO report using OpenAI
@@ -64,9 +66,7 @@ export const generateSeoReport = async (
       customPrompt: newReport.custom_prompt
     };
   } catch (error: any) {
-    console.error('Error in generateSeoReport:', error);
-    toast.error('Error al iniciar generación del informe');
-    throw error;
+    return handleServiceError(error, 'Error al iniciar generación del informe');
   }
 };
 
@@ -83,18 +83,7 @@ const processReportGeneration = async (
   try {
     // Upload supporting files if any
     if (files.length > 0) {
-      for (const file of files) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${clientId}/${reportId}/${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('seo-files')
-          .upload(fileName, file);
-          
-        if (uploadError) {
-          console.error('Error uploading file:', uploadError);
-        }
-      }
+      await uploadReportFiles(clientId, reportId, files);
     }
     
     // Fetch PageSpeed Insights data if Google API key is available
