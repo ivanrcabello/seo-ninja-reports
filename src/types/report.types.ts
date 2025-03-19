@@ -5,7 +5,7 @@ export interface Report {
   summary?: string;
   date: string;
   clientId: string;
-  url: string;
+  url?: string; // Changed from required to optional
   status: "processing" | "completed" | "failed";
   content?: {
     executiveSummary: string;
