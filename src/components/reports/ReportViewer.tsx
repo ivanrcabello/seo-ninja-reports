@@ -10,12 +10,15 @@ import { Edit, Share2 } from 'lucide-react';
 import { getFilePublicUrl } from '@/services/reportService';
 import ReportSection from './report-section';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from '@/hooks/use-toast';
 
 interface ReportViewerProps {
   report: Report | undefined;
 }
 
 const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
+  const { toast } = useToast();
+  
   if (!report) {
     return <p>Informe no encontrado.</p>;
   }
@@ -40,6 +43,28 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
     return `${baseUrl}/shared/reports/${report.id}`;
   };
 
+  const handleShareClick = () => {
+    navigator.clipboard.writeText(getPublicShareLink());
+    toast({
+      title: "Enlace copiado",
+      description: "El enlace de compartir ha sido copiado al portapapeles",
+    });
+  };
+
+  // Determine which tab to show by default
+  const getDefaultTab = () => {
+    if (content?.executiveSummary) return "executiveSummary";
+    if (content?.technicalAnalysis) return "technicalAnalysis";
+    if (content?.keywords) return "keywords";
+    if (content?.contentAnalysis) return "contentAnalysis";
+    if (content?.backlinksAnalysis) return "backlinksAnalysis";
+    if (content?.localSeo) return "localSeo";
+    if (content?.pageSpeedData) return "pageSpeedData";
+    if (content?.recommendations) return "recommendations";
+    if (content?.serviceProposal) return "serviceProposal";
+    return "executiveSummary";
+  };
+
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -56,17 +81,14 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
               Editar
             </Button>
           </Link>
-          <Button variant="ghost" size="sm" onClick={() => {
-            navigator.clipboard.writeText(getPublicShareLink());
-            alert('Enlace copiado al portapapeles');
-          }}>
+          <Button variant="ghost" size="sm" onClick={handleShareClick}>
             <Share2 className="mr-2 h-4 w-4" />
             Compartir
           </Button>
         </div>
       </CardHeader>
       <CardContent className="overflow-auto flex-1">
-        <Tabs defaultValue="executiveSummary" className="w-full">
+        <Tabs defaultValue={getDefaultTab()} className="w-full">
           <TabsList className="mb-4 flex justify-start overflow-x-auto pb-px w-full">
             {content?.executiveSummary && (
               <TabsTrigger value="executiveSummary">Resumen Ejecutivo</TabsTrigger>
@@ -113,9 +135,21 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
             {content?.technicalAnalysis && (
               <TabsContent value="technicalAnalysis">
                 <ReportSection 
-                  title="Análisis Técnico" 
+                  title="Análisis Técnico SEO" 
                   content={content.technicalAnalysis} 
                   sectionKey="technicalAnalysis"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
+              </TabsContent>
+            )}
+            
+            {content?.keywords && (
+              <TabsContent value="keywords">
+                <ReportSection 
+                  title="Palabras Clave" 
+                  content={content.keywords} 
+                  sectionKey="keywords"
                   onEdit={() => {}} 
                   isEditing={false} 
                 />
@@ -146,18 +180,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
               </TabsContent>
             )}
             
-            {content?.keywords && (
-              <TabsContent value="keywords">
-                <ReportSection 
-                  title="Palabras Clave" 
-                  content={content.keywords} 
-                  sectionKey="keywords"
-                  onEdit={() => {}} 
-                  isEditing={false} 
-                />
-              </TabsContent>
-            )}
-            
             {content?.localSeo && (
               <TabsContent value="localSeo">
                 <ReportSection 
@@ -170,35 +192,10 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
               </TabsContent>
             )}
             
-            {content?.recommendations && (
-              <TabsContent value="recommendations">
-                <ReportSection 
-                  title="Recomendaciones" 
-                  content={content.recommendations} 
-                  sectionKey="recommendations"
-                  onEdit={() => {}} 
-                  isEditing={false} 
-                  isRecommendations={true}
-                />
-              </TabsContent>
-            )}
-            
-            {content?.serviceProposal && (
-              <TabsContent value="serviceProposal">
-                <ReportSection 
-                  title="Propuesta de Servicios" 
-                  content={content.serviceProposal} 
-                  sectionKey="serviceProposal"
-                  onEdit={() => {}} 
-                  isEditing={false} 
-                />
-              </TabsContent>
-            )}
-            
             {content?.pageSpeedData && (
               <TabsContent value="pageSpeedData">
                 <section>
-                  <h2 className="text-xl font-semibold mb-4">Datos de PageSpeed Insights</h2>
+                  <h2 className="text-xl font-semibold mb-4">Datos de PageSpeed</h2>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-card p-4 rounded-lg border">
@@ -270,6 +267,31 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
                     </div>
                   </div>
                 </section>
+              </TabsContent>
+            )}
+            
+            {content?.recommendations && (
+              <TabsContent value="recommendations">
+                <ReportSection 
+                  title="Recomendaciones" 
+                  content={content.recommendations} 
+                  sectionKey="recommendations"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                  isRecommendations={true}
+                />
+              </TabsContent>
+            )}
+            
+            {content?.serviceProposal && (
+              <TabsContent value="serviceProposal">
+                <ReportSection 
+                  title="Propuesta de Servicios" 
+                  content={content.serviceProposal} 
+                  sectionKey="serviceProposal"
+                  onEdit={() => {}} 
+                  isEditing={false} 
+                />
               </TabsContent>
             )}
           </ScrollArea>
