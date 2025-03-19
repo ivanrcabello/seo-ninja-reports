@@ -6,7 +6,8 @@ import Footer from '@/components/layout/Footer';
 import ApiSettings from '@/components/settings/ApiSettings';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import useAuth from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
@@ -27,6 +28,17 @@ const Settings = () => {
             <p className="text-muted-foreground">
               Gestiona las configuraciones de API y generación de informes
             </p>
+          </AnimatedContainer>
+
+          <AnimatedContainer animation="slide-up" delay={100} className="mb-6">
+            <Alert className="bg-primary/5 border-primary/20">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Importante</AlertTitle>
+              <AlertDescription>
+                Para poder generar informes SEO, necesitas configurar una API key de OpenAI. 
+                Sin una API key válida, la función de generación de informes no funcionará.
+              </AlertDescription>
+            </Alert>
           </AnimatedContainer>
           
           {authLoading ? (

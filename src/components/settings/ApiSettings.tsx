@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { toast } from 'sonner';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const DEFAULT_PROMPT = `Eres un experto en SEO y marketing digital. A continuación, se te proporcionan datos extraídos de un análisis SEO del sitio web [DOMINIO] y de los documentos e imágenes proporcionados. Con base en esta información, elabora un informe SEO completo que incluya las siguientes secciones:
 
@@ -34,7 +35,7 @@ Elabora el informe de manera clara, estructurada y con recomendaciones práctica
 
 const ApiSettings = () => {
   const [apiKey, setApiKey] = useState(() => {
-    return localStorage.getItem('openai_api_key') || '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';
+    return localStorage.getItem('openai_api_key') || '';
   });
   
   const [defaultPrompt, setDefaultPrompt] = useState(() => {
@@ -42,13 +43,26 @@ const ApiSettings = () => {
   });
   
   const [isSaving, setIsSaving] = useState(false);
+  const [hasConfiguredKey, setHasConfiguredKey] = useState(false);
+
+  useEffect(() => {
+    const storedKey = localStorage.getItem('openai_api_key');
+    setHasConfiguredKey(!!storedKey && storedKey.trim() !== '');
+  }, []);
 
   const handleSave = () => {
     setIsSaving(true);
     
     try {
+      if (!apiKey.trim()) {
+        toast.error('Debes proporcionar una API key de OpenAI válida');
+        setIsSaving(false);
+        return;
+      }
+      
       localStorage.setItem('openai_api_key', apiKey);
       localStorage.setItem('default_seo_prompt', defaultPrompt);
+      setHasConfiguredKey(true);
       toast.success('Configuración guardada correctamente');
     } catch (error) {
       console.error('Error al guardar la configuración:', error);
@@ -75,6 +89,17 @@ const ApiSettings = () => {
           </CardDescription>
         </CardHeader>
         
+        {!hasConfiguredKey && (
+          <CardContent className="pb-0">
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No has configurado una API key de OpenAI. Debes configurar una API key válida para utilizar la funcionalidad de generación de informes SEO.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        )}
+        
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="apiKey">API Key de OpenAI</Label>
@@ -84,9 +109,11 @@ const ApiSettings = () => {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               className="glass-input"
+              placeholder="sk-..."
+              required
             />
             <p className="text-xs text-muted-foreground">
-              Tu clave API de OpenAI para generar informes SEO
+              Tu clave API de OpenAI para generar informes SEO. Obtén una clave en <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com/api-keys</a>
             </p>
           </div>
           
