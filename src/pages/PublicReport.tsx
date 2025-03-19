@@ -29,7 +29,7 @@ const PublicReport = () => {
         
         console.log('Fetching report with ID:', id);
         
-        // Use the anon key explicitly to ensure public access
+        // Use the client that has access to anonymous policy
         const { data, error: fetchError } = await supabase
           .from('reports')
           .select('*, clients(name, website)')
@@ -46,7 +46,7 @@ const PublicReport = () => {
           throw new Error('Informe no encontrado');
         }
         
-        console.log('Report data retrieved:', data);
+        console.log('Report data retrieved successfully:', data);
         
         // Safely type check the content from the database
         let reportContent;
@@ -151,22 +151,24 @@ const PublicReport = () => {
       <BlurredCard className="w-full max-w-4xl mb-8 bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gradient-primary">{title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gradient-primary">{report?.title}</h1>
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-                <Calendar className="h-4 w-4" />
-                <span>{format(new Date(date), 'd MMM yyyy', { locale: es })}</span>
-              </div>
-              {url && (
+              {report?.date && (
+                <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+                  <Calendar className="h-4 w-4" />
+                  <span>{format(new Date(report.date), 'd MMM yyyy', { locale: es })}</span>
+                </div>
+              )}
+              {report?.url && (
                 <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full group hover:bg-primary/20 transition-all">
                   <Globe className="h-4 w-4" />
                   <a 
-                    href={url} 
+                    href={report.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="hover:text-primary transition-colors flex items-center gap-1"
                   >
-                    {url.replace(/^https?:\/\//, '').split('/')[0]}
+                    {report.url.replace(/^https?:\/\//, '').split('/')[0]}
                     <ExternalLink className="h-3 w-3 opacity-70" />
                   </a>
                 </div>
@@ -176,62 +178,64 @@ const PublicReport = () => {
         </div>
       </BlurredCard>
       
-      <div className="w-full max-w-4xl">
-        <Tabs defaultValue="executive-summary" className="w-full">
-          <TabsList className="w-full grid grid-cols-2 md:grid-cols-5 h-auto p-1 bg-gradient-to-r from-primary/5 to-background backdrop-blur-sm rounded-lg border border-primary/10">
-            <TabsTrigger value="executive-summary" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Resumen Ejecutivo</TabsTrigger>
-            <TabsTrigger value="technical" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Técnico</TabsTrigger>
-            <TabsTrigger value="content" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Contenido</TabsTrigger>
-            <TabsTrigger value="backlinks" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Backlinks</TabsTrigger>
-            <TabsTrigger value="recommendations" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Recomendaciones</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="executive-summary">
-            <BlurredCard className="p-6">
-              <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Resumen Ejecutivo</h2>
-              <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
-                {formatReportContent(content.executiveSummary)}
-              </div>
-            </BlurredCard>
-          </TabsContent>
-          
-          <TabsContent value="technical">
-            <BlurredCard className="p-6">
-              <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis Técnico</h2>
-              <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
-                {formatReportContent(content.technicalAnalysis)}
-              </div>
-            </BlurredCard>
-          </TabsContent>
-          
-          <TabsContent value="content">
-            <BlurredCard className="p-6">
-              <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis de Contenido</h2>
-              <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
-                {formatReportContent(content.contentAnalysis)}
-              </div>
-            </BlurredCard>
-          </TabsContent>
-          
-          <TabsContent value="backlinks">
-            <BlurredCard className="p-6">
-              <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis de Backlinks y Autoridad</h2>
-              <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
-                {formatReportContent(content.backlinksAnalysis)}
-              </div>
-            </BlurredCard>
-          </TabsContent>
-          
-          <TabsContent value="recommendations">
-            <BlurredCard className="p-6">
-              <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Recomendaciones y Acciones</h2>
-              <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
-                {formatReportContent(content.recommendations)}
-              </div>
-            </BlurredCard>
-          </TabsContent>
-        </Tabs>
-      </div>
+      {report?.content && (
+        <div className="w-full max-w-4xl">
+          <Tabs defaultValue="executive-summary" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 md:grid-cols-5 h-auto p-1 bg-gradient-to-r from-primary/5 to-background backdrop-blur-sm rounded-lg border border-primary/10">
+              <TabsTrigger value="executive-summary" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Resumen Ejecutivo</TabsTrigger>
+              <TabsTrigger value="technical" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Técnico</TabsTrigger>
+              <TabsTrigger value="content" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Contenido</TabsTrigger>
+              <TabsTrigger value="backlinks" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Backlinks</TabsTrigger>
+              <TabsTrigger value="recommendations" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Recomendaciones</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="executive-summary">
+              <BlurredCard className="p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Resumen Ejecutivo</h2>
+                <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
+                  {formatReportContent(report.content.executiveSummary)}
+                </div>
+              </BlurredCard>
+            </TabsContent>
+            
+            <TabsContent value="technical">
+              <BlurredCard className="p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis Técnico</h2>
+                <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
+                  {formatReportContent(report.content.technicalAnalysis)}
+                </div>
+              </BlurredCard>
+            </TabsContent>
+            
+            <TabsContent value="content">
+              <BlurredCard className="p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis de Contenido</h2>
+                <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
+                  {formatReportContent(report.content.contentAnalysis)}
+                </div>
+              </BlurredCard>
+            </TabsContent>
+            
+            <TabsContent value="backlinks">
+              <BlurredCard className="p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Análisis de Backlinks y Autoridad</h2>
+                <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
+                  {formatReportContent(report.content.backlinksAnalysis)}
+                </div>
+              </BlurredCard>
+            </TabsContent>
+            
+            <TabsContent value="recommendations">
+              <BlurredCard className="p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-gradient-primary">Recomendaciones y Acciones</h2>
+                <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
+                  {formatReportContent(report.content.recommendations)}
+                </div>
+              </BlurredCard>
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
     </div>
   );
 };
