@@ -64,20 +64,20 @@ const PageSpeedTab: React.FC<PageSpeedDataProps> = ({ data }) => {
         {/* Desktop Score Card */}
         {hasDesktopData && (
           <DeviceScoreCard
+            device="desktop"
             title="Escritorio"
             icon={<Monitor className="h-5 w-5 text-primary" />}
             data={data.desktop}
-            formatTimeMetric={formatTimeMetric}
           />
         )}
 
         {/* Mobile Score Card */}
         {hasMobileData && (
           <DeviceScoreCard
+            device="mobile"
             title="Móvil"
             icon={<Smartphone className="h-5 w-5 text-primary" />}
             data={data.mobile}
-            formatTimeMetric={formatTimeMetric}
           />
         )}
       </div>

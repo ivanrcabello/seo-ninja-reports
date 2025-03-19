@@ -26,9 +26,11 @@ interface DeviceScoreCardProps {
     cumulativeLayoutShift?: number | null;
   };
   device: 'mobile' | 'desktop';
+  title?: string;
+  icon?: React.ReactNode;
 }
 
-const DeviceScoreCard: React.FC<DeviceScoreCardProps> = ({ data, device }) => {
+const DeviceScoreCard: React.FC<DeviceScoreCardProps> = ({ data, device, title, icon }) => {
   console.log(`DeviceScoreCard ${device === 'desktop' ? 'Escritorio' : 'Móvil'} data:`, data);
   
   // Make sure data exists and has properties
@@ -81,21 +83,18 @@ const DeviceScoreCard: React.FC<DeviceScoreCardProps> = ({ data, device }) => {
     return 'text-red-500';
   };
 
+  const displayTitle = title || (device === 'desktop' ? 'Escritorio' : 'Móvil');
+  const displayIcon = icon || (device === 'desktop' ? 
+    <Laptop className="h-4 w-4 text-blue-500" /> : 
+    <Smartphone className="h-4 w-4 text-purple-500" />
+  );
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium flex items-center gap-2">
-          {device === 'desktop' ? (
-            <>
-              <Laptop className="h-4 w-4 text-blue-500" />
-              <span>Escritorio</span>
-            </>
-          ) : (
-            <>
-              <Smartphone className="h-4 w-4 text-purple-500" />
-              <span>Móvil</span>
-            </>
-          )}
+          {displayIcon}
+          <span>{displayTitle}</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
