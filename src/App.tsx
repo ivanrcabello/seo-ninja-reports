@@ -19,6 +19,9 @@ import NotFound from "./pages/NotFound";
 import Settings from '@/pages/Settings';
 import Servicios from './pages/Servicios';
 import Paquetes from './pages/Paquetes';
+import PackStarter from './pages/packs/PackStarter';
+import PackAscenso from './pages/packs/PackAscenso';
+import PackMaster from './pages/packs/PackMaster';
 import Blog from './pages/Blog';
 
 const queryClient = new QueryClient();
@@ -44,6 +47,9 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/servicios" element={<Servicios />} />
                 <Route path="/paquetes" element={<Paquetes />} />
+                <Route path="/paquetes/starter" element={<PackStarter />} />
+                <Route path="/paquetes/ascenso" element={<PackAscenso />} />
+                <Route path="/paquetes/master" element={<PackMaster />} />
                 <Route path="/blog" element={<Blog />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

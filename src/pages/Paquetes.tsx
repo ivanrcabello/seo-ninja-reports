@@ -6,7 +6,7 @@ import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Check } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 
 const Paquetes = () => {
   return (
@@ -56,7 +56,7 @@ const Paquetes = () => {
                 <BlurredCard className="h-full">
                   <div className="p-6 flex flex-col h-full">
                     <div className="mb-4">
-                      <h3 className="text-2xl font-bold">Básico</h3>
+                      <h3 className="text-2xl font-bold">Starter</h3>
                       <p className="text-muted-foreground mt-2">Ideal para pequeños negocios locales</p>
                     </div>
                     
@@ -68,12 +68,17 @@ const Paquetes = () => {
                     <ul className="space-y-3 mb-8 flex-1">
                       <PricingItem>Auditoría SEO básica</PricingItem>
                       <PricingItem>Optimización Google Business Profile</PricingItem>
-                      <PricingItem>10 palabras clave locales</PricingItem>
+                      <PricingItem>5 palabras clave locales</PricingItem>
                       <PricingItem>Informe mensual</PricingItem>
                       <PricingItem>Soporte por email</PricingItem>
                     </ul>
                     
-                    <Button className="w-full">Contratar Ahora</Button>
+                    <Link to="/paquetes/starter">
+                      <Button className="w-full flex items-center justify-center">
+                        Ver detalles
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </BlurredCard>
               </AnimatedContainer>
@@ -83,7 +88,7 @@ const Paquetes = () => {
                 <BlurredCard className="h-full border-primary">
                   <div className="p-6 flex flex-col h-full">
                     <div className="mb-4">
-                      <h3 className="text-2xl font-bold">Profesional</h3>
+                      <h3 className="text-2xl font-bold">Ascenso</h3>
                       <p className="text-muted-foreground mt-2">Para empresas que buscan crecer localmente</p>
                     </div>
                     
@@ -95,14 +100,18 @@ const Paquetes = () => {
                     <ul className="space-y-3 mb-8 flex-1">
                       <PricingItem>Auditoría SEO completa</PricingItem>
                       <PricingItem>Optimización GBP avanzada</PricingItem>
-                      <PricingItem>25 palabras clave locales</PricingItem>
-                      <PricingItem>Gestión de citas locales</PricingItem>
+                      <PricingItem>15 palabras clave locales</PricingItem>
                       <PricingItem>Contenido SEO mensual (2 artículos)</PricingItem>
-                      <PricingItem>Informe semanal</PricingItem>
+                      <PricingItem>Informes semanales</PricingItem>
                       <PricingItem>Soporte por email y teléfono</PricingItem>
                     </ul>
                     
-                    <Button className="w-full">Contratar Ahora</Button>
+                    <Link to="/paquetes/ascenso">
+                      <Button className="w-full flex items-center justify-center">
+                        Ver detalles
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </BlurredCard>
               </AnimatedContainer>
@@ -112,7 +121,7 @@ const Paquetes = () => {
                 <BlurredCard className="h-full">
                   <div className="p-6 flex flex-col h-full">
                     <div className="mb-4">
-                      <h3 className="text-2xl font-bold">Premium</h3>
+                      <h3 className="text-2xl font-bold">Master</h3>
                       <p className="text-muted-foreground mt-2">Estrategia completa para dominar tu mercado local</p>
                     </div>
                     
@@ -124,16 +133,19 @@ const Paquetes = () => {
                     <ul className="space-y-3 mb-8 flex-1">
                       <PricingItem>Auditoría SEO premium</PricingItem>
                       <PricingItem>Estrategia SEO local completa</PricingItem>
-                      <PricingItem>50+ palabras clave locales</PricingItem>
-                      <PricingItem>Optimización de citas y directorios</PricingItem>
-                      <PricingItem>Contenido SEO semanal</PricingItem>
+                      <PricingItem>30+ palabras clave locales</PricingItem>
+                      <PricingItem>Contenido SEO semanal (4 artículos)</PricingItem>
                       <PricingItem>Link building local</PricingItem>
-                      <PricingItem>Análisis de competencia</PricingItem>
                       <PricingItem>Informes personalizados</PricingItem>
                       <PricingItem>Soporte prioritario 24/7</PricingItem>
                     </ul>
                     
-                    <Button className="w-full">Contratar Ahora</Button>
+                    <Link to="/paquetes/master">
+                      <Button className="w-full flex items-center justify-center">
+                        Ver detalles
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </BlurredCard>
               </AnimatedContainer>
