@@ -93,10 +93,13 @@ const processReportGeneration = async (
       
       if (pageSpeedData) {
         toast.success('Datos de PageSpeed obtenidos correctamente');
+      } else {
+        console.log('No se pudieron obtener datos de PageSpeed, continuando sin ellos');
       }
     } catch (pageSpeedError) {
+      // No detenemos el proceso por un error en PageSpeed
       console.error('Error fetching PageSpeed data:', pageSpeedError);
-      toast.error('Error al obtener datos de PageSpeed');
+      toast.error('Error al obtener datos de PageSpeed, continuando sin esta información');
     }
     
     // Process the report with OpenAI

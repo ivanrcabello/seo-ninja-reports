@@ -22,6 +22,8 @@ export const processOpenAIReport = async (
     if (pageSpeedData) {
       const pageSpeedSummary = formatPageSpeedData(pageSpeedData);
       prompt += "\n\nA continuación se incluyen datos obtenidos de Google PageSpeed Insights. Utiliza esta información para enriquecer la sección de Análisis Técnico del informe:\n" + pageSpeedSummary;
+    } else {
+      prompt += "\n\nNo se pudieron obtener datos de Google PageSpeed Insights. Por favor, incluye en el informe recomendaciones generales sobre la importancia de la velocidad de carga y rendimiento del sitio, sin datos específicos.";
     }
     
     const { sections } = await generateOpenAIReport(url, prompt);
