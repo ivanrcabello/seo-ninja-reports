@@ -21,7 +21,7 @@ const PublicReport = () => {
       try {
         setLoading(true);
         
-        // Fetch the report without authentication
+        // Fetch the report - using public access without auth
         const { data, error } = await supabase
           .from('reports')
           .select('*, clients(*)')
