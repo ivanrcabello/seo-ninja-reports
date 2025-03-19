@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Keyword } from '@/types/report.types';
-import { FormattedContent } from '../../report-section';
+import FormattedContent from '../../report-section/FormattedContent';
 import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
 import KeywordTags from '../../keywords/KeywordTags';
@@ -30,8 +30,11 @@ const KeywordsSection: React.FC<KeywordsSectionProps> = ({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-semibold">Palabras Clave</h2>
-            {!isPublic && reportId && (
-              <KeywordTags keywords={keywords} reportId={reportId} editable={false} />
+            {!isPublic && reportId && keywords.length > 0 && (
+              <KeywordTags 
+                keywords={keywords} 
+                onRemove={async () => false}
+              />
             )}
           </div>
         </div>

@@ -1,7 +1,10 @@
 
 import React from 'react';
 import { BusinessProfile } from '@/types/report.types';
-import { ReportSection, FormattedContent, RecommendationsList, BusinessProfileSection } from '../reports/report-section';
+import ReportSection from '../reports/report-section/ReportSection';
+import FormattedContent from '../reports/report-section/FormattedContent';
+import RecommendationsList from '../reports/report-section/RecommendationsList';
+import BusinessProfileSection from '../reports/report-section/BusinessProfileSection';
 import { PageSpeedTab } from '../reports/report-viewer/pagespeed';
 import KeywordsSection from '../reports/report-viewer/keywords/KeywordsSection';
 

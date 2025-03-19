@@ -2,12 +2,9 @@
 import React from 'react';
 import { Report } from '@/types/report.types';
 import { TabsContent } from "@/components/ui/tabs";
-import { 
-  ReportSection, 
-  FormattedContent, 
-  RecommendationsList,
-  BusinessProfileSection
-} from '../../report-section';
+import ReportSection from '../../report-section/ReportSection';
+import RecommendationsList from '../../report-section/RecommendationsList';
+import BusinessProfileSection from '../../report-section/BusinessProfileSection';
 import { PageSpeedTab } from '../pagespeed';
 import KeywordsSection from '../keywords/KeywordsSection';
 import { getKeywords } from '@/services/api/keywordsService';

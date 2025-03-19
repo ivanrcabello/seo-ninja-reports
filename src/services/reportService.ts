@@ -43,3 +43,8 @@ export {
   extractBusinessInfo,
   isValidGoogleBusinessUrl
 } from './api/businessProfile';
+
+// Export Keywords service
+export {
+  getKeywords
+} from './api/keywordsService';
