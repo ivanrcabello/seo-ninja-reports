@@ -301,7 +301,13 @@ export const generateSeoReport = async (
         status: 'processing',
         date: new Date().toISOString(),
         summary: 'Generating report...',
-        content: {},
+        content: {
+          executiveSummary: '',
+          technicalAnalysis: '',
+          contentAnalysis: '',
+          backlinksAnalysis: '',
+          recommendations: ''
+        },
         custom_prompt: customPrompt || ''
       })
       .select()
@@ -325,9 +331,8 @@ export const generateSeoReport = async (
       status: newReport.status as 'processing' | 'completed' | 'failed',
       url: newReport.url,
       summary: newReport.summary,
-      content: {},
-      customPrompt: newReport.custom_prompt,
-      pageSpeedData: null
+      content: newReport.content as Report['content'],
+      customPrompt: newReport.custom_prompt
     };
   } catch (error: any) {
     console.error('Error in generateSeoReport:', error);
@@ -457,7 +462,7 @@ ESCRITORIO:
       
       // Add PageSpeed data if available
       if (pageSpeedData) {
-        updateData.pageSpeedData = pageSpeedData;
+        updateData.page_speed_data = pageSpeedData;
       }
       
       const { data: completedReport, error: updateError } = await supabase
@@ -471,6 +476,7 @@ ESCRITORIO:
         throw updateError;
       }
       
+      // Convert the database column names to camelCase for the Report interface
       const formattedCompletedReport: Report = {
         id: completedReport.id,
         clientId: completedReport.client_id,
@@ -481,7 +487,7 @@ ESCRITORIO:
         summary: completedReport.summary,
         content: completedReport.content as Report['content'],
         customPrompt: completedReport.custom_prompt,
-        pageSpeedData: completedReport.pageSpeedData
+        pageSpeedData: completedReport.page_speed_data as Report['pageSpeedData']
       };
       
       toast.success('Informe generado exitosamente');
