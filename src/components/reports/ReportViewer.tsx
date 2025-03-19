@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, Share, Calendar, Globe, Activity } from 'lucide-react';
 import BlurredCard from '../ui/BlurredCard';
 import AnimatedContainer from '../ui/AnimatedContainer';
-import { Report } from '@/hooks/useReports';
+import { Report } from '@/types/report.types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 

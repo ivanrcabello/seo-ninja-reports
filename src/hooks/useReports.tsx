@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +15,6 @@ interface ReportsContextType {
   generateReport: (clientId: string, url: string, files: File[], customPrompt?: string) => Promise<Report>;
 }
 
-// Create context
 const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
 
 export const ReportsProvider = ({ children }: { children: ReactNode }) => {
@@ -24,7 +22,6 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
-  // Load reports when user changes
   useEffect(() => {
     const loadReports = async () => {
       if (!user) {
@@ -36,7 +33,6 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       try {
         setIsLoading(true);
         
-        // Get reports from Supabase
         const { data: reportsData, error } = await supabase
           .from('reports')
           .select('*, clients!inner(*)')
@@ -46,12 +42,9 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
           throw error;
         }
 
-        // Format reports data
         const formattedReports: Report[] = reportsData.map((report: any) => {
-          // Asegurar que content tiene la estructura correcta
           let formattedContent = report.content;
           
-          // Si content existe pero no tiene la estructura correcta, formatearlo
           if (report.content && (
             typeof report.content.executiveSummary !== 'string' ||
             typeof report.content.technicalAnalysis !== 'string' ||
@@ -148,7 +141,6 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateReport = async (id: string, data: Partial<Report>) => {
     try {
-      // Convert from camelCase to snake_case for database
       const dbData: any = {};
       if (data.clientId !== undefined) dbData.client_id = data.clientId;
       if (data.title !== undefined) dbData.title = data.title;
@@ -214,10 +206,8 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Generate a new report using ChatGPT API
   const generateReport = async (clientId: string, url: string, files: File[], customPrompt?: string): Promise<Report> => {
     try {
-      // Get the OpenAI API key from localStorage
       const apiKey = localStorage.getItem('openai_api_key') || '';
       
       if (!apiKey) {
@@ -225,7 +215,6 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('No se ha configurado la API key de OpenAI');
       }
       
-      // Create a new report in processing state
       const { data: newReport, error } = await supabase
         .from('reports')
         .insert({
@@ -255,7 +244,6 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       setReports(prevReports => [processingReport, ...prevReports]);
       toast.success('Generación de informe iniciada');
       
-      // Upload files if provided
       if (files.length > 0) {
         for (const file of files) {
           const fileExt = file.name.split('.').pop();
@@ -271,11 +259,9 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
-      // Prepare prompt for ChatGPT
       let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
       prompt = prompt.replace('[DOMINIO]', new URL(url).hostname);
       
-      // Call OpenAI API to generate the report
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -306,10 +292,8 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         const data = await response.json();
         const generatedText = data.choices[0].message.content;
         
-        // Extract sections from the generated text
         const sections = extractSectionsFromText(generatedText);
         
-        // Update the report with the generated content
         const { data: completedReport, error: updateError } = await supabase
           .from('reports')
           .update({
@@ -353,7 +337,6 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       } catch (apiError: any) {
         console.error('Error calling OpenAI API:', apiError);
         
-        // Update report to failed state
         await supabase
           .from('reports')
           .update({ 
@@ -381,7 +364,6 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       console.error('Error generating report:', error);
       
-      // Try to update the report to failed state if we have an ID
       try {
         if (error.reportId) {
           await supabase
@@ -406,9 +388,7 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Helper function to extract sections from the generated text
   const extractSectionsFromText = (text: string) => {
-    // Default structure for the content
     const sections = {
       summary: '',
       executiveSummary: '',
@@ -418,36 +398,30 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
       recommendations: ''
     };
 
-    // Extract Resumen Ejecutivo (Executive Summary)
     const execSummaryMatch = text.match(/(?:Resumen Ejecutivo|Executive Summary)(?:[\s\S]*?)(?=(?:Análisis Técnico|Technical Analysis|2\.|$))/i);
     if (execSummaryMatch) {
       sections.executiveSummary = execSummaryMatch[0].replace(/(?:Resumen Ejecutivo|Executive Summary)(?:\s*):?/i, '').trim();
-      // Use the first paragraph of executive summary as the overall summary
       const summaryParagraph = sections.executiveSummary.split('\n\n')[0];
       if (summaryParagraph) {
         sections.summary = summaryParagraph;
       }
     }
 
-    // Extract Análisis Técnico (Technical Analysis)
     const techAnalysisMatch = text.match(/(?:Análisis Técnico|Technical Analysis)(?:[\s\S]*?)(?=(?:Análisis de Contenido|Content Analysis|3\.|$))/i);
     if (techAnalysisMatch) {
       sections.technicalAnalysis = techAnalysisMatch[0].replace(/(?:Análisis Técnico|Technical Analysis)(?:\s*):?/i, '').trim();
     }
 
-    // Extract Análisis de Contenido (Content Analysis)
     const contentAnalysisMatch = text.match(/(?:Análisis de Contenido|Content Analysis)(?:[\s\S]*?)(?=(?:Backlinks y Autoridad|Backlinks and Authority|4\.|$))/i);
     if (contentAnalysisMatch) {
       sections.contentAnalysis = contentAnalysisMatch[0].replace(/(?:Análisis de Contenido|Content Analysis)(?:\s*):?/i, '').trim();
     }
 
-    // Extract Backlinks y Autoridad (Backlinks and Authority)
     const backlinksMatch = text.match(/(?:Backlinks y Autoridad|Backlinks and Authority)(?:[\s\S]*?)(?=(?:Recomendaciones|Recommendations|5\.|$))/i);
     if (backlinksMatch) {
       sections.backlinksAnalysis = backlinksMatch[0].replace(/(?:Backlinks y Autoridad|Backlinks and Authority)(?:\s*):?/i, '').trim();
     }
 
-    // Extract Recomendaciones (Recommendations)
     const recommendationsMatch = text.match(/(?:Recomendaciones|Recommendations)(?:[\s\S]*?)(?=$)/i);
     if (recommendationsMatch) {
       sections.recommendations = recommendationsMatch[0].replace(/(?:Recomendaciones|Recommendations)(?:\s*):?/i, '').trim();

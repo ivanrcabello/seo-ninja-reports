@@ -68,6 +68,7 @@ export type Database = {
           client_id: string
           content: Json | null
           created_at: string
+          custom_prompt: string | null
           date: string
           id: string
           status: string
@@ -80,6 +81,7 @@ export type Database = {
           client_id: string
           content?: Json | null
           created_at?: string
+          custom_prompt?: string | null
           date?: string
           id?: string
           status?: string
@@ -92,6 +94,7 @@ export type Database = {
           client_id?: string
           content?: Json | null
           created_at?: string
+          custom_prompt?: string | null
           date?: string
           id?: string
           status?: string
