@@ -1,27 +1,44 @@
 
-import React, { useEffect } from 'react';
-import { useParams, Navigate, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ReportViewer from '@/components/reports/ReportViewer';
-import BlurredCard from '@/components/ui/BlurredCard';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import useAuth from '@/hooks/useAuth';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
 import { Loader2, ChevronLeft, Trash2, Download, Share, FileText } from 'lucide-react';
-import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const ReportDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.search);
+  const initialIsEditing = searchParams.get('mode') === 'edit';
+  const [isEditing, setIsEditing] = useState(initialIsEditing);
+  
   const { user, loading: authLoading } = useAuth();
   const { getClient } = useClients();
   const { getReport, isLoading: reportsLoading, deleteReport } = useReports();
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  
+  // Update URL when editing state changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (isEditing) {
+      params.set('mode', 'edit');
+    } else {
+      params.delete('mode');
+    }
+    
+    const newUrl = `${location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    navigate(newUrl, { replace: true });
+  }, [isEditing, location.pathname, navigate]);
   
   useEffect(() => {
     if (id && !reportsLoading) {
@@ -168,7 +185,7 @@ const ReportDetail = () => {
               </AnimatedContainer>
               
               <AnimatedContainer animation="fade" delay={100}>
-                <ReportViewer report={report} />
+                <ReportViewer report={report} isEditing={isEditing} setIsEditing={setIsEditing} />
               </AnimatedContainer>
             </>
           )}

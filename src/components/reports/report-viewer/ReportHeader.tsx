@@ -3,7 +3,7 @@ import React from 'react';
 import { Report } from '@/types/report.types';
 import { CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Edit, Share2, Calendar, Globe, FileText, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,7 @@ interface ReportHeaderProps {
 
 const ReportHeader: React.FC<ReportHeaderProps> = ({ report }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -41,6 +42,12 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({ report }) => {
       title: "Enlace copiado",
       description: "El enlace de compartir ha sido copiado al portapapeles",
     });
+  };
+
+  // Handle edit button click - stay on the same page
+  const handleEditClick = () => {
+    // Navigate to the report page with a query parameter to indicate edit mode
+    navigate(`/reports/${report.id}?mode=edit`);
   };
 
   return (
@@ -75,12 +82,15 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({ report }) => {
       </div>
       
       <div className="flex items-center gap-2 self-end md:self-auto">
-        <Link to={`/reports/${report.id}/edit`}>
-          <Button variant="outline" size="sm" className="group hover:bg-primary hover:text-primary-foreground transition-all">
-            <Edit className="h-4 w-4 group-hover:text-primary-foreground" />
-            <span className="hidden sm:inline">Editar</span>
-          </Button>
-        </Link>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="group hover:bg-primary hover:text-primary-foreground transition-all"
+          onClick={handleEditClick}
+        >
+          <Edit className="h-4 w-4 group-hover:text-primary-foreground" />
+          <span className="hidden sm:inline">Editar</span>
+        </Button>
         <Button 
           variant="outline" 
           size="sm" 

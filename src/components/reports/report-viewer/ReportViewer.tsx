@@ -9,9 +9,15 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ReportViewerProps {
   report: Report | undefined;
+  isEditing?: boolean;
+  setIsEditing?: (value: boolean) => void;
 }
 
-const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
+const ReportViewer: React.FC<ReportViewerProps> = ({ 
+  report, 
+  isEditing = false, 
+  setIsEditing = () => {} 
+}) => {
   const [pageSpeedData, setPageSpeedData] = useState<any>(null);
   const [isLoadingPageSpeed, setIsLoadingPageSpeed] = useState(false);
   const { toast } = useToast();
@@ -60,7 +66,16 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         <ReportHeader report={report} />
       </CardHeader>
       <CardContent className="overflow-auto flex-1 p-0 pt-4">
-        <ReportTabs report={report} pageSpeedData={pageSpeedData} isLoadingPageSpeed={isLoadingPageSpeed} />
+        <ReportTabs 
+          report={report} 
+          pageSpeedData={pageSpeedData} 
+          isLoadingPageSpeed={isLoadingPageSpeed} 
+          isEditing={isEditing}
+          onEdit={(sectionKey) => {
+            if (setIsEditing) setIsEditing(true);
+            // Could also store the active section for editing if needed
+          }}
+        />
       </CardContent>
     </Card>
   );

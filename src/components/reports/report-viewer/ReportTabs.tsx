@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Report } from '@/types/report.types';
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,9 +12,17 @@ interface ReportTabsProps {
   report: Report;
   pageSpeedData?: any;
   isLoadingPageSpeed?: boolean;
+  isEditing?: boolean;
+  onEdit?: (sectionKey: string) => void;
 }
 
-const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadingPageSpeed = false }) => {
+const ReportTabs: React.FC<ReportTabsProps> = ({ 
+  report, 
+  pageSpeedData, 
+  isLoadingPageSpeed = false,
+  isEditing = false,
+  onEdit = () => {}
+}) => {
   const { content } = report;
 
   if (!content) {
@@ -109,8 +118,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadin
               title="Resumen Ejecutivo" 
               content={content.executiveSummary} 
               sectionKey="executiveSummary"
-              onEdit={() => {}} 
-              isEditing={false} 
+              onEdit={() => onEdit("executiveSummary")} 
+              isEditing={isEditing} 
             />
           </TabsContent>
         )}
@@ -121,8 +130,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadin
               title="Análisis Técnico SEO" 
               content={content.technicalAnalysis} 
               sectionKey="technicalAnalysis"
-              onEdit={() => {}} 
-              isEditing={false} 
+              onEdit={() => onEdit("technicalAnalysis")} 
+              isEditing={isEditing} 
             />
           </TabsContent>
         )}
@@ -133,8 +142,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadin
               title="Palabras Clave" 
               content={content.keywords} 
               sectionKey="keywords"
-              onEdit={() => {}} 
-              isEditing={false} 
+              onEdit={() => onEdit("keywords")} 
+              isEditing={isEditing} 
             />
           </TabsContent>
         )}
@@ -145,8 +154,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadin
               title="Análisis de Contenido" 
               content={content.contentAnalysis} 
               sectionKey="contentAnalysis"
-              onEdit={() => {}} 
-              isEditing={false} 
+              onEdit={() => onEdit("contentAnalysis")} 
+              isEditing={isEditing} 
             />
           </TabsContent>
         )}
@@ -157,8 +166,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadin
               title="Análisis de Backlinks" 
               content={content.backlinksAnalysis} 
               sectionKey="backlinksAnalysis"
-              onEdit={() => {}} 
-              isEditing={false} 
+              onEdit={() => onEdit("backlinksAnalysis")} 
+              isEditing={isEditing} 
             />
           </TabsContent>
         )}
@@ -169,8 +178,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadin
               title="SEO Local" 
               content={content.localSeo} 
               sectionKey="localSeo"
-              onEdit={() => {}} 
-              isEditing={false} 
+              onEdit={() => onEdit("localSeo")} 
+              isEditing={isEditing} 
             />
           </TabsContent>
         )}
@@ -201,8 +210,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadin
               title="Recomendaciones" 
               content={content.recommendations} 
               sectionKey="recommendations"
-              onEdit={() => {}} 
-              isEditing={false} 
+              onEdit={() => onEdit("recommendations")} 
+              isEditing={isEditing} 
               isRecommendations={true}
             />
           </TabsContent>
@@ -214,8 +223,8 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, pageSpeedData, isLoadin
               title="Propuesta de Servicios" 
               content={content.serviceProposal} 
               sectionKey="serviceProposal"
-              onEdit={() => {}} 
-              isEditing={false} 
+              onEdit={() => onEdit("serviceProposal")} 
+              isEditing={isEditing} 
             />
           </TabsContent>
         )}
