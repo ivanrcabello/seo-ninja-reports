@@ -43,8 +43,8 @@ export const processOpenAIReport = async (
         contentAnalysis: sections.contentAnalysis || '',
         backlinksAnalysis: sections.backlinksAnalysis || '',
         recommendations: sections.recommendations || '',
-        localSeo: sections.seoLocal || '',
-        serviceProposal: sections.propuesta || ''
+        localSeo: sections.localSeo || '',
+        serviceProposal: sections.serviceProposal || ''
       },
       summary: sections.summary || 'Análisis SEO completo del sitio web.',
       status: 'completed',
@@ -71,6 +71,7 @@ export const processOpenAIReport = async (
     }
     
     console.log('Informe actualizado exitosamente');
+    console.log('Contenido del informe:', completedReport.content);
     
     // Convert the database column names to camelCase for the Report interface
     const formattedCompletedReport: Report = {
@@ -96,12 +97,12 @@ export const processOpenAIReport = async (
     await supabase
       .from('reports')
       .update({ 
-        status: 'failed' as 'processing' | 'completed' | 'failed',
+        status: 'failed',
         summary: `Error: ${apiError.message}`
       })
       .eq('id', reportId);
       
-    toast.error('Error al generar el informe con la API de OpenAI');
+    toast.error(`Error al generar el informe: ${apiError.message}`);
     throw apiError;
   }
 };
@@ -115,7 +116,7 @@ export const markReportAsFailed = async (reportId: string, errorMessage: string)
       await supabase
         .from('reports')
         .update({ 
-          status: 'failed' as 'processing' | 'completed' | 'failed',
+          status: 'failed',
           summary: `Error: ${errorMessage}`
         })
         .eq('id', reportId);

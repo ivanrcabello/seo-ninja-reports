@@ -29,11 +29,18 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   
   const client = getClient(clientId);
   const hasGoogleApiKey = !!localStorage.getItem('google_pagespeed_api_key');
+  const hasOpenAIApiKey = !!localStorage.getItem('openai_api_key');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!url || files.length === 0) {
+    if (!url) {
+      toast.error('Debes proporcionar una URL válida');
+      return;
+    }
+
+    if (!hasOpenAIApiKey) {
+      toast.error('Debes configurar una API key de OpenAI en la sección de Configuración');
       return;
     }
     
@@ -70,6 +77,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const nextStep = () => {
     if (url) {
       setStep(2);
+    } else {
+      toast.error('Debes proporcionar una URL válida');
     }
   };
 
@@ -81,6 +90,13 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     <BlurredCard animation="scale" className="w-full max-w-2xl mx-auto">
       <Card className="border-none shadow-none bg-transparent">
         <ReportGeneratorHeader clientName={client?.name} />
+        
+        {!hasOpenAIApiKey && (
+          <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-md">
+            <p className="font-medium">No has configurado una API key de OpenAI</p>
+            <p className="text-sm">Debes configurar una API key válida en la sección de Configuración para generar informes.</p>
+          </div>
+        )}
         
         {step === 1 ? (
           <ReportGeneratorStep1

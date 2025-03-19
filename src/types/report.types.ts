@@ -18,16 +18,16 @@ export interface Report {
   };
   customPrompt?: string;
   pageSpeedData?: {
-    desktop: PageSpeedResult;
-    mobile: PageSpeedResult;
+    desktop?: PageSpeedResult;
+    mobile?: PageSpeedResult;
   };
 }
 
 export interface PageSpeedResult {
-  performance: number;
-  accessibility: number;
-  bestPractices: number;
-  seo: number;
+  performance?: number;
+  accessibility?: number;
+  bestPractices?: number;
+  seo?: number;
   firstContentfulPaint?: number;
   speedIndex?: number;
   largestContentfulPaint?: number;

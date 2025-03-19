@@ -10,9 +10,15 @@ export const generateOpenAIReport = async (
   url: string,
   prompt: string
 ): Promise<{ 
-  sections: ReturnType<typeof extractSectionsFromText> & {
-    seoLocal?: string;
-    propuesta?: string;
+  sections: {
+    summary: string;
+    executiveSummary: string;
+    technicalAnalysis: string;
+    contentAnalysis: string;
+    backlinksAnalysis: string;
+    recommendations: string;
+    localSeo: string;
+    serviceProposal: string;
   },
   rawResponse: string 
 }> => {
@@ -20,11 +26,16 @@ export const generateOpenAIReport = async (
     console.log('Iniciando solicitud a OpenAI para:', url);
     console.log('Utilizando prompt con longitud:', prompt.length);
     
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error('No se ha configurado una API key de OpenAI válida');
+    }
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('openai_api_key') || ''}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: "gpt-4o",
@@ -45,7 +56,7 @@ export const generateOpenAIReport = async (
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Error en respuesta de OpenAI:', errorData);
-      throw new Error(`Error en la API de OpenAI: ${response.statusText}`);
+      throw new Error(`Error en la API de OpenAI: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -66,8 +77,8 @@ export const generateOpenAIReport = async (
     // Combine all sections
     const sections = {
       ...standardSections,
-      seoLocal: seoLocalMatch ? seoLocalMatch[1].trim() : '',
-      propuesta: propuestaMatch ? propuestaMatch[1].trim() : ''
+      localSeo: seoLocalMatch ? seoLocalMatch[1].trim() : '',
+      serviceProposal: propuestaMatch ? propuestaMatch[1].trim() : ''
     };
     
     return {
@@ -76,7 +87,7 @@ export const generateOpenAIReport = async (
     };
   } catch (error: any) {
     console.error('Error calling OpenAI API:', error);
-    toast.error('Error al generar el informe con la API de OpenAI');
+    toast.error(`Error al generar el informe: ${error.message}`);
     throw error;
   }
 };
