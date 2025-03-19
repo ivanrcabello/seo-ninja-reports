@@ -23,14 +23,11 @@ const Footer: React.FC = () => {
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-12">
             <div className="flex flex-col space-y-2">
               <h4 className="font-medium text-sm">Producto</h4>
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/caracteristicas" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Características
               </Link>
-              <Link to="/paquetes" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/precios" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Precios
-              </Link>
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Integraciones
               </Link>
             </div>
             
@@ -42,7 +39,7 @@ const Footer: React.FC = () => {
               <Link to="/documentacion" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Documentación
               </Link>
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/guias" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Guías
               </Link>
             </div>
@@ -52,10 +49,10 @@ const Footer: React.FC = () => {
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Sobre Nosotros
               </Link>
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/contacto" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Contacto
               </Link>
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/privacidad" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Privacidad
               </Link>
             </div>

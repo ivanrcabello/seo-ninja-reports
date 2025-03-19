@@ -23,7 +23,13 @@ import PackStarter from './pages/packs/PackStarter';
 import PackAscenso from './pages/packs/PackAscenso';
 import PackMaster from './pages/packs/PackMaster';
 import Blog from './pages/Blog';
+import BlogAdmin from './pages/BlogAdmin';
 import Documentacion from './pages/Documentacion';
+import Caracteristicas from './pages/Caracteristicas';
+import Precios from './pages/Precios';
+import Guias from './pages/Guias';
+import Contacto from './pages/Contacto';
+import Privacidad from './pages/Privacidad';
 
 const queryClient = new QueryClient();
 
@@ -52,7 +58,13 @@ const App = () => (
                 <Route path="/paquetes/ascenso" element={<PackAscenso />} />
                 <Route path="/paquetes/master" element={<PackMaster />} />
                 <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/admin" element={<BlogAdmin />} />
                 <Route path="/documentacion" element={<Documentacion />} />
+                <Route path="/caracteristicas" element={<Caracteristicas />} />
+                <Route path="/precios" element={<Precios />} />
+                <Route path="/guias" element={<Guias />} />
+                <Route path="/contacto" element={<Contacto />} />
+                <Route path="/privacidad" element={<Privacidad />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
