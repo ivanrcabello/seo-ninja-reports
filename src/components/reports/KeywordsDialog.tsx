@@ -176,9 +176,15 @@ const KeywordsDialog: React.FC<KeywordsDialogProps> = ({
       }
       
       // Update content with keywords
-      const updatedContent = reportData.content 
-        ? { ...reportData.content, keywords: keywordsContent }
-        : { keywords: keywordsContent };
+      // Make sure reportData.content is an object before spreading it
+      const content = reportData.content && typeof reportData.content === 'object' 
+        ? reportData.content 
+        : {};
+        
+      const updatedContent = {
+        ...content,
+        keywords: keywordsContent
+      };
       
       // Save updated content
       const { error: updateError } = await supabase
