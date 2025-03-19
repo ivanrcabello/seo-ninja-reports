@@ -1,6 +1,8 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import useAuth from './useAuth';
 
 export interface Report {
   id: string;
@@ -33,88 +35,56 @@ interface ReportsContextType {
 // Create context
 const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
 
-// Mock data
-const MOCK_REPORTS: Report[] = [
-  {
-    id: '1',
-    clientId: '1',
-    title: 'Initial SEO Audit',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
-    status: 'completed',
-    url: 'https://acme.example.com',
-    summary: 'Overall good performance but needs improvement in mobile optimization.',
-    content: {
-      executiveSummary: 'The website has good content and structure but needs improvements in mobile experience and page speed.',
-      technicalAnalysis: 'Mobile score: 68/100\nDesktop score: 89/100\nSite loads in 3.2s on average.',
-      contentAnalysis: 'Content is well-structured with clear headings. Some pages lack proper keyword optimization.',
-      backlinksAnalysis: '156 backlinks from 42 domains. Strong profile but could use more diversity.',
-      recommendations: '1. Optimize images for mobile\n2. Implement lazy loading\n3. Add schema markup\n4. Fix 3 broken links'
-    }
-  },
-  {
-    id: '2',
-    clientId: '1',
-    title: 'Keyword Analysis',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-    status: 'completed',
-    url: 'https://acme.example.com/products',
-    summary: 'Identified 25 high-value keywords that could improve organic traffic by 30%.',
-    content: {
-      executiveSummary: 'Analysis shows significant opportunities for targeting industry-specific long-tail keywords.',
-      technicalAnalysis: 'Current keyword density is appropriate but could be enhanced on product pages.',
-      contentAnalysis: 'Blog content is ranking well but product descriptions need optimization.',
-      backlinksAnalysis: 'Anchor text diversity is good but could use more keyword-specific backlinks.',
-      recommendations: '1. Update meta descriptions with focus keywords\n2. Expand product descriptions\n3. Create content for 5 identified long-tail keywords'
-    }
-  },
-  {
-    id: '3',
-    clientId: '2',
-    title: 'Competitive Analysis',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-    status: 'completed',
-    url: 'https://globex.example.com',
-    summary: 'Detailed analysis of 3 main competitors shows opportunities in video content and schema markup.',
-    content: {
-      executiveSummary: 'Competitors are outperforming in video content and local SEO. Significant opportunities identified.',
-      technicalAnalysis: 'Competitors have faster page load times by 15% on average.',
-      contentAnalysis: 'Competitors publish 2x more content but with inconsistent quality.',
-      backlinksAnalysis: 'Main competitor has 30% more backlinks but lower domain authority.',
-      recommendations: '1. Implement schema markup\n2. Create video content series\n3. Optimize for local search\n4. Increase publishing frequency with focus on quality'
-    }
-  }
-];
-
 export const ReportsProvider = ({ children }: { children: ReactNode }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
-  // Load reports on mount (mock)
+  // Load reports when user changes
   useEffect(() => {
     const loadReports = async () => {
+      if (!user) {
+        setReports([]);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        // Mock API call
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        setIsLoading(true);
         
-        // Check local storage first
-        const storedReports = localStorage.getItem('seo-ninja-reports');
-        if (storedReports) {
-          setReports(JSON.parse(storedReports));
-        } else {
-          // Use mock data as fallback
-          setReports(MOCK_REPORTS);
-          localStorage.setItem('seo-ninja-reports', JSON.stringify(MOCK_REPORTS));
+        // Get reports from Supabase
+        const { data: reportsData, error } = await supabase
+          .from('reports')
+          .select('*, clients!inner(*)')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          throw error;
         }
-      } catch (error) {
+
+        // Format reports data
+        const formattedReports: Report[] = reportsData.map((report: any) => ({
+          id: report.id,
+          clientId: report.client_id,
+          title: report.title,
+          date: report.date,
+          status: report.status,
+          url: report.url,
+          summary: report.summary,
+          content: report.content
+        }));
+        
+        setReports(formattedReports);
+      } catch (error: any) {
         console.error('Error loading reports:', error);
-        toast.error('Failed to load reports');
+        toast.error(error.message || 'Error al cargar informes');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadReports();
-  }, []);
+  }, [user]);
 
   const getReport = (id: string) => {
     return reports.find(report => report.id === id);
@@ -126,134 +96,228 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
 
   const createReport = async (data: Omit<Report, 'id' | 'date' | 'status'>) => {
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { clientId, title, url, summary, content } = data;
       
-      const newReport: Report = {
-        ...data,
-        id: crypto.randomUUID(),
-        date: new Date().toISOString(),
-        status: 'completed'
+      const { data: newReport, error } = await supabase
+        .from('reports')
+        .insert({
+          client_id: clientId,
+          title,
+          url,
+          summary,
+          content,
+          status: 'completed'
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      const formattedReport: Report = {
+        id: newReport.id,
+        clientId: newReport.client_id,
+        title: newReport.title,
+        date: newReport.date,
+        status: newReport.status,
+        url: newReport.url,
+        summary: newReport.summary,
+        content: newReport.content
       };
       
-      const updatedReports = [...reports, newReport];
-      setReports(updatedReports);
-      localStorage.setItem('seo-ninja-reports', JSON.stringify(updatedReports));
+      setReports(prevReports => [formattedReport, ...prevReports]);
+      toast.success('Informe creado exitosamente');
       
-      toast.success('Report created successfully');
-      return newReport;
-    } catch (error) {
+      return formattedReport;
+    } catch (error: any) {
       console.error('Error creating report:', error);
-      toast.error('Failed to create report');
+      toast.error(error.message || 'Error al crear informe');
       throw error;
     }
   };
 
   const updateReport = async (id: string, data: Partial<Report>) => {
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 600));
+      // Convert from camelCase to snake_case for database
+      const dbData: any = {};
+      if (data.clientId !== undefined) dbData.client_id = data.clientId;
+      if (data.title !== undefined) dbData.title = data.title;
+      if (data.status !== undefined) dbData.status = data.status;
+      if (data.url !== undefined) dbData.url = data.url;
+      if (data.summary !== undefined) dbData.summary = data.summary;
+      if (data.content !== undefined) dbData.content = data.content;
       
-      const reportIndex = reports.findIndex(report => report.id === id);
+      const { data: updatedReport, error } = await supabase
+        .from('reports')
+        .update(dbData)
+        .eq('id', id)
+        .select()
+        .single();
       
-      if (reportIndex === -1) {
-        throw new Error('Report not found');
+      if (error) {
+        throw error;
       }
       
-      const updatedReport = {
-        ...reports[reportIndex],
-        ...data
+      const formattedReport: Report = {
+        id: updatedReport.id,
+        clientId: updatedReport.client_id,
+        title: updatedReport.title,
+        date: updatedReport.date,
+        status: updatedReport.status,
+        url: updatedReport.url,
+        summary: updatedReport.summary,
+        content: updatedReport.content
       };
       
-      const updatedReports = [...reports];
-      updatedReports[reportIndex] = updatedReport;
+      setReports(prevReports => 
+        prevReports.map(report => report.id === id ? formattedReport : report)
+      );
       
-      setReports(updatedReports);
-      localStorage.setItem('seo-ninja-reports', JSON.stringify(updatedReports));
-      
-      toast.success('Report updated successfully');
-      return updatedReport;
-    } catch (error) {
+      toast.success('Informe actualizado exitosamente');
+      return formattedReport;
+    } catch (error: any) {
       console.error('Error updating report:', error);
-      toast.error('Failed to update report');
+      toast.error(error.message || 'Error al actualizar informe');
       throw error;
     }
   };
 
   const deleteReport = async (id: string) => {
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const { error } = await supabase
+        .from('reports')
+        .delete()
+        .eq('id', id);
       
-      const updatedReports = reports.filter(report => report.id !== id);
-      setReports(updatedReports);
-      localStorage.setItem('seo-ninja-reports', JSON.stringify(updatedReports));
+      if (error) {
+        throw error;
+      }
       
-      toast.success('Report deleted successfully');
-    } catch (error) {
+      setReports(prevReports => prevReports.filter(report => report.id !== id));
+      toast.success('Informe eliminado exitosamente');
+    } catch (error: any) {
       console.error('Error deleting report:', error);
-      toast.error('Failed to delete report');
+      toast.error(error.message || 'Error al eliminar informe');
       throw error;
     }
   };
 
-  // Mock report generation with file upload
+  // Generate a new report
   const generateReport = async (clientId: string, url: string, files: File[]): Promise<Report> => {
     try {
       // Create a new report in processing state
-      const newReport: Report = {
-        id: crypto.randomUUID(),
-        clientId,
-        title: `SEO Analysis - ${new URL(url).hostname}`,
-        date: new Date().toISOString(),
-        status: 'processing',
-        url
+      const { data: newReport, error } = await supabase
+        .from('reports')
+        .insert({
+          client_id: clientId,
+          title: `Análisis SEO - ${new URL(url).hostname}`,
+          url,
+          status: 'processing'
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      const processingReport: Report = {
+        id: newReport.id,
+        clientId: newReport.client_id,
+        title: newReport.title,
+        date: newReport.date,
+        status: newReport.status as 'processing',
+        url: newReport.url
       };
       
-      const updatedReports = [...reports, newReport];
-      setReports(updatedReports);
-      localStorage.setItem('seo-ninja-reports', JSON.stringify(updatedReports));
+      setReports(prevReports => [processingReport, ...prevReports]);
+      toast.success('Generación de informe iniciada');
       
-      toast.success('Report generation started');
+      // Upload files if provided
+      if (files.length > 0) {
+        for (const file of files) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${clientId}/${newReport.id}/${Date.now()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('seo-files')
+            .upload(fileName, file);
+            
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+          }
+        }
+      }
       
-      // Simulate processing time
+      // Simulate processing time (replace with actual processing later)
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       // Update with generated content
-      const completedReport: Report = {
-        ...newReport,
-        status: 'completed',
-        summary: 'Analysis shows good technical foundation but opportunities for content improvement.',
-        content: {
-          executiveSummary: 'The website demonstrates solid technical fundamentals with good load speed and mobile responsiveness. Content quality is high but quantity could be improved, especially for targeting long-tail keywords. Backlink profile shows room for growth.',
-          technicalAnalysis: 'Mobile score: 85/100\nDesktop score: 92/100\nSite loads in 2.4s on average.\nNo major crawl errors detected.\n4 minor mixed content warnings on blog pages.',
-          contentAnalysis: 'Well-structured content with clear headings and good readability. Keyword density is appropriate but could be enhanced in certain sections. Blog frequency is below industry average at 2 posts/month vs recommended 6-8.',
-          backlinksAnalysis: '137 backlinks from 48 referring domains. Domain authority is 38/100, which is good but below top competitors (avg 45). Link profile is clean with no toxic links detected.',
-          recommendations: '1. Increase content publishing frequency to 6-8 posts/month\n2. Fix mixed content warnings on blog\n3. Target 5 identified long-tail keywords\n4. Implement schema markup for better rich snippets\n5. Develop outreach campaign to improve backlink profile'
-        }
+      const demoContent = {
+        executiveSummary: 'El sitio web demuestra buenos fundamentos técnicos con buena velocidad de carga y capacidad de respuesta móvil. La calidad del contenido es alta pero la cantidad podría mejorarse, especialmente para apuntar a palabras clave de cola larga. El perfil de backlinks muestra espacio para crecer.',
+        technicalAnalysis: 'Puntuación móvil: 85/100\nPuntuación de escritorio: 92/100\nEl sitio se carga en 2,4 segundos en promedio.\nNo se detectaron errores de rastreo importantes.\n4 advertencias menores de contenido mixto en las páginas del blog.',
+        contentAnalysis: 'Contenido bien estructurado con encabezados claros y buena legibilidad. La densidad de palabras clave es apropiada pero podría mejorarse en ciertas secciones. La frecuencia del blog está por debajo del promedio de la industria con 2 publicaciones/mes frente a las 6-8 recomendadas.',
+        backlinksAnalysis: '137 backlinks de 48 dominios de referencia. La autoridad de dominio es 38/100, lo que es bueno pero por debajo de los principales competidores (promedio 45). El perfil de enlaces es limpio sin enlaces tóxicos detectados.',
+        recommendations: '1. Aumentar la frecuencia de publicación de contenido a 6-8 publicaciones/mes\n2. Corregir las advertencias de contenido mixto en el blog\n3. Apuntar a 5 palabras clave de cola larga identificadas\n4. Implementar marcado de esquema para obtener mejores fragmentos enriquecidos\n5. Desarrollar una campaña de divulgación para mejorar el perfil de backlinks'
       };
       
-      const finalReports = reports.map(report => 
-        report.id === newReport.id ? completedReport : report
+      const { data: completedReport, error: updateError } = await supabase
+        .from('reports')
+        .update({
+          status: 'completed',
+          summary: 'El análisis muestra buenos fundamentos técnicos pero oportunidades de mejora en el contenido.',
+          content: demoContent
+        })
+        .eq('id', newReport.id)
+        .select()
+        .single();
+        
+      if (updateError) {
+        throw updateError;
+      }
+      
+      const formattedCompletedReport: Report = {
+        id: completedReport.id,
+        clientId: completedReport.client_id,
+        title: completedReport.title,
+        date: completedReport.date,
+        status: completedReport.status as 'completed',
+        url: completedReport.url,
+        summary: completedReport.summary,
+        content: completedReport.content
+      };
+      
+      setReports(prevReports => 
+        prevReports.map(report => report.id === newReport.id ? formattedCompletedReport : report)
       );
       
-      setReports(finalReports);
-      localStorage.setItem('seo-ninja-reports', JSON.stringify(finalReports));
-      
-      toast.success('Report generated successfully');
-      return completedReport;
-    } catch (error) {
+      toast.success('Informe generado exitosamente');
+      return formattedCompletedReport;
+    } catch (error: any) {
       console.error('Error generating report:', error);
       
-      // Update to failed state
-      const failedReports = reports.map(report => 
-        report.id === report.id ? {...report, status: 'failed' as const} : report
-      );
+      // Try to update the report to failed state if we have an ID
+      try {
+        if (error.reportId) {
+          await supabase
+            .from('reports')
+            .update({ status: 'failed' })
+            .eq('id', error.reportId);
+            
+          setReports(prevReports => 
+            prevReports.map(report => 
+              report.id === error.reportId 
+                ? { ...report, status: 'failed' as const } 
+                : report
+            )
+          );
+        }
+      } catch (updateError) {
+        console.error('Error updating report status to failed:', updateError);
+      }
       
-      setReports(failedReports);
-      localStorage.setItem('seo-ninja-reports', JSON.stringify(failedReports));
-      
-      toast.error('Failed to generate report');
+      toast.error(error.message || 'Error al generar informe');
       throw error;
     }
   };

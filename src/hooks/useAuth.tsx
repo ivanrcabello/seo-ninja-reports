@@ -1,15 +1,12 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
-
-// Mock types for the Supabase integration
-interface User {
-  id: string;
-  email?: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -19,8 +16,9 @@ interface AuthContextType {
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock authentication provider (replace with actual Supabase code later)
+// Authentication provider using Supabase
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,11 +26,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Mock session check - replace with actual Supabase
-        const storedUser = localStorage.getItem('seo-ninja-user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        // Get session from Supabase
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          throw error;
         }
+        
+        setSession(session);
+        setUser(session?.user ?? null);
       } catch (error) {
         console.error('Error al verificar sesión:', error);
       } finally {
@@ -41,24 +43,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     checkSession();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Sign in user
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      // Mock sign in - replace with actual Supabase
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // For demo purposes, any email/password combo works
-      const mockUser = { id: crypto.randomUUID(), email };
-      localStorage.setItem('seo-ninja-user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      if (error) {
+        throw error;
+      }
+      
       toast.success('Inicio de sesión exitoso');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al iniciar sesión:', error);
-      toast.error('Error al iniciar sesión');
+      toast.error(error.message || 'Error al iniciar sesión');
       throw error;
     } finally {
       setLoading(false);
@@ -69,18 +83,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string) => {
     try {
       setLoading(true);
-      // Mock sign up - replace with actual Supabase
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { error } = await supabase.auth.signUp({
+        email,
+        password
+      });
       
-      // For demo purposes, any email/password combo works
-      const mockUser = { id: crypto.randomUUID(), email };
-      localStorage.setItem('seo-ninja-user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      if (error) {
+        throw error;
+      }
+      
       toast.success('Cuenta creada exitosamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al crear cuenta:', error);
-      toast.error('Error al crear cuenta');
+      toast.error(error.message || 'Error al crear cuenta');
       throw error;
     } finally {
       setLoading(false);
@@ -91,13 +106,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-      // Mock sign out - replace with actual Supabase
-      localStorage.removeItem('seo-ninja-user');
-      setUser(null);
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
       toast.success('Sesión cerrada exitosamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cerrar sesión:', error);
-      toast.error('Error al cerrar sesión');
+      toast.error(error.message || 'Error al cerrar sesión');
     } finally {
       setLoading(false);
     }
@@ -105,6 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     user,
+    session,
     signIn,
     signUp,
     signOut,

@@ -1,6 +1,8 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import useAuth from './useAuth';
 
 export interface Client {
   id: string;
@@ -16,71 +18,80 @@ interface ClientsContextType {
   isLoading: boolean;
   getClient: (id: string) => Client | undefined;
   addClient: (data: Omit<Client, 'id' | 'createdAt' | 'reportsCount'>) => Promise<Client>;
-  updateClient: (id: string, data: Partial<Client>) => Promise<Client>;
+  updateClient: (id: string, data: Partial<Omit<Client, 'id' | 'createdAt' | 'reportsCount'>>) => Promise<Client>;
   deleteClient: (id: string) => Promise<void>;
 }
 
 // Create context
 const ClientsContext = createContext<ClientsContextType | undefined>(undefined);
 
-// Mock data - replace with actual Supabase
-const MOCK_CLIENTS: Client[] = [
-  {
-    id: '1',
-    name: 'Acme Corporation',
-    website: 'https://acme.example.com',
-    industry: 'Technology',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-    reportsCount: 3
-  },
-  {
-    id: '2',
-    name: 'Globex Inc',
-    website: 'https://globex.example.com',
-    industry: 'E-commerce',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
-    reportsCount: 1
-  },
-  {
-    id: '3',
-    name: 'Soylent Corp',
-    website: 'https://soylent.example.com',
-    industry: 'Food & Beverage',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-    reportsCount: 2
-  }
-];
-
 export const ClientsProvider = ({ children }: { children: ReactNode }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
-  // Load clients on mount (mock)
+  // Load clients when user changes
   useEffect(() => {
     const loadClients = async () => {
+      if (!user) {
+        setClients([]);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        // Mock API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setIsLoading(true);
         
-        // Check local storage first
-        const storedClients = localStorage.getItem('seo-ninja-clients');
-        if (storedClients) {
-          setClients(JSON.parse(storedClients));
-        } else {
-          // Use mock data as fallback
-          setClients(MOCK_CLIENTS);
-          localStorage.setItem('seo-ninja-clients', JSON.stringify(MOCK_CLIENTS));
+        // Get clients from Supabase
+        const { data: clientsData, error } = await supabase
+          .from('clients')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          throw error;
         }
-      } catch (error) {
+
+        // Get reports count for each client
+        const { data: reportsCountData, error: reportsError } = await supabase
+          .from('reports')
+          .select('client_id, count')
+          .select('client_id, count(*)', { count: 'exact' })
+          .group('client_id');
+
+        if (reportsError) {
+          console.error('Error cargando conteo de informes:', reportsError);
+        }
+
+        // Create a mapping of client_id to report count
+        const reportCountMap: Record<string, number> = {};
+        if (reportsCountData) {
+          reportsCountData.forEach((item: any) => {
+            reportCountMap[item.client_id] = Number(item.count);
+          });
+        }
+
+        // Format clients data
+        const formattedClients = clientsData.map((client: any) => ({
+          id: client.id,
+          name: client.name,
+          website: client.website,
+          industry: client.industry || '',
+          createdAt: client.created_at,
+          reportsCount: reportCountMap[client.id] || 0
+        }));
+        
+        setClients(formattedClients);
+      } catch (error: any) {
         console.error('Error loading clients:', error);
-        toast.error('Failed to load clients');
+        toast.error(error.message || 'Error al cargar clientes');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadClients();
-  }, []);
+  }, [user]);
 
   const getClient = (id: string) => {
     return clients.find(client => client.id === id);
@@ -88,73 +99,98 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
 
   const addClient = async (data: Omit<Client, 'id' | 'createdAt' | 'reportsCount'>) => {
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { name, website, industry } = data;
       
-      const newClient: Client = {
-        ...data,
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
+      const { data: newClient, error } = await supabase
+        .from('clients')
+        .insert({
+          name,
+          website,
+          industry
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      const formattedClient: Client = {
+        id: newClient.id,
+        name: newClient.name,
+        website: newClient.website,
+        industry: newClient.industry || '',
+        createdAt: newClient.created_at,
         reportsCount: 0
       };
       
-      const updatedClients = [...clients, newClient];
-      setClients(updatedClients);
-      localStorage.setItem('seo-ninja-clients', JSON.stringify(updatedClients));
+      setClients(prevClients => [formattedClient, ...prevClients]);
+      toast.success('Cliente añadido exitosamente');
       
-      toast.success('Client added successfully');
-      return newClient;
-    } catch (error) {
+      return formattedClient;
+    } catch (error: any) {
       console.error('Error adding client:', error);
-      toast.error('Failed to add client');
+      toast.error(error.message || 'Error al añadir cliente');
       throw error;
     }
   };
 
-  const updateClient = async (id: string, data: Partial<Client>) => {
+  const updateClient = async (id: string, data: Partial<Omit<Client, 'id' | 'createdAt' | 'reportsCount'>>) => {
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 600));
+      const { data: updatedClient, error } = await supabase
+        .from('clients')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
       
-      const clientIndex = clients.findIndex(client => client.id === id);
-      
-      if (clientIndex === -1) {
-        throw new Error('Client not found');
+      if (error) {
+        throw error;
       }
       
-      const updatedClient = {
-        ...clients[clientIndex],
-        ...data
+      const clientToUpdate = clients.find(client => client.id === id);
+      if (!clientToUpdate) {
+        throw new Error('Cliente no encontrado');
+      }
+      
+      const formattedClient: Client = {
+        id: updatedClient.id,
+        name: updatedClient.name,
+        website: updatedClient.website,
+        industry: updatedClient.industry || '',
+        createdAt: updatedClient.created_at,
+        reportsCount: clientToUpdate.reportsCount
       };
       
-      const updatedClients = [...clients];
-      updatedClients[clientIndex] = updatedClient;
+      setClients(prevClients => 
+        prevClients.map(client => client.id === id ? formattedClient : client)
+      );
       
-      setClients(updatedClients);
-      localStorage.setItem('seo-ninja-clients', JSON.stringify(updatedClients));
-      
-      toast.success('Client updated successfully');
-      return updatedClient;
-    } catch (error) {
+      toast.success('Cliente actualizado exitosamente');
+      return formattedClient;
+    } catch (error: any) {
       console.error('Error updating client:', error);
-      toast.error('Failed to update client');
+      toast.error(error.message || 'Error al actualizar cliente');
       throw error;
     }
   };
 
   const deleteClient = async (id: string) => {
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id);
       
-      const updatedClients = clients.filter(client => client.id !== id);
-      setClients(updatedClients);
-      localStorage.setItem('seo-ninja-clients', JSON.stringify(updatedClients));
+      if (error) {
+        throw error;
+      }
       
-      toast.success('Client deleted successfully');
-    } catch (error) {
+      setClients(prevClients => prevClients.filter(client => client.id !== id));
+      toast.success('Cliente eliminado exitosamente');
+    } catch (error: any) {
       console.error('Error deleting client:', error);
-      toast.error('Failed to delete client');
+      toast.error(error.message || 'Error al eliminar cliente');
       throw error;
     }
   };
