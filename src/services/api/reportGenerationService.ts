@@ -45,8 +45,8 @@ export const generateSeoReport = async (
           localSeo: '',
           serviceProposal: ''
         },
-        custom_prompt: customPrompt || '',
-        page_speed_data: prefetchedPageSpeedData || null
+        custom_prompt: customPrompt || ''
+        // We'll store PageSpeed data in the content field instead
       })
       .select()
       .single();
@@ -57,6 +57,23 @@ export const generateSeoReport = async (
     }
 
     console.log('Informe inicial creado con ID:', newReport.id);
+
+    // If we have prefetched PageSpeed data, update the report content
+    if (prefetchedPageSpeedData) {
+      // Update the content field to include the PageSpeed data
+      const updatedContent = {
+        ...newReport.content,
+        pageSpeedData: prefetchedPageSpeedData
+      };
+
+      // Update the report with the PageSpeed data
+      await supabase
+        .from('reports')
+        .update({ 
+          content: updatedContent 
+        })
+        .eq('id', newReport.id);
+    }
 
     // Start the report generation process with prefetched PageSpeed data
     processReportGeneration(newReport.id, clientId, url, files, customPrompt, prefetchedPageSpeedData);
@@ -72,7 +89,7 @@ export const generateSeoReport = async (
       summary: newReport.summary,
       content: newReport.content as Report['content'],
       customPrompt: newReport.custom_prompt,
-      pageSpeedData: (newReport as any).page_speed_data
+      pageSpeedData: prefetchedPageSpeedData
     };
   } catch (error: any) {
     console.error('Error al iniciar generación del informe:', error);
@@ -111,11 +128,26 @@ const processReportGeneration = async (
         if (pageSpeedData) {
           console.log('Datos de PageSpeed obtenidos correctamente');
           
-          // Update the report with the PageSpeed data
-          await supabase
+          // Get current report content
+          const { data: currentReport } = await supabase
             .from('reports')
-            .update({ page_speed_data: pageSpeedData })
-            .eq('id', reportId);
+            .select('content')
+            .eq('id', reportId)
+            .single();
+          
+          if (currentReport) {
+            // Update the content to include PageSpeed data
+            const updatedContent = {
+              ...currentReport.content,
+              pageSpeedData: pageSpeedData
+            };
+            
+            // Update the report with the PageSpeed data
+            await supabase
+              .from('reports')
+              .update({ content: updatedContent })
+              .eq('id', reportId);
+          }
             
           toast.success('Datos de PageSpeed obtenidos correctamente');
         } else {
