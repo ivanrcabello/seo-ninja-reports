@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Report } from '@/types/report.types';
+import { Report, PageSpeedResult } from '@/types/report.types';
 import { toast } from 'sonner';
 import { extractSectionsFromText } from '@/utils/reportUtils';
 
@@ -192,6 +191,92 @@ export const deleteReportById = async (id: string) => {
 };
 
 /**
+ * Fetches PageSpeed Insights data from Google API
+ */
+export const fetchPageSpeedData = async (url: string) => {
+  try {
+    const apiKey = localStorage.getItem('google_pagespeed_api_key');
+    
+    if (!apiKey) {
+      console.warn('No se ha configurado la API key de Google PageSpeed');
+      return null;
+    }
+    
+    const results = {
+      desktop: {} as PageSpeedResult,
+      mobile: {} as PageSpeedResult
+    };
+    
+    // Fetch desktop results
+    const desktopResponse = await fetch(
+      `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=desktop`
+    );
+    
+    if (!desktopResponse.ok) {
+      throw new Error(`Error al obtener datos de PageSpeed para desktop: ${desktopResponse.statusText}`);
+    }
+    
+    const desktopData = await desktopResponse.json();
+    
+    // Extract desktop metrics
+    if (desktopData.lighthouseResult && desktopData.lighthouseResult.categories) {
+      const categories = desktopData.lighthouseResult.categories;
+      results.desktop.performance = categories.performance?.score * 100 || 0;
+      results.desktop.accessibility = categories.accessibility?.score * 100 || 0;
+      results.desktop.bestPractices = categories['best-practices']?.score * 100 || 0;
+      results.desktop.seo = categories.seo?.score * 100 || 0;
+      
+      // Extract audits if available
+      const audits = desktopData.lighthouseResult.audits;
+      if (audits) {
+        results.desktop.firstContentfulPaint = audits['first-contentful-paint']?.numericValue;
+        results.desktop.speedIndex = audits['speed-index']?.numericValue;
+        results.desktop.largestContentfulPaint = audits['largest-contentful-paint']?.numericValue;
+        results.desktop.timeToInteractive = audits['interactive']?.numericValue;
+        results.desktop.totalBlockingTime = audits['total-blocking-time']?.numericValue;
+        results.desktop.cumulativeLayoutShift = audits['cumulative-layout-shift']?.numericValue;
+      }
+    }
+    
+    // Fetch mobile results
+    const mobileResponse = await fetch(
+      `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=mobile`
+    );
+    
+    if (!mobileResponse.ok) {
+      throw new Error(`Error al obtener datos de PageSpeed para mobile: ${mobileResponse.statusText}`);
+    }
+    
+    const mobileData = await mobileResponse.json();
+    
+    // Extract mobile metrics
+    if (mobileData.lighthouseResult && mobileData.lighthouseResult.categories) {
+      const categories = mobileData.lighthouseResult.categories;
+      results.mobile.performance = categories.performance?.score * 100 || 0;
+      results.mobile.accessibility = categories.accessibility?.score * 100 || 0;
+      results.mobile.bestPractices = categories['best-practices']?.score * 100 || 0;
+      results.mobile.seo = categories.seo?.score * 100 || 0;
+      
+      // Extract audits if available
+      const audits = mobileData.lighthouseResult.audits;
+      if (audits) {
+        results.mobile.firstContentfulPaint = audits['first-contentful-paint']?.numericValue;
+        results.mobile.speedIndex = audits['speed-index']?.numericValue;
+        results.mobile.largestContentfulPaint = audits['largest-contentful-paint']?.numericValue;
+        results.mobile.timeToInteractive = audits['interactive']?.numericValue;
+        results.mobile.totalBlockingTime = audits['total-blocking-time']?.numericValue;
+        results.mobile.cumulativeLayoutShift = audits['cumulative-layout-shift']?.numericValue;
+      }
+    }
+    
+    return results;
+  } catch (error: any) {
+    console.error('Error fetching PageSpeed data:', error);
+    throw error;
+  }
+};
+
+/**
  * Generates an SEO report using OpenAI
  */
 export const generateSeoReport = async (
@@ -253,8 +338,54 @@ export const generateSeoReport = async (
       }
     }
     
+    // Fetch PageSpeed Insights data if Google API key is available
+    let pageSpeedData = null;
+    try {
+      pageSpeedData = await fetchPageSpeedData(url);
+      
+      if (pageSpeedData) {
+        toast.success('Datos de PageSpeed obtenidos correctamente');
+      }
+    } catch (pageSpeedError) {
+      console.error('Error fetching PageSpeed data:', pageSpeedError);
+      toast.error('Error al obtener datos de PageSpeed');
+    }
+    
     let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
     prompt = prompt.replace('[DOMINIO]', new URL(url).hostname);
+    
+    // Add PageSpeed data to prompt if available
+    if (pageSpeedData) {
+      const pageSpeedSummary = `
+Datos de PageSpeed Insights:
+
+MÓVIL:
+- Rendimiento: ${pageSpeedData.mobile.performance.toFixed(0)}%
+- Accesibilidad: ${pageSpeedData.mobile.accessibility.toFixed(0)}%
+- Mejores Prácticas: ${pageSpeedData.mobile.bestPractices.toFixed(0)}%
+- SEO: ${pageSpeedData.mobile.seo.toFixed(0)}%
+- Métricas Clave: 
+  * First Contentful Paint: ${(pageSpeedData.mobile.firstContentfulPaint ? (pageSpeedData.mobile.firstContentfulPaint / 1000).toFixed(2) : 'N/A')}s
+  * Largest Contentful Paint: ${(pageSpeedData.mobile.largestContentfulPaint ? (pageSpeedData.mobile.largestContentfulPaint / 1000).toFixed(2) : 'N/A')}s
+  * Time to Interactive: ${(pageSpeedData.mobile.timeToInteractive ? (pageSpeedData.mobile.timeToInteractive / 1000).toFixed(2) : 'N/A')}s
+  * Total Blocking Time: ${(pageSpeedData.mobile.totalBlockingTime ? pageSpeedData.mobile.totalBlockingTime.toFixed(0) : 'N/A')}ms
+  * Cumulative Layout Shift: ${pageSpeedData.mobile.cumulativeLayoutShift?.toFixed(2) || 'N/A'}
+
+ESCRITORIO:
+- Rendimiento: ${pageSpeedData.desktop.performance.toFixed(0)}%
+- Accesibilidad: ${pageSpeedData.desktop.accessibility.toFixed(0)}%
+- Mejores Prácticas: ${pageSpeedData.desktop.bestPractices.toFixed(0)}%
+- SEO: ${pageSpeedData.desktop.seo.toFixed(0)}%
+- Métricas Clave: 
+  * First Contentful Paint: ${(pageSpeedData.desktop.firstContentfulPaint ? (pageSpeedData.desktop.firstContentfulPaint / 1000).toFixed(2) : 'N/A')}s
+  * Largest Contentful Paint: ${(pageSpeedData.desktop.largestContentfulPaint ? (pageSpeedData.desktop.largestContentfulPaint / 1000).toFixed(2) : 'N/A')}s
+  * Time to Interactive: ${(pageSpeedData.desktop.timeToInteractive ? (pageSpeedData.desktop.timeToInteractive / 1000).toFixed(2) : 'N/A')}s
+  * Total Blocking Time: ${(pageSpeedData.desktop.totalBlockingTime ? pageSpeedData.desktop.totalBlockingTime.toFixed(0) : 'N/A')}ms
+  * Cumulative Layout Shift: ${pageSpeedData.desktop.cumulativeLayoutShift?.toFixed(2) || 'N/A'}
+`;
+      
+      prompt += "\n\nA continuación se incluyen datos obtenidos de Google PageSpeed Insights. Utiliza esta información para enriquecer la sección de Análisis Técnico del informe:\n" + pageSpeedSummary;
+    }
     
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -288,20 +419,27 @@ export const generateSeoReport = async (
       
       const sections = extractSectionsFromText(generatedText);
       
-      // Update report with generated content
+      // Update report with generated content and PageSpeed data
+      const updateData: any = {
+        status: 'completed' as 'processing' | 'completed' | 'failed',
+        summary: sections.summary || 'Análisis SEO completo del sitio web.',
+        content: {
+          executiveSummary: sections.executiveSummary || '',
+          technicalAnalysis: sections.technicalAnalysis || '',
+          contentAnalysis: sections.contentAnalysis || '',
+          backlinksAnalysis: sections.backlinksAnalysis || '',
+          recommendations: sections.recommendations || ''
+        }
+      };
+      
+      // Add PageSpeed data if available
+      if (pageSpeedData) {
+        updateData.pagespeed_data = pageSpeedData;
+      }
+      
       const { data: completedReport, error: updateError } = await supabase
         .from('reports')
-        .update({
-          status: 'completed' as 'processing' | 'completed' | 'failed',
-          summary: sections.summary || 'Análisis SEO completo del sitio web.',
-          content: {
-            executiveSummary: sections.executiveSummary || '',
-            technicalAnalysis: sections.technicalAnalysis || '',
-            contentAnalysis: sections.contentAnalysis || '',
-            backlinksAnalysis: sections.backlinksAnalysis || '',
-            recommendations: sections.recommendations || ''
-          }
-        })
+        .update(updateData)
         .eq('id', newReport.id)
         .select()
         .single();
@@ -319,7 +457,8 @@ export const generateSeoReport = async (
         url: completedReport.url,
         summary: completedReport.summary,
         content: completedReport.content as Report['content'],
-        customPrompt: completedReport.custom_prompt
+        customPrompt: completedReport.custom_prompt,
+        pageSpeedData: completedReport.pagespeed_data
       };
       
       toast.success('Informe generado exitosamente');

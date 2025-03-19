@@ -7,12 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, FileText, Globe, ArrowRight, Wand2 } from 'lucide-react';
+import { Loader2, FileText, Globe, ArrowRight, Wand2, AlertCircle } from 'lucide-react';
 import FileUploader from './FileUploader';
 import BlurredCard from '../ui/BlurredCard';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ReportGeneratorProps {
   clientId: string;
@@ -30,9 +31,9 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const { generateReport } = useReports();
   const { getClient } = useClients();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const client = getClient(clientId);
+  const hasGoogleApiKey = !!localStorage.getItem('google_pagespeed_api_key');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +119,15 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
                 </p>
               </div>
               
+              {!hasGoogleApiKey && (
+                <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-700">
+                    No se ha configurado la API key de Google PageSpeed. Se generará el informe sin datos de rendimiento. Para incluir datos de rendimiento, configura la API key en la sección de Configuración.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <div className="flex justify-center items-center">
                 <span className="h-px flex-1 bg-border"></span>
                 <span className="px-3 text-sm text-muted-foreground">Luego</span>
@@ -165,6 +175,24 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
                   Sube exportaciones de analytics, informes anteriores, capturas de pantalla u otros documentos para mejorar tu análisis
                 </p>
               </div>
+              
+              {hasGoogleApiKey && (
+                <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-green-800">Análisis de rendimiento activado</h3>
+                      <p className="mt-1 text-xs text-green-700">
+                        Se incluirán datos de Google PageSpeed Insights en el informe final, incluyendo métricas de rendimiento para móvil y escritorio.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
                 <DialogTrigger asChild>

@@ -17,4 +17,21 @@ export interface Report {
     serviceProposal?: string;
   };
   customPrompt?: string;
+  pageSpeedData?: {
+    desktop: PageSpeedResult;
+    mobile: PageSpeedResult;
+  };
+}
+
+export interface PageSpeedResult {
+  performance: number;
+  accessibility: number;
+  bestPractices: number;
+  seo: number;
+  firstContentfulPaint?: number;
+  speedIndex?: number;
+  largestContentfulPaint?: number;
+  timeToInteractive?: number;
+  totalBlockingTime?: number;
+  cumulativeLayoutShift?: number;
 }

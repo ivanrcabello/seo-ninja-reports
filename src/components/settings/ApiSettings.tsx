@@ -9,6 +9,7 @@ import BlurredCard from '@/components/ui/BlurredCard';
 import { toast } from 'sonner';
 import { Loader2, Save, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const DEFAULT_PROMPT = `Eres un experto en SEO y marketing digital. A continuación, se te proporcionan datos extraídos de un análisis SEO del sitio web [DOMINIO] y de los documentos e imágenes proporcionados. Con base en esta información, elabora un informe SEO completo que incluya las siguientes secciones:
 
@@ -34,8 +35,13 @@ const DEFAULT_PROMPT = `Eres un experto en SEO y marketing digital. A continuaci
 Elabora el informe de manera clara, estructurada y con recomendaciones prácticas.`;
 
 const ApiSettings = () => {
+  const [activeTab, setActiveTab] = useState('openai');
   const [apiKey, setApiKey] = useState(() => {
     return localStorage.getItem('openai_api_key') || '';
+  });
+  
+  const [googleApiKey, setGoogleApiKey] = useState(() => {
+    return localStorage.getItem('google_pagespeed_api_key') || '';
   });
   
   const [defaultPrompt, setDefaultPrompt] = useState(() => {
@@ -44,26 +50,42 @@ const ApiSettings = () => {
   
   const [isSaving, setIsSaving] = useState(false);
   const [hasConfiguredKey, setHasConfiguredKey] = useState(false);
+  const [hasConfiguredGoogleKey, setHasConfiguredGoogleKey] = useState(false);
 
   useEffect(() => {
     const storedKey = localStorage.getItem('openai_api_key');
+    const storedGoogleKey = localStorage.getItem('google_pagespeed_api_key');
+    
     setHasConfiguredKey(!!storedKey && storedKey.trim() !== '');
+    setHasConfiguredGoogleKey(!!storedGoogleKey && storedGoogleKey.trim() !== '');
   }, []);
 
   const handleSave = () => {
     setIsSaving(true);
     
     try {
-      if (!apiKey.trim()) {
-        toast.error('Debes proporcionar una API key de OpenAI válida');
-        setIsSaving(false);
-        return;
+      if (activeTab === 'openai') {
+        if (!apiKey.trim()) {
+          toast.error('Debes proporcionar una API key de OpenAI válida');
+          setIsSaving(false);
+          return;
+        }
+        
+        localStorage.setItem('openai_api_key', apiKey);
+        localStorage.setItem('default_seo_prompt', defaultPrompt);
+        setHasConfiguredKey(true);
+        toast.success('Configuración de OpenAI guardada correctamente');
+      } else if (activeTab === 'google') {
+        if (!googleApiKey.trim()) {
+          toast.error('Debes proporcionar una API key de Google válida');
+          setIsSaving(false);
+          return;
+        }
+        
+        localStorage.setItem('google_pagespeed_api_key', googleApiKey);
+        setHasConfiguredGoogleKey(true);
+        toast.success('Configuración de Google PageSpeed API guardada correctamente');
       }
-      
-      localStorage.setItem('openai_api_key', apiKey);
-      localStorage.setItem('default_seo_prompt', defaultPrompt);
-      setHasConfiguredKey(true);
-      toast.success('Configuración guardada correctamente');
     } catch (error) {
       console.error('Error al guardar la configuración:', error);
       toast.error('Error al guardar la configuración');
@@ -85,61 +107,95 @@ const ApiSettings = () => {
             Configuración de API
           </CardTitle>
           <CardDescription>
-            Configura tu API de OpenAI y personaliza el prompt para la generación de informes SEO
+            Configura las APIs necesarias para la generación de informes SEO
           </CardDescription>
         </CardHeader>
         
-        {!hasConfiguredKey && (
-          <CardContent className="pb-0">
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                No has configurado una API key de OpenAI. Debes configurar una API key válida para utilizar la funcionalidad de generación de informes SEO.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        )}
-        
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">API Key de OpenAI</Label>
-            <Input
-              id="apiKey"
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="glass-input"
-              placeholder="sk-..."
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Tu clave API de OpenAI para generar informes SEO. Obtén una clave en <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com/api-keys</a>
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="defaultPrompt">Prompt Predeterminado</Label>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleReset}
-                className="h-8 text-xs"
-              >
-                Restaurar predeterminado
-              </Button>
-            </div>
-            <Textarea
-              id="defaultPrompt"
-              value={defaultPrompt}
-              onChange={(e) => setDefaultPrompt(e.target.value)}
-              className="min-h-[300px] glass-input"
-            />
-            <p className="text-xs text-muted-foreground">
-              Este prompt será utilizado como base para generar todos los informes SEO
-            </p>
-          </div>
+        <CardContent className="pb-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="openai">OpenAI</TabsTrigger>
+              <TabsTrigger value="google">Google PageSpeed</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="openai" className="space-y-6">
+              {!hasConfiguredKey && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No has configurado una API key de OpenAI. Debes configurar una API key válida para utilizar la funcionalidad de generación de informes SEO.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key de OpenAI</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="glass-input"
+                  placeholder="sk-..."
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tu clave API de OpenAI para generar informes SEO. Obtén una clave en <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com/api-keys</a>
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="defaultPrompt">Prompt Predeterminado</Label>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleReset}
+                    className="h-8 text-xs"
+                  >
+                    Restaurar predeterminado
+                  </Button>
+                </div>
+                <Textarea
+                  id="defaultPrompt"
+                  value={defaultPrompt}
+                  onChange={(e) => setDefaultPrompt(e.target.value)}
+                  className="min-h-[300px] glass-input"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Este prompt será utilizado como base para generar todos los informes SEO
+                </p>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="google" className="space-y-6">
+              {!hasConfiguredGoogleKey && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No has configurado una API key de Google. Debes configurar una API key válida para utilizar la funcionalidad de análisis con PageSpeed Insights.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="googleApiKey">API Key de Google</Label>
+                <Input
+                  id="googleApiKey"
+                  type="password"
+                  value={googleApiKey}
+                  onChange={(e) => setGoogleApiKey(e.target.value)}
+                  className="glass-input"
+                  placeholder="AIza..."
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tu clave API de Google para analizar sitios web con PageSpeed Insights. Obtén una clave en <a href="https://developers.google.com/speed/docs/insights/v5/get-started" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a>
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
         
         <CardFooter className="flex justify-end pt-4">
