@@ -1,7 +1,7 @@
 
 import React from 'react';
 import BlurredCard from '@/components/ui/BlurredCard';
-import { Calendar, Globe, ExternalLink } from 'lucide-react';
+import { Calendar, Globe, ExternalLink, Building } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -9,9 +9,17 @@ interface PublicReportHeaderProps {
   title: string;
   date?: string;
   url?: string;
+  clientName?: string;
+  clientWebsite?: string;
 }
 
-const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ title, date, url }) => {
+const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ 
+  title, 
+  date, 
+  url,
+  clientName,
+  clientWebsite
+}) => {
   return (
     <BlurredCard className="w-full max-w-4xl mb-8 bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
@@ -36,6 +44,12 @@ const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ title, date, ur
                   {url.replace(/^https?:\/\//, '').split('/')[0]}
                   <ExternalLink className="h-3 w-3 opacity-70" />
                 </a>
+              </div>
+            )}
+            {clientName && (
+              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+                <Building className="h-4 w-4" />
+                <span>{clientName}</span>
               </div>
             )}
           </div>

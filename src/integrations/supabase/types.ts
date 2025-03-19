@@ -124,7 +124,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_reports: {
+        Row: {
+          client_name: string | null
+          client_website: string | null
+          content: Json | null
+          date: string | null
+          id: string | null
+          status: string | null
+          summary: string | null
+          title: string | null
+          url: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

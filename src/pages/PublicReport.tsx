@@ -10,9 +10,14 @@ import PublicReportError from '@/components/public-reports/PublicReportError';
 import PublicReportLoading from '@/components/public-reports/PublicReportLoading';
 import PublicReportEmpty from '@/components/public-reports/PublicReportEmpty';
 
+interface PublicReportData extends Report {
+  client_name?: string;
+  client_website?: string;
+}
+
 const PublicReport = () => {
   const { id } = useParams<{ id: string }>();
-  const [report, setReport] = useState<Report | null>(null);
+  const [report, setReport] = useState<PublicReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -28,25 +33,25 @@ const PublicReport = () => {
         
         console.log('Fetching public report with ID:', id);
         
-        // First, try to query without using single()
-        const { data: reportData, error: fetchError } = await supabase
-          .from('reports')
-          .select('*, clients(name, website)')
+        // Use the public_reports view we created to avoid RLS issues
+        const { data: publicReportData, error: fetchError } = await supabase
+          .from('public_reports')
+          .select('*')
           .eq('id', id);
         
         if (fetchError) {
           console.error('Error fetching public report:', fetchError);
-          throw new Error(`Error: ${fetchError.message}`);
+          throw new Error(`Error al cargar informe: ${fetchError.message}`);
         }
         
-        if (!reportData || reportData.length === 0) {
+        if (!publicReportData || publicReportData.length === 0) {
           console.error('No data returned for public report ID:', id);
           throw new Error(`Informe con ID ${id} no encontrado`);
         }
         
-        console.log('Public report data retrieved successfully:', reportData[0]);
+        console.log('Public report data retrieved successfully:', publicReportData[0]);
         
-        const data = reportData[0];
+        const data = publicReportData[0];
         
         // Safely type check the content from the database
         let reportContent;
@@ -69,16 +74,17 @@ const PublicReport = () => {
           };
         }
         
-        const formattedReport: Report = {
+        const formattedReport: PublicReportData = {
           id: data.id,
-          clientId: data.client_id,
+          clientId: '', // No client_id in the view but not needed for public display
           title: data.title,
           date: data.date,
           status: data.status as 'processing' | 'completed' | 'failed',
           url: data.url,
           summary: data.summary,
           content: reportContent,
-          customPrompt: data.custom_prompt
+          client_name: data.client_name,
+          client_website: data.client_website
         };
         
         setReport(formattedReport);
@@ -125,7 +131,9 @@ const PublicReport = () => {
       <PublicReportHeader 
         title={report.title} 
         date={report.date} 
-        url={report.url} 
+        url={report.url}
+        clientName={report.client_name}
+        clientWebsite={report.client_website}
       />
       
       <PublicReportContent content={report.content} />
