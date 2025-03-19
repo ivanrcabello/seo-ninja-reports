@@ -35,9 +35,9 @@ const Navbar: React.FC<{ isMobile: boolean; closeMenu?: () => void }> = ({
   ];
 
   const paquetes = [
-    { title: "Plan Starter", description: "Ideal para pequeños negocios locales", href: "/packs/starter" },
-    { title: "Plan Ascenso", description: "Para empresas que buscan expandir su presencia online", href: "/packs/ascenso" },
-    { title: "Plan Master", description: "Servicios avanzados para máximos resultados", href: "/packs/master" },
+    { title: "Plan Starter", description: "Ideal para pequeños negocios locales", href: "/paquetes/starter" },
+    { title: "Plan Ascenso", description: "Para empresas que buscan expandir su presencia online", href: "/paquetes/ascenso" },
+    { title: "Plan Master", description: "Servicios avanzados para máximos resultados", href: "/paquetes/master" },
   ];
 
   if (isMobile) {
