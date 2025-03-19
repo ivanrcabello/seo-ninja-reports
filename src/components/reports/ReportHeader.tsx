@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share, Calendar, Globe, PenLine, CheckCircle, ExternalLink } from 'lucide-react';
 import BlurredCard from '../ui/BlurredCard';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import ShareReportDialog from './ShareReportDialog';
 
 interface ReportHeaderProps {
   title: string;
@@ -12,6 +13,7 @@ interface ReportHeaderProps {
   url?: string;
   isEditing: boolean;
   setIsEditing: (value: boolean) => void;
+  reportId: string;
 }
 
 const ReportHeader: React.FC<ReportHeaderProps> = ({ 
@@ -19,8 +21,11 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
   date, 
   url, 
   isEditing, 
-  setIsEditing 
+  setIsEditing,
+  reportId
 }) => {
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  
   return (
     <BlurredCard className="w-full bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
@@ -71,12 +76,24 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
             <Download className="h-4 w-4 group-hover:text-primary-foreground" />
             <span className="hidden sm:inline">Descargar</span>
           </Button>
-          <Button variant="outline" size="sm" className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all"
+            onClick={() => setShareDialogOpen(true)}
+          >
             <Share className="h-4 w-4 group-hover:text-primary-foreground" />
             <span className="hidden sm:inline">Compartir</span>
           </Button>
         </div>
       </div>
+      
+      <ShareReportDialog 
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        reportId={reportId}
+        reportTitle={title}
+      />
     </BlurredCard>
   );
 };

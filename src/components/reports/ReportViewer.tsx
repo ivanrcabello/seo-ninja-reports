@@ -14,7 +14,7 @@ interface ReportViewerProps {
 }
 
 const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
-  const { title, date, url, content } = report;
+  const { id, title, date, url, content } = report;
   const { updateReport } = useReports();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
@@ -96,7 +96,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         date={date} 
         url={url} 
         isEditing={isEditing} 
-        setIsEditing={setIsEditing} 
+        setIsEditing={setIsEditing}
+        reportId={id}
       />
       
       <Tabs defaultValue="executive-summary" className="w-full">
