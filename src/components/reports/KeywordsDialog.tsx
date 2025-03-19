@@ -162,7 +162,7 @@ const KeywordsDialog: React.FC<KeywordsDialogProps> = ({
           if (k.difficulty) keywordText += ` (Dificultad: ${k.difficulty}/100)`;
           return keywordText;
         })
-        .join('\\n');
+        .join('\n');
       
       // Get current report content
       const { data: reportData, error: reportError } = await supabase
@@ -176,10 +176,9 @@ const KeywordsDialog: React.FC<KeywordsDialogProps> = ({
       }
       
       // Update content with keywords
-      const updatedContent = {
-        ...reportData.content,
-        keywords: keywordsContent
-      };
+      const updatedContent = reportData.content 
+        ? { ...reportData.content, keywords: keywordsContent }
+        : { keywords: keywordsContent };
       
       // Save updated content
       const { error: updateError } = await supabase
