@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Store, AlertCircle, Check, Search } from 'lucide-react';
 import { toast } from 'sonner';
-import { extractBusinessInfo } from '@/services/reportService';
+import { extractBusinessInfo } from '@/services/api/businessProfileService';
 import { BusinessProfile } from '@/types/report.types';
 
 interface BusinessUrlInputProps {
@@ -22,6 +22,13 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
   setBusinessProfile
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  
+  useEffect(() => {
+    // Comprobar si existe la API key
+    const apiKey = localStorage.getItem('google_business_api_key');
+    setHasApiKey(!!apiKey && apiKey.trim() !== '');
+  }, []);
   
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusinessUrl(e.target.value);
@@ -129,13 +136,16 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
         </Card>
       )}
       
-      <div className="text-sm flex items-start gap-2 mt-2 text-amber-600 dark:text-amber-400">
-        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-        <p>
-          La información se extraerá de forma simulada para esta demostración. 
-          Para extraer datos reales se necesitaría integrar con una API externa.
-        </p>
-      </div>
+      {!hasApiKey && (
+        <div className="text-sm flex items-start gap-2 mt-2 text-amber-600 dark:text-amber-400">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <p>
+            No se ha configurado una API key para Google Business. 
+            La información se extraerá de forma simulada para esta demostración.
+            Configura una API key en Configuración &gt; Google Business.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

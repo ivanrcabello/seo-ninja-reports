@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SettingsCard from './api/SettingsCard';
 import GoogleSettings from './api/GoogleSettings';
 import { OpenAISettings, DEFAULT_PROMPT } from './api/OpenAISettings';
+import GoogleBusinessSettings from './api/GoogleBusinessSettings';
 
 const ApiSettings = () => {
   const [activeTab, setActiveTab] = useState('openai');
@@ -16,6 +17,10 @@ const ApiSettings = () => {
     return localStorage.getItem('google_pagespeed_api_key') || '';
   });
   
+  const [googleBusinessApiKey, setGoogleBusinessApiKey] = useState(() => {
+    return localStorage.getItem('google_business_api_key') || '';
+  });
+  
   const [defaultPrompt, setDefaultPrompt] = useState(() => {
     return localStorage.getItem('default_seo_prompt') || DEFAULT_PROMPT;
   });
@@ -23,13 +28,16 @@ const ApiSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasConfiguredKey, setHasConfiguredKey] = useState(false);
   const [hasConfiguredGoogleKey, setHasConfiguredGoogleKey] = useState(false);
+  const [hasConfiguredGoogleBusinessKey, setHasConfiguredGoogleBusinessKey] = useState(false);
 
   useEffect(() => {
     const storedKey = localStorage.getItem('openai_api_key');
     const storedGoogleKey = localStorage.getItem('google_pagespeed_api_key');
+    const storedGoogleBusinessKey = localStorage.getItem('google_business_api_key');
     
     setHasConfiguredKey(!!storedKey && storedKey.trim() !== '');
     setHasConfiguredGoogleKey(!!storedGoogleKey && storedGoogleKey.trim() !== '');
+    setHasConfiguredGoogleBusinessKey(!!storedGoogleBusinessKey && storedGoogleBusinessKey.trim() !== '');
   }, []);
 
   const handleSave = () => {
@@ -57,6 +65,16 @@ const ApiSettings = () => {
         localStorage.setItem('google_pagespeed_api_key', googleApiKey);
         setHasConfiguredGoogleKey(true);
         toast.success('Configuración de Google PageSpeed API guardada correctamente');
+      } else if (activeTab === 'google-business') {
+        if (!googleBusinessApiKey.trim()) {
+          toast.error('Debes proporcionar una API key de Google Business válida');
+          setIsSaving(false);
+          return;
+        }
+        
+        localStorage.setItem('google_business_api_key', googleBusinessApiKey);
+        setHasConfiguredGoogleBusinessKey(true);
+        toast.success('Configuración de Google Business API guardada correctamente');
       }
     } catch (error) {
       console.error('Error al guardar la configuración:', error);
@@ -74,9 +92,10 @@ const ApiSettings = () => {
       onSave={handleSave}
     >
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="openai">OpenAI</TabsTrigger>
           <TabsTrigger value="google">Google PageSpeed</TabsTrigger>
+          <TabsTrigger value="google-business">Google Business</TabsTrigger>
         </TabsList>
         
         <TabsContent value="openai">
@@ -95,6 +114,14 @@ const ApiSettings = () => {
             googleApiKey={googleApiKey}
             setGoogleApiKey={setGoogleApiKey}
             hasConfiguredGoogleKey={hasConfiguredGoogleKey}
+          />
+        </TabsContent>
+        
+        <TabsContent value="google-business">
+          <GoogleBusinessSettings 
+            googleBusinessApiKey={googleBusinessApiKey}
+            setGoogleBusinessApiKey={setGoogleBusinessApiKey}
+            hasConfiguredGoogleBusinessKey={hasConfiguredGoogleBusinessKey}
           />
         </TabsContent>
       </Tabs>

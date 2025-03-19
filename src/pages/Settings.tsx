@@ -35,8 +35,9 @@ const Settings = () => {
               <Info className="h-4 w-4" />
               <AlertTitle>Importante</AlertTitle>
               <AlertDescription>
-                Para poder generar informes SEO, necesitas configurar una API key de OpenAI. 
-                Sin una API key válida, la función de generación de informes no funcionará.
+                Para aprovechar todas las funcionalidades, configura las APIs necesarias.
+                OpenAI es obligatoria para la generación de informes. Google PageSpeed y Google Business
+                son opcionales pero añaden funcionalidades adicionales.
               </AlertDescription>
             </Alert>
           </AnimatedContainer>

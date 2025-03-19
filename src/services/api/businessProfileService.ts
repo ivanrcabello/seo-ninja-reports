@@ -155,43 +155,38 @@ export const getBusinessProfile = async (reportId: string): Promise<BusinessProf
 
 /**
  * Extrae información de una URL de Google Business
- * Nota: Este es un ejemplo simplificado. Para una implementación completa,
- * se necesitaría una API externa o un scraper más sofisticado.
  */
 export const extractBusinessInfo = async (
   businessUrl: string
 ): Promise<Partial<BusinessProfile> | null> => {
   try {
-    // En una implementación real, aquí se usaría una API o scraping
-    // Para este ejemplo, mostraremos un mensaje de que se necesitaría
-    // integrar con una API externa
+    const apiKey = localStorage.getItem('google_business_api_key');
     
+    if (!apiKey) {
+      console.log('No se ha configurado API key para Google Business');
+      
+      // En desarrollo, podemos usar datos simulados
+      if (process.env.NODE_ENV !== 'production') {
+        toast.info('Usando datos simulados', {
+          description: 'No se ha configurado una API key para Google Business, usando datos de ejemplo',
+        });
+        
+        return simulateBusinessProfileData(businessUrl);
+      } else {
+        toast.error('API key no configurada', {
+          description: 'Debes configurar una API key válida para Google Business en la sección de Configuración',
+        });
+        return null;
+      }
+    }
+    
+    // Aquí implementaríamos la llamada real a la API de Google Business
+    // Por ahora, seguiremos usando datos simulados con un mensaje diferente
     toast.info('Extracción de datos', {
-      description: 'Para extraer datos reales se necesitaría integrar con una API externa de Google o un servicio de scraping',
+      description: 'Por el momento, se están utilizando datos simulados para la demostración',
     });
     
-    // Devolvemos un resultado simulado para demostración
-    // En un caso real, estos datos vendrían de la API o el scraping
-    return {
-      businessUrl,
-      businessName: 'Negocio de ejemplo',
-      businessAddress: 'Calle Ejemplo 123, Ciudad',
-      businessPhone: '+34 123 456 789',
-      businessCategory: 'Servicios Profesionales',
-      businessRating: 4.7,
-      businessReviewsCount: 42,
-      businessWebsite: 'https://www.ejemplo.com',
-      businessHours: {
-        'Monday': '9:00 - 18:00',
-        'Tuesday': '9:00 - 18:00',
-        'Wednesday': '9:00 - 18:00',
-        'Thursday': '9:00 - 18:00',
-        'Friday': '9:00 - 17:00',
-        'Saturday': 'Cerrado',
-        'Sunday': 'Cerrado'
-      }
-    };
-    
+    return simulateBusinessProfileData(businessUrl);
   } catch (error: any) {
     console.error('Error al extraer información de negocio:', error);
     toast.error('Error al extraer información', {
@@ -200,3 +195,28 @@ export const extractBusinessInfo = async (
     return null;
   }
 };
+
+/**
+ * Simula datos de perfil de negocio para desarrollo
+ */
+function simulateBusinessProfileData(businessUrl: string): Partial<BusinessProfile> {
+  return {
+    businessUrl,
+    businessName: 'Negocio de ejemplo',
+    businessAddress: 'Calle Ejemplo 123, Ciudad',
+    businessPhone: '+34 123 456 789',
+    businessCategory: 'Servicios Profesionales',
+    businessRating: 4.7,
+    businessReviewsCount: 42,
+    businessWebsite: 'https://www.ejemplo.com',
+    businessHours: {
+      'Monday': '9:00 - 18:00',
+      'Tuesday': '9:00 - 18:00',
+      'Wednesday': '9:00 - 18:00',
+      'Thursday': '9:00 - 18:00',
+      'Friday': '9:00 - 17:00',
+      'Saturday': 'Cerrado',
+      'Sunday': 'Cerrado'
+    }
+  };
+}
