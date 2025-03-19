@@ -22,7 +22,8 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
           <ReportSection
             title="Resumen Ejecutivo"
             content={content?.executiveSummary || ''}
-            isPublic
+            sectionKey="executiveSummary"
+            isPublic={true}
           />
         );
       case 'technical':
@@ -30,7 +31,8 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
           <ReportSection
             title="Análisis Técnico SEO"
             content={content?.technicalAnalysis || ''}
-            isPublic
+            sectionKey="technicalAnalysis"
+            isPublic={true}
           />
         );
       case 'content':
@@ -38,7 +40,8 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
           <ReportSection
             title="Análisis de Contenido"
             content={content?.contentAnalysis || ''}
-            isPublic
+            sectionKey="contentAnalysis"
+            isPublic={true}
           />
         );
       case 'backlinks':
@@ -46,18 +49,20 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
           <ReportSection
             title="Análisis de Backlinks"
             content={content?.backlinksAnalysis || ''}
-            isPublic
+            sectionKey="backlinksAnalysis"
+            isPublic={true}
           />
         );
       case 'recommendations':
         if (content?.recommendations?.includes('<recommendation>')) {
-          return <RecommendationsList content={content.recommendations} isPublic />;
+          return <RecommendationsList content={content.recommendations} isPublic={true} />;
         }
         return (
           <ReportSection
             title="Recomendaciones"
             content={content?.recommendations || ''}
-            isPublic
+            sectionKey="recommendations"
+            isPublic={true}
           />
         );
       case 'local-seo':
@@ -65,7 +70,8 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
           <ReportSection
             title="SEO Local"
             content={content?.localSeo || ''}
-            isPublic
+            sectionKey="localSeo"
+            isPublic={true}
           />
         );
       case 'proposal':
@@ -73,7 +79,8 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
           <ReportSection
             title="Propuesta de Servicios"
             content={content?.serviceProposal || ''}
-            isPublic
+            sectionKey="serviceProposal"
+            isPublic={true}
           />
         );
       case 'keywords':
@@ -81,7 +88,7 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
           <KeywordsSection
             keywordsContent={content?.keywords || ''}
             keywords={keywords}
-            isPublic
+            isPublic={true}
           />
         );
       case 'business-profile':

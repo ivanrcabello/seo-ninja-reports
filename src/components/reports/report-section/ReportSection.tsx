@@ -13,21 +13,23 @@ import RecommendationsList from './RecommendationsList';
 interface ReportSectionProps {
   title: string;
   content: string;
-  sectionKey: string;
-  onEdit: (section: string, content: string) => void;
-  isEditing: boolean;
+  sectionKey?: string;
+  onEdit?: (section: string, content: string) => void;
+  isEditing?: boolean;
   delay?: number;
   isRecommendations?: boolean;
+  isPublic?: boolean;
 }
 
 const ReportSection: React.FC<ReportSectionProps> = ({
   title,
   content,
-  sectionKey,
-  onEdit,
-  isEditing,
+  sectionKey = '',
+  onEdit = () => {},
+  isEditing = false,
   delay = 0,
-  isRecommendations = false
+  isRecommendations = false,
+  isPublic = false
 }) => {
   // Use empty string if content is undefined or null
   const safeContent = content || '';
@@ -38,7 +40,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
         <BlurredCard className="p-8 text-center">
           <h3 className="text-xl font-medium mb-2">No hay contenido disponible</h3>
           <p className="text-muted-foreground">Esta sección aún no tiene contenido.</p>
-          {isEditing && (
+          {isEditing && !isPublic && (
             <Button 
               variant="outline" 
               size="sm" 
@@ -62,7 +64,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
             <SectionIcon sectionKey={sectionKey} />
             {title}
           </CardTitle>
-          {isEditing && (
+          {isEditing && !isPublic && (
             <Button 
               variant="ghost" 
               size="sm" 
@@ -78,7 +80,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
         <CardContent className="pt-6">
           <div className="prose prose-sm md:prose-base max-w-none">
             {isRecommendations ? 
-              <RecommendationsList content={safeContent} /> : 
+              <RecommendationsList content={safeContent} isPublic={isPublic} /> : 
               <FormattedContent content={safeContent} />
             }
           </div>

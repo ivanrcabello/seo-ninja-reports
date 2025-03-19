@@ -2,14 +2,23 @@
 import React, { useState } from 'react';
 import { getRecommendationPriority, formatReportContent } from '@/utils/reportUtils';
 import PriorityBadge from './PriorityBadge';
-import { ChevronDown, ChevronUp, AlertTriangle, Check, Clock, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertTriangle, Check, Clock, Info, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface RecommendationsListProps {
   content: string;
+  isPublic?: boolean;
+  isEditing?: boolean;
+  onEdit?: (newContent: string) => void;
 }
 
-const RecommendationsList: React.FC<RecommendationsListProps> = ({ content }) => {
+const RecommendationsList: React.FC<RecommendationsListProps> = ({ 
+  content, 
+  isPublic = false,
+  isEditing = false,
+  onEdit = () => {}
+}) => {
   // State for expanded items
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
   
@@ -31,10 +40,23 @@ const RecommendationsList: React.FC<RecommendationsListProps> = ({ content }) =>
   // If content is already HTML formatted
   if (content.includes('<li') || content.includes('<p') || content.includes('<h')) {
     return (
-      <div 
-        dangerouslySetInnerHTML={{ __html: formatReportContent(content) }} 
-        className="prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold" 
-      />
+      <div className="relative">
+        {isEditing && !isPublic && onEdit && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="absolute right-0 top-0"
+            onClick={() => onEdit(content)}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+        )}
+        <div 
+          dangerouslySetInnerHTML={{ __html: formatReportContent(content) }} 
+          className="prose-headings:text-primary prose-strong:text-primary/90 prose-strong:font-semibold" 
+        />
+      </div>
     );
   }
   
@@ -42,7 +64,19 @@ const RecommendationsList: React.FC<RecommendationsListProps> = ({ content }) =>
   const recommendations = content.split('\n').filter(item => item.trim() !== '');
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
+      {isEditing && !isPublic && onEdit && (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="absolute right-0 top-0"
+          onClick={() => onEdit(content)}
+        >
+          <Edit className="h-4 w-4 mr-2" />
+          Editar
+        </Button>
+      )}
+      
       {recommendations.map((item, i) => {
         const itemNumber = i + 1;
         const cleanItem = item.replace(/^\d+\.\s*/, '');

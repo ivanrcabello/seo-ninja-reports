@@ -32,85 +32,55 @@ const ReportContents: React.FC<ReportContentsProps> = ({
   return (
     <>
       <ContentTab 
-        value="executive-summary" 
-        title="Resumen Ejecutivo" 
-        content={content.executiveSummary} 
-        icon={Info} 
-        iconColor="text-blue-500" 
+        tabValue="executive-summary" 
+        content={content}
       />
       
       <ContentTab 
-        value="technical" 
-        title="Análisis Técnico" 
-        content={content.technicalAnalysis} 
-        icon={CheckCircle} 
-        iconColor="text-green-500" 
+        tabValue="technical" 
+        content={content}
       />
       
       <ContentTab 
-        value="content" 
-        title="Análisis de Contenido" 
-        content={content.contentAnalysis} 
-        icon={ArrowUp} 
-        iconColor="text-purple-500" 
+        tabValue="content" 
+        content={content}
       />
       
       <ContentTab 
-        value="backlinks" 
-        title="Análisis de Backlinks y Autoridad" 
-        content={content.backlinksAnalysis} 
-        icon={ArrowDown} 
-        iconColor="text-amber-500" 
+        tabValue="backlinks" 
+        content={content}
       />
       
       <ContentTab 
-        value="recommendations" 
-        title="Recomendaciones y Acciones" 
-        content={content.recommendations} 
-        icon={AlertTriangle} 
-        iconColor="text-red-500" 
-        isRecommendations={true}
+        tabValue="recommendations" 
+        content={content}
       />
       
       {hasLocalSeo && (
         <ContentTab 
-          value="local-seo" 
-          title="SEO Local" 
-          content={content.localSeo || ''} 
-          icon={MapPin} 
-          iconColor="text-indigo-500" 
+          tabValue="local-seo" 
+          content={content}
         />
       )}
       
       {hasProposal && (
         <ContentTab 
-          value="proposal" 
-          title="Propuesta de Servicios" 
-          content={content.serviceProposal || ''} 
-          icon={Star} 
-          iconColor="text-yellow-500" 
+          tabValue="proposal" 
+          content={content}
         />
       )}
       
       {hasKeywords && (
         <ContentTab 
-          value="keywords" 
-          title="Palabras Clave" 
-          content={content.keywords || ''} 
-          icon={FileText} 
-          iconColor="text-teal-500" 
+          tabValue="keywords" 
+          content={content}
         />
       )}
       
       {hasBusinessProfile && content.businessProfile && (
         <ContentTab 
-          value="business-profile" 
-          title="Ficha de Negocio" 
-          content={content.businessProfile.businessUrl}
-          icon={Building} 
-          iconColor="text-gray-500" 
-          isBusinessProfile={true}
-          businessProfile={content.businessProfile}
+          tabValue="business-profile" 
+          content={content}
         />
       )}
     </>

@@ -43,7 +43,7 @@ const KeywordsSection: React.FC<KeywordsSectionProps> = ({
       {/* Only show written content if it exists */}
       {keywordsContent && (
         <div className="relative">
-          {isEditing && onEdit && (
+          {isEditing && !isPublic && onEdit && (
             <Button
               variant="outline"
               size="sm"
