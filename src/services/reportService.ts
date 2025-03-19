@@ -280,53 +280,75 @@ export const fetchPageSpeedData = async (url: string) => {
  * Generates an SEO report using OpenAI
  */
 export const generateSeoReport = async (
-  clientId: string, 
-  url: string, 
-  files: File[], 
+  clientId: string,
+  url: string,
+  files: File[],
   customPrompt?: string
 ): Promise<Report> => {
   try {
-    const apiKey = localStorage.getItem('openai_api_key') || '';
-    
-    if (!apiKey) {
-      toast.error('No se ha configurado la API key de OpenAI');
-      throw new Error('No se ha configurado la API key de OpenAI');
+    const session = await supabase.auth.getSession();
+    if (!session.data.session) {
+      throw new Error('No active session');
     }
-    
-    // Create initial processing report
-    const { data: newReport, error } = await supabase
+
+    // Create a new report with status "processing"
+    const { data: newReport, error: createError } = await supabase
       .from('reports')
       .insert({
         client_id: clientId,
-        title: `Análisis SEO - ${new URL(url).hostname}`,
-        url,
-        custom_prompt: customPrompt,
-        status: 'processing' as 'processing' | 'completed' | 'failed'
+        title: `SEO Report - ${url}`,
+        url: url,
+        status: 'processing',
+        date: new Date().toISOString(),
+        summary: 'Generating report...',
+        content: {},
+        custom_prompt: customPrompt || ''
       })
       .select()
       .single();
-    
-    if (error) {
-      throw error;
+
+    if (createError) {
+      throw createError;
     }
-    
-    const processingReport: Report = {
+
+    console.log('Created initial report:', newReport);
+
+    // Start the report generation process
+    processReportGeneration(newReport.id, clientId, url, files, customPrompt);
+
+    // Return the initial report with status "processing"
+    return {
       id: newReport.id,
       clientId: newReport.client_id,
       title: newReport.title,
       date: newReport.date,
       status: newReport.status as 'processing' | 'completed' | 'failed',
       url: newReport.url,
-      customPrompt: newReport.custom_prompt
+      summary: newReport.summary,
+      content: {},
+      customPrompt: newReport.custom_prompt,
+      pageSpeedData: null
     };
-    
-    toast.success('Generación de informe iniciada');
-    
+  } catch (error: any) {
+    console.error('Error in generateSeoReport:', error);
+    toast.error('Error al iniciar generación del informe');
+    throw error;
+  }
+};
+
+const processReportGeneration = async (
+  reportId: string,
+  clientId: string,
+  url: string,
+  files: File[],
+  customPrompt?: string
+) => {
+  try {
     // Upload supporting files if any
     if (files.length > 0) {
       for (const file of files) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${clientId}/${newReport.id}/${Date.now()}.${fileExt}`;
+        const fileName = `${clientId}/${reportId}/${Date.now()}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('seo-files')
@@ -392,7 +414,7 @@ ESCRITORIO:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${localStorage.getItem('openai_api_key') || ''}`
         },
         body: JSON.stringify({
           model: "gpt-4o",
@@ -421,15 +443,16 @@ ESCRITORIO:
       
       // Update report with generated content and PageSpeed data
       const updateData: any = {
-        status: 'completed' as 'processing' | 'completed' | 'failed',
-        summary: sections.summary || 'Análisis SEO completo del sitio web.',
         content: {
           executiveSummary: sections.executiveSummary || '',
           technicalAnalysis: sections.technicalAnalysis || '',
           contentAnalysis: sections.contentAnalysis || '',
           backlinksAnalysis: sections.backlinksAnalysis || '',
           recommendations: sections.recommendations || ''
-        }
+        },
+        summary: sections.summary || 'Análisis SEO completo del sitio web.',
+        status: 'completed',
+        updated_at: new Date().toISOString()
       };
       
       // Add PageSpeed data if available
@@ -440,7 +463,7 @@ ESCRITORIO:
       const { data: completedReport, error: updateError } = await supabase
         .from('reports')
         .update(updateData)
-        .eq('id', newReport.id)
+        .eq('id', reportId)
         .select()
         .single();
         
@@ -474,7 +497,7 @@ ESCRITORIO:
           status: 'failed' as 'processing' | 'completed' | 'failed',
           summary: `Error: ${apiError.message}`
         })
-        .eq('id', newReport.id);
+        .eq('id', reportId);
         
       toast.error('Error al generar el informe con la API de OpenAI');
       throw apiError;
