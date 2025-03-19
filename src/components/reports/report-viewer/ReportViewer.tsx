@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { Report } from '@/types/report.types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import ReportHeader from './ReportHeader';
+import ReportHeader from '../ReportHeader';
 import ReportTabs from './ReportTabs';
 import { getPageSpeedData } from '@/services/api/pagespeed/getPageSpeedData';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +28,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const { toast } = useToast();
   const location = useLocation();
   
-  // Extract edit mode from URL query params
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const editMode = searchParams.get('mode') === 'edit';
@@ -82,7 +80,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       
       await updateExistingReport(report.id, { content: updatedContent });
       
-      // Update the report locally
       if (report && report.content) {
         report.content[activeSection as keyof typeof report.content] = editContent as never;
       }
@@ -136,6 +133,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           isEditing={isEditing} 
           setIsEditing={setIsEditing}
           reportId={report.id}
+          variant="simple"
         />
       </CardHeader>
       <CardContent className="overflow-auto flex-1 p-0 pt-4">
