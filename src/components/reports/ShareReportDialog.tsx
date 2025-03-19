@@ -21,7 +21,8 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   
-  const shareUrl = `${window.location.origin}/reports/${reportId}`;
+  // Use the public sharing URL with the /shared/reports/ path
+  const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
   
   const handleCopyLink = async () => {
     try {

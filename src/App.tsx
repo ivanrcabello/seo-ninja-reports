@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ClientDetail from "./pages/ClientDetail";
 import ReportDetail from "./pages/ReportDetail";
+import PublicReport from "./pages/PublicReport";
 import AllReports from "./pages/AllReports";
 import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
@@ -35,6 +36,7 @@ const App = () => (
                 <Route path="/clients/:id" element={<ClientDetail />} />
                 <Route path="/reports" element={<AllReports />} />
                 <Route path="/reports/:id" element={<ReportDetail />} />
+                <Route path="/shared/reports/:id" element={<PublicReport />} />
                 <Route path="/activity" element={<Activity />} />
                 <Route path="/settings" element={<Settings />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
