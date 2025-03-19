@@ -39,7 +39,7 @@ const Footer: React.FC = () => {
               <Link to="/blog" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Blog
               </Link>
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/documentacion" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Documentación
               </Link>
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">

@@ -23,6 +23,7 @@ import PackStarter from './pages/packs/PackStarter';
 import PackAscenso from './pages/packs/PackAscenso';
 import PackMaster from './pages/packs/PackMaster';
 import Blog from './pages/Blog';
+import Documentacion from './pages/Documentacion';
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/paquetes/ascenso" element={<PackAscenso />} />
                 <Route path="/paquetes/master" element={<PackMaster />} />
                 <Route path="/blog" element={<Blog />} />
+                <Route path="/documentacion" element={<Documentacion />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
