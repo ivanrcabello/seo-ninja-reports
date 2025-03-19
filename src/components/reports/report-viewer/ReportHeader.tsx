@@ -1,116 +1,103 @@
 
-import React from 'react';
-import { Report } from '@/types/report.types';
-import { CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit, Share2, Calendar, Globe, FileText, ExternalLink } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Download, Share, Calendar, Globe, PenLine, CheckCircle, ExternalLink } from 'lucide-react';
+import BlurredCard from '@/components/ui/BlurredCard';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import ShareReportDialog from '@/components/reports/ShareReportDialog';
+import { Report } from '@/types/report.types';
 
 interface ReportHeaderProps {
-  report: Report;
+  title: string;
+  date: string;
+  url?: string;
+  isEditing: boolean;
+  setIsEditing: (value: boolean) => void;
+  reportId: string;
+  report?: Report;
 }
 
-const ReportHeader: React.FC<ReportHeaderProps> = ({ report }) => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'processing':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">En Proceso</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Completado</Badge>;
-      case 'failed':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Fallido</Badge>;
-      default:
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">{status}</Badge>;
-    }
-  };
+const ReportHeader: React.FC<ReportHeaderProps> = ({ 
+  title, 
+  date, 
+  url, 
+  isEditing, 
+  setIsEditing,
+  reportId,
+  report
+}) => {
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   
-  const getPublicShareLink = () => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/shared/reports/${report.id}`;
-  };
-
-  const handleShareClick = () => {
-    navigator.clipboard.writeText(getPublicShareLink());
-    toast({
-      title: "Enlace copiado",
-      description: "El enlace de compartir ha sido copiado al portapapeles",
-    });
-  };
-
-  // Handle edit button click - update query parameter in the URL
-  const handleEditClick = () => {
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('mode', 'edit');
-    navigate(currentUrl.pathname + currentUrl.search);
-  };
-
   return (
-    <div className="w-full flex flex-col md:flex-row justify-between gap-4">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-2xl font-bold text-gradient-primary">
-            {report.title}
-          </CardTitle>
-          {getStatusBadge(report.status)}
-        </div>
-
-        <div className="flex flex-wrap gap-3 text-sm">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>{format(new Date(report.date), 'd MMM yyyy', { locale: es })}</span>
+    <BlurredCard className="w-full bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gradient-primary">{title}</h1>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+              <Calendar className="h-4 w-4" />
+              <span>{format(new Date(date), 'd MMM yyyy', { locale: es })}</span>
+            </div>
+            {url && (
+              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full group hover:bg-primary/20 transition-all">
+                <Globe className="h-4 w-4" />
+                <a 
+                  href={url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors flex items-center gap-1"
+                >
+                  {url.replace(/^https?:\/\//, '').split('/')[0]}
+                  <ExternalLink className="h-3 w-3 opacity-70" />
+                </a>
+              </div>
+            )}
           </div>
-          
-          {report.url && (
-            <a 
-              href={report.url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-primary hover:underline"
-            >
-              <Globe className="h-4 w-4" />
-              <span>{report.url.replace(/^https?:\/\//, '').split('/')[0]}</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          )}
+        </div>
+        
+        <div className="flex gap-2 self-end md:self-auto">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all"
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            {isEditing ? (
+              <>
+                <CheckCircle className="h-4 w-4 group-hover:text-primary-foreground" />
+                <span className="hidden sm:inline">Terminar Edición</span>
+              </>
+            ) : (
+              <>
+                <PenLine className="h-4 w-4 group-hover:text-primary-foreground" />
+                <span className="hidden sm:inline">Editar</span>
+              </>
+            )}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all">
+            <Download className="h-4 w-4 group-hover:text-primary-foreground" />
+            <span className="hidden sm:inline">Descargar</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1 group hover:bg-primary hover:text-primary-foreground transition-all"
+            onClick={() => setShareDialogOpen(true)}
+          >
+            <Share className="h-4 w-4 group-hover:text-primary-foreground" />
+            <span className="hidden sm:inline">Compartir</span>
+          </Button>
         </div>
       </div>
       
-      <div className="flex items-center gap-2 self-end md:self-auto">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="group hover:bg-primary hover:text-primary-foreground transition-all"
-          onClick={handleEditClick}
-        >
-          <Edit className="h-4 w-4 group-hover:text-primary-foreground" />
-          <span className="hidden sm:inline">Editar</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="group hover:bg-primary hover:text-primary-foreground transition-all"
-          onClick={handleShareClick}
-        >
-          <Share2 className="h-4 w-4 group-hover:text-primary-foreground" />
-          <span className="hidden sm:inline">Compartir</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="group hover:bg-primary hover:text-primary-foreground transition-all"
-        >
-          <FileText className="h-4 w-4 group-hover:text-primary-foreground" />
-          <span className="hidden sm:inline">PDF</span>
-        </Button>
-      </div>
-    </div>
+      <ShareReportDialog 
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        reportId={reportId}
+        reportTitle={title}
+      />
+    </BlurredCard>
   );
 };
 

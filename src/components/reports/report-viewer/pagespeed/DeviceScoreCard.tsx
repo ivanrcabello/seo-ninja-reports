@@ -29,11 +29,11 @@ const DeviceScoreCard: React.FC<DeviceScoreCardProps> = ({ title, icon, data, fo
   
   console.log(`DeviceScoreCard ${title} data:`, data);
   
-  // Ensure accessibility, bestPractices, and SEO scores are properly formatted
-  const performanceScore = formatScoreValue(data.performance);
-  const accessibilityScore = formatScoreValue(data.accessibility);
-  const bestPracticesScore = formatScoreValue(data.bestPractices);
-  const seoScore = formatScoreValue(data.seo);
+  // Format scores properly - these should already be between 0 and 1
+  const performanceScore = data.performance;
+  const accessibilityScore = data.accessibility;
+  const bestPracticesScore = data.bestPractices;
+  const seoScore = data.seo;
   
   return (
     <Card className="overflow-hidden bg-gradient-to-br from-background via-background/95 to-background/90 backdrop-blur-sm border-primary/10">
