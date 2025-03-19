@@ -81,6 +81,7 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
         open={shareDialogOpen} 
         onOpenChange={setShareDialogOpen} 
         reportId={reportId}
+        reportTitle={title}
       />
     </div>
   );
