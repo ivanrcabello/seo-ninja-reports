@@ -39,7 +39,7 @@ export const generateSeoReport = async (
     
     // Add PageSpeed data to content if available
     if (prefetchedPageSpeedData) {
-      initialContent.pageSpeedData = prefetchedPageSpeedData;
+      initialContent['pageSpeedData'] = prefetchedPageSpeedData;
     }
 
     // Create a new report with status "processing"
@@ -77,7 +77,7 @@ export const generateSeoReport = async (
       status: newReport.status as 'processing' | 'completed' | 'failed',
       url: newReport.url,
       summary: newReport.summary,
-      content: typeof newReport.content === 'object' 
+      content: newReport.content && typeof newReport.content === 'object' 
         ? newReport.content as Report['content']
         : undefined,
       customPrompt: newReport.custom_prompt

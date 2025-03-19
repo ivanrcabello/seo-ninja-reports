@@ -56,7 +56,7 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
   try {
     const { clientId, title, url, summary, content, customPrompt } = data;
     
-    // Prepare a properly structured content object
+    // Prepare a properly structured content object that's compatible with Supabase JSON type
     let validContent = content || {
       executiveSummary: '',
       technicalAnalysis: '',
@@ -67,17 +67,20 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
     
     console.log('Creating new report with data:', { clientId, title, url, summary });
     
+    // Convert the content to a simple object that Supabase can handle
+    const supabaseData = {
+      client_id: clientId,
+      title,
+      url,
+      summary,
+      content: validContent,
+      custom_prompt: customPrompt,
+      status: 'completed' as 'processing' | 'completed' | 'failed'
+    };
+    
     const { data: newReport, error } = await supabase
       .from('reports')
-      .insert({
-        client_id: clientId,
-        title,
-        url,
-        summary,
-        content: validContent,
-        custom_prompt: customPrompt,
-        status: 'completed' as 'processing' | 'completed' | 'failed'
-      })
+      .insert(supabaseData)
       .select()
       .single();
     
@@ -101,7 +104,7 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       status: newReport.status as 'processing' | 'completed' | 'failed',
       url: newReport.url,
       summary: newReport.summary,
-      content: typeof newReport.content === 'object' 
+      content: newReport.content && typeof newReport.content === 'object' 
         ? newReport.content as Report['content']
         : undefined,
       customPrompt: newReport.custom_prompt
@@ -152,7 +155,7 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
       status: updatedReport.status as 'processing' | 'completed' | 'failed',
       url: updatedReport.url,
       summary: updatedReport.summary,
-      content: typeof updatedReport.content === 'object' 
+      content: updatedReport.content && typeof updatedReport.content === 'object' 
         ? updatedReport.content as Report['content']
         : undefined,
       customPrompt: updatedReport.custom_prompt

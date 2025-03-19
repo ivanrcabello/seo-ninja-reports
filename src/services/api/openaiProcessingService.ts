@@ -84,7 +84,7 @@ export const processOpenAIReport = async (
     
     console.log('Informe actualizado exitosamente');
     
-    // Format report for return
+    // Format report for return with proper type safety
     const formattedCompletedReport: Report = {
       id: completedReport.id,
       clientId: completedReport.client_id,
@@ -93,7 +93,7 @@ export const processOpenAIReport = async (
       status: completedReport.status as 'processing' | 'completed' | 'failed',
       url: completedReport.url,
       summary: completedReport.summary,
-      content: typeof completedReport.content === 'object' 
+      content: completedReport.content && typeof completedReport.content === 'object' 
         ? completedReport.content as Report['content']
         : undefined,
       customPrompt: completedReport.custom_prompt
