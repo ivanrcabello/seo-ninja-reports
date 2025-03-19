@@ -29,12 +29,26 @@ const ReportSection: React.FC<ReportSectionProps> = ({
   delay = 0,
   isRecommendations = false
 }) => {
-  if (!content || content.trim() === '') {
+  // Use empty string if content is undefined or null
+  const safeContent = content || '';
+  
+  if (!safeContent || safeContent.trim() === '') {
     return (
       <AnimatedContainer animation="fade" delay={delay} className="mt-4">
         <BlurredCard className="p-8 text-center">
           <h3 className="text-xl font-medium mb-2">No hay contenido disponible</h3>
           <p className="text-muted-foreground">Esta sección aún no tiene contenido.</p>
+          {isEditing && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-4 text-primary hover:text-primary hover:bg-primary/10"
+              onClick={() => onEdit(sectionKey, '')}
+            >
+              <PenLine className="h-4 w-4 mr-2" />
+              Añadir contenido
+            </Button>
+          )}
         </BlurredCard>
       </AnimatedContainer>
     );
@@ -53,7 +67,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
               variant="ghost" 
               size="sm" 
               className="text-primary hover:text-primary hover:bg-primary/10"
-              onClick={() => onEdit(sectionKey, content)}
+              onClick={() => onEdit(sectionKey, safeContent)}
             >
               <PenLine className="h-4 w-4 mr-2" />
               Editar
@@ -64,8 +78,8 @@ const ReportSection: React.FC<ReportSectionProps> = ({
         <CardContent className="pt-6">
           <div className="prose prose-sm md:prose-base max-w-none">
             {isRecommendations ? 
-              <RecommendationsList content={content} /> : 
-              <FormattedContent content={content} />
+              <RecommendationsList content={safeContent} /> : 
+              <FormattedContent content={safeContent} />
             }
           </div>
         </CardContent>

@@ -61,7 +61,10 @@ const PublicReport = () => {
             technicalAnalysis: data.content.technicalAnalysis || '',
             contentAnalysis: data.content.contentAnalysis || '',
             backlinksAnalysis: data.content.backlinksAnalysis || '',
-            recommendations: data.content.recommendations || ''
+            recommendations: data.content.recommendations || '',
+            localSeo: data.content.localSeo || '',
+            serviceProposal: data.content.serviceProposal || '',
+            keywords: data.content.keywords || ''
           };
         } else {
           // Initialize with empty values if content is not in expected format
@@ -70,7 +73,10 @@ const PublicReport = () => {
             technicalAnalysis: '',
             contentAnalysis: '',
             backlinksAnalysis: '',
-            recommendations: ''
+            recommendations: '',
+            localSeo: '',
+            serviceProposal: '',
+            keywords: ''
           };
         }
         
