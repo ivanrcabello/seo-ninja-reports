@@ -43,7 +43,9 @@ export const processOpenAIReport = async (
       .single();
     
     // Ensure content is an object
-    const currentContent = currentReport?.content || {};
+    const currentContent = currentReport?.content ? 
+      (typeof currentReport.content === 'object' ? currentReport.content : {}) : 
+      {};
     
     // Create properly typed content object
     const reportContent = {
@@ -54,10 +56,8 @@ export const processOpenAIReport = async (
       recommendations: sections.recommendations || '',
       localSeo: sections.localSeo || '',
       serviceProposal: sections.serviceProposal || '',
-      // If current content has pageSpeedData, preserve it, otherwise use the new pageSpeedData
-      pageSpeedData: typeof currentContent === 'object' && currentContent.pageSpeedData 
-        ? currentContent.pageSpeedData 
-        : pageSpeedData
+      // Add pageSpeedData to content
+      pageSpeedData: pageSpeedData || undefined
     };
     
     console.log('Actualización de content preparada con secciones:', Object.keys(reportContent));
@@ -84,12 +84,7 @@ export const processOpenAIReport = async (
     
     console.log('Informe actualizado exitosamente');
     
-    // Extract pageSpeedData from content
-    const extractedPageSpeedData = completedReport.content && typeof completedReport.content === 'object'
-      ? completedReport.content.pageSpeedData
-      : null;
-    
-    // Convert the database column names to camelCase for the Report interface
+    // Format report for return
     const formattedCompletedReport: Report = {
       id: completedReport.id,
       clientId: completedReport.client_id,
@@ -101,8 +96,7 @@ export const processOpenAIReport = async (
       content: typeof completedReport.content === 'object' 
         ? completedReport.content as Report['content']
         : undefined,
-      customPrompt: completedReport.custom_prompt,
-      pageSpeedData: extractedPageSpeedData
+      customPrompt: completedReport.custom_prompt
     };
     
     toast.success('Informe generado exitosamente');

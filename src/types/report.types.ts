@@ -21,10 +21,6 @@ export interface Report {
     };
   };
   customPrompt?: string;
-  pageSpeedData?: {
-    desktop?: PageSpeedResult;
-    mobile?: PageSpeedResult;
-  };
 }
 
 export interface PageSpeedResult {

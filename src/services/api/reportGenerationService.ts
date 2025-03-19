@@ -68,11 +68,6 @@ export const generateSeoReport = async (
     // Start the report generation process with prefetched PageSpeed data
     processReportGeneration(newReport.id, clientId, url, files, customPrompt, prefetchedPageSpeedData);
 
-    // Safely extract pageSpeedData from content if it exists
-    const extractedPageSpeedData = newReport.content && typeof newReport.content === 'object'
-      ? newReport.content.pageSpeedData
-      : null;
-
     // Return the initial report with status "processing"
     return {
       id: newReport.id,
@@ -85,8 +80,7 @@ export const generateSeoReport = async (
       content: typeof newReport.content === 'object' 
         ? newReport.content as Report['content']
         : undefined,
-      customPrompt: newReport.custom_prompt,
-      pageSpeedData: extractedPageSpeedData
+      customPrompt: newReport.custom_prompt
     };
   } catch (error: any) {
     console.error('Error al iniciar generación del informe:', error);

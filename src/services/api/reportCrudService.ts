@@ -30,9 +30,6 @@ export const fetchReports = async () => {
             recommendations: ''
           };
       
-      // Extract pageSpeedData from content if it exists
-      const pageSpeedData = reportContent.pageSpeedData;
-      
       return {
         id: report.id,
         clientId: report.client_id,
@@ -41,9 +38,8 @@ export const fetchReports = async () => {
         status: report.status as 'processing' | 'completed' | 'failed',
         url: report.url,
         summary: report.summary,
-        content: reportContent,
-        customPrompt: report.custom_prompt,
-        pageSpeedData: pageSpeedData
+        content: reportContent as Report['content'],
+        customPrompt: report.custom_prompt
       };
     });
     
@@ -58,7 +54,7 @@ export const fetchReports = async () => {
  */
 export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status'>) => {
   try {
-    const { clientId, title, url, summary, content, customPrompt, pageSpeedData } = data;
+    const { clientId, title, url, summary, content, customPrompt } = data;
     
     // Prepare a properly structured content object
     let validContent = content || {
@@ -68,14 +64,6 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       backlinksAnalysis: '',
       recommendations: ''
     };
-    
-    // Add pageSpeedData to content if it exists
-    if (pageSpeedData) {
-      validContent = {
-        ...validContent,
-        pageSpeedData
-      };
-    }
     
     console.log('Creating new report with data:', { clientId, title, url, summary });
     
@@ -105,11 +93,6 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
     
     console.log('Report created successfully:', newReport);
     
-    // Extract pageSpeedData from content if it exists
-    const extractedPageSpeedData = newReport.content && typeof newReport.content === 'object'
-      ? newReport.content.pageSpeedData
-      : null;
-    
     const formattedReport: Report = {
       id: newReport.id,
       clientId: newReport.client_id,
@@ -121,8 +104,7 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       content: typeof newReport.content === 'object' 
         ? newReport.content as Report['content']
         : undefined,
-      customPrompt: newReport.custom_prompt,
-      pageSpeedData: extractedPageSpeedData
+      customPrompt: newReport.custom_prompt
     };
     
     toast.success('Informe creado exitosamente');
@@ -144,17 +126,9 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
     if (data.url !== undefined) dbData.url = data.url;
     if (data.summary !== undefined) dbData.summary = data.summary;
     
-    // Handle content and pageSpeedData together
-    if (data.content !== undefined || data.pageSpeedData !== undefined) {
-      // Start with existing content or empty object
-      const content = { ...data.content };
-      
-      // Add pageSpeedData to content if provided
-      if (data.pageSpeedData) {
-        content.pageSpeedData = data.pageSpeedData;
-      }
-      
-      dbData.content = content;
+    // Handle content update
+    if (data.content !== undefined) {
+      dbData.content = data.content;
     }
     
     if (data.customPrompt !== undefined) dbData.custom_prompt = data.customPrompt;
@@ -170,11 +144,6 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
       throw error;
     }
     
-    // Extract pageSpeedData from content if it exists
-    const extractedPageSpeedData = updatedReport.content && typeof updatedReport.content === 'object'
-      ? updatedReport.content.pageSpeedData
-      : null;
-    
     const formattedReport: Report = {
       id: updatedReport.id,
       clientId: updatedReport.client_id,
@@ -186,8 +155,7 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
       content: typeof updatedReport.content === 'object' 
         ? updatedReport.content as Report['content']
         : undefined,
-      customPrompt: updatedReport.custom_prompt,
-      pageSpeedData: extractedPageSpeedData
+      customPrompt: updatedReport.custom_prompt
     };
     
     toast.success('Informe actualizado exitosamente');
