@@ -94,7 +94,7 @@ export const processOpenAIReport = async (
       url: completedReport.url,
       summary: completedReport.summary,
       content: completedReport.content && typeof completedReport.content === 'object' 
-        ? completedReport.content as Report['content']
+        ? (completedReport.content as any) as Report['content']
         : undefined,
       customPrompt: completedReport.custom_prompt
     };

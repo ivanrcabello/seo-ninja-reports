@@ -38,7 +38,7 @@ export const fetchReports = async () => {
         status: report.status as 'processing' | 'completed' | 'failed',
         url: report.url,
         summary: report.summary,
-        content: reportContent as Report['content'],
+        content: reportContent as any as Report['content'],
         customPrompt: report.custom_prompt
       };
     });
@@ -73,7 +73,7 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       title,
       url,
       summary,
-      content: validContent,
+      content: validContent as any,
       custom_prompt: customPrompt,
       status: 'completed' as 'processing' | 'completed' | 'failed'
     };
@@ -105,7 +105,7 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       url: newReport.url,
       summary: newReport.summary,
       content: newReport.content && typeof newReport.content === 'object' 
-        ? newReport.content as Report['content']
+        ? (newReport.content as any) as Report['content']
         : undefined,
       customPrompt: newReport.custom_prompt
     };
@@ -131,7 +131,7 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
     
     // Handle content update
     if (data.content !== undefined) {
-      dbData.content = data.content;
+      dbData.content = data.content as any;
     }
     
     if (data.customPrompt !== undefined) dbData.custom_prompt = data.customPrompt;
@@ -156,7 +156,7 @@ export const updateExistingReport = async (id: string, data: Partial<Report>) =>
       url: updatedReport.url,
       summary: updatedReport.summary,
       content: updatedReport.content && typeof updatedReport.content === 'object' 
-        ? updatedReport.content as Report['content']
+        ? (updatedReport.content as any) as Report['content']
         : undefined,
       customPrompt: updatedReport.custom_prompt
     };

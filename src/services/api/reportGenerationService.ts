@@ -52,7 +52,7 @@ export const generateSeoReport = async (
         status: 'processing',
         date: new Date().toISOString(),
         summary: 'Generating report...',
-        content: initialContent,
+        content: initialContent as any,
         custom_prompt: customPrompt || ''
       })
       .select()
@@ -78,7 +78,7 @@ export const generateSeoReport = async (
       url: newReport.url,
       summary: newReport.summary,
       content: newReport.content && typeof newReport.content === 'object' 
-        ? newReport.content as Report['content']
+        ? (newReport.content as any) as Report['content']
         : undefined,
       customPrompt: newReport.custom_prompt
     };
@@ -141,7 +141,7 @@ const processReportGeneration = async (
             // Update the report with the PageSpeed data
             await supabase
               .from('reports')
-              .update({ content: updatedContent })
+              .update({ content: updatedContent as any })
               .eq('id', reportId);
           }
             
