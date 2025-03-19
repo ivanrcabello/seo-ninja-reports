@@ -40,6 +40,15 @@ const PublicReport = () => {
             backlinksAnalysis: data.content.backlinksAnalysis || '',
             recommendations: data.content.recommendations || ''
           };
+        } else {
+          // Initialize with empty values if content is not in expected format
+          reportContent = {
+            executiveSummary: '',
+            technicalAnalysis: '',
+            contentAnalysis: '',
+            backlinksAnalysis: '',
+            recommendations: ''
+          };
         }
         
         const formattedReport: Report = {
