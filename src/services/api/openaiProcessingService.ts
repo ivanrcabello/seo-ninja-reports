@@ -38,6 +38,13 @@ export const processOpenAIReport = async (
     }
     
     console.log('Generando informe con OpenAI...');
+    
+    // Verificar si la API key de OpenAI está configurada
+    const openAIKey = localStorage.getItem('openai_api_key');
+    if (!openAIKey) {
+      throw new Error('No se ha configurado la API key de OpenAI. Configúrela en la sección de Configuración.');
+    }
+    
     const { sections, rawResponse } = await generateOpenAIReport(url, prompt);
     console.log('Informe generado, actualizando base de datos...');
     console.log('Secciones disponibles:', Object.keys(sections));
@@ -103,7 +110,8 @@ export const processOpenAIReport = async (
       .from('reports')
       .update({ 
         status: 'failed',
-        summary: `Error: ${apiError.message}`
+        summary: `Error: ${apiError.message}`,
+        updated_at: new Date().toISOString()
       })
       .eq('id', reportId);
       
@@ -122,7 +130,8 @@ export const markReportAsFailed = async (reportId: string, errorMessage: string)
         .from('reports')
         .update({ 
           status: 'failed',
-          summary: `Error: ${errorMessage}`
+          summary: `Error: ${errorMessage}`,
+          updated_at: new Date().toISOString()
         })
         .eq('id', reportId);
     }

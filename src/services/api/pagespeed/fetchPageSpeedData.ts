@@ -20,12 +20,13 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       mobile: {} as PageSpeedResult
     };
     
+    // Desktop fetch with better error handling
     try {
-      // Fetch desktop results
       console.log('Intentando obtener datos de PageSpeed para desktop...');
-      const desktopResponse = await fetch(
-        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=desktop`
-      );
+      const desktopUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=desktop`;
+      console.log('URL de petición desktop:', desktopUrl.replace(apiKey, 'API_KEY_REDACTED'));
+      
+      const desktopResponse = await fetch(desktopUrl);
       
       if (!desktopResponse.ok) {
         const errorData = await desktopResponse.json();
@@ -56,11 +57,12 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
         }
       }
       
-      // Fetch mobile results
+      // Mobile fetch with better error handling
       console.log('Intentando obtener datos de PageSpeed para mobile...');
-      const mobileResponse = await fetch(
-        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=mobile`
-      );
+      const mobileUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=mobile`;
+      console.log('URL de petición mobile:', mobileUrl.replace(apiKey, 'API_KEY_REDACTED'));
+      
+      const mobileResponse = await fetch(mobileUrl);
       
       if (!mobileResponse.ok) {
         const errorData = await mobileResponse.json();
@@ -93,13 +95,26 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       
       // Save PageSpeed data to dedicated table if reportId is provided
       if (reportId) {
+        console.log('Guardando datos en la base de datos para reporte:', reportId);
         const rawData = { desktop: desktopData, mobile: mobileData };
         await savePageSpeedData(reportId, url, results, rawData);
       }
       
       return results;
     } catch (apiError: any) {
-      console.error('Error específico de la API de PageSpeed:', apiError.message);
+      console.error('Error específico de la API de PageSpeed:', apiError);
+      // Si solo tenemos datos de desktop, seguimos adelante con eso
+      if (Object.keys(results.desktop).length > 0) {
+        console.log('Continuando con datos parciales (solo desktop)');
+        
+        // Guardar datos parciales si tenemos reportId
+        if (reportId) {
+          await savePageSpeedData(reportId, url, results);
+        }
+        
+        return results;
+      }
+      
       // No lanzamos el error para que no interrumpa el proceso
       toast.error('No se pudo obtener datos de PageSpeed. El informe se generará sin esta información.', {
         description: apiError.message

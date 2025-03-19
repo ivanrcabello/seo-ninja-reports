@@ -25,6 +25,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
   setPageSpeedData,
 }) => {
   const [isLoadingPageSpeed, setIsLoadingPageSpeed] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   
   const handleContinue = async () => {
     if (!url) {
@@ -42,6 +43,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
     // If Google API key is available, try to fetch PageSpeed data
     if (hasGoogleApiKey) {
       setIsLoadingPageSpeed(true);
+      setLoadingMessage('Analizando datos de PageSpeed para desktop...');
       try {
         // We don't have reportId at this point, so we'll just fetch the data
         // and the reportId will be assigned when creating the report
@@ -56,7 +58,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
           
           toast.success('Datos de PageSpeed obtenidos correctamente');
         } else {
-          toast.warning('No se pudieron obtener datos de PageSpeed, continuando sin esta información');
+          toast.warning('No se pudieron obtener datos completos de PageSpeed, continuando con datos parciales o sin esta información');
         }
       } catch (error: any) {
         console.error('Error fetching PageSpeed data:', error);
@@ -65,6 +67,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
         });
       } finally {
         setIsLoadingPageSpeed(false);
+        setLoadingMessage('');
         nextStep();
       }
     } else {
@@ -135,7 +138,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
           {isLoadingPageSpeed ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Obteniendo datos de rendimiento...
+              {loadingMessage || 'Obteniendo datos de rendimiento...'}
             </>
           ) : (
             <>

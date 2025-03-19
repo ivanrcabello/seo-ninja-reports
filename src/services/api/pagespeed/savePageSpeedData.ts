@@ -58,8 +58,11 @@ export const savePageSpeedData = async (
       raw_data: rawData || null
     };
     
+    console.log('Objeto de datos PageSpeed preparado:', { reportId, url });
+    
     // If a record exists, update it; otherwise, insert a new one
     if (existing?.id) {
+      console.log('Actualizando registro existente con ID:', existing.id);
       const result = await supabase
         .from('pagespeed_data')
         .update(pageSpeedData)
@@ -70,6 +73,7 @@ export const savePageSpeedData = async (
       data = result.data;
       error = result.error;
     } else {
+      console.log('Insertando nuevo registro de PageSpeed data');
       const result = await supabase
         .from('pagespeed_data')
         .insert(pageSpeedData)
@@ -130,6 +134,8 @@ export const savePageSpeedData = async (
         cumulativeLayoutShift: results.mobile.cumulativeLayoutShift
       }
     };
+    
+    console.log('Actualizando informe con datos de PageSpeed');
     
     // Now update with the PageSpeed data
     const { error: reportUpdateError } = await supabase
