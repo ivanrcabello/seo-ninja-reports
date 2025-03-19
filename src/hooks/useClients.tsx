@@ -41,8 +41,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
           createdAt: client.created_at,
           reportsCount: reportCountMap[client.id] || 0,
           phoneNumber: client.phone_number,
-          wpCredentials: client.wp_credentials,
-          hostingCredentials: client.hosting_credentials
+          wpCredentials: client.wp_credentials ? client.wp_credentials : null,
+          hostingCredentials: client.hosting_credentials ? client.hosting_credentials : null
         }));
         
         setClients(formattedClients);
@@ -73,8 +73,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         createdAt: newClient.created_at,
         reportsCount: 0,
         phoneNumber: newClient.phone_number,
-        wpCredentials: newClient.wp_credentials,
-        hostingCredentials: newClient.hosting_credentials
+        wpCredentials: newClient.wp_credentials || null,
+        hostingCredentials: newClient.hosting_credentials || null
       };
       
       setClients(prevClients => [formattedClient, ...prevClients]);
@@ -103,8 +103,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         createdAt: updatedClient.created_at,
         reportsCount: clientToUpdate.reportsCount,
         phoneNumber: updatedClient.phone_number,
-        wpCredentials: updatedClient.wp_credentials,
-        hostingCredentials: updatedClient.hosting_credentials
+        wpCredentials: updatedClient.wp_credentials || null,
+        hostingCredentials: updatedClient.hosting_credentials || null
       };
       
       setClients(prevClients => 

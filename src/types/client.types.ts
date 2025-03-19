@@ -11,13 +11,13 @@ export interface Client {
     username: string;
     password: string;
     url?: string;
-  };
+  } | null;
   hostingCredentials?: {
     provider: string;
     username: string;
     password: string;
     url?: string;
-  };
+  } | null;
 }
 
 export interface ClientsContextType {

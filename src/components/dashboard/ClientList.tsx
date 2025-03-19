@@ -1,16 +1,14 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Loader2 } from 'lucide-react';
 import ClientCard from './ClientCard';
 import useClients from '@/hooks/useClients';
 import AnimatedContainer from '../ui/AnimatedContainer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Textarea } from "@/components/ui/textarea";
 
 const ClientList: React.FC = () => {
   const { clients, isLoading, addClient } = useClients();
@@ -53,7 +51,7 @@ const ClientList: React.FC = () => {
       setNewClient(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof typeof prev],
+          ...(prev as any)[parent],
           [child]: value
         }
       }));

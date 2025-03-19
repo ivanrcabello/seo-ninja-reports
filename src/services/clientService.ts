@@ -70,8 +70,8 @@ export async function addClientToDb(
         industry,
         user_id: userId,
         phone_number: phoneNumber,
-        wp_credentials: wpCredentials,
-        hosting_credentials: hostingCredentials
+        wp_credentials: wpCredentials || null,
+        hosting_credentials: hostingCredentials || null
       })
       .select()
       .single();
