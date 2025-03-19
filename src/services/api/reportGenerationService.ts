@@ -4,7 +4,7 @@ import { Report } from '@/types/report.types';
 import { toast } from 'sonner';
 import { fetchPageSpeedData, savePageSpeedData } from './pageSpeedService';
 import { uploadReportFiles } from './reportFileService';
-import { processOpenAIReport, markReportAsFailed } from './openaiProcessingService';
+import { processOpenAIReport, markReportAsFailed, checkAndFixStuckReports } from './openaiProcessingService';
 import { handleServiceError } from './baseService';
 
 interface Keyword {
@@ -36,6 +36,9 @@ export const generateSeoReport = async (
     console.log('¿Hay palabras clave?', !!keywords && keywords.length > 0);
     console.log('¿Hay notas?', !!notes);
 
+    // Check for stuck reports and fix them
+    await checkAndFixStuckReports();
+
     // Prepare initial content object with properly typed structure
     const initialContent = {
       executiveSummary: '',
@@ -59,7 +62,7 @@ export const generateSeoReport = async (
         url: url,
         status: 'processing',
         date: new Date().toISOString(),
-        summary: 'Generating report...',
+        summary: 'Generando informe...',
         content: initialContent,
         custom_prompt: customPrompt || '',
         notes: notes || null
@@ -114,7 +117,10 @@ export const generateSeoReport = async (
       customPrompt, 
       prefetchedPageSpeedData,
       notes
-    );
+    ).catch(error => {
+      console.error('Error no controlado en procesamiento de informe:', error);
+      markReportAsFailed(newReport.id, `Error no controlado: ${error.message || 'Error desconocido'}`);
+    });
 
     // Return the initial report with status "processing"
     return {
@@ -152,6 +158,9 @@ const processReportGeneration = async (
   try {
     console.log('Iniciando proceso de generación en segundo plano para reporte:', reportId);
     
+    // Update report status with progress
+    await updateReportStatus(reportId, 'processing', 'Subiendo archivos y configurando datos...');
+    
     // Upload supporting files if any
     if (files.length > 0) {
       console.log('Subiendo archivos de soporte:', files.length, 'archivos');
@@ -163,6 +172,7 @@ const processReportGeneration = async (
     
     if (!pageSpeedData) {
       try {
+        await updateReportStatus(reportId, 'processing', 'Obteniendo datos de PageSpeed...');
         console.log('No hay datos prefetched, intentando obtener datos de PageSpeed para:', url);
         pageSpeedData = await fetchPageSpeedData(url, reportId);
         
@@ -185,7 +195,9 @@ const processReportGeneration = async (
       console.log('Usando datos de PageSpeed prefetched');
     }
     
+    await updateReportStatus(reportId, 'processing', 'Generando informe con OpenAI...');
     console.log('Procesando informe con OpenAI...');
+    
     // Process the report with OpenAI
     await processOpenAIReport(reportId, url, pageSpeedData, customPrompt, notes);
     console.log('Procesamiento de informe completado con éxito');
@@ -198,5 +210,72 @@ const processReportGeneration = async (
     
     toast.error('Error al generar informe');
     throw error;
+  }
+};
+
+/**
+ * Helper function to update report status with progress information
+ */
+const updateReportStatus = async (reportId: string, status: 'processing' | 'completed' | 'failed', summary: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('reports')
+      .update({ 
+        status,
+        summary,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reportId);
+      
+    if (error) {
+      console.error('Error al actualizar estado del informe:', error);
+    }
+  } catch (updateError) {
+    console.error('Error al actualizar estado del informe:', updateError);
+  }
+};
+
+/**
+ * Manually retries a failed report
+ */
+export const retryFailedReport = async (reportId: string): Promise<boolean> => {
+  try {
+    // Get the failed report
+    const { data: report, error } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('id', reportId)
+      .single();
+      
+    if (error || !report) {
+      console.error('Error al obtener informe para retry:', error);
+      return false;
+    }
+    
+    // Check if report is in failed state
+    if (report.status !== 'failed') {
+      console.log('El informe no está en estado fallido, no se puede reintentar');
+      return false;
+    }
+    
+    // Update status to processing
+    await updateReportStatus(reportId, 'processing', 'Reintentando generación de informe...');
+    
+    // Get PageSpeed data if available
+    const pageSpeedData = report.content?.pageSpeedData || null;
+    
+    // Process with OpenAI
+    await processOpenAIReport(
+      reportId, 
+      report.url, 
+      pageSpeedData,
+      report.custom_prompt || undefined,
+      report.notes || undefined
+    );
+    
+    return true;
+  } catch (error) {
+    console.error('Error al reintentar informe fallido:', error);
+    return false;
   }
 };

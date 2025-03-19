@@ -32,6 +32,9 @@ export const generateOpenAIReport = async (
       throw new Error('No se ha configurado una API key de OpenAI válida');
     }
     
+    const startTime = Date.now();
+    console.log(`[${new Date().toISOString()}] Enviando solicitud a OpenAI API...`);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -54,13 +57,32 @@ export const generateOpenAIReport = async (
       })
     });
     
+    const endTime = Date.now();
+    const requestTime = (endTime - startTime) / 1000;
+    console.log(`[${new Date().toISOString()}] Respuesta recibida de OpenAI API después de ${requestTime} segundos`);
+    
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Error en respuesta de OpenAI:', errorData);
-      throw new Error(`Error en la API de OpenAI: ${response.status} ${response.statusText}`);
+      const errorStatus = response.status;
+      let errorText = '';
+      
+      try {
+        const errorData = await response.text();
+        errorText = errorData;
+        console.error('Error en respuesta de OpenAI:', errorData);
+      } catch (textError) {
+        console.error('No se pudo obtener el texto del error:', textError);
+      }
+      
+      throw new Error(`Error en la API de OpenAI: ${errorStatus} - ${response.statusText}. ${errorText.slice(0, 200)}`);
     }
     
     const data = await response.json();
+    
+    if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Respuesta de OpenAI incompleta o con formato incorrecto:', JSON.stringify(data, null, 2));
+      throw new Error('La respuesta de OpenAI no tiene el formato esperado');
+    }
+    
     const generatedText = data.choices[0].message.content;
     console.log('Respuesta de OpenAI recibida. Longitud del texto:', generatedText.length);
     
@@ -85,12 +107,20 @@ export const generateOpenAIReport = async (
       keywords: keywordsMatch ? keywordsMatch[1].trim() : ''
     };
     
+    // Verify that we have the minimum required sections
+    if (!sections.executiveSummary || !sections.technicalAnalysis || !sections.recommendations) {
+      console.error('Faltan secciones principales en la respuesta generada:', Object.keys(sections));
+      console.error('Texto generado completo:', generatedText);
+      throw new Error('La respuesta no contiene todas las secciones requeridas del informe');
+    }
+    
     return {
       sections,
       rawResponse: generatedText
     };
   } catch (error: any) {
-    console.error('Error calling OpenAI API:', error);
+    console.error('Error detallado al llamar a OpenAI API:', error);
+    console.error('Stack trace:', error.stack);
     toast.error(`Error al generar el informe: ${error.message}`);
     throw error;
   }

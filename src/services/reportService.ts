@@ -9,7 +9,10 @@ export {
 } from './api/reportCrudService';
 
 // Export the report generation functionality
-export { generateSeoReport } from './api/reportGenerationService';
+export { 
+  generateSeoReport,
+  retryFailedReport
+} from './api/reportGenerationService';
 
 // Export PageSpeed service
 export { 
@@ -29,5 +32,6 @@ export {
 // Export OpenAI processing functionality
 export {
   processOpenAIReport,
-  markReportAsFailed
+  markReportAsFailed,
+  checkAndFixStuckReports
 } from './api/openaiProcessingService';

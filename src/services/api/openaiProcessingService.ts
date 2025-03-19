@@ -16,7 +16,7 @@ export const processOpenAIReport = async (
   notes?: string
 ): Promise<Report | null> => {
   try {
-    console.log('Procesando informe con OpenAI para:', url);
+    console.log('Iniciando procesamiento de informe con OpenAI para:', url);
     console.log('ID del informe:', reportId);
     console.log('¿Hay datos de PageSpeed?', !!pageSpeedData);
     console.log('¿Hay notas?', !!notes);
@@ -98,8 +98,20 @@ export const processOpenAIReport = async (
       throw new Error('No se ha configurado la API key de OpenAI. Configúrela en la sección de Configuración.');
     }
     
+    // Update report status to show it's being processed by OpenAI
+    await supabase
+      .from('reports')
+      .update({ 
+        status: 'processing',
+        summary: 'Procesando informe con OpenAI...',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reportId);
+      
+    console.log('Estado del informe actualizado a "processing"');
+    
     const { sections, rawResponse } = await generateOpenAIReport(url, prompt);
-    console.log('Informe generado, actualizando base de datos...');
+    console.log('Informe generado exitosamente, actualizando base de datos...');
     console.log('Secciones disponibles:', Object.keys(sections));
     
     // Create properly typed content object
@@ -136,7 +148,7 @@ export const processOpenAIReport = async (
       throw updateError;
     }
     
-    console.log('Informe actualizado exitosamente');
+    console.log('Informe actualizado exitosamente a estado "completed"');
     
     // Format report for return with proper type safety
     const formattedCompletedReport: Report = {
@@ -158,19 +170,30 @@ export const processOpenAIReport = async (
     return formattedCompletedReport;
     
   } catch (apiError: any) {
-    console.error('Error calling OpenAI API:', apiError);
+    console.error('Error al procesar informe con OpenAI:', apiError);
     
-    // Update report status to failed
-    await supabase
-      .from('reports')
-      .update({ 
-        status: 'failed',
-        summary: `Error: ${apiError.message}`,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', reportId);
+    // Capture detailed error information
+    const errorMessage = apiError.message || 'Error desconocido en la generación';
+    const errorDetails = JSON.stringify(apiError, Object.getOwnPropertyNames(apiError));
+    console.error('Detalles del error:', errorDetails);
+    
+    try {
+      // Update report status to failed with detailed error message
+      await supabase
+        .from('reports')
+        .update({ 
+          status: 'failed',
+          summary: `Error: ${errorMessage.substring(0, 200)}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', reportId);
       
-    toast.error(`Error al generar el informe: ${apiError.message}`);
+      console.log('Estado del informe actualizado a "failed" con mensaje:', errorMessage);
+      toast.error(`Error al generar el informe: ${errorMessage}`);
+    } catch (updateError) {
+      console.error('Error adicional al intentar marcar el informe como fallido:', updateError);
+    }
+    
     throw apiError;
   }
 };
@@ -181,16 +204,60 @@ export const processOpenAIReport = async (
 export const markReportAsFailed = async (reportId: string, errorMessage: string): Promise<void> => {
   try {
     if (reportId) {
-      await supabase
+      console.log(`Marcando informe ${reportId} como fallido con mensaje: ${errorMessage}`);
+      
+      const { error } = await supabase
         .from('reports')
         .update({ 
           status: 'failed',
-          summary: `Error: ${errorMessage}`,
+          summary: `Error: ${errorMessage.substring(0, 200)}`,
           updated_at: new Date().toISOString()
         })
         .eq('id', reportId);
+      
+      if (error) {
+        console.error('Error al marcar el informe como fallido:', error);
+      } else {
+        console.log('Informe marcado como fallido exitosamente');
+      }
     }
   } catch (updateError) {
-    console.error('Error updating report status to failed:', updateError);
+    console.error('Error crítico al marcar el informe como fallido:', updateError);
+  }
+};
+
+/**
+ * Utility function to detect and fix stuck reports
+ */
+export const checkAndFixStuckReports = async (): Promise<void> => {
+  try {
+    // Find reports that have been "processing" for more than 10 minutes
+    const tenMinutesAgo = new Date();
+    tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
+    
+    const { data: stuckReports, error } = await supabase
+      .from('reports')
+      .select('id, title, updated_at')
+      .eq('status', 'processing')
+      .lt('updated_at', tenMinutesAgo.toISOString());
+    
+    if (error) {
+      console.error('Error al buscar informes atascados:', error);
+      return;
+    }
+    
+    if (stuckReports && stuckReports.length > 0) {
+      console.log(`Se encontraron ${stuckReports.length} informes atascados en estado "processing"`);
+      
+      for (const report of stuckReports) {
+        console.log(`Marcando informe atascado como fallido: ${report.id} - ${report.title}`);
+        await markReportAsFailed(
+          report.id, 
+          `Informe atascado en estado "processing" desde ${report.updated_at}. Posible error en procesamiento de OpenAI.`
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error al verificar informes atascados:', error);
   }
 };

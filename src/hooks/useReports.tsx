@@ -7,7 +7,9 @@ import {
   createNewReport, 
   updateExistingReport, 
   deleteReportById,
-  generateSeoReport
+  generateSeoReport,
+  retryFailedReport,
+  checkAndFixStuckReports
 } from '@/services/reportService';
 
 interface Keyword {
@@ -33,6 +35,8 @@ interface ReportsContextType {
     keywords?: Keyword[],
     notes?: string
   ) => Promise<Report>;
+  retryReport: (id: string) => Promise<boolean>;
+  checkForStuckReports: () => Promise<void>;
 }
 
 const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
@@ -54,6 +58,9 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(true);
         const reportsData = await fetchReports();
         setReports(reportsData);
+        
+        // Check for stuck reports on initial load
+        await checkAndFixStuckReports();
       } catch (error) {
         console.error('Error in loadReports:', error);
         // Error is already handled in fetchReports
@@ -63,6 +70,24 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadReports();
+    
+    // Set up interval to check for stuck reports every 5 minutes
+    const stuckReportsInterval = setInterval(async () => {
+      if (user) {
+        try {
+          await checkAndFixStuckReports();
+          // Refresh reports list after fixing stuck reports
+          const reportsData = await fetchReports();
+          setReports(reportsData);
+        } catch (error) {
+          console.error('Error checking for stuck reports:', error);
+        }
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => {
+      clearInterval(stuckReportsInterval);
+    };
   }, [user]);
 
   const getReport = (id: string) => {
@@ -122,6 +147,33 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     
     return report;
   };
+  
+  const retryReport = async (id: string) => {
+    const result = await retryFailedReport(id);
+    if (result) {
+      // Update the report status in the state
+      const report = getReport(id);
+      if (report) {
+        const updatedReport = {
+          ...report,
+          status: 'processing' as const,
+          summary: 'Reintentando generación de informe...'
+        };
+        
+        setReports(prevReports => 
+          prevReports.map(r => r.id === id ? updatedReport : r)
+        );
+      }
+    }
+    return result;
+  };
+  
+  const checkForStuckReports = async () => {
+    await checkAndFixStuckReports();
+    // Refresh reports list
+    const reportsData = await fetchReports();
+    setReports(reportsData);
+  };
 
   const value = {
     reports,
@@ -131,7 +183,9 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     createReport,
     updateReport,
     deleteReport,
-    generateReport
+    generateReport,
+    retryReport,
+    checkForStuckReports
   };
 
   return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>;
