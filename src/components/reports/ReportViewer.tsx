@@ -72,28 +72,28 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
               <TabsTrigger value="executiveSummary">Resumen Ejecutivo</TabsTrigger>
             )}
             {content?.technicalAnalysis && (
-              <TabsTrigger value="technicalAnalysis">Análisis Técnico</TabsTrigger>
+              <TabsTrigger value="technicalAnalysis">SEO Técnico</TabsTrigger>
+            )}
+            {content?.keywords && (
+              <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
             )}
             {content?.contentAnalysis && (
               <TabsTrigger value="contentAnalysis">Análisis de Contenido</TabsTrigger>
             )}
             {content?.backlinksAnalysis && (
-              <TabsTrigger value="backlinksAnalysis">Análisis de Backlinks</TabsTrigger>
-            )}
-            {content?.keywords && (
-              <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
+              <TabsTrigger value="backlinksAnalysis">Backlinks</TabsTrigger>
             )}
             {content?.localSeo && (
               <TabsTrigger value="localSeo">SEO Local</TabsTrigger>
+            )}
+            {content?.pageSpeedData && (
+              <TabsTrigger value="pageSpeedData">PageSpeed</TabsTrigger>
             )}
             {content?.recommendations && (
               <TabsTrigger value="recommendations">Recomendaciones</TabsTrigger>
             )}
             {content?.serviceProposal && (
-              <TabsTrigger value="serviceProposal">Propuesta de Servicios</TabsTrigger>
-            )}
-            {content?.pageSpeedData && (
-              <TabsTrigger value="pageSpeedData">PageSpeed Insights</TabsTrigger>
+              <TabsTrigger value="serviceProposal">Propuesta</TabsTrigger>
             )}
           </TabsList>
           
