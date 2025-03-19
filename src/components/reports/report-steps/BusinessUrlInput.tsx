@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Store, AlertCircle, Check, Search } from 'lucide-react';
+import { Store, Check, Search } from 'lucide-react';
 import { toast } from 'sonner';
-import { extractBusinessInfo, isValidGoogleBusinessUrl } from '@/services/api/businessProfile';
+import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { BusinessProfile } from '@/types/report.types';
 
 interface BusinessUrlInputProps {
@@ -22,13 +22,6 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
   setBusinessProfile
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState(false);
-  
-  useEffect(() => {
-    // Comprobar si existe la API key
-    const apiKey = localStorage.getItem('google_business_api_key');
-    setHasApiKey(!!apiKey && apiKey.trim() !== '');
-  }, []);
   
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusinessUrl(e.target.value);
@@ -37,11 +30,6 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
   const analyzeBusinessUrl = async () => {
     if (!businessUrl) {
       toast.error('Introduce una URL válida');
-      return;
-    }
-    
-    if (!isValidGoogleBusinessUrl(businessUrl)) {
-      toast.error('La URL debe ser de Google Maps o Google Business');
       return;
     }
     
@@ -79,7 +67,7 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
         <Input
           value={businessUrl}
           onChange={handleUrlChange}
-          placeholder="https://maps.google.com/... o https://business.google.com/..."
+          placeholder="https://maps.google.com/... o https://maps.app.goo.gl/..."
           className="flex-1"
         />
         <Button 
@@ -123,17 +111,6 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
             </div>
           </div>
         </Card>
-      )}
-      
-      {!hasApiKey && (
-        <div className="text-sm flex items-start gap-2 mt-2 text-amber-600 dark:text-amber-400">
-          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <p>
-            No se ha configurado una API key para Google Business. 
-            La información se extraerá mediante un proceso automatizado simplificado.
-            Para obtener mejores resultados, configura una API key en Configuración &gt; Google Business.
-          </p>
-        </div>
       )}
     </div>
   );

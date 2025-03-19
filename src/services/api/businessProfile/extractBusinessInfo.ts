@@ -2,7 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
-import { isValidGoogleBusinessUrl } from './utils';
 import { simulateBusinessProfileData } from './mocks';
 
 /**
@@ -12,24 +11,16 @@ export const extractBusinessInfo = async (
   businessUrl: string
 ): Promise<Partial<BusinessProfile> | null> => {
   try {
-    const apiKey = localStorage.getItem('google_business_api_key');
-    
-    // Verificar si la URL es válida
-    if (!businessUrl || !isValidGoogleBusinessUrl(businessUrl)) {
+    if (!businessUrl) {
       toast.error('URL no válida', {
-        description: 'La URL debe ser un enlace válido a Google Maps o Google Business',
+        description: 'Debes proporcionar una URL válida',
       });
       return null;
     }
     
-    // Si hay una API key configurada, intentaríamos usar la API oficial de Google Business
-    // Sin embargo, ya que esto requiere configuración avanzada, usaremos el servicio de scraping
-    if (apiKey && apiKey.length > 10) {
-      console.log('API key configurada, pero usando servicio de scraping por ahora');
-      toast.info('Usando API configurada', {
-        description: 'Extrayendo información del perfil de negocio',
-      });
-    }
+    toast.info('Analizando perfil de negocio', {
+      description: 'Extrayendo información del perfil de Google Business',
+    });
     
     // Llamar a nuestra función edge para hacer scraping del perfil
     const { data, error } = await supabase.functions.invoke('scrape-business', {
