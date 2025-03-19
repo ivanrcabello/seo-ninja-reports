@@ -40,5 +40,6 @@ export {
 export {
   saveBusinessProfile,
   getBusinessProfile,
-  extractBusinessInfo
-} from './api/businessProfileService';
+  extractBusinessInfo,
+  isValidGoogleBusinessUrl
+} from './api/businessProfile';

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Store, AlertCircle, Check, Search } from 'lucide-react';
 import { toast } from 'sonner';
-import { extractBusinessInfo } from '@/services/api/businessProfileService';
+import { extractBusinessInfo, isValidGoogleBusinessUrl } from '@/services/api/businessProfile';
 import { BusinessProfile } from '@/types/report.types';
 
 interface BusinessUrlInputProps {
@@ -34,27 +34,13 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
     setBusinessUrl(e.target.value);
   };
   
-  const isValidUrl = (url: string) => {
-    try {
-      // Verificar si es una URL de Google Maps o Business
-      const urlObj = new URL(url);
-      return (
-        (urlObj.hostname.includes('google') && urlObj.hostname.includes('maps')) || 
-        urlObj.hostname.includes('business.google.com') ||
-        urlObj.hostname.includes('g.page')
-      );
-    } catch (e) {
-      return false;
-    }
-  };
-  
   const analyzeBusinessUrl = async () => {
     if (!businessUrl) {
       toast.error('Introduce una URL válida');
       return;
     }
     
-    if (!isValidUrl(businessUrl)) {
+    if (!isValidGoogleBusinessUrl(businessUrl)) {
       toast.error('La URL debe ser de Google Maps o Google Business');
       return;
     }
