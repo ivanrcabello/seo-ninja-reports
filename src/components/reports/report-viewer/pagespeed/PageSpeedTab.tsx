@@ -35,9 +35,19 @@ interface PageSpeedDataProps {
 }
 
 const PageSpeedTab: React.FC<PageSpeedDataProps> = ({ data }) => {
-  // Verificar si hay datos disponibles
-  const hasDesktopData = data && data.desktop && Object.keys(data.desktop).length > 0;
-  const hasMobileData = data && data.mobile && Object.keys(data.mobile).length > 0;
+  // Verify if data exists and has the expected structure
+  if (!data || (!data.desktop && !data.mobile)) {
+    console.log('No PageSpeed data available', data);
+    return <EmptyState />;
+  }
+  
+  // Checking if there's valid data for desktop and mobile
+  const hasDesktopData = data.desktop && Object.keys(data.desktop).length > 0;
+  const hasMobileData = data.mobile && Object.keys(data.mobile).length > 0;
+  
+  console.log('PageSpeed data:', data);
+  console.log('Has desktop data:', hasDesktopData, data.desktop);
+  console.log('Has mobile data:', hasMobileData, data.mobile);
 
   if (!hasDesktopData && !hasMobileData) {
     return <EmptyState />;

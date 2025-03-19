@@ -44,10 +44,11 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({ report }) => {
     });
   };
 
-  // Handle edit button click - stay on the same page
+  // Handle edit button click - update query parameter in the URL
   const handleEditClick = () => {
-    // Navigate to the report page with a query parameter to indicate edit mode
-    navigate(`/reports/${report.id}?mode=edit`);
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('mode', 'edit');
+    navigate(currentUrl.pathname + currentUrl.search);
   };
 
   return (

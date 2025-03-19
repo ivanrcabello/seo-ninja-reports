@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { TabsContent } from "@/components/ui/tabs";
 import { Report } from '@/types/report.types';
 import ReportSection from '../../report-section';
-import PageSpeedTab from '../PageSpeedTab';
+import { PageSpeedTab } from '../pagespeed';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface TabContentProps {
@@ -25,15 +25,15 @@ const TabContent: React.FC<TabContentProps> = ({
   const { content } = report;
   if (!content) return null;
 
-  // Verificamos si hay datos de PageSpeed, ya sea de la base de datos o del contenido del informe
-  const hasPageSpeedData = pageSpeedData || content?.pageSpeedData;
+  // Check if we have PageSpeed data from either source
+  const hasPageSpeedData = pageSpeedData || content.pageSpeedData;
   
-  // Decidir qué datos usar para PageSpeed, priorizando los datos recién cargados
-  const pageSpeedDataToUse = pageSpeedData || content?.pageSpeedData;
+  // Decide which data to use for PageSpeed, prioritizing newly loaded data
+  const pageSpeedDataToUse = pageSpeedData || content.pageSpeedData;
 
   return (
     <ScrollArea className="h-full pr-4">
-      {content?.executiveSummary && (
+      {content.executiveSummary && (
         <TabsContent value="executiveSummary" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           <ReportSection 
             title="Resumen Ejecutivo" 
@@ -45,7 +45,7 @@ const TabContent: React.FC<TabContentProps> = ({
         </TabsContent>
       )}
       
-      {content?.technicalAnalysis && (
+      {content.technicalAnalysis && (
         <TabsContent value="technicalAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           <ReportSection 
             title="Análisis Técnico SEO" 
@@ -57,7 +57,7 @@ const TabContent: React.FC<TabContentProps> = ({
         </TabsContent>
       )}
       
-      {content?.keywords && (
+      {content.keywords && (
         <TabsContent value="keywords" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           <ReportSection 
             title="Palabras Clave" 
@@ -69,7 +69,7 @@ const TabContent: React.FC<TabContentProps> = ({
         </TabsContent>
       )}
       
-      {content?.contentAnalysis && (
+      {content.contentAnalysis && (
         <TabsContent value="contentAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           <ReportSection 
             title="Análisis de Contenido" 
@@ -81,7 +81,7 @@ const TabContent: React.FC<TabContentProps> = ({
         </TabsContent>
       )}
       
-      {content?.backlinksAnalysis && (
+      {content.backlinksAnalysis && (
         <TabsContent value="backlinksAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           <ReportSection 
             title="Análisis de Backlinks" 
@@ -93,7 +93,7 @@ const TabContent: React.FC<TabContentProps> = ({
         </TabsContent>
       )}
       
-      {content?.localSeo && (
+      {content.localSeo && (
         <TabsContent value="localSeo" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           <ReportSection 
             title="SEO Local" 
@@ -125,7 +125,7 @@ const TabContent: React.FC<TabContentProps> = ({
         </TabsContent>
       )}
       
-      {content?.recommendations && (
+      {content.recommendations && (
         <TabsContent value="recommendations" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           <ReportSection 
             title="Recomendaciones" 
@@ -138,7 +138,7 @@ const TabContent: React.FC<TabContentProps> = ({
         </TabsContent>
       )}
       
-      {content?.serviceProposal && (
+      {content.serviceProposal && (
         <TabsContent value="serviceProposal" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           <ReportSection 
             title="Propuesta de Servicios" 

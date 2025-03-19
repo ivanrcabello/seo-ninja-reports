@@ -6,6 +6,7 @@ import ReportHeader from './ReportHeader';
 import ReportTabs from './ReportTabs';
 import { getPageSpeedData } from '@/services/api/pagespeed/getPageSpeedData';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'react-router-dom';
 
 interface ReportViewerProps {
   report: Report | undefined;
@@ -21,6 +22,14 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const [pageSpeedData, setPageSpeedData] = useState<any>(null);
   const [isLoadingPageSpeed, setIsLoadingPageSpeed] = useState(false);
   const { toast } = useToast();
+  const location = useLocation();
+  
+  // Extract edit mode from URL query params
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const editMode = searchParams.get('mode') === 'edit';
+    setIsEditing(editMode);
+  }, [location.search, setIsEditing]);
   
   useEffect(() => {
     const fetchPageSpeedData = async () => {
@@ -72,7 +81,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           isLoadingPageSpeed={isLoadingPageSpeed} 
           isEditing={isEditing}
           onEdit={(sectionKey) => {
-            if (setIsEditing) setIsEditing(true);
+            setIsEditing(true);
             // Could also store the active section for editing if needed
           }}
         />
