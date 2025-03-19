@@ -38,8 +38,11 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
     try {
       // Verificar si es una URL de Google Maps o Business
       const urlObj = new URL(url);
-      return urlObj.hostname.includes('google') && 
-        (urlObj.pathname.includes('/maps') || url.includes('business.google.com'));
+      return (
+        (urlObj.hostname.includes('google') && urlObj.hostname.includes('maps')) || 
+        urlObj.hostname.includes('business.google.com') ||
+        urlObj.hostname.includes('g.page')
+      );
     } catch (e) {
       return false;
     }
@@ -90,7 +93,7 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
         <Input
           value={businessUrl}
           onChange={handleUrlChange}
-          placeholder="https://business.google.com/..."
+          placeholder="https://maps.google.com/... o https://business.google.com/..."
           className="flex-1"
         />
         <Button 
@@ -141,8 +144,8 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
           <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <p>
             No se ha configurado una API key para Google Business. 
-            La información se extraerá de forma simulada para esta demostración.
-            Configura una API key en Configuración &gt; Google Business.
+            La información se extraerá mediante un proceso automatizado simplificado.
+            Para obtener mejores resultados, configura una API key en Configuración &gt; Google Business.
           </p>
         </div>
       )}

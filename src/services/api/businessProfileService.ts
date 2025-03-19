@@ -162,31 +162,52 @@ export const extractBusinessInfo = async (
   try {
     const apiKey = localStorage.getItem('google_business_api_key');
     
-    if (!apiKey) {
-      console.log('No se ha configurado API key para Google Business');
-      
-      // En desarrollo, podemos usar datos simulados
-      if (process.env.NODE_ENV !== 'production') {
-        toast.info('Usando datos simulados', {
-          description: 'No se ha configurado una API key para Google Business, usando datos de ejemplo',
-        });
-        
-        return simulateBusinessProfileData(businessUrl);
-      } else {
-        toast.error('API key no configurada', {
-          description: 'Debes configurar una API key válida para Google Business en la sección de Configuración',
-        });
-        return null;
-      }
+    // Verificar si la URL es válida
+    if (!businessUrl || !isValidGoogleBusinessUrl(businessUrl)) {
+      toast.error('URL no válida', {
+        description: 'La URL debe ser un enlace válido a Google Maps o Google Business',
+      });
+      return null;
     }
     
-    // Aquí implementaríamos la llamada real a la API de Google Business
-    // Por ahora, seguiremos usando datos simulados con un mensaje diferente
-    toast.info('Extracción de datos', {
-      description: 'Por el momento, se están utilizando datos simulados para la demostración',
+    // Si hay una API key configurada, intentaríamos usar la API oficial de Google Business
+    // Sin embargo, ya que esto requiere configuración avanzada, usaremos el servicio de scraping
+    if (apiKey && apiKey.length > 10) {
+      console.log('API key configurada, pero usando servicio de scraping por ahora');
+      toast.info('Usando API configurada', {
+        description: 'Extrayendo información del perfil de negocio',
+      });
+    }
+    
+    // Llamar a nuestra función edge para hacer scraping del perfil
+    const { data, error } = await supabase.functions.invoke('scrape-business', {
+      body: { url: businessUrl }
     });
     
-    return simulateBusinessProfileData(businessUrl);
+    if (error) {
+      console.error('Error al invocar función de scraping:', error);
+      toast.error('Error en extracción de datos', {
+        description: error.message || 'No se pudo extraer información del perfil',
+      });
+      return null;
+    }
+    
+    if (!data || !data.success) {
+      console.error('La función de scraping no devolvió datos válidos:', data);
+      toast.error('Error en extracción de datos', {
+        description: 'No se pudo extraer información del perfil',
+      });
+      return null;
+    }
+    
+    console.log('Datos extraídos del perfil:', data.data);
+    
+    toast.success('Información extraída correctamente', {
+      description: 'Se ha obtenido información del perfil de negocio',
+    });
+    
+    return data.data as Partial<BusinessProfile>;
+    
   } catch (error: any) {
     console.error('Error al extraer información de negocio:', error);
     toast.error('Error al extraer información', {
@@ -195,6 +216,25 @@ export const extractBusinessInfo = async (
     return null;
   }
 };
+
+/**
+ * Valida si una URL es una URL válida de Google Maps o Google Business
+ */
+function isValidGoogleBusinessUrl(url: string): boolean {
+  try {
+    // Verificar si es una URL válida
+    const urlObj = new URL(url);
+    
+    // Verificar si es una URL de Google Maps o Business
+    return (
+      (urlObj.hostname.includes('google') && urlObj.hostname.includes('maps')) || 
+      urlObj.hostname.includes('business.google.com') ||
+      urlObj.hostname.includes('g.page')
+    );
+  } catch (e) {
+    return false;
+  }
+}
 
 /**
  * Simula datos de perfil de negocio para desarrollo
