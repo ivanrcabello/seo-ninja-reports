@@ -52,22 +52,25 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
           throw error;
         }
 
-        // Get reports count for each client using count aggregate
-        const { data: reportsData, error: reportsError } = await supabase
+        // Get reports count for each client
+        // Fix: Use a different approach to count reports
+        const { data: reportsCountData, error: reportsError } = await supabase
           .from('reports')
-          .select('client_id, count')
-          .count()
-          .group('client_id');
-
+          .select('client_id, id');
+          
         if (reportsError) {
           console.error('Error cargando conteo de informes:', reportsError);
         }
 
         // Create a mapping of client_id to report count
         const reportCountMap: Record<string, number> = {};
-        if (reportsData) {
-          reportsData.forEach((item: any) => {
-            reportCountMap[item.client_id] = Number(item.count);
+        if (reportsCountData) {
+          reportsCountData.forEach((item: any) => {
+            const clientId = item.client_id;
+            if (!reportCountMap[clientId]) {
+              reportCountMap[clientId] = 0;
+            }
+            reportCountMap[clientId]++;
           });
         }
 
@@ -101,14 +104,14 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { name, website, industry } = data;
       
-      // Añadir el user_id al insertar cliente
+      // Fix: Add user_id to the client data
       const { data: newClient, error } = await supabase
         .from('clients')
         .insert({
           name,
           website,
           industry,
-          user_id: user?.id // Añadir el ID del usuario actual
+          user_id: user?.id // Add user ID
         })
         .select()
         .single();
