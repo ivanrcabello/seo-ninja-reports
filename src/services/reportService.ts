@@ -487,7 +487,7 @@ ESCRITORIO:
         summary: completedReport.summary,
         content: completedReport.content as Report['content'],
         customPrompt: completedReport.custom_prompt,
-        pageSpeedData: completedReport.page_speed_data as Report['pageSpeedData']
+        pageSpeedData: (completedReport as any).page_speed_data as Report['pageSpeedData']
       };
       
       toast.success('Informe generado exitosamente');
