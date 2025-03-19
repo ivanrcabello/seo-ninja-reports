@@ -26,9 +26,9 @@ const PublicReport = () => {
           throw new Error('ID de informe no especificado');
         }
         
-        console.log('Fetching report with ID:', id);
+        console.log('Fetching public report with ID:', id);
         
-        // Use the client that has access to anonymous policy
+        // Use the anonymous access provided by RLS policies
         const { data, error: fetchError } = await supabase
           .from('reports')
           .select('*, clients(name, website)')
@@ -36,16 +36,16 @@ const PublicReport = () => {
           .single();
         
         if (fetchError) {
-          console.error('Error fetching report:', fetchError);
+          console.error('Error fetching public report:', fetchError);
           throw new Error('No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
         }
         
         if (!data) {
-          console.error('No data returned for report ID:', id);
+          console.error('No data returned for public report ID:', id);
           throw new Error('Informe no encontrado');
         }
         
-        console.log('Report data retrieved successfully:', data);
+        console.log('Public report data retrieved successfully:', data);
         
         // Safely type check the content from the database
         let reportContent;
@@ -88,7 +88,7 @@ const PublicReport = () => {
           description: 'El informe se ha cargado correctamente',
         });
       } catch (err: any) {
-        console.error('Error loading report:', err);
+        console.error('Error loading public report:', err);
         setError(err.message || 'No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
         
         // Show error toast
