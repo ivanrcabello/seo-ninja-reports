@@ -20,3 +20,9 @@ export {
   getFilePublicUrl,
   deleteReportFiles
 } from './api/reportFileService';
+
+// Export OpenAI processing functionality
+export {
+  processOpenAIReport,
+  markReportAsFailed
+} from './api/openaiProcessingService';
