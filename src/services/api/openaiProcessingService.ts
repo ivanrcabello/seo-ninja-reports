@@ -36,8 +36,8 @@ export const processOpenAIReport = async (
         contentAnalysis: sections.contentAnalysis || '',
         backlinksAnalysis: sections.backlinksAnalysis || '',
         recommendations: sections.recommendations || '',
-        seoLocal: sections.seoLocal || '',
-        propuesta: sections.propuesta || ''
+        localSeo: sections.seoLocal || '',         // Changed from seoLocal to localSeo
+        serviceProposal: sections.propuesta || ''  // Changed from propuesta to serviceProposal
       },
       summary: sections.summary || 'Análisis SEO completo del sitio web.',
       status: 'completed',
@@ -112,3 +112,4 @@ export const markReportAsFailed = async (reportId: string, errorMessage: string)
     console.error('Error updating report status to failed:', updateError);
   }
 };
+

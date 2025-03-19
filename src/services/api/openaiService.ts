@@ -10,7 +10,10 @@ export const generateOpenAIReport = async (
   url: string,
   prompt: string
 ): Promise<{ 
-  sections: ReturnType<typeof extractSectionsFromText>,
+  sections: ReturnType<typeof extractSectionsFromText> & {
+    seoLocal?: string;
+    propuesta?: string;
+  },
   rawResponse: string 
 }> => {
   try {
@@ -43,7 +46,19 @@ export const generateOpenAIReport = async (
     const data = await response.json();
     const generatedText = data.choices[0].message.content;
     
-    const sections = extractSectionsFromText(generatedText);
+    // Extract the standard sections
+    const standardSections = extractSectionsFromText(generatedText);
+    
+    // Extract additional sections that might not be in the standard extraction
+    const seoLocalMatch = generatedText.match(/##?\s*SEO Local([\s\S]*?)(?=##?\s|$)/i);
+    const propuestaMatch = generatedText.match(/##?\s*Propuesta([\s\S]*?)(?=##?\s|$)/i);
+    
+    // Combine all sections
+    const sections = {
+      ...standardSections,
+      seoLocal: seoLocalMatch ? seoLocalMatch[1].trim() : '',
+      propuesta: propuestaMatch ? propuestaMatch[1].trim() : ''
+    };
     
     return {
       sections,
