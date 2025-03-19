@@ -14,6 +14,7 @@ interface ReportGeneratorStep2Props {
   customPrompt: string;
   setCustomPrompt: (prompt: string) => void;
   hasGoogleApiKey: boolean;
+  pageSpeedDataFetched: boolean;
   isLoading: boolean;
   previousStep: () => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
@@ -25,6 +26,7 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
   customPrompt,
   setCustomPrompt,
   hasGoogleApiKey,
+  pageSpeedDataFetched,
   isLoading,
   previousStep,
   handleSubmit,
@@ -46,7 +48,7 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
           </p>
         </div>
         
-        {hasGoogleApiKey && (
+        {hasGoogleApiKey && pageSpeedDataFetched && (
           <div className="p-4 rounded-lg bg-green-50 border border-green-200">
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -55,9 +57,27 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">Análisis de rendimiento activado</h3>
+                <h3 className="text-sm font-medium text-green-800">Datos de rendimiento obtenidos</h3>
                 <p className="mt-1 text-xs text-green-700">
-                  Se incluirán datos de Google PageSpeed Insights en el informe final, incluyendo métricas de rendimiento para móvil y escritorio.
+                  Se han obtenido datos de Google PageSpeed Insights y se incluirán en el informe final, incluyendo métricas de rendimiento para móvil y escritorio.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {hasGoogleApiKey && !pageSpeedDataFetched && (
+          <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-amber-800">No se obtuvieron datos de rendimiento</h3>
+                <p className="mt-1 text-xs text-amber-700">
+                  No se pudieron obtener datos de Google PageSpeed Insights. El informe se generará sin esta información.
                 </p>
               </div>
             </div>
@@ -114,7 +134,7 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
         </Button>
         <Button
           type="submit"
-          disabled={files.length === 0 || isLoading}
+          disabled={isLoading}
         >
           {isLoading ? (
             <>

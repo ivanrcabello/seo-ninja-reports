@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Report } from '@/types/report.types';
 import useAuth from './useAuth';
@@ -18,7 +17,7 @@ interface ReportsContextType {
   createReport: (data: Omit<Report, 'id' | 'date' | 'status'>) => Promise<Report>;
   updateReport: (id: string, data: Partial<Report>) => Promise<Report>;
   deleteReport: (id: string) => Promise<void>;
-  generateReport: (clientId: string, url: string, files: File[], customPrompt?: string) => Promise<Report>;
+  generateReport: (clientId: string, url: string, files: File[], customPrompt?: string, pageSpeedData?: any) => Promise<Report>;
 }
 
 const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
@@ -78,8 +77,8 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     setReports(prevReports => prevReports.filter(report => report.id !== id));
   };
 
-  const generateReport = async (clientId: string, url: string, files: File[], customPrompt?: string) => {
-    const report = await generateSeoReport(clientId, url, files, customPrompt);
+  const generateReport = async (clientId: string, url: string, files: File[], customPrompt?: string, pageSpeedData?: any) => {
+    const report = await generateSeoReport(clientId, url, files, customPrompt, pageSpeedData);
     
     // Update reports state based on status
     if (report.status === 'processing') {

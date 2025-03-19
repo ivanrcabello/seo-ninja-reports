@@ -19,6 +19,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
+  const [pageSpeedData, setPageSpeedData] = useState<any>(null);
   const [customPrompt, setCustomPrompt] = useState(() => {
     return localStorage.getItem('default_seo_prompt') || '';
   });
@@ -48,7 +49,10 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     
     try {
       console.log('Generating report for client:', clientId, 'URL:', url);
-      const report = await generateReport(clientId, url, files, customPrompt);
+      console.log('Using PageSpeed data:', pageSpeedData);
+      
+      // Pass the pre-fetched PageSpeed data to the generateReport function
+      const report = await generateReport(clientId, url, files, customPrompt, pageSpeedData);
       
       console.log('Report generated successfully:', report);
       
@@ -104,6 +108,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
             setUrl={setUrl}
             hasGoogleApiKey={hasGoogleApiKey}
             nextStep={nextStep}
+            setPageSpeedData={setPageSpeedData}
           />
         ) : (
           <ReportGeneratorStep2
@@ -112,6 +117,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
             customPrompt={customPrompt}
             setCustomPrompt={setCustomPrompt}
             hasGoogleApiKey={hasGoogleApiKey}
+            pageSpeedDataFetched={!!pageSpeedData}
             isLoading={isLoading}
             previousStep={previousStep}
             handleSubmit={handleSubmit}

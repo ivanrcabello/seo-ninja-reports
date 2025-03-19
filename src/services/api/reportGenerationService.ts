@@ -14,7 +14,8 @@ export const generateSeoReport = async (
   clientId: string,
   url: string,
   files: File[],
-  customPrompt?: string
+  customPrompt?: string,
+  prefetchedPageSpeedData?: any
 ): Promise<Report> => {
   try {
     const session = await supabase.auth.getSession();
@@ -23,6 +24,7 @@ export const generateSeoReport = async (
     }
 
     console.log('Iniciando generación de informe SEO para cliente:', clientId, 'URL:', url);
+    console.log('¿Hay datos de PageSpeed prefetched?', !!prefetchedPageSpeedData);
 
     // Create a new report with status "processing"
     const { data: newReport, error: createError } = await supabase
@@ -43,7 +45,8 @@ export const generateSeoReport = async (
           localSeo: '',
           serviceProposal: ''
         },
-        custom_prompt: customPrompt || ''
+        custom_prompt: customPrompt || '',
+        page_speed_data: prefetchedPageSpeedData || null
       })
       .select()
       .single();
@@ -55,8 +58,8 @@ export const generateSeoReport = async (
 
     console.log('Informe inicial creado con ID:', newReport.id);
 
-    // Start the report generation process
-    processReportGeneration(newReport.id, clientId, url, files, customPrompt);
+    // Start the report generation process with prefetched PageSpeed data
+    processReportGeneration(newReport.id, clientId, url, files, customPrompt, prefetchedPageSpeedData);
 
     // Return the initial report with status "processing"
     return {
@@ -68,7 +71,8 @@ export const generateSeoReport = async (
       url: newReport.url,
       summary: newReport.summary,
       content: newReport.content as Report['content'],
-      customPrompt: newReport.custom_prompt
+      customPrompt: newReport.custom_prompt,
+      pageSpeedData: (newReport as any).page_speed_data
     };
   } catch (error: any) {
     console.error('Error al iniciar generación del informe:', error);
@@ -84,7 +88,8 @@ const processReportGeneration = async (
   clientId: string,
   url: string,
   files: File[],
-  customPrompt?: string
+  customPrompt?: string,
+  prefetchedPageSpeedData?: any
 ) => {
   try {
     console.log('Iniciando proceso de generación en segundo plano para reporte:', reportId);
@@ -95,22 +100,34 @@ const processReportGeneration = async (
       await uploadReportFiles(clientId, reportId, files);
     }
     
-    // Fetch PageSpeed Insights data if Google API key is available
-    let pageSpeedData = null;
-    try {
-      console.log('Intentando obtener datos de PageSpeed para:', url);
-      pageSpeedData = await fetchPageSpeedData(url);
-      
-      if (pageSpeedData) {
-        console.log('Datos de PageSpeed obtenidos correctamente');
-        toast.success('Datos de PageSpeed obtenidos correctamente');
-      } else {
-        console.log('No se pudieron obtener datos de PageSpeed, continuando sin ellos');
+    // Use prefetched PageSpeed data if available, otherwise try to fetch it
+    let pageSpeedData = prefetchedPageSpeedData;
+    
+    if (!pageSpeedData) {
+      try {
+        console.log('No hay datos prefetched, intentando obtener datos de PageSpeed para:', url);
+        pageSpeedData = await fetchPageSpeedData(url);
+        
+        if (pageSpeedData) {
+          console.log('Datos de PageSpeed obtenidos correctamente');
+          
+          // Update the report with the PageSpeed data
+          await supabase
+            .from('reports')
+            .update({ page_speed_data: pageSpeedData })
+            .eq('id', reportId);
+            
+          toast.success('Datos de PageSpeed obtenidos correctamente');
+        } else {
+          console.log('No se pudieron obtener datos de PageSpeed, continuando sin ellos');
+        }
+      } catch (pageSpeedError) {
+        // No detenemos el proceso por un error en PageSpeed
+        console.error('Error fetching PageSpeed data:', pageSpeedError);
+        toast.error('Error al obtener datos de PageSpeed, continuando sin esta información');
       }
-    } catch (pageSpeedError) {
-      // No detenemos el proceso por un error en PageSpeed
-      console.error('Error fetching PageSpeed data:', pageSpeedError);
-      toast.error('Error al obtener datos de PageSpeed, continuando sin esta información');
+    } else {
+      console.log('Usando datos de PageSpeed prefetched');
     }
     
     console.log('Procesando informe con OpenAI...');

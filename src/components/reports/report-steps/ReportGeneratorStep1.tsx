@@ -1,17 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Globe, FileText, ArrowRight, AlertCircle } from 'lucide-react';
+import { Globe, FileText, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { fetchPageSpeedData } from '@/services/reportService';
+import { toast } from 'sonner';
 
 interface ReportGeneratorStep1Props {
   url: string;
   setUrl: (url: string) => void;
   hasGoogleApiKey: boolean;
   nextStep: () => void;
+  setPageSpeedData: (data: any) => void;
 }
 
 const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
@@ -19,7 +22,43 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
   setUrl,
   hasGoogleApiKey,
   nextStep,
+  setPageSpeedData,
 }) => {
+  const [isLoadingPageSpeed, setIsLoadingPageSpeed] = useState(false);
+  
+  const handleContinue = async () => {
+    if (!url) {
+      toast.error('Debes proporcionar una URL válida');
+      return;
+    }
+
+    // If Google API key is available, try to fetch PageSpeed data
+    if (hasGoogleApiKey) {
+      setIsLoadingPageSpeed(true);
+      try {
+        const pageSpeedResult = await fetchPageSpeedData(url);
+        setPageSpeedData(pageSpeedResult);
+        
+        if (pageSpeedResult) {
+          toast.success('Datos de PageSpeed obtenidos correctamente');
+        } else {
+          toast.warning('No se pudieron obtener datos de PageSpeed, continuando sin esta información');
+        }
+      } catch (error: any) {
+        console.error('Error fetching PageSpeed data:', error);
+        toast.error('Error al obtener datos de PageSpeed, continuando sin esta información', {
+          description: error.message
+        });
+      } finally {
+        setIsLoadingPageSpeed(false);
+        nextStep();
+      }
+    } else {
+      // If no Google API key, just continue to next step
+      nextStep();
+    }
+  };
+
   return (
     <>
       <CardContent className="space-y-6 pt-4">
@@ -75,12 +114,21 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
       
       <CardFooter className="flex justify-end pt-4">
         <Button
-          onClick={nextStep}
-          disabled={!url}
+          onClick={handleContinue}
+          disabled={!url || isLoadingPageSpeed}
           className="group"
         >
-          Continuar
-          <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          {isLoadingPageSpeed ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Obteniendo datos de rendimiento...
+            </>
+          ) : (
+            <>
+              Continuar
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </>
+          )}
         </Button>
       </CardFooter>
     </>
