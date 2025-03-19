@@ -47,3 +47,74 @@ export const extractSectionsFromText = (text: string) => {
 
   return sections;
 };
+
+/**
+ * Formats report content by parsing markdown-like syntax
+ * @param text The raw report text
+ * @returns Formatted text with proper HTML styling
+ */
+export const formatReportContent = (text: string) => {
+  // Replace headers
+  let formattedText = text
+    .replace(/# (.*?)(\n|$)/g, '<h3 class="text-xl font-semibold mb-3">$1</h3>')
+    .replace(/## (.*?)(\n|$)/g, '<h4 class="text-lg font-medium mb-2">$1</h4>');
+  
+  // Replace bullet points
+  formattedText = formattedText.replace(/- (.*?)(\n|$)/g, '<li class="mb-1">$1</li>');
+  
+  // Split into paragraphs
+  const paragraphs = formattedText.split('\n\n');
+  
+  return paragraphs
+    .map(p => {
+      if (p.startsWith('<h3') || p.startsWith('<h4')) {
+        return p;
+      }
+      if (p.includes('<li>')) {
+        return `<ul class="list-disc pl-5 mb-4">${p}</ul>`;
+      }
+      return `<p class="mb-4">${p}</p>`;
+    })
+    .join('');
+};
+
+/**
+ * Detects priority level from recommendation text
+ * @param text The recommendation text
+ * @returns CSS classes for styling based on priority
+ */
+export const getRecommendationPriority = (text: string) => {
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.includes("alta") || lowerText.includes("crítica") || lowerText.includes("urgente")) {
+    return {
+      color: "text-red-600",
+      background: "bg-red-50",
+      border: "border-red-200",
+      icon: "🔴"
+    };
+  } 
+  else if (lowerText.includes("media")) {
+    return {
+      color: "text-amber-600",
+      background: "bg-amber-50",
+      border: "border-amber-200",
+      icon: "🟠"
+    };
+  }
+  else if (lowerText.includes("baja")) {
+    return {
+      color: "text-green-600",
+      background: "bg-green-50",
+      border: "border-green-200",
+      icon: "🟢"
+    };
+  }
+  
+  return {
+    color: "text-blue-600",
+    background: "bg-blue-50",
+    border: "border-blue-200",
+    icon: "🔵"
+  };
+};

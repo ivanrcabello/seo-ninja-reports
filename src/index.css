@@ -155,6 +155,31 @@
   .glass-input {
     @apply bg-white/50 dark:bg-black/50 backdrop-blur-sm border border-white/20 dark:border-white/10;
   }
+  
+  .text-gradient {
+    @apply bg-gradient-to-br from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-primary {
+    @apply bg-gradient-to-br from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent;
+  }
+  
+  /* Nuevo: clases para prioridades con colores */
+  .priority-high {
+    @apply bg-red-500/10 text-red-600 border border-red-500/20;
+  }
+  
+  .priority-medium {
+    @apply bg-amber-500/10 text-amber-600 border border-amber-500/20;
+  }
+  
+  .priority-low {
+    @apply bg-green-500/10 text-green-600 border border-green-500/20;
+  }
+  
+  .priority-default {
+    @apply bg-blue-500/10 text-blue-600 border border-blue-500/20;
+  }
 }
 
 /* Page transitions */
