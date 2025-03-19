@@ -15,6 +15,10 @@ export const processOpenAIReport = async (
   customPrompt?: string
 ): Promise<Report | null> => {
   try {
+    console.log('Procesando informe con OpenAI para:', url);
+    console.log('ID del informe:', reportId);
+    console.log('¿Hay datos de PageSpeed?', !!pageSpeedData);
+    
     let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
     prompt = prompt.replace('[DOMINIO]', new URL(url).hostname);
     
@@ -26,7 +30,10 @@ export const processOpenAIReport = async (
       prompt += "\n\nNo se pudieron obtener datos de Google PageSpeed Insights. Por favor, incluye en el informe recomendaciones generales sobre la importancia de la velocidad de carga y rendimiento del sitio, sin datos específicos.";
     }
     
-    const { sections } = await generateOpenAIReport(url, prompt);
+    console.log('Generando informe con OpenAI...');
+    const { sections, rawResponse } = await generateOpenAIReport(url, prompt);
+    console.log('Informe generado, actualizando base de datos...');
+    console.log('Secciones disponibles:', Object.keys(sections));
     
     // Update report with generated content and PageSpeed data
     const updateData: any = {
@@ -36,13 +43,15 @@ export const processOpenAIReport = async (
         contentAnalysis: sections.contentAnalysis || '',
         backlinksAnalysis: sections.backlinksAnalysis || '',
         recommendations: sections.recommendations || '',
-        localSeo: sections.seoLocal || '',         // Changed from seoLocal to localSeo
-        serviceProposal: sections.propuesta || ''  // Changed from propuesta to serviceProposal
+        localSeo: sections.seoLocal || '',
+        serviceProposal: sections.propuesta || ''
       },
       summary: sections.summary || 'Análisis SEO completo del sitio web.',
       status: 'completed',
       updated_at: new Date().toISOString()
     };
+    
+    console.log('Actualización de content preparada con secciones:', Object.keys(updateData.content));
     
     // Add PageSpeed data if available
     if (pageSpeedData) {
@@ -57,8 +66,11 @@ export const processOpenAIReport = async (
       .single();
       
     if (updateError) {
+      console.error('Error al actualizar el informe en Supabase:', updateError);
       throw updateError;
     }
+    
+    console.log('Informe actualizado exitosamente');
     
     // Convert the database column names to camelCase for the Report interface
     const formattedCompletedReport: Report = {
@@ -112,4 +124,3 @@ export const markReportAsFailed = async (reportId: string, errorMessage: string)
     console.error('Error updating report status to failed:', updateError);
   }
 };
-

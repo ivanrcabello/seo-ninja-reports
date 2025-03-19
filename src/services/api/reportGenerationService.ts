@@ -22,6 +22,8 @@ export const generateSeoReport = async (
       throw new Error('No active session');
     }
 
+    console.log('Iniciando generación de informe SEO para cliente:', clientId, 'URL:', url);
+
     // Create a new report with status "processing"
     const { data: newReport, error: createError } = await supabase
       .from('reports')
@@ -37,7 +39,9 @@ export const generateSeoReport = async (
           technicalAnalysis: '',
           contentAnalysis: '',
           backlinksAnalysis: '',
-          recommendations: ''
+          recommendations: '',
+          localSeo: '',
+          serviceProposal: ''
         },
         custom_prompt: customPrompt || ''
       })
@@ -45,10 +49,11 @@ export const generateSeoReport = async (
       .single();
 
     if (createError) {
+      console.error('Error al crear informe inicial:', createError);
       throw createError;
     }
 
-    console.log('Created initial report:', newReport);
+    console.log('Informe inicial creado con ID:', newReport.id);
 
     // Start the report generation process
     processReportGeneration(newReport.id, clientId, url, files, customPrompt);
@@ -66,6 +71,7 @@ export const generateSeoReport = async (
       customPrompt: newReport.custom_prompt
     };
   } catch (error: any) {
+    console.error('Error al iniciar generación del informe:', error);
     return handleServiceError(error, 'Error al iniciar generación del informe');
   }
 };
@@ -81,17 +87,22 @@ const processReportGeneration = async (
   customPrompt?: string
 ) => {
   try {
+    console.log('Iniciando proceso de generación en segundo plano para reporte:', reportId);
+    
     // Upload supporting files if any
     if (files.length > 0) {
+      console.log('Subiendo archivos de soporte:', files.length, 'archivos');
       await uploadReportFiles(clientId, reportId, files);
     }
     
     // Fetch PageSpeed Insights data if Google API key is available
     let pageSpeedData = null;
     try {
+      console.log('Intentando obtener datos de PageSpeed para:', url);
       pageSpeedData = await fetchPageSpeedData(url);
       
       if (pageSpeedData) {
+        console.log('Datos de PageSpeed obtenidos correctamente');
         toast.success('Datos de PageSpeed obtenidos correctamente');
       } else {
         console.log('No se pudieron obtener datos de PageSpeed, continuando sin ellos');
@@ -102,8 +113,10 @@ const processReportGeneration = async (
       toast.error('Error al obtener datos de PageSpeed, continuando sin esta información');
     }
     
+    console.log('Procesando informe con OpenAI...');
     // Process the report with OpenAI
     await processOpenAIReport(reportId, url, pageSpeedData, customPrompt);
+    console.log('Procesamiento de informe completado con éxito');
     
   } catch (error: any) {
     console.error('Error generating report:', error);

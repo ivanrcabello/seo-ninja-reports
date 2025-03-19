@@ -17,6 +17,9 @@ export const generateOpenAIReport = async (
   rawResponse: string 
 }> => {
   try {
+    console.log('Iniciando solicitud a OpenAI para:', url);
+    console.log('Utilizando prompt con longitud:', prompt.length);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -40,18 +43,25 @@ export const generateOpenAIReport = async (
     });
     
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Error en respuesta de OpenAI:', errorData);
       throw new Error(`Error en la API de OpenAI: ${response.statusText}`);
     }
     
     const data = await response.json();
     const generatedText = data.choices[0].message.content;
+    console.log('Respuesta de OpenAI recibida. Longitud del texto:', generatedText.length);
     
     // Extract the standard sections
     const standardSections = extractSectionsFromText(generatedText);
+    console.log('Secciones estándar extraídas:', Object.keys(standardSections));
     
     // Extract additional sections that might not be in the standard extraction
     const seoLocalMatch = generatedText.match(/##?\s*SEO Local([\s\S]*?)(?=##?\s|$)/i);
     const propuestaMatch = generatedText.match(/##?\s*Propuesta([\s\S]*?)(?=##?\s|$)/i);
+    
+    console.log('¿Se encontró sección SEO Local?', !!seoLocalMatch);
+    console.log('¿Se encontró sección Propuesta?', !!propuestaMatch);
     
     // Combine all sections
     const sections = {
