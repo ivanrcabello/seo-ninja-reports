@@ -1,26 +1,14 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import useAuth from './useAuth';
-
-export interface Client {
-  id: string;
-  name: string;
-  website: string;
-  industry: string;
-  createdAt: string;
-  reportsCount: number;
-}
-
-interface ClientsContextType {
-  clients: Client[];
-  isLoading: boolean;
-  getClient: (id: string) => Client | undefined;
-  addClient: (data: Omit<Client, 'id' | 'createdAt' | 'reportsCount'>) => Promise<Client>;
-  updateClient: (id: string, data: Partial<Omit<Client, 'id' | 'createdAt' | 'reportsCount'>>) => Promise<Client>;
-  deleteClient: (id: string) => Promise<void>;
-}
+import { Client, ClientsContextType } from '@/types/client.types';
+import { 
+  fetchClients, 
+  addClientToDb, 
+  updateClientInDb, 
+  deleteClientFromDb 
+} from '@/services/clientService';
 
 // Create context
 const ClientsContext = createContext<ClientsContextType | undefined>(undefined);
@@ -42,37 +30,7 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
       try {
         setIsLoading(true);
         
-        // Get clients from Supabase
-        const { data: clientsData, error } = await supabase
-          .from('clients')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          throw error;
-        }
-
-        // Get reports count for each client
-        // Fix: Use a different approach to count reports
-        const { data: reportsCountData, error: reportsError } = await supabase
-          .from('reports')
-          .select('client_id, id');
-          
-        if (reportsError) {
-          console.error('Error cargando conteo de informes:', reportsError);
-        }
-
-        // Create a mapping of client_id to report count
-        const reportCountMap: Record<string, number> = {};
-        if (reportsCountData) {
-          reportsCountData.forEach((item: any) => {
-            const clientId = item.client_id;
-            if (!reportCountMap[clientId]) {
-              reportCountMap[clientId] = 0;
-            }
-            reportCountMap[clientId]++;
-          });
-        }
+        const { clients: clientsData, reportCountMap } = await fetchClients(user.id);
 
         // Format clients data
         const formattedClients = clientsData.map((client: any) => ({
@@ -102,23 +60,7 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
 
   const addClient = async (data: Omit<Client, 'id' | 'createdAt' | 'reportsCount'>) => {
     try {
-      const { name, website, industry } = data;
-      
-      // Fix: Add user_id to the client data
-      const { data: newClient, error } = await supabase
-        .from('clients')
-        .insert({
-          name,
-          website,
-          industry,
-          user_id: user?.id // Add user ID
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        throw error;
-      }
+      const newClient = await addClientToDb(data, user?.id);
       
       const formattedClient: Client = {
         id: newClient.id,
@@ -134,24 +76,13 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
       
       return formattedClient;
     } catch (error: any) {
-      console.error('Error adding client:', error);
-      toast.error(error.message || 'Error al añadir cliente');
       throw error;
     }
   };
 
   const updateClient = async (id: string, data: Partial<Omit<Client, 'id' | 'createdAt' | 'reportsCount'>>) => {
     try {
-      const { data: updatedClient, error } = await supabase
-        .from('clients')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) {
-        throw error;
-      }
+      const updatedClient = await updateClientInDb(id, data);
       
       const clientToUpdate = clients.find(client => client.id === id);
       if (!clientToUpdate) {
@@ -174,28 +105,17 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
       toast.success('Cliente actualizado exitosamente');
       return formattedClient;
     } catch (error: any) {
-      console.error('Error updating client:', error);
-      toast.error(error.message || 'Error al actualizar cliente');
       throw error;
     }
   };
 
   const deleteClient = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        throw error;
-      }
+      await deleteClientFromDb(id);
       
       setClients(prevClients => prevClients.filter(client => client.id !== id));
       toast.success('Cliente eliminado exitosamente');
     } catch (error: any) {
-      console.error('Error deleting client:', error);
-      toast.error(error.message || 'Error al eliminar cliente');
       throw error;
     }
   };
@@ -220,4 +140,5 @@ const useClients = () => {
   return context;
 };
 
+export { Client };
 export default useClients;

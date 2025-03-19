@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, Loader2 } from 'lucide-react';
 import ClientCard from './ClientCard';
-import useClients, { Client } from '@/hooks/useClients';
+import useClients from '@/hooks/useClients';
 import AnimatedContainer from '../ui/AnimatedContainer';
 
 const ClientList: React.FC = () => {
@@ -21,7 +20,6 @@ const ClientList: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter clients based on search
   const filteredClients = clients.filter(client => {
     const query = searchQuery.toLowerCase();
     return (
