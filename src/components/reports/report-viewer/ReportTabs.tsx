@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import ReportSection from '../report-section';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageSpeedTab from './PageSpeedTab';
+import { FileBarChart, Layers, SearchCode, KeyRound, FileText, Globe, Gauge, CheckCircle2, LightbulbIcon } from 'lucide-react';
 
 interface ReportTabsProps {
   report: Report;
@@ -33,39 +34,69 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
 
   return (
     <Tabs defaultValue={getDefaultTab()} className="w-full">
-      <TabsList className="mb-4 flex justify-start overflow-x-auto pb-px w-full">
-        {content?.executiveSummary && (
-          <TabsTrigger value="executiveSummary">Resumen Ejecutivo</TabsTrigger>
-        )}
-        {content?.technicalAnalysis && (
-          <TabsTrigger value="technicalAnalysis">SEO Técnico</TabsTrigger>
-        )}
-        {content?.keywords && (
-          <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
-        )}
-        {content?.contentAnalysis && (
-          <TabsTrigger value="contentAnalysis">Análisis de Contenido</TabsTrigger>
-        )}
-        {content?.backlinksAnalysis && (
-          <TabsTrigger value="backlinksAnalysis">Backlinks</TabsTrigger>
-        )}
-        {content?.localSeo && (
-          <TabsTrigger value="localSeo">SEO Local</TabsTrigger>
-        )}
-        {content?.pageSpeedData && (
-          <TabsTrigger value="pageSpeedData">PageSpeed</TabsTrigger>
-        )}
-        {content?.recommendations && (
-          <TabsTrigger value="recommendations">Recomendaciones</TabsTrigger>
-        )}
-        {content?.serviceProposal && (
-          <TabsTrigger value="serviceProposal">Propuesta</TabsTrigger>
-        )}
-      </TabsList>
+      {/* Tabs Navigation */}
+      <div className="bg-background/80 backdrop-blur-sm sticky top-0 z-10 pb-2">
+        <TabsList className="mb-4 flex h-auto p-1 justify-start overflow-x-auto w-full">
+          {content?.executiveSummary && (
+            <TabsTrigger value="executiveSummary" className="flex items-center gap-1 py-2">
+              <FileBarChart className="h-4 w-4" />
+              <span>Resumen Ejecutivo</span>
+            </TabsTrigger>
+          )}
+          {content?.technicalAnalysis && (
+            <TabsTrigger value="technicalAnalysis" className="flex items-center gap-1 py-2">
+              <SearchCode className="h-4 w-4" />
+              <span>SEO Técnico</span>
+            </TabsTrigger>
+          )}
+          {content?.keywords && (
+            <TabsTrigger value="keywords" className="flex items-center gap-1 py-2">
+              <KeyRound className="h-4 w-4" />
+              <span>Palabras Clave</span>
+            </TabsTrigger>
+          )}
+          {content?.contentAnalysis && (
+            <TabsTrigger value="contentAnalysis" className="flex items-center gap-1 py-2">
+              <FileText className="h-4 w-4" />
+              <span>Análisis de Contenido</span>
+            </TabsTrigger>
+          )}
+          {content?.backlinksAnalysis && (
+            <TabsTrigger value="backlinksAnalysis" className="flex items-center gap-1 py-2">
+              <Layers className="h-4 w-4" />
+              <span>Backlinks</span>
+            </TabsTrigger>
+          )}
+          {content?.localSeo && (
+            <TabsTrigger value="localSeo" className="flex items-center gap-1 py-2">
+              <Globe className="h-4 w-4" />
+              <span>SEO Local</span>
+            </TabsTrigger>
+          )}
+          {content?.pageSpeedData && (
+            <TabsTrigger value="pageSpeedData" className="flex items-center gap-1 py-2">
+              <Gauge className="h-4 w-4" />
+              <span>PageSpeed</span>
+            </TabsTrigger>
+          )}
+          {content?.recommendations && (
+            <TabsTrigger value="recommendations" className="flex items-center gap-1 py-2">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Recomendaciones</span>
+            </TabsTrigger>
+          )}
+          {content?.serviceProposal && (
+            <TabsTrigger value="serviceProposal" className="flex items-center gap-1 py-2">
+              <LightbulbIcon className="h-4 w-4" />
+              <span>Propuesta</span>
+            </TabsTrigger>
+          )}
+        </TabsList>
+      </div>
       
-      <ScrollArea className="h-full">
+      <ScrollArea className="h-full pr-4">
         {content?.executiveSummary && (
-          <TabsContent value="executiveSummary">
+          <TabsContent value="executiveSummary" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <ReportSection 
               title="Resumen Ejecutivo" 
               content={content.executiveSummary} 
@@ -77,7 +108,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
         )}
         
         {content?.technicalAnalysis && (
-          <TabsContent value="technicalAnalysis">
+          <TabsContent value="technicalAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <ReportSection 
               title="Análisis Técnico SEO" 
               content={content.technicalAnalysis} 
@@ -89,7 +120,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
         )}
         
         {content?.keywords && (
-          <TabsContent value="keywords">
+          <TabsContent value="keywords" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <ReportSection 
               title="Palabras Clave" 
               content={content.keywords} 
@@ -101,7 +132,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
         )}
         
         {content?.contentAnalysis && (
-          <TabsContent value="contentAnalysis">
+          <TabsContent value="contentAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <ReportSection 
               title="Análisis de Contenido" 
               content={content.contentAnalysis} 
@@ -113,7 +144,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
         )}
         
         {content?.backlinksAnalysis && (
-          <TabsContent value="backlinksAnalysis">
+          <TabsContent value="backlinksAnalysis" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <ReportSection 
               title="Análisis de Backlinks" 
               content={content.backlinksAnalysis} 
@@ -125,7 +156,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
         )}
         
         {content?.localSeo && (
-          <TabsContent value="localSeo">
+          <TabsContent value="localSeo" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <ReportSection 
               title="SEO Local" 
               content={content.localSeo} 
@@ -137,13 +168,13 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
         )}
         
         {content?.pageSpeedData && (
-          <TabsContent value="pageSpeedData">
+          <TabsContent value="pageSpeedData" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <PageSpeedTab data={content.pageSpeedData} />
           </TabsContent>
         )}
         
         {content?.recommendations && (
-          <TabsContent value="recommendations">
+          <TabsContent value="recommendations" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <ReportSection 
               title="Recomendaciones" 
               content={content.recommendations} 
@@ -156,7 +187,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report }) => {
         )}
         
         {content?.serviceProposal && (
-          <TabsContent value="serviceProposal">
+          <TabsContent value="serviceProposal" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <ReportSection 
               title="Propuesta de Servicios" 
               content={content.serviceProposal} 
