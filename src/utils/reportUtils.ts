@@ -54,6 +54,46 @@ export const extractSectionsFromText = (text: string) => {
  * @returns Formatted text with proper HTML styling
  */
 export const formatReportContent = (text: string) => {
+  if (!text) return '';
+  
+  // Check if content already contains HTML tags
+  if (text.includes('<li class=') || text.includes('<p class=')) {
+    // Content is already HTML formatted, just wrap lists properly
+    let formattedHtml = text;
+    
+    // Ensure lists are properly wrapped in <ul> tags
+    if (formattedHtml.includes('<li class=') && !formattedHtml.includes('<ul')) {
+      formattedHtml = formattedHtml.replace(
+        /(<li class=[^>]*>.*?<\/li>)(?=\s*<li class=|$)/g, 
+        '$1'
+      );
+      // Wrap consecutive <li> elements in <ul> tags
+      const listItems = formattedHtml.match(/(<li class=[^>]*>.*?<\/li>)+/g);
+      if (listItems) {
+        listItems.forEach(listGroup => {
+          formattedHtml = formattedHtml.replace(
+            listGroup,
+            `<ul class="list-none pl-0 mb-4 space-y-1">${listGroup}</ul>`
+          );
+        });
+      }
+    }
+    
+    // Fix headings if needed
+    formattedHtml = formattedHtml.replace(
+      /<h(\d)[^>]*>(.*?)<\/h\1>/g,
+      (match, level, content) => {
+        const classes = level === '3' 
+          ? 'text-xl font-semibold mb-3 text-primary' 
+          : 'text-lg font-medium mb-2 text-primary/90';
+        return `<h${level} class="${classes}">${content}</h${level}>`;
+      }
+    );
+    
+    return formattedHtml;
+  }
+  
+  // Original markdown-to-HTML conversion logic
   // Replace headers
   let formattedText = text
     .replace(/# (.*?)(\n|$)/g, '<h3 class="text-xl font-semibold mb-3 text-primary">$1</h3>')
