@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(JSON.parse(storedUser));
         }
       } catch (error) {
-        console.error('Error checking session:', error);
+        console.error('Error al verificar sesión:', error);
       } finally {
         setLoading(false);
       }
@@ -55,10 +55,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const mockUser = { id: crypto.randomUUID(), email };
       localStorage.setItem('seo-ninja-user', JSON.stringify(mockUser));
       setUser(mockUser);
-      toast.success('Signed in successfully');
+      toast.success('Inicio de sesión exitoso');
     } catch (error) {
-      console.error('Error signing in:', error);
-      toast.error('Failed to sign in');
+      console.error('Error al iniciar sesión:', error);
+      toast.error('Error al iniciar sesión');
       throw error;
     } finally {
       setLoading(false);
@@ -77,10 +77,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const mockUser = { id: crypto.randomUUID(), email };
       localStorage.setItem('seo-ninja-user', JSON.stringify(mockUser));
       setUser(mockUser);
-      toast.success('Account created successfully');
+      toast.success('Cuenta creada exitosamente');
     } catch (error) {
-      console.error('Error signing up:', error);
-      toast.error('Failed to create account');
+      console.error('Error al crear cuenta:', error);
+      toast.error('Error al crear cuenta');
       throw error;
     } finally {
       setLoading(false);
@@ -94,10 +94,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Mock sign out - replace with actual Supabase
       localStorage.removeItem('seo-ninja-user');
       setUser(null);
-      toast.success('Signed out successfully');
+      toast.success('Sesión cerrada exitosamente');
     } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error('Failed to sign out');
+      console.error('Error al cerrar sesión:', error);
+      toast.error('Error al cerrar sesión');
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth debe usarse dentro de un AuthProvider');
   }
   return context;
 };

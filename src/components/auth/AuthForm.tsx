@@ -35,7 +35,7 @@ const AuthForm: React.FC = () => {
       }
       navigate('/dashboard');
     } catch (error) {
-      console.error('Authentication error:', error);
+      console.error('Error de autenticación:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -46,28 +46,28 @@ const AuthForm: React.FC = () => {
       <Card className="w-full glass-card">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            {mode === 'signin' ? 'Welcome back' : 'Create an account'}
+            {mode === 'signin' ? 'Bienvenido de nuevo' : 'Crear una cuenta'}
           </CardTitle>
           <CardDescription className="text-center">
             {mode === 'signin' 
-              ? 'Enter your credentials to sign in to your account' 
-              : 'Enter your details to create a new account'}
+              ? 'Introduce tus credenciales para iniciar sesión' 
+              : 'Introduce tus datos para crear una nueva cuenta'}
           </CardDescription>
         </CardHeader>
         <Tabs value={mode} onValueChange={(value) => setMode(value as 'signin' | 'signup')} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
+            <TabsTrigger value="signup">Registrarse</TabsTrigger>
           </TabsList>
           <TabsContent value="signin">
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Correo Electrónico</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="example@email.com"
+                    placeholder="ejemplo@correo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -76,9 +76,9 @@ const AuthForm: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">Contraseña</Label>
                     <a href="#" className="text-xs text-primary hover:underline">
-                      Forgot password?
+                      ¿Olvidaste tu contraseña?
                     </a>
                   </div>
                   <Input
@@ -101,10 +101,10 @@ const AuthForm: React.FC = () => {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing In...
+                      Iniciando Sesión...
                     </>
                   ) : (
-                    'Sign In'
+                    'Iniciar Sesión'
                   )}
                 </Button>
               </CardFooter>
@@ -114,11 +114,11 @@ const AuthForm: React.FC = () => {
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Correo Electrónico</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="example@email.com"
+                    placeholder="ejemplo@correo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -126,7 +126,7 @@ const AuthForm: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Contraseña</Label>
                   <Input
                     id="password"
                     type="password"
@@ -147,10 +147,10 @@ const AuthForm: React.FC = () => {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
+                      Creando Cuenta...
                     </>
                   ) : (
-                    'Create Account'
+                    'Crear Cuenta'
                   )}
                 </Button>
               </CardFooter>

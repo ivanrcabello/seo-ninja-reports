@@ -30,9 +30,9 @@ const Dashboard = () => {
       <main className="flex-1 pt-24 pb-16">
         <div className="container px-4 sm:px-6 mx-auto">
           <AnimatedContainer animation="slide-up" className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2">Dashboard</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">Panel de Control</h1>
             <p className="text-muted-foreground">
-              Manage your clients and SEO reports
+              Gestiona tus clientes e informes SEO
             </p>
           </AnimatedContainer>
           
@@ -45,24 +45,24 @@ const Dashboard = () => {
               <AnimatedContainer animation="fade" delay={200} className="mb-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <DashboardCard
-                    title="Total Clients"
+                    title="Total Clientes"
                     value={clients.length}
-                    description="Active clients in your account"
-                    linkText="View all clients"
+                    description="Clientes activos en tu cuenta"
+                    linkText="Ver todos los clientes"
                     linkUrl="#clients"
                   />
                   <DashboardCard
-                    title="Total Reports"
+                    title="Total Informes"
                     value={reports.length}
-                    description="SEO reports generated"
-                    linkText="View all reports"
+                    description="Informes SEO generados"
+                    linkText="Ver todos los informes"
                     linkUrl="/reports"
                   />
                   <DashboardCard
-                    title="Recent Activity"
+                    title="Actividad Reciente"
                     value={reports.filter(r => new Date(r.date) > new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)).length}
-                    description="Reports created in the last 7 days"
-                    linkText="View recent activity"
+                    description="Informes creados en los últimos 7 días"
+                    linkText="Ver actividad reciente"
                     linkUrl="/activity"
                   />
                 </div>
@@ -70,7 +70,7 @@ const Dashboard = () => {
               
               <AnimatedContainer animation="slide-up" delay={400} className="mb-8">
                 <div className="flex items-center justify-between" id="clients">
-                  <h2 className="text-2xl font-bold">Your Clients</h2>
+                  <h2 className="text-2xl font-bold">Tus Clientes</h2>
                 </div>
               </AnimatedContainer>
               

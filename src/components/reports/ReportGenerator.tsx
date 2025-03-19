@@ -39,7 +39,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       const report = await generateReport(clientId, url, files);
       navigate(`/reports/${report.id}`);
     } catch (error) {
-      console.error('Error generating report:', error);
+      console.error('Error al generar informe:', error);
     } finally {
       setIsLoading(false);
     }
@@ -60,10 +60,10 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       <Card className="border-none shadow-none bg-transparent">
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-2xl font-bold">
-            Generate SEO Report {client ? `for ${client.name}` : ''}
+            Generar Informe SEO {client ? `para ${client.name}` : ''}
           </CardTitle>
           <CardDescription>
-            Enter website details and upload supporting files to generate a comprehensive SEO report.
+            Introduce los detalles del sitio web y sube archivos de apoyo para generar un informe SEO completo.
           </CardDescription>
         </CardHeader>
         
@@ -71,13 +71,13 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
           <>
             <CardContent className="space-y-6 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="url">Website URL</Label>
+                <Label htmlFor="url">URL del Sitio Web</Label>
                 <div className="relative">
                   <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="url"
                     type="url"
-                    placeholder="https://example.com"
+                    placeholder="https://ejemplo.com"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     className="pl-10 glass-input"
@@ -85,13 +85,13 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Enter the main URL you want to analyze
+                  Introduce la URL principal que quieres analizar
                 </p>
               </div>
               
               <div className="flex justify-center items-center">
                 <span className="h-px flex-1 bg-border"></span>
-                <span className="px-3 text-sm text-muted-foreground">Then</span>
+                <span className="px-3 text-sm text-muted-foreground">Luego</span>
                 <span className="h-px flex-1 bg-border"></span>
               </div>
               
@@ -101,10 +101,10 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
                     <FileText className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium">Upload Supporting Files</h3>
+                    <h3 className="text-sm font-medium">Subir Archivos de Apoyo</h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      In the next step, you'll upload files like analytics exports, previous reports, 
-                      screenshots, and other documents to enhance your SEO analysis.
+                      En el siguiente paso, podrás subir archivos como exportaciones de analytics, informes anteriores, 
+                      capturas de pantalla y otros documentos para mejorar tu análisis SEO.
                     </p>
                   </div>
                 </div>
@@ -117,7 +117,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
                 disabled={!url}
                 className="group"
               >
-                Continue
+                Continuar
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
             </CardFooter>
@@ -126,14 +126,14 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6 pt-4">
               <div className="space-y-2">
-                <Label>Upload Supporting Files</Label>
+                <Label>Subir Archivos de Apoyo</Label>
                 <FileUploader
                   onFilesChange={setFiles}
                   maxFiles={5}
                   acceptedTypes=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx,.xls"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Upload analytics exports, previous reports, screenshots, or other documents to enhance your analysis
+                  Sube exportaciones de analytics, informes anteriores, capturas de pantalla u otros documentos para mejorar tu análisis
                 </p>
               </div>
             </CardContent>
@@ -144,7 +144,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
                 variant="outline"
                 onClick={previousStep}
               >
-                Back
+                Atrás
               </Button>
               <Button
                 type="submit"
@@ -153,10 +153,10 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    Generando...
                   </>
                 ) : (
-                  'Generate Report'
+                  'Generar Informe'
                 )}
               </Button>
             </CardFooter>

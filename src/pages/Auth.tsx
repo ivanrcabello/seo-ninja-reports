@@ -28,7 +28,7 @@ const Auth = () => {
             </span>
           </h1>
           <p className="text-muted-foreground">
-            Sign in to your account or create a new one
+            Inicia sesión o crea una nueva cuenta
           </p>
         </AnimatedContainer>
         
@@ -36,10 +36,10 @@ const Auth = () => {
         
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            By signing in, you agree to our
-            <a href="#" className="text-primary hover:underline mx-1">Terms of Service</a>
-            and
-            <a href="#" className="text-primary hover:underline mx-1">Privacy Policy</a>
+            Al iniciar sesión, aceptas nuestros
+            <a href="#" className="text-primary hover:underline mx-1">Términos de Servicio</a>
+            y
+            <a href="#" className="text-primary hover:underline mx-1">Política de Privacidad</a>
           </p>
         </div>
       </div>

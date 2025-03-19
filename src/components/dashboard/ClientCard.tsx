@@ -7,6 +7,7 @@ import { ChevronRight, Activity, File, Calendar } from 'lucide-react';
 import BlurredCard from '../ui/BlurredCard';
 import { formatDistanceToNow } from 'date-fns';
 import { Client } from '@/hooks/useClients';
+import { es } from 'date-fns/locale';
 
 interface ClientCardProps {
   client: Client;
@@ -43,21 +44,21 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, index }) => {
           <div className="flex flex-col items-center justify-center p-3 bg-primary/5 rounded-lg">
             <File className="h-5 w-5 text-primary mb-1" />
             <span className="text-lg font-semibold">{reportsCount}</span>
-            <span className="text-xs text-muted-foreground">Reports</span>
+            <span className="text-xs text-muted-foreground">Informes</span>
           </div>
           <div className="flex flex-col items-center justify-center p-3 bg-primary/5 rounded-lg">
             <Calendar className="h-5 w-5 text-primary mb-1" />
             <span className="text-sm font-medium">
-              {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+              {formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: es })}
             </span>
-            <span className="text-xs text-muted-foreground">Added</span>
+            <span className="text-xs text-muted-foreground">Añadido</span>
           </div>
         </div>
 
         <div className="mt-auto pt-4 border-t border-border">
           <Link to={`/clients/${id}`}>
             <Button className="w-full justify-between group" variant="outline">
-              <span>View Client</span>
+              <span>Ver Cliente</span>
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Button>
           </Link>

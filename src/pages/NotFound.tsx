@@ -18,9 +18,9 @@ const NotFound = () => {
           <div className="flex flex-col items-center justify-center py-8">
             <FileQuestion className="h-20 w-20 text-primary/50 mb-6" />
             <h1 className="text-4xl font-bold mb-4">404</h1>
-            <p className="text-xl text-muted-foreground mb-8">Oops! Page not found</p>
+            <p className="text-xl text-muted-foreground mb-8">¡Ups! Página no encontrada</p>
             <Button asChild>
-              <Link to="/">Return Home</Link>
+              <Link to="/">Volver al Inicio</Link>
             </Button>
           </div>
         </AnimatedContainer>

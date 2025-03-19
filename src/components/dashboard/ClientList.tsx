@@ -54,7 +54,7 @@ const ClientList: React.FC = () => {
       setNewClient({ name: '', website: '', industry: '' });
       setIsDialogOpen(false);
     } catch (error) {
-      console.error('Error adding client:', error);
+      console.error('Error al añadir cliente:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -74,7 +74,7 @@ const ClientList: React.FC = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search clients..."
+            placeholder="Buscar clientes..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="pl-10 glass-input w-full sm:w-[300px]"
@@ -85,20 +85,20 @@ const ClientList: React.FC = () => {
           <DialogTrigger asChild>
             <Button className="gap-1.5">
               <Plus className="h-4 w-4" />
-              <span>Add Client</span>
+              <span>Añadir Cliente</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px] glass">
             <form onSubmit={handleAddClient}>
               <DialogHeader>
-                <DialogTitle>Add New Client</DialogTitle>
+                <DialogTitle>Añadir Nuevo Cliente</DialogTitle>
                 <DialogDescription>
-                  Fill out the form below to add a new client to your dashboard.
+                  Completa el formulario para añadir un nuevo cliente a tu panel.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Client Name</Label>
+                  <Label htmlFor="name">Nombre del Cliente</Label>
                   <Input
                     id="name"
                     name="name"
@@ -110,37 +110,37 @@ const ClientList: React.FC = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="website">Sitio Web</Label>
                   <Input
                     id="website"
                     name="website"
                     value={newClient.website}
                     onChange={handleInputChange}
-                    placeholder="https://example.com"
+                    placeholder="https://ejemplo.com"
                     className="glass-input"
                     required
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="industry">Industry</Label>
+                  <Label htmlFor="industry">Industria</Label>
                   <Select
                     value={newClient.industry}
                     onValueChange={handleIndustryChange}
                     required
                   >
                     <SelectTrigger className="glass-input">
-                      <SelectValue placeholder="Select industry" />
+                      <SelectValue placeholder="Seleccionar industria" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Technology">Technology</SelectItem>
+                      <SelectItem value="Tecnología">Tecnología</SelectItem>
                       <SelectItem value="E-commerce">E-commerce</SelectItem>
-                      <SelectItem value="Health">Health</SelectItem>
-                      <SelectItem value="Finance">Finance</SelectItem>
-                      <SelectItem value="Education">Education</SelectItem>
-                      <SelectItem value="Travel">Travel</SelectItem>
-                      <SelectItem value="Food & Beverage">Food & Beverage</SelectItem>
-                      <SelectItem value="Real Estate">Real Estate</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      <SelectItem value="Salud">Salud</SelectItem>
+                      <SelectItem value="Finanzas">Finanzas</SelectItem>
+                      <SelectItem value="Educación">Educación</SelectItem>
+                      <SelectItem value="Viajes">Viajes</SelectItem>
+                      <SelectItem value="Alimentación">Alimentación</SelectItem>
+                      <SelectItem value="Inmobiliaria">Inmobiliaria</SelectItem>
+                      <SelectItem value="Otro">Otro</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -150,10 +150,10 @@ const ClientList: React.FC = () => {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Adding...
+                      Añadiendo...
                     </>
                   ) : (
-                    'Add Client'
+                    'Añadir Cliente'
                   )}
                 </Button>
               </DialogFooter>
@@ -164,8 +164,8 @@ const ClientList: React.FC = () => {
 
       {filteredClients.length === 0 ? (
         <AnimatedContainer animation="fade" className="text-center py-12">
-          <h3 className="text-xl font-medium text-muted-foreground">No clients found</h3>
-          <p className="text-muted-foreground mt-2">Try a different search or add a new client.</p>
+          <h3 className="text-xl font-medium text-muted-foreground">No se encontraron clientes</h3>
+          <p className="text-muted-foreground mt-2">Prueba con otra búsqueda o añade un nuevo cliente.</p>
         </AnimatedContainer>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

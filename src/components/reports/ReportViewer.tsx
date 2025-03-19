@@ -9,6 +9,7 @@ import BlurredCard from '../ui/BlurredCard';
 import AnimatedContainer from '../ui/AnimatedContainer';
 import { Report } from '@/hooks/useReports';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface ReportViewerProps {
   report: Report;
@@ -20,8 +21,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
   if (!content) {
     return (
       <BlurredCard className="p-12 text-center">
-        <h3 className="text-xl font-medium mb-2">No report content available</h3>
-        <p className="text-muted-foreground">This report doesn't have any content yet.</p>
+        <h3 className="text-xl font-medium mb-2">No hay contenido disponible</h3>
+        <p className="text-muted-foreground">Este informe aún no tiene contenido.</p>
       </BlurredCard>
     );
   }
@@ -35,7 +36,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                <span>{format(new Date(date), 'MMM d, yyyy')}</span>
+                <span>{format(new Date(date), 'd MMM yyyy', { locale: es })}</span>
               </div>
               {url && (
                 <div className="flex items-center gap-1">
@@ -56,11 +57,11 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
           <div className="flex gap-2 self-end md:self-auto">
             <Button variant="outline" size="sm" className="gap-1">
               <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Download</span>
+              <span className="hidden sm:inline">Descargar</span>
             </Button>
             <Button variant="outline" size="sm" className="gap-1">
               <Share className="h-4 w-4" />
-              <span className="hidden sm:inline">Share</span>
+              <span className="hidden sm:inline">Compartir</span>
             </Button>
           </div>
         </div>
@@ -68,16 +69,16 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
       
       <Tabs defaultValue="executive-summary" className="w-full">
         <TabsList className="w-full grid grid-cols-3 md:grid-cols-5 h-auto p-1 bg-muted/30 backdrop-blur-sm rounded-lg">
-          <TabsTrigger value="executive-summary" className="py-2">Executive Summary</TabsTrigger>
-          <TabsTrigger value="technical" className="py-2">Technical</TabsTrigger>
-          <TabsTrigger value="content" className="py-2">Content</TabsTrigger>
+          <TabsTrigger value="executive-summary" className="py-2">Resumen Ejecutivo</TabsTrigger>
+          <TabsTrigger value="technical" className="py-2">Técnico</TabsTrigger>
+          <TabsTrigger value="content" className="py-2">Contenido</TabsTrigger>
           <TabsTrigger value="backlinks" className="py-2">Backlinks</TabsTrigger>
-          <TabsTrigger value="recommendations" className="py-2">Recommendations</TabsTrigger>
+          <TabsTrigger value="recommendations" className="py-2">Recomendaciones</TabsTrigger>
         </TabsList>
         
         <TabsContent value="executive-summary">
           <ReportSection
-            title="Executive Summary"
+            title="Resumen Ejecutivo"
             content={content.executiveSummary}
             delay={0}
           />
@@ -85,7 +86,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         
         <TabsContent value="technical">
           <ReportSection
-            title="Technical Analysis"
+            title="Análisis Técnico"
             content={content.technicalAnalysis}
             delay={0}
           />
@@ -93,7 +94,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         
         <TabsContent value="content">
           <ReportSection
-            title="Content Analysis"
+            title="Análisis de Contenido"
             content={content.contentAnalysis}
             delay={0}
           />
@@ -101,7 +102,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         
         <TabsContent value="backlinks">
           <ReportSection
-            title="Backlinks & Authority Analysis"
+            title="Análisis de Backlinks y Autoridad"
             content={content.backlinksAnalysis}
             delay={0}
           />
@@ -109,7 +110,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report }) => {
         
         <TabsContent value="recommendations">
           <ReportSection
-            title="Recommendations & Actions"
+            title="Recomendaciones y Acciones"
             content={content.recommendations}
             delay={0}
             isRecommendations
