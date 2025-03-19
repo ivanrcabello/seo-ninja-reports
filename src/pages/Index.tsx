@@ -42,24 +42,24 @@ const Index = () => {
             <div className="text-center max-w-3xl mx-auto">
               <AnimatedContainer animation="fade" className="mb-6">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
-                  Elevate Your SEO Strategy
+                  Mejora tu Estrategia SEO
                 </span>
               </AnimatedContainer>
               
               <AnimatedContainer animation="slide-up" delay={200} className="mb-6">
                 <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4">
-                  Automatic SEO Reports <br className="hidden sm:inline" />
+                  Informes SEO Automáticos <br className="hidden sm:inline" />
                   <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
-                    In Minutes
+                    En Minutos
                   </span>
                 </h1>
               </AnimatedContainer>
               
               <AnimatedContainer animation="slide-up" delay={400} className="mb-8">
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  Upload your data, documents, and screenshots. 
-                  Our AI analyzes everything and generates comprehensive, 
-                  actionable SEO reports that drive results.
+                  Sube tus datos, documentos y capturas de pantalla. 
+                  Nuestra IA analiza todo y genera informes SEO completos y 
+                  accionables que impulsan resultados.
                 </p>
               </AnimatedContainer>
               
@@ -68,20 +68,20 @@ const Index = () => {
                   {user ? (
                     <Link to="/dashboard">
                       <Button size="lg" className="group font-medium">
-                        Go to Dashboard
+                        Ir al Dashboard
                         <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </Button>
                     </Link>
                   ) : (
                     <Link to="/auth">
                       <Button size="lg" className="group font-medium">
-                        Get Started
+                        Comenzar
                         <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </Button>
                     </Link>
                   )}
                   <Button variant="outline" size="lg">
-                    Learn More
+                    Saber Más
                   </Button>
                 </div>
               </AnimatedContainer>
@@ -92,12 +92,12 @@ const Index = () => {
               <BlurredCard className="relative overflow-hidden h-[350px] sm:h-[450px]">
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/30 to-transparent"></div>
                 <div className="absolute bottom-6 left-6 right-6 text-left">
-                  <h3 className="text-2xl font-bold mb-2">Comprehensive SEO Dashboard</h3>
+                  <h3 className="text-2xl font-bold mb-2">Panel de Control SEO Completo</h3>
                   <p className="text-muted-foreground mb-4">
-                    Track your SEO performance with intuitive visualizations and actionable insights.
+                    Sigue tu rendimiento SEO con visualizaciones intuitivas e insights accionables.
                   </p>
                   <Button variant="outline" size="sm" className="group">
-                    See Demo
+                    Ver Demo
                     <ArrowUpRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                   </Button>
                 </div>
@@ -110,47 +110,47 @@ const Index = () => {
         <section className="py-16 sm:py-24">
           <div className="container px-4 sm:px-6 mx-auto">
             <AnimatedContainer animation="slide-up" className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">All-in-one SEO Reporting</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Informes SEO Todo-en-uno</h2>
               <p className="text-lg text-muted-foreground">
-                Generate comprehensive reports that analyze every aspect of your website's SEO performance.
+                Genera informes completos que analizan todos los aspectos del rendimiento SEO de tu sitio web.
               </p>
             </AnimatedContainer>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <Feature
                 icon={<Search className="h-10 w-10 text-primary" />}
-                title="Technical Analysis"
-                description="Evaluate site speed, mobile-friendliness, crawlability, and other technical factors affecting your SEO."
+                title="Análisis Técnico"
+                description="Evalúa la velocidad del sitio, compatibilidad móvil, rastreabilidad y otros factores técnicos que afectan tu SEO."
                 delay={0}
               />
               <Feature
                 icon={<FileText className="h-10 w-10 text-primary" />}
-                title="Content Evaluation"
-                description="Get detailed insights on content quality, keyword usage, readability, and opportunities for improvement."
+                title="Evaluación de Contenido"
+                description="Obtén información detallada sobre la calidad del contenido, uso de palabras clave, legibilidad y oportunidades de mejora."
                 delay={100}
               />
               <Feature
                 icon={<Layers className="h-10 w-10 text-primary" />}
-                title="Backlink Analysis"
-                description="Review your backlink profile quality, diversity, and authority compared to competitors."
+                title="Análisis de Backlinks"
+                description="Revisa la calidad, diversidad y autoridad de tu perfil de backlinks en comparación con la competencia."
                 delay={200}
               />
               <Feature
                 icon={<BarChart className="h-10 w-10 text-primary" />}
-                title="Performance Metrics"
-                description="Track your rankings, traffic, and conversion metrics with beautiful, intuitive visualizations."
+                title="Métricas de Rendimiento"
+                description="Haz seguimiento de tus rankings, tráfico y métricas de conversión con visualizaciones intuitivas y elegantes."
                 delay={300}
               />
               <Feature
                 icon={<Zap className="h-10 w-10 text-primary" />}
-                title="Action Recommendations"
-                description="Receive prioritized, actionable steps to improve your SEO performance and outrank competitors."
+                title="Recomendaciones de Acción"
+                description="Recibe pasos priorizados y accionables para mejorar tu rendimiento SEO y superar a la competencia."
                 delay={400}
               />
               <Feature
                 icon={<ArrowUpRight className="h-10 w-10 text-primary" />}
-                title="Competitor Insights"
-                description="Benchmark your performance against competitors and identify strategic opportunities."
+                title="Información de Competidores"
+                description="Compara tu rendimiento con competidores e identifica oportunidades estratégicas."
                 delay={500}
               />
             </div>
@@ -164,22 +164,22 @@ const Index = () => {
               <div className="flex flex-col md:flex-row items-center gap-8 p-4 sm:p-6 md:p-8">
                 <div className="flex-1">
                   <AnimatedContainer animation="slide-up">
-                    <h2 className="text-3xl font-bold mb-4">Ready to Transform Your SEO Strategy?</h2>
+                    <h2 className="text-3xl font-bold mb-4">¿Listo para Transformar tu Estrategia SEO?</h2>
                     <p className="text-muted-foreground mb-6">
-                      Join thousands of marketers and SEO professionals who are saving time and improving results with our automated SEO reports.
+                      Únete a miles de especialistas en marketing y profesionales SEO que ahorran tiempo y mejoran resultados con nuestros informes SEO automatizados.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4">
                       {user ? (
                         <Link to="/dashboard">
                           <Button size="lg" className="group">
-                            Go to Dashboard
+                            Ir al Dashboard
                             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                           </Button>
                         </Link>
                       ) : (
                         <Link to="/auth">
                           <Button size="lg" className="group">
-                            Get Started
+                            Comenzar
                             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                           </Button>
                         </Link>

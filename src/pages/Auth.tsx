@@ -47,7 +47,7 @@ const Auth = () => {
         <AnimatedContainer animation="fade" className="mb-8 text-center">
           <h1 className="text-3xl font-bold mb-2">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
-              SEO Ninja
+              SoySeoLocal.com
             </span>
           </h1>
           <p className="text-muted-foreground">

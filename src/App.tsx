@@ -17,6 +17,9 @@ import AllReports from "./pages/AllReports";
 import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
 import Settings from '@/pages/Settings';
+import Servicios from './pages/Servicios';
+import Paquetes from './pages/Paquetes';
+import Blog from './pages/Blog';
 
 const queryClient = new QueryClient();
 
@@ -39,6 +42,9 @@ const App = () => (
                 <Route path="/shared/reports/:id" element={<PublicReport />} />
                 <Route path="/activity" element={<Activity />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/servicios" element={<Servicios />} />
+                <Route path="/paquetes" element={<Paquetes />} />
+                <Route path="/blog" element={<Blog />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

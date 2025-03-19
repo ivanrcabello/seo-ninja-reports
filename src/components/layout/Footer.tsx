@@ -12,51 +12,51 @@ const Footer: React.FC = () => {
           <div className="mb-4 md:mb-0">
             <Link to="/" className="flex items-center space-x-2">
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
-                SEO Ninja
+                SoySeoLocal.com
               </span>
             </Link>
             <p className="text-sm text-muted-foreground mt-2">
-              Automatic SEO report generation
+              Generación automática de informes SEO
             </p>
           </div>
           
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-12">
             <div className="flex flex-col space-y-2">
-              <h4 className="font-medium text-sm">Product</h4>
+              <h4 className="font-medium text-sm">Producto</h4>
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Features
+                Características
+              </Link>
+              <Link to="/paquetes" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                Precios
               </Link>
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Pricing
-              </Link>
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Integrations
+                Integraciones
               </Link>
             </div>
             
             <div className="flex flex-col space-y-2">
-              <h4 className="font-medium text-sm">Resources</h4>
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              <h4 className="font-medium text-sm">Recursos</h4>
+              <Link to="/blog" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Blog
               </Link>
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Documentation
+                Documentación
               </Link>
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Guides
+                Guías
               </Link>
             </div>
             
             <div className="flex flex-col space-y-2">
-              <h4 className="font-medium text-sm">Company</h4>
+              <h4 className="font-medium text-sm">Empresa</h4>
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                About
+                Sobre Nosotros
               </Link>
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Contact
+                Contacto
               </Link>
               <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Privacy
+                Privacidad
               </Link>
             </div>
           </div>
@@ -64,7 +64,7 @@ const Footer: React.FC = () => {
         
         <div className="mt-8 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center">
           <p className="text-xs text-muted-foreground">
-            © {currentYear} SEO Ninja. All rights reserved.
+            © {currentYear} SoySeoLocal.com. Todos los derechos reservados.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a href="#" className="text-muted-foreground hover:text-primary">
