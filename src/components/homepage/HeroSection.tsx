@@ -22,24 +22,23 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isLoggedIn }) => {
         <div className="text-center max-w-3xl mx-auto">
           <AnimatedContainer animation="fade" className="mb-6">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
-              Mejora tu Estrategia SEO
+              Solución SEO potenciada por IA
             </span>
           </AnimatedContainer>
           
           <AnimatedContainer animation="slide-up" delay={200} className="mb-6">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4">
-              Informes SEO Automáticos <br className="hidden sm:inline" />
+              Automatiza el <br className="hidden sm:inline" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
-                En Minutos
+                SEO Local
               </span>
             </h1>
           </AnimatedContainer>
           
           <AnimatedContainer animation="slide-up" delay={400} className="mb-8">
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Sube tus datos, documentos y capturas de pantalla. 
-              Nuestra IA analiza todo y genera informes SEO completos y 
-              accionables que impulsan resultados.
+              Nuestra plataforma impulsada por IA optimiza automáticamente el posicionamiento web de empresas de servicios. 
+              Genera informes profesionales, identifica oportunidades y automatiza mejoras SEO.
             </p>
           </AnimatedContainer>
           
@@ -55,14 +54,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isLoggedIn }) => {
               ) : (
                 <Link to="/auth">
                   <Button size="lg" className="group font-medium">
-                    Comenzar
+                    Probar la plataforma
                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </Button>
                 </Link>
               )}
-              <Button variant="outline" size="lg">
-                Saber Más
-              </Button>
+              <Link to="/servicios">
+                <Button variant="outline" size="lg">
+                  Descubrir servicios
+                </Button>
+              </Link>
             </div>
           </AnimatedContainer>
         </div>
@@ -72,9 +73,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isLoggedIn }) => {
           <BlurredCard className="relative overflow-hidden h-[350px] sm:h-[450px]">
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/30 to-transparent"></div>
             <div className="absolute bottom-6 left-6 right-6 text-left">
-              <h3 className="text-2xl font-bold mb-2">Panel de Control SEO Completo</h3>
+              <h3 className="text-2xl font-bold mb-2">Plataforma de automatización SEO</h3>
               <p className="text-muted-foreground mb-4">
-                Sigue tu rendimiento SEO con visualizaciones intuitivas e insights accionables.
+                Optimiza tu presencia en búsquedas locales con nuestra tecnología de IA que analiza, identifica y soluciona problemas SEO automáticamente.
               </p>
               <Button variant="outline" size="sm" className="group">
                 Ver Demo

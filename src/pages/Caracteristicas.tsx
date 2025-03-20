@@ -5,56 +5,56 @@ import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Check, ArrowRight, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Bot, BarChart, FileText, Zap, Search, Target } from 'lucide-react';
 
 const Caracteristicas = () => {
   const currentFeatures = [
     {
-      title: "Informes SEO Automáticos",
-      description: "Generación de informes SEO completos y personalizados para cualquier sitio web en cuestión de minutos."
+      title: "Análisis SEO Automatizado",
+      description: "La IA analiza tu sitio web y competencia para identificar oportunidades específicas para empresas de servicios."
     },
     {
-      title: "Análisis Local",
-      description: "Evaluación específica de factores de SEO local como Google Business Profile, citas locales y reseñas."
+      title: "Optimización Local Inteligente",
+      description: "Mejora automática de factores críticos de SEO local como Google Business Profile, citas locales y reseñas."
     },
     {
-      title: "Recomendaciones Accionables",
-      description: "Sugerencias prácticas y priorizadas que puedes implementar inmediatamente para mejorar el posicionamiento."
+      title: "Generación de Contenido SEO",
+      description: "Creación automática de contenido optimizado para keywords locales relevantes para tu sector de servicios."
+    },
+    {
+      title: "Informes Profesionales",
+      description: "Genera informes detallados y personalizados con tu marca para compartir con clientes o gestionar tu estrategia."
+    },
+    {
+      title: "Seguimiento Automático",
+      description: "Monitorización continua del rendimiento de palabras clave locales, tráfico y conversiones con alertas personalizables."
     },
     {
       title: "Análisis de Competencia",
-      description: "Compara el rendimiento SEO con competidores directos en tu área local."
-    },
-    {
-      title: "Seguimiento de Keywords",
-      description: "Monitoriza el posicionamiento de palabras clave relevantes para el negocio."
-    },
-    {
-      title: "Informes para Clientes",
-      description: "Crea informes profesionales con tu marca para compartir con tus clientes."
+      description: "Comparativa automática con competidores locales para identificar oportunidades y adaptar tu estrategia."
     }
   ];
 
   const upcomingFeatures = [
     {
-      title: "Integración con Google Analytics",
-      description: "Conecta con Google Analytics para incluir datos de tráfico en tus informes."
+      title: "Implementación Automática",
+      description: "Aplicación automática de cambios técnicos SEO directamente en tu sitio web sin intervención manual."
     },
     {
-      title: "Auditorías Técnicas Avanzadas",
-      description: "Análisis técnico profundo con recomendaciones específicas para mejorar aspectos técnicos del SEO."
+      title: "Predicción de Tendencias",
+      description: "Análisis predictivo de tendencias de búsqueda locales para anticiparte a las necesidades de tus clientes."
     },
     {
-      title: "Seguimiento Automático",
-      description: "Monitoreo automatizado de mejoras y cambios en el posicionamiento."
+      title: "Automatización Multicanal",
+      description: "Optimización integrada de Google Business Profile, redes sociales y directorios locales desde una única plataforma."
     },
     {
-      title: "Plantillas Personalizables",
-      description: "Crea y guarda tus propias plantillas de informes para diferentes tipos de clientes."
+      title: "SEO de Voz Localizado",
+      description: "Optimización específica para búsquedas por voz con intención local, cada vez más utilizadas en dispositivos móviles."
     },
     {
-      title: "API para Integraciones",
-      description: "Conecta con tus herramientas favoritas a través de nuestra API."
+      title: "API Avanzada",
+      description: "Conexión con tus herramientas de marketing favoritas para crear flujos de trabajo totalmente personalizados."
     }
   ];
 
@@ -72,7 +72,7 @@ const Caracteristicas = () => {
             <div className="text-center max-w-3xl mx-auto">
               <AnimatedContainer animation="fade" className="mb-6">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
-                  Funcionalidades
+                  Automatización SEO
                 </span>
               </AnimatedContainer>
               
@@ -80,14 +80,14 @@ const Caracteristicas = () => {
                 <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4">
                   Características de <br className="hidden sm:inline" />
                   <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
-                    SoySeoLocal
+                    nuestra plataforma
                   </span>
                 </h1>
               </AnimatedContainer>
               
               <AnimatedContainer animation="slide-up" delay={400} className="mb-8">
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  Descubre todas las herramientas y funcionalidades que ponemos a tu disposición para mejorar el SEO local de tu negocio.
+                  Descubre cómo nuestra tecnología de IA automatiza y optimiza todos los aspectos del SEO local para empresas de servicios.
                 </p>
               </AnimatedContainer>
               
@@ -95,12 +95,12 @@ const Caracteristicas = () => {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link to="/auth">
                     <Button size="lg" className="w-full sm:w-auto">
-                      Comenzar ahora
+                      Probar la plataforma
                     </Button>
                   </Link>
-                  <Link to="/paquetes">
+                  <Link to="/contacto">
                     <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                      Ver precios
+                      Solicitar demostración
                     </Button>
                   </Link>
                 </div>
@@ -113,9 +113,12 @@ const Caracteristicas = () => {
         <section className="py-16 sm:py-24 bg-slate-50 dark:bg-slate-900/30">
           <div className="container px-4 sm:px-6 mx-auto">
             <AnimatedContainer animation="slide-up" className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Características actuales</h2>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Bot className="h-6 w-6 text-primary" />
+                <h2 className="text-3xl sm:text-4xl font-bold">Automatización SEO con IA</h2>
+              </div>
               <p className="text-lg text-muted-foreground">
-                Todas las herramientas que necesitas para optimizar tu presencia local en línea.
+                Nuestra plataforma utiliza inteligencia artificial avanzada para automatizar todos estos procesos clave.
               </p>
             </AnimatedContainer>
             
@@ -143,10 +146,10 @@ const Caracteristicas = () => {
             <AnimatedContainer animation="slide-up" className="text-center max-w-3xl mx-auto mb-16">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Sparkles className="h-6 w-6 text-yellow-500" />
-                <h2 className="text-3xl sm:text-4xl font-bold">Próximamente</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold">En desarrollo</h2>
               </div>
               <p className="text-lg text-muted-foreground">
-                Estamos trabajando constantemente para mejorar nuestra plataforma. Estas son algunas de las características que llegarán pronto.
+                Estamos trabajando constantemente para expandir las capacidades de nuestra plataforma de automatización SEO. Éstas son algunas de las funcionalidades que pronto estarán disponibles.
               </p>
             </AnimatedContainer>
             
