@@ -1,12 +1,101 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { OpenAISettings } from './api/OpenAISettings';
+import { OpenAISettings, DEFAULT_PROMPT } from './api/OpenAISettings';
 import GoogleSettings from './api/GoogleSettings';
 import GoogleBusinessSettings from './api/GoogleBusinessSettings';
 import LogoUpload from './LogoUpload';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const ApiSettings = () => {
+  // State for OpenAI settings
+  const [apiKey, setApiKey] = useState('');
+  const [defaultPrompt, setDefaultPrompt] = useState(DEFAULT_PROMPT);
+  const [hasConfiguredKey, setHasConfiguredKey] = useState(false);
+  
+  // State for Google settings
+  const [googleApiKey, setGoogleApiKey] = useState('');
+  const [hasConfiguredGoogleKey, setHasConfiguredGoogleKey] = useState(false);
+  
+  // State for Google Business settings
+  const [googleBusinessApiKey, setGoogleBusinessApiKey] = useState('');
+  const [hasConfiguredGoogleBusinessKey, setHasConfiguredGoogleBusinessKey] = useState(false);
+
+  // Load settings on component mount
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      // Fetch API settings from Supabase
+      const { data, error } = await supabase
+        .from('settings')
+        .select('openai_key, google_key, google_business_key, default_prompt')
+        .eq('id', 1)
+        .single();
+
+      if (error) {
+        console.error('Error fetching settings:', error);
+        return;
+      }
+
+      // Set OpenAI settings
+      if (data?.openai_key) {
+        setApiKey(data.openai_key);
+        setHasConfiguredKey(true);
+      }
+      
+      // Set Google settings
+      if (data?.google_key) {
+        setGoogleApiKey(data.google_key);
+        setHasConfiguredGoogleKey(true);
+      }
+      
+      // Set Google Business settings
+      if (data?.google_business_key) {
+        setGoogleBusinessApiKey(data.google_business_key);
+        setHasConfiguredGoogleBusinessKey(true);
+      }
+      
+      // Set default prompt if available
+      if (data?.default_prompt) {
+        setDefaultPrompt(data.default_prompt);
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .update({
+          openai_key: apiKey,
+          google_key: googleApiKey,
+          google_business_key: googleBusinessApiKey,
+          default_prompt: defaultPrompt
+        })
+        .eq('id', 1);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update configured state based on current values
+      setHasConfiguredKey(!!apiKey);
+      setHasConfiguredGoogleKey(!!googleApiKey);
+      setHasConfiguredGoogleBusinessKey(!!googleBusinessApiKey);
+
+      toast.success('Configuración guardada correctamente');
+    } catch (error: any) {
+      console.error('Error saving settings:', error);
+      toast.error('Error al guardar la configuración: ' + error.message);
+    }
+  };
+
   return (
     <Tabs defaultValue="apis" className="space-y-4">
       <TabsList>
@@ -15,9 +104,33 @@ const ApiSettings = () => {
       </TabsList>
       
       <TabsContent value="apis" className="space-y-4">
-        <OpenAISettings />
-        <GoogleSettings />
-        <GoogleBusinessSettings />
+        <OpenAISettings 
+          apiKey={apiKey}
+          setApiKey={setApiKey}
+          defaultPrompt={defaultPrompt}
+          setDefaultPrompt={setDefaultPrompt}
+          hasConfiguredKey={hasConfiguredKey}
+          onSave={handleSaveSettings}
+        />
+        <GoogleSettings 
+          googleApiKey={googleApiKey}
+          setGoogleApiKey={setGoogleApiKey}
+          hasConfiguredGoogleKey={hasConfiguredGoogleKey}
+        />
+        <GoogleBusinessSettings 
+          googleBusinessApiKey={googleBusinessApiKey}
+          setGoogleBusinessApiKey={setGoogleBusinessApiKey}
+          hasConfiguredGoogleBusinessKey={hasConfiguredGoogleBusinessKey}
+        />
+
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={handleSaveSettings}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Guardar configuración
+          </button>
+        </div>
       </TabsContent>
       
       <TabsContent value="customization" className="space-y-4">
