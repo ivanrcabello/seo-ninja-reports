@@ -22,24 +22,38 @@ const Contacto = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Simulate form submission with a delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      console.log('Form submitted:', formData);
+      
       toast({
         title: "Mensaje enviado",
         description: "Hemos recibido tu mensaje. Te responderemos lo antes posible.",
       });
+      
+      // Reset form after successful submission
       setFormData({
         name: '',
         email: '',
         subject: '',
         message: ''
       });
-    }, 1500);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Error",
+        description: "Ha ocurrido un error al enviar el mensaje. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -184,7 +198,7 @@ const Contacto = () => {
                           </div>
                           <div>
                             <h3 className="font-medium">Email</h3>
-                            <a href="mailto:info@seoyseolocal.com" className="text-primary hover:underline">
+                            <a href="mailto:info@soyseolocal.com" className="text-primary hover:underline">
                               info@soyseolocal.com
                             </a>
                           </div>

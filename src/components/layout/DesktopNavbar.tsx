@@ -10,7 +10,7 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { Settings2 } from 'lucide-react';
+import { Settings2, Mail } from 'lucide-react';
 import NavDropdown from './NavDropdown';
 
 const DesktopNavbar: React.FC = () => {
@@ -68,6 +68,15 @@ const DesktopNavbar: React.FC = () => {
           <Link to="/blog">
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
               Blog
+            </NavigationMenuLink>
+          </Link>
+        </NavigationMenuItem>
+        
+        <NavigationMenuItem>
+          <Link to="/contacto">
+            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+              <Mail className="h-4 w-4 mr-2" />
+              Contacto
             </NavigationMenuLink>
           </Link>
         </NavigationMenuItem>

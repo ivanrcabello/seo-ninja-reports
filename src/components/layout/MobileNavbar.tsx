@@ -17,6 +17,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
     { label: 'Servicios', href: '/servicios' },
     { label: 'Paquetes', href: '/paquetes' },
     { label: 'Blog', href: '/blog' },
+    { label: 'Contacto', href: '/contacto' }, // Added contact link
   ];
 
   return (
