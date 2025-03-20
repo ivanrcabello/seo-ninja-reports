@@ -9,7 +9,7 @@ export const createSettingsTableIfNeeded = async (): Promise<void> => {
     // Create the settings table if it doesn't exist
     const { data, error } = await supabase.rpc(
       'create_settings_table_if_not_exists',
-      {} // Empty object for the parameters, fixing the TypeScript error
+      {} // Empty object for the parameters, correctly typed
     );
     
     if (error) {
