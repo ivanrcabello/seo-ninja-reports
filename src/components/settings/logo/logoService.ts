@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -7,7 +8,7 @@ export const createSettingsTableIfNeeded = async (): Promise<void> => {
   try {
     // Create the settings table if it doesn't exist
     const { data, error } = await supabase.rpc(
-      'create_settings_table_if_not_exists' as any,
+      'create_settings_table_if_not_exists' as never,
       {},
       { count: 'exact' }
     );
