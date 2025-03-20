@@ -22,16 +22,29 @@ const RetryReportButton: React.FC<RetryReportButtonProps> = ({ reportId, status 
   const handleRetry = async () => {
     try {
       setIsRetrying(true);
+      console.log(`Attempting to retry report generation for report: ${reportId}`);
+      
       const success = await retryReport(reportId);
       
       if (success) {
-        toast.success('Reintentando generación del informe');
+        toast.success('Reintentando generación del informe', {
+          description: 'El proceso de generación se ha reiniciado.'
+        });
+        
+        // Force reload the page after a short delay to show processing status
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
-        toast.error('No se pudo reintentar la generación del informe');
+        toast.error('No se pudo reintentar la generación del informe', {
+          description: 'Ha ocurrido un error al procesar el informe.'
+        });
       }
     } catch (error) {
       console.error('Error retrying report:', error);
-      toast.error('Error al reintentar la generación del informe');
+      toast.error('Error al reintentar la generación del informe', {
+        description: 'Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo más tarde.'
+      });
     } finally {
       setIsRetrying(false);
     }

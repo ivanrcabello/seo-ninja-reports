@@ -24,10 +24,10 @@ export const saveBusinessProfile = async (
       .from('business_profiles')
       .select('id')
       .eq('report_id', reportId)
-      .single();
+      .maybeSingle();  // Using maybeSingle instead of single to prevent errors
       
-    if (checkError && checkError.code !== 'PGRST116') {
-      // Error distinto a "no se encontró registro"
+    if (checkError) {
+      console.error('Error checking existing profile:', checkError);
       throw checkError;
     }
     
@@ -48,51 +48,79 @@ export const saveBusinessProfile = async (
       updated_at: new Date().toISOString()
     };
     
-    console.log('Datos formateados para BD:', dbData);
+    console.log('Formatted data for database:', dbData);
     
-    // Si existe, actualizar
-    if (existingProfile) {
-      const { data: updatedProfile, error: updateError } = await supabase
-        .from('business_profiles')
-        .update(dbData)
-        .eq('id', existingProfile.id)
-        .select('*')
-        .single();
+    try {
+      // Si existe, actualizar
+      if (existingProfile) {
+        console.log(`Updating existing business profile with ID: ${existingProfile.id}`);
+        const { data: updatedProfile, error: updateError } = await supabase
+          .from('business_profiles')
+          .update(dbData)
+          .eq('id', existingProfile.id)
+          .select('*')
+          .single();
+          
+        if (updateError) {
+          console.error('Error updating business profile:', updateError);
+          throw updateError;
+        }
         
-      if (updateError) throw updateError;
-      result = updatedProfile;
-      
-      console.log('Perfil de negocio actualizado:', result);
-    } else {
-      // Si no existe, insertar
-      const { data: newProfile, error: insertError } = await supabase
-        .from('business_profiles')
-        .insert(dbData)
-        .select('*')
-        .single();
+        result = updatedProfile;
+        console.log('Business profile updated:', result);
+      } else {
+        // Si no existe, insertar
+        console.log('Creating new business profile');
+        const { data: newProfile, error: insertError } = await supabase
+          .from('business_profiles')
+          .insert(dbData)
+          .select('*')
+          .single();
+          
+        if (insertError) {
+          console.error('Error inserting business profile:', insertError);
+          throw insertError;
+        }
         
-      if (insertError) {
-        console.error('Error al insertar perfil de negocio:', insertError);
-        throw insertError;
+        result = newProfile;
+        
+        // Actualizar el flag en reports
+        const { error: reportUpdateError } = await supabase
+          .from('reports')
+          .update({ has_business_profile: true })
+          .eq('id', reportId);
+          
+        if (reportUpdateError) {
+          console.error('Error updating report has_business_profile flag:', reportUpdateError);
+          // Continue anyway since the profile was created successfully
+        }
+        
+        console.log('New business profile created:', result);
       }
-      
-      result = newProfile;
-      
-      // Actualizar el flag en reports
-      await supabase
-        .from('reports')
-        .update({ has_business_profile: true })
-        .eq('id', reportId);
-        
-      console.log('Nuevo perfil de negocio creado:', result);
+    } catch (dbError) {
+      console.error('Database error while saving business profile:', dbError);
+      toast.error('Error al guardar el perfil de negocio', {
+        description: 'Ha ocurrido un error en la base de datos'
+      });
+      throw dbError;
     }
     
     // Transformar el resultado a formato de frontend
-    const businessHours = result.business_hours ? 
-      (typeof result.business_hours === 'string' ? 
-        JSON.parse(result.business_hours) : 
-        result.business_hours) : 
-      {};
+    if (!result) {
+      throw new Error('No result returned from database operation');
+    }
+    
+    let businessHours = {};
+    if (result.business_hours) {
+      try {
+        businessHours = typeof result.business_hours === 'string' 
+          ? JSON.parse(result.business_hours) 
+          : result.business_hours;
+      } catch (parseError) {
+        console.error('Error parsing business hours:', parseError);
+        // Continue with empty business hours
+      }
+    }
       
     return {
       id: result.id,
@@ -111,7 +139,7 @@ export const saveBusinessProfile = async (
     };
     
   } catch (error: any) {
-    console.error('Error al guardar perfil de negocio:', error);
+    console.error('Error saving business profile:', error);
     return handleServiceError(error, 'Error al guardar perfil de negocio');
   }
 };

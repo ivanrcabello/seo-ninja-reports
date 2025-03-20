@@ -9,9 +9,8 @@ export const createSettingsTableIfNeeded = async (): Promise<void> => {
     // Create the settings table if it doesn't exist
     const { data, error } = await supabase.rpc(
       'create_settings_table_if_not_exists',
-      {},
-      { count: 'exact' }
-    ) as any;
+      {} // Empty object for the parameters, fixing the TypeScript error
+    );
     
     if (error) {
       console.error('Error creating settings table:', error);
@@ -87,51 +86,85 @@ export const fetchLogoFromSettings = async (): Promise<string | null> => {
  * Uploads the logo file to Supabase storage
  */
 export const uploadLogoToStorage = async (file: File): Promise<string> => {
-  // Upload file to Supabase storage
-  const fileExt = file.name.split('.').pop();
-  const fileName = `logo-${Date.now()}.${fileExt}`;
+  try {
+    // Check if blog_images bucket exists, create if not
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const blogImagesBucket = buckets?.find(b => b.name === 'blog_images');
+    
+    if (!blogImagesBucket) {
+      console.log('Creating blog_images bucket for logo storage');
+      const { error: bucketError } = await supabase.storage.createBucket('blog_images', {
+        public: true
+      });
+      
+      if (bucketError) {
+        console.error('Error creating storage bucket:', bucketError);
+        throw bucketError;
+      }
+    }
   
-  const { data, error } = await supabase.storage
-    .from('blog_images') // Using the same bucket we created for blog images
-    .upload(fileName, file);
-  
-  if (error) {
+    // Upload file to Supabase storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `logo-${Date.now()}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from('blog_images') 
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+    
+    if (error) {
+      console.error('Error uploading logo:', error);
+      throw error;
+    }
+    
+    // Get public URL
+    const { data: publicURL } = supabase.storage
+      .from('blog_images')
+      .getPublicUrl(fileName);
+    
+    if (!publicURL) {
+      throw new Error('Could not get public URL for uploaded logo');
+    }
+    
+    console.log('Logo uploaded successfully:', publicURL.publicUrl);
+    return publicURL.publicUrl;
+  } catch (error) {
+    console.error('Logo upload failed:', error);
     throw error;
   }
-  
-  // Get public URL
-  const { data: publicURL } = supabase.storage
-    .from('blog_images')
-    .getPublicUrl(fileName);
-  
-  if (!publicURL) {
-    throw new Error('Could not get public URL for uploaded logo');
-  }
-  
-  return publicURL.publicUrl;
 };
 
 /**
  * Updates the logo URL in the settings table
  */
 export const updateLogoInSettings = async (logoUrl: string | null): Promise<void> => {
-  // Check if settings table has data
-  const { count, error: countError } = await supabase
-    .from('settings')
-    .select('*', { count: 'exact', head: true });
+  try {
+    // Check if settings table has data
+    const { count, error: countError } = await supabase
+      .from('settings')
+      .select('*', { count: 'exact', head: true });
+      
+    if (countError) {
+      console.error('Error checking settings count:', countError);
+      await createSettingsRecord();
+    }
     
-  if (countError) {
-    console.error('Error checking settings count:', countError);
-    await createSettingsRecord();
-  }
-  
-  // Save URL to settings table
-  const { error: updateError } = await supabase
-    .from('settings')
-    .upsert({ id: 1, logo_url: logoUrl })
-    .select();
-  
-  if (updateError) {
-    throw updateError;
+    // Save URL to settings table
+    const { error: updateError } = await supabase
+      .from('settings')
+      .upsert({ id: 1, logo_url: logoUrl })
+      .select();
+    
+    if (updateError) {
+      console.error('Error updating logo in settings:', updateError);
+      throw updateError;
+    }
+    
+    console.log('Logo URL updated in settings:', logoUrl);
+  } catch (error) {
+    console.error('Error updating logo in settings:', error);
+    throw error;
   }
 };
