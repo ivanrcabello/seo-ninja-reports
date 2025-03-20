@@ -48,16 +48,7 @@ export const createSettingsRecord = async (): Promise<void> => {
 export const fetchLogoFromSettings = async (): Promise<string | null> => {
   try {
     // Check if settings table exists
-    const { data: tableInfo, error: tableError } = await supabase
-      .from('settings')
-      .select('count(*)', { count: 'exact', head: true });
-    
-    if (tableError) {
-      console.error('Error checking settings table:', tableError);
-      // Create settings table if it doesn't exist
-      await createSettingsTableIfNeeded();
-      return null;
-    }
+    await createSettingsTableIfNeeded();
     
     const { data, error } = await supabase
       .from('settings')
@@ -87,22 +78,6 @@ export const fetchLogoFromSettings = async (): Promise<string | null> => {
  */
 export const uploadLogoToStorage = async (file: File): Promise<string> => {
   try {
-    // Check if logos bucket exists, create if not
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const logosBucket = buckets?.find(b => b.name === 'logos');
-    
-    if (!logosBucket) {
-      console.log('Creating logos bucket for logo storage');
-      const { error: bucketError } = await supabase.storage.createBucket('logos', {
-        public: true
-      });
-      
-      if (bucketError) {
-        console.error('Error creating storage bucket:', bucketError);
-        throw bucketError;
-      }
-    }
-  
     // Upload file to Supabase storage
     const fileExt = file.name.split('.').pop();
     const fileName = `logo-${Date.now()}.${fileExt}`;
@@ -141,13 +116,16 @@ export const uploadLogoToStorage = async (file: File): Promise<string> => {
  */
 export const updateLogoInSettings = async (logoUrl: string | null): Promise<void> => {
   try {
-    // Check if settings table has data
+    // Ensure settings table exists
+    await createSettingsTableIfNeeded();
+    
+    // Check if settings record exists
     const { count, error: countError } = await supabase
       .from('settings')
       .select('*', { count: 'exact', head: true });
       
-    if (countError) {
-      console.error('Error checking settings count:', countError);
+    if (countError || count === 0) {
+      console.log('Creating settings record...');
       await createSettingsRecord();
     }
     

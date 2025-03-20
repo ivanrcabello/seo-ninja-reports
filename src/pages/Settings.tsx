@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ApiSettings from '@/components/settings/ApiSettings';
+import LogoUpload from '@/components/settings/LogoUpload';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import useAuth from '@/hooks/useAuth';
 import { Loader2, Info } from 'lucide-react';
@@ -65,7 +66,10 @@ const Settings = () => {
             </div>
           ) : (
             <AnimatedContainer animation="fade" delay={200}>
-              <ApiSettings />
+              <div className="grid grid-cols-1 gap-8">
+                <LogoUpload />
+                <ApiSettings />
+              </div>
             </AnimatedContainer>
           )}
         </div>

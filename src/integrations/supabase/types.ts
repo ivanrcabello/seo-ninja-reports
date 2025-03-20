@@ -460,7 +460,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      create_settings_table_if_not_exists: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -7,7 +6,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
 import Navbar from './Navbar';
-import { supabase } from '@/integrations/supabase/client';
 import { fetchLogoFromSettings } from '@/components/settings/logo/logoService';
 
 const Header: React.FC = () => {
