@@ -64,7 +64,8 @@ const PublicReport = () => {
             recommendations: data.content.recommendations || '',
             localSeo: data.content.localSeo || '',
             serviceProposal: data.content.serviceProposal || '',
-            keywords: data.content.keywords || ''
+            keywords: data.content.keywords || '',
+            businessProfile: data.content.businessProfile || null
           };
         } else {
           // Initialize with empty values if content is not in expected format
@@ -133,7 +134,7 @@ const PublicReport = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6 flex flex-col items-center">
+    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-6 flex flex-col items-center">
       <PublicReportHeader 
         title={report.title} 
         date={report.date} 
@@ -143,6 +144,23 @@ const PublicReport = () => {
       />
       
       <PublicReportContent content={report.content} />
+      
+      <div className="w-full max-w-5xl mx-auto mt-16 p-6 bg-gradient-to-br from-primary/5 to-background/50 backdrop-blur-sm rounded-lg border border-primary/10 shadow-md">
+        <h3 className="text-xl font-semibold mb-2 text-center">¿Necesitas ayuda con tu SEO?</h3>
+        <p className="text-center text-muted-foreground mb-4">
+          Nuestro equipo de expertos está listo para ayudarte a mejorar tu presencia en línea.
+        </p>
+        <div className="flex justify-center">
+          <a 
+            href="https://soyseolocal.com/contacto" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="inline-flex items-center px-6 py-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+          >
+            Contáctanos
+          </a>
+        </div>
+      </div>
     </div>
   );
 };

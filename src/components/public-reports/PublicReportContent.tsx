@@ -36,7 +36,12 @@ const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) =>
     (hasBusinessProfile ? 1 : 0);
   
   return (
-    <div className="w-full max-w-4xl">
+    <div className="w-full max-w-5xl mx-auto">
+      <div className="bg-gradient-to-br from-primary/5 to-background/50 backdrop-blur-sm p-6 rounded-lg border border-primary/10 shadow-lg mb-8">
+        <h2 className="text-2xl font-bold text-center mb-4 text-gradient-primary">Informe SEO Completo</h2>
+        <p className="text-center text-muted-foreground">Navega por las diferentes secciones para ver el análisis detallado.</p>
+      </div>
+      
       <Tabs defaultValue="executive-summary" className="w-full">
         <ReportTabs 
           tabCount={tabCount} 

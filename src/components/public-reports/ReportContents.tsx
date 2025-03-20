@@ -1,7 +1,6 @@
 
 import React from 'react';
 import ContentTab from './ContentTab';
-import { Info, CheckCircle, ArrowUp, ArrowDown, AlertTriangle, MapPin, Star, FileText, Building } from 'lucide-react';
 import { BusinessProfile } from '@/types/report.types';
 
 interface ReportContentsProps {
@@ -30,7 +29,7 @@ const ReportContents: React.FC<ReportContentsProps> = ({
   hasBusinessProfile
 }) => {
   return (
-    <>
+    <div className="w-full relative">
       <ContentTab 
         tabValue="executive-summary" 
         content={content}
@@ -83,7 +82,7 @@ const ReportContents: React.FC<ReportContentsProps> = ({
           content={content}
         />
       )}
-    </>
+    </div>
   );
 };
 
