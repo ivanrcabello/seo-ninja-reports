@@ -9,7 +9,7 @@ export const createSettingsTableIfNeeded = async (): Promise<void> => {
     // Create the settings table if it doesn't exist
     const { data, error } = await supabase.rpc(
       'create_settings_table_if_not_exists',
-      {} // Empty object for the parameters, correctly typed
+      {} // Empty object for the parameters
     );
     
     if (error) {
@@ -87,13 +87,13 @@ export const fetchLogoFromSettings = async (): Promise<string | null> => {
  */
 export const uploadLogoToStorage = async (file: File): Promise<string> => {
   try {
-    // Check if blog_images bucket exists, create if not
+    // Check if logos bucket exists, create if not
     const { data: buckets } = await supabase.storage.listBuckets();
-    const blogImagesBucket = buckets?.find(b => b.name === 'blog_images');
+    const logosBucket = buckets?.find(b => b.name === 'logos');
     
-    if (!blogImagesBucket) {
-      console.log('Creating blog_images bucket for logo storage');
-      const { error: bucketError } = await supabase.storage.createBucket('blog_images', {
+    if (!logosBucket) {
+      console.log('Creating logos bucket for logo storage');
+      const { error: bucketError } = await supabase.storage.createBucket('logos', {
         public: true
       });
       
@@ -108,7 +108,7 @@ export const uploadLogoToStorage = async (file: File): Promise<string> => {
     const fileName = `logo-${Date.now()}.${fileExt}`;
     
     const { data, error } = await supabase.storage
-      .from('blog_images') 
+      .from('logos') 
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: true
@@ -121,7 +121,7 @@ export const uploadLogoToStorage = async (file: File): Promise<string> => {
     
     // Get public URL
     const { data: publicURL } = supabase.storage
-      .from('blog_images')
+      .from('logos')
       .getPublicUrl(fileName);
     
     if (!publicURL) {

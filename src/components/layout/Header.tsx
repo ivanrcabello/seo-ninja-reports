@@ -8,10 +8,12 @@ import { Menu, X, User, LogOut } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
 import Navbar from './Navbar';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchLogoFromSettings } from '@/components/settings/logo/logoService';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoLoading, setLogoLoading] = useState<boolean>(true);
   const isMobile = useIsMobile();
   const location = useLocation();
   const { user, signOut } = useAuth();
@@ -22,21 +24,13 @@ const Header: React.FC = () => {
 
   const fetchLogo = async () => {
     try {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('logo_url')
-        .eq('id', 1)
-        .single();
+      setLogoLoading(true);
+      const logoUrl = await fetchLogoFromSettings();
       
-      if (error) {
-        console.error('Error fetching logo:', error);
-        // Fallback to static logo
-        setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
-        return;
-      }
+      console.log('Fetched logo URL:', logoUrl);
       
-      if (data?.logo_url) {
-        setLogoUrl(data.logo_url);
+      if (logoUrl) {
+        setLogoUrl(logoUrl);
       } else {
         // Fallback to static logo if no custom logo is set
         setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
@@ -45,6 +39,8 @@ const Header: React.FC = () => {
       console.error('Error fetching logo:', error);
       // Fallback to static logo
       setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+    } finally {
+      setLogoLoading(false);
     }
   };
 
@@ -60,11 +56,17 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            {logoUrl ? (
+            {logoLoading ? (
+              <div className="h-10 w-40 bg-gray-200 animate-pulse rounded"></div>
+            ) : logoUrl ? (
               <img 
                 src={logoUrl} 
                 alt="SoyLocal SEO" 
                 className="h-10 w-auto object-contain"
+                onError={(e) => {
+                  console.error('Error loading logo image');
+                  setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+                }}
               />
             ) : (
               <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-emerald-800">
