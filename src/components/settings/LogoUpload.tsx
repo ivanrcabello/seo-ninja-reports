@@ -20,6 +20,18 @@ const LogoUpload = () => {
 
   const fetchLogo = async () => {
     try {
+      // Check if settings table exists
+      const { data: tableInfo, error: tableError } = await supabase
+        .from('settings')
+        .select('count(*)', { count: 'exact', head: true });
+      
+      if (tableError) {
+        console.error('Error checking settings table:', tableError);
+        // Create settings table if it doesn't exist
+        await createSettingsTable();
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('settings')
         .select('logo_url')
@@ -27,7 +39,12 @@ const LogoUpload = () => {
         .single();
       
       if (error) {
-        console.error('Error fetching logo:', error);
+        if (error.code === 'PGRST116') {
+          // No settings record, create one
+          await createSettingsRecord();
+        } else {
+          console.error('Error fetching logo:', error);
+        }
         return;
       }
       
@@ -36,6 +53,38 @@ const LogoUpload = () => {
       }
     } catch (error) {
       console.error('Error fetching logo:', error);
+    }
+  };
+
+  const createSettingsTable = async () => {
+    try {
+      // Create the settings table if it doesn't exist
+      const { error } = await supabase.rpc('create_settings_table_if_not_exists');
+      
+      if (error) {
+        console.error('Error creating settings table:', error);
+        return;
+      }
+      
+      // Create initial record
+      await createSettingsRecord();
+    } catch (error) {
+      console.error('Error creating settings table:', error);
+    }
+  };
+
+  const createSettingsRecord = async () => {
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .insert({ id: 1, logo_url: null })
+        .select();
+        
+      if (error) {
+        console.error('Error creating settings record:', error);
+      }
+    } catch (error) {
+      console.error('Error creating settings record:', error);
     }
   };
 
@@ -64,11 +113,21 @@ const LogoUpload = () => {
         .getPublicUrl(fileName);
       
       if (publicURL) {
+        // Check if settings table has data
+        const { count, error: countError } = await supabase
+          .from('settings')
+          .select('*', { count: 'exact', head: true });
+          
+        if (countError) {
+          console.error('Error checking settings count:', countError);
+          await createSettingsRecord();
+        }
+        
         // Save URL to settings table
         const { error: updateError } = await supabase
           .from('settings')
-          .update({ logo_url: publicURL.publicUrl })
-          .eq('id', 1);
+          .upsert({ id: 1, logo_url: publicURL.publicUrl })
+          .select();
         
         if (updateError) {
           throw updateError;
@@ -81,6 +140,9 @@ const LogoUpload = () => {
           description: "El logo se ha actualizado correctamente.",
           variant: "default",
         });
+        
+        // Reload the page to refresh the logo in the header
+        window.location.reload();
       }
     } catch (error: any) {
       console.error('Error uploading logo:', error);
@@ -115,6 +177,9 @@ const LogoUpload = () => {
         description: "El logo ha sido eliminado correctamente.",
         variant: "default",
       });
+      
+      // Reload the page to refresh the header
+      window.location.reload();
     } catch (error: any) {
       console.error('Error removing logo:', error);
       toast({
@@ -136,7 +201,7 @@ const LogoUpload = () => {
         <div 
           className={cn(
             "border-2 border-dashed rounded-md p-4 transition-all flex flex-col items-center justify-center",
-            "cursor-pointer hover:border-primary/50 hover:bg-muted/20",
+            "cursor-pointer hover:border-emerald-600/50 hover:bg-muted/20",
             logo ? "h-auto" : "h-40"
           )}
           onClick={() => document.getElementById('logo-upload')?.click()}
@@ -177,7 +242,7 @@ const LogoUpload = () => {
             <div className="flex flex-col items-center justify-center text-muted-foreground">
               {isUploading ? (
                 <div className="flex flex-col items-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-2"></div>
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600 mb-2"></div>
                   <p className="text-sm font-medium">Subiendo logo...</p>
                 </div>
               ) : (

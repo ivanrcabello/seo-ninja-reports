@@ -57,22 +57,22 @@ const DesktopNavbar = () => {
         {user ? (
           <div className="flex items-center gap-2">
             <Link to="/dashboard">
-              <Button variant="default" size="sm">Dashboard</Button>
+              <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700">Dashboard</Button>
             </Link>
             {isAdmin && (
               <>
                 <Link to="/blog-admin">
-                  <Button variant="outline" size="sm">Blog Admin</Button>
+                  <Button variant="outline" size="sm" className="border-emerald-600/30 text-emerald-700 hover:text-emerald-800">Blog Admin</Button>
                 </Link>
                 <Link to="/settings">
-                  <Button variant="outline" size="sm">Configuración</Button>
+                  <Button variant="outline" size="sm" className="border-emerald-600/30 text-emerald-700 hover:text-emerald-800">Configuración</Button>
                 </Link>
               </>
             )}
           </div>
         ) : (
           <Link to="/auth">
-            <Button>Iniciar sesión</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700">Iniciar sesión</Button>
           </Link>
         )}
       </div>

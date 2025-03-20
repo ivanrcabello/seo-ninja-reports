@@ -19,29 +19,9 @@ const Header: React.FC = () => {
   const { user, signOut } = useAuth();
 
   useEffect(() => {
-    fetchLogo();
+    // Use the static logo instead of fetching from settings
+    setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
   }, []);
-
-  const fetchLogo = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('logo_url')
-        .eq('id', 1)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching logo:', error);
-        return;
-      }
-      
-      if (data?.logo_url) {
-        setLogoUrl(data.logo_url);
-      }
-    } catch (error) {
-      console.error('Error fetching logo:', error);
-    }
-  };
 
   // Check if we're on the auth page to avoid showing the header
   const isAuthPage = location.pathname === '/auth';
@@ -51,19 +31,18 @@ const Header: React.FC = () => {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 glass backdrop-blur-md bg-white/10 dark:bg-black/10 border-b border-white/10">
+    <header className="fixed top-0 left-0 w-full z-50 glass backdrop-blur-md bg-emerald-50/10 dark:bg-emerald-900/10 border-b border-emerald-600/10">
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             {logoUrl ? (
               <img 
                 src={logoUrl} 
-                alt="SoySeoLocal.com" 
+                alt="SoyLocal SEO" 
                 className="h-10 w-auto object-contain"
-                onError={() => setLogoUrl(null)}
               />
             ) : (
-              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
+              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-emerald-800">
                 SoySeoLocal.com
               </span>
             )}
@@ -88,7 +67,7 @@ const Header: React.FC = () => {
               
               {user ? (
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-primary">
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                     <User className="inline-block mr-1 h-4 w-4" />
                     {user.email?.split('@')[0]}
                   </span>
@@ -115,12 +94,12 @@ const Header: React.FC = () => {
 
         {/* Mobile Menu */}
         {isMobile && isMenuOpen && (
-          <div className="absolute top-full left-0 w-full glass backdrop-blur-lg p-4 border-b border-white/10 animate-slide-down">
+          <div className="absolute top-full left-0 w-full glass backdrop-blur-lg p-4 border-b border-emerald-600/10 animate-slide-down">
             <Navbar isMobile={true} closeMenu={closeMenu} />
             
             {user ? (
-              <div className="flex flex-col space-y-2 pt-2 border-t border-white/10 mt-4">
-                <span className="text-sm font-medium text-primary">
+              <div className="flex flex-col space-y-2 pt-2 border-t border-emerald-600/10 mt-4">
+                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                   <User className="inline-block mr-1 h-4 w-4" />
                   {user.email?.split('@')[0]}
                 </span>
@@ -138,7 +117,7 @@ const Header: React.FC = () => {
                 </Button>
               </div>
             ) : (
-              <div className="pt-2 border-t border-white/10 mt-4">
+              <div className="pt-2 border-t border-emerald-600/10 mt-4">
                 <Link
                   to="/auth"
                   className="w-full"
