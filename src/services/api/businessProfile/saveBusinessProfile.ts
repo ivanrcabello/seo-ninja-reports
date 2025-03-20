@@ -12,6 +12,13 @@ export const saveBusinessProfile = async (
   businessProfile: Omit<BusinessProfile, 'id' | 'reportId' | 'createdAt' | 'updatedAt'>
 ): Promise<BusinessProfile | null> => {
   try {
+    if (!businessProfile) {
+      console.log('No hay perfil de negocio para guardar');
+      return null;
+    }
+    
+    console.log('Guardando perfil de negocio:', businessProfile, 'para informe:', reportId);
+    
     // Verificar si ya existe un perfil para este informe
     const { data: existingProfile, error: checkError } = await supabase
       .from('business_profiles')
@@ -41,6 +48,8 @@ export const saveBusinessProfile = async (
       updated_at: new Date().toISOString()
     };
     
+    console.log('Datos formateados para BD:', dbData);
+    
     // Si existe, actualizar
     if (existingProfile) {
       const { data: updatedProfile, error: updateError } = await supabase
@@ -62,7 +71,11 @@ export const saveBusinessProfile = async (
         .select('*')
         .single();
         
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Error al insertar perfil de negocio:', insertError);
+        throw insertError;
+      }
+      
       result = newProfile;
       
       // Actualizar el flag en reports

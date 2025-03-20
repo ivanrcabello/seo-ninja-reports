@@ -49,7 +49,12 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
       
       if (profileData) {
         setBusinessProfile(profileData);
+        console.log('Perfil de negocio extraído:', profileData);
         toast.success('Información extraída correctamente');
+      } else {
+        toast.error('No se pudo extraer información', {
+          description: 'No se encontraron datos del perfil de negocio'
+        });
       }
     } catch (error: any) {
       console.error('Error al analizar URL:', error);

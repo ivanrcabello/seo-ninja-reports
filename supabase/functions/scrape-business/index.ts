@@ -30,6 +30,8 @@ Deno.serve(async (req) => {
     // Function to extract data from Google Business profile
     const businessData = await scrapeBusinessProfile(url);
     
+    console.log('Scraped business data:', JSON.stringify(businessData, null, 2));
+    
     return new Response(
       JSON.stringify({ 
         success: true, 
