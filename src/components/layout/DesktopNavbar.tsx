@@ -14,6 +14,9 @@ const DesktopNavbar = () => {
     setOpenDropdown(openDropdown === name ? null : name);
   };
 
+  // Verificar si el usuario tiene correo de administrador
+  const isAdmin = user?.email?.includes('@soyseolocal.com');
+
   return (
     <div className="hidden md:flex items-center gap-x-1">
       <NavDropdown
@@ -56,10 +59,15 @@ const DesktopNavbar = () => {
             <Link to="/dashboard">
               <Button variant="default" size="sm">Dashboard</Button>
             </Link>
-            {user.email?.includes('@soyseolocal.com') && (
-              <Link to="/blog-admin">
-                <Button variant="outline" size="sm">Blog Admin</Button>
-              </Link>
+            {isAdmin && (
+              <>
+                <Link to="/blog-admin">
+                  <Button variant="outline" size="sm">Blog Admin</Button>
+                </Link>
+                <Link to="/settings">
+                  <Button variant="outline" size="sm">Configuración</Button>
+                </Link>
+              </>
             )}
           </div>
         ) : (

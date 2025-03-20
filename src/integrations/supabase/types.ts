@@ -412,20 +412,32 @@ export type Database = {
       settings: {
         Row: {
           created_at: string
+          default_prompt: string | null
+          google_business_key: string | null
+          google_key: string | null
           id: number
           logo_url: string | null
+          openai_key: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          default_prompt?: string | null
+          google_business_key?: string | null
+          google_key?: string | null
           id: number
           logo_url?: string | null
+          openai_key?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          default_prompt?: string | null
+          google_business_key?: string | null
+          google_key?: string | null
           id?: number
           logo_url?: string | null
+          openai_key?: string | null
           updated_at?: string
         }
         Relationships: []
