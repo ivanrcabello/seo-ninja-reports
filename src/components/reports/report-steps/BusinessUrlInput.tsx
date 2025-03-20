@@ -44,6 +44,7 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
     setIsAnalyzing(true);
     
     try {
+      // Usamos la función extractBusinessInfo que utiliza el scraper para obtener información
       const profileData = await extractBusinessInfo(businessUrl);
       
       if (profileData) {

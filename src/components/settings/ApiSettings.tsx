@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OpenAISettings, DEFAULT_PROMPT } from './api/OpenAISettings';
 import GoogleSettings from './api/GoogleSettings';
-import GoogleBusinessSettings from './api/GoogleBusinessSettings';
 import LogoUpload from './LogoUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -17,10 +16,6 @@ const ApiSettings = () => {
   // State for Google settings
   const [googleApiKey, setGoogleApiKey] = useState('');
   const [hasConfiguredGoogleKey, setHasConfiguredGoogleKey] = useState(false);
-  
-  // State for Google Business settings
-  const [googleBusinessApiKey, setGoogleBusinessApiKey] = useState('');
-  const [hasConfiguredGoogleBusinessKey, setHasConfiguredGoogleBusinessKey] = useState(false);
 
   // Load settings on component mount
   useEffect(() => {
@@ -32,7 +27,7 @@ const ApiSettings = () => {
       // Fetch API settings from Supabase
       const { data, error } = await supabase
         .from('settings')
-        .select('openai_key, google_key, google_business_key, default_prompt')
+        .select('openai_key, google_key, default_prompt')
         .eq('id', 1)
         .single();
 
@@ -53,12 +48,6 @@ const ApiSettings = () => {
         setHasConfiguredGoogleKey(true);
       }
       
-      // Set Google Business settings
-      if (data?.google_business_key) {
-        setGoogleBusinessApiKey(data.google_business_key);
-        setHasConfiguredGoogleBusinessKey(true);
-      }
-      
       // Set default prompt if available
       if (data?.default_prompt) {
         setDefaultPrompt(data.default_prompt);
@@ -75,7 +64,6 @@ const ApiSettings = () => {
         .update({
           openai_key: apiKey,
           google_key: googleApiKey,
-          google_business_key: googleBusinessApiKey,
           default_prompt: defaultPrompt
         })
         .eq('id', 1);
@@ -87,7 +75,6 @@ const ApiSettings = () => {
       // Update configured state based on current values
       setHasConfiguredKey(!!apiKey);
       setHasConfiguredGoogleKey(!!googleApiKey);
-      setHasConfiguredGoogleBusinessKey(!!googleBusinessApiKey);
 
       toast.success('Configuración guardada correctamente');
     } catch (error: any) {
@@ -116,11 +103,6 @@ const ApiSettings = () => {
           googleApiKey={googleApiKey}
           setGoogleApiKey={setGoogleApiKey}
           hasConfiguredGoogleKey={hasConfiguredGoogleKey}
-        />
-        <GoogleBusinessSettings 
-          googleBusinessApiKey={googleBusinessApiKey}
-          setGoogleBusinessApiKey={setGoogleBusinessApiKey}
-          hasConfiguredGoogleBusinessKey={hasConfiguredGoogleBusinessKey}
         />
 
         <div className="flex justify-end mt-6">

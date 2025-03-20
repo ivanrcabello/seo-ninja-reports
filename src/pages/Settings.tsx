@@ -36,8 +36,8 @@ const Settings = () => {
               <AlertTitle>Importante</AlertTitle>
               <AlertDescription>
                 Para aprovechar todas las funcionalidades, configura las APIs necesarias.
-                OpenAI es obligatoria para la generación de informes. Google PageSpeed y Google Business
-                son opcionales pero añaden funcionalidades adicionales.
+                OpenAI es obligatoria para la generación de informes. Google PageSpeed
+                es opcional pero añade funcionalidades adicionales.
               </AlertDescription>
             </Alert>
           </AnimatedContainer>
