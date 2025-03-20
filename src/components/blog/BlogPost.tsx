@@ -20,6 +20,10 @@ const BlogPost: React.FC<BlogPostProps> = ({ post, index }) => {
               src={post.image_url || 'https://via.placeholder.com/640x360?text=SoySeoLocal'} 
               alt={post.title} 
               className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = 'https://via.placeholder.com/640x360?text=SoySeoLocal';
+              }}
             />
           </div>
           <div className="p-6 flex flex-col flex-1">

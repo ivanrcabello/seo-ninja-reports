@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { handleServiceError } from "./baseService";
 
@@ -65,11 +66,20 @@ export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> 
   }
 };
 
-export const createBlogPost = async (post: Omit<BlogPost, 'id' | 'created_at' | 'updated_at'>): Promise<BlogPost> => {
+export const createBlogPost = async (post: Omit<BlogPost, 'id' | 'created_at' | 'updated_at'>, image?: File): Promise<BlogPost> => {
   try {
+    let imageUrl = post.image_url;
+    
+    // Upload image if provided
+    if (image) {
+      const { data: imageData, error: imageError } = await uploadBlogImage(image);
+      if (imageError) throw imageError;
+      imageUrl = imageData.publicUrl;
+    }
+    
     const { data, error } = await supabase
       .from('blog_posts')
-      .insert([post])
+      .insert([{ ...post, image_url: imageUrl }])
       .select()
       .single();
 
@@ -88,12 +98,22 @@ export const createBlogPost = async (post: Omit<BlogPost, 'id' | 'created_at' | 
   }
 };
 
-export const updateBlogPost = async (id: string, post: Partial<BlogPost>): Promise<BlogPost> => {
+export const updateBlogPost = async (id: string, post: Partial<BlogPost>, image?: File): Promise<BlogPost> => {
   try {
+    let imageUrl = post.image_url;
+    
+    // Upload image if provided
+    if (image) {
+      const { data: imageData, error: imageError } = await uploadBlogImage(image);
+      if (imageError) throw imageError;
+      imageUrl = imageData.publicUrl;
+    }
+    
     const { data, error } = await supabase
       .from('blog_posts')
       .update({
         ...post,
+        image_url: imageUrl,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -125,6 +145,29 @@ export const deleteBlogPost = async (id: string): Promise<void> => {
     if (error) throw error;
   } catch (error) {
     return handleServiceError(error, 'Error al eliminar el artículo del blog');
+  }
+};
+
+export const uploadBlogImage = async (file: File) => {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('blog_images')
+      .upload(filePath, file);
+      
+    if (uploadError) throw uploadError;
+    
+    const { data } = supabase.storage
+      .from('blog_images')
+      .getPublicUrl(filePath);
+      
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error uploading image: ', error);
+    return { data: null, error };
   }
 };
 

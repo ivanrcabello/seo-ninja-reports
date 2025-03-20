@@ -108,6 +108,10 @@ const BlogDetail = () => {
                   src={post.image_url} 
                   alt={post.title} 
                   className="w-full h-auto object-cover max-h-[400px]"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://via.placeholder.com/1200x600?text=SoySeoLocal';
+                  }}
                 />
               </div>
             )}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -15,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import ImageUpload from '@/components/blog/ImageUpload';
 
 const BlogAdmin = () => {
   const { toast } = useToast();
@@ -22,6 +24,7 @@ const BlogAdmin = () => {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<BlogPost | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     excerpt: '',
@@ -41,7 +44,8 @@ const BlogAdmin = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (post: Omit<BlogPost, 'id' | 'created_at' | 'updated_at'>) => createBlogPost(post),
+    mutationFn: (data: { post: Omit<BlogPost, 'id' | 'created_at' | 'updated_at'>, image: File | null }) => 
+      createBlogPost(data.post, data.image),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['blogPosts'] });
       toast({
@@ -60,7 +64,8 @@ const BlogAdmin = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, post }: { id: string; post: Partial<BlogPost> }) => updateBlogPost(id, post),
+    mutationFn: ({ id, post, image }: { id: string; post: Partial<BlogPost>; image: File | null }) => 
+      updateBlogPost(id, post, image),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['blogPosts'] });
       toast({
@@ -111,6 +116,7 @@ const BlogAdmin = () => {
         featured: post.featured,
         slug: post.slug
       });
+      setSelectedImage(null);
     } else {
       setCurrentPost(null);
       setFormData({
@@ -124,6 +130,7 @@ const BlogAdmin = () => {
         featured: false,
         slug: ''
       });
+      setSelectedImage(null);
     }
     setIsFormOpen(true);
   };
@@ -131,6 +138,7 @@ const BlogAdmin = () => {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setCurrentPost(null);
+    setSelectedImage(null);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -148,6 +156,14 @@ const BlogAdmin = () => {
         setFormData(prev => ({ ...prev, slug: generateSlugFromTitle(value) }));
       }
     }
+  };
+
+  const handleImageSelected = (file: File | null) => {
+    setSelectedImage(file);
+  };
+
+  const handleImageUrlChange = (url: string) => {
+    setFormData(prev => ({ ...prev, imageUrl: url }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -169,11 +185,15 @@ const BlogAdmin = () => {
       // Update existing post
       updateMutation.mutate({ 
         id: currentPost.id, 
-        post: postData 
+        post: postData,
+        image: selectedImage
       });
     } else {
       // Add new post
-      createMutation.mutate(postData);
+      createMutation.mutate({
+        post: postData,
+        image: selectedImage
+      });
     }
   };
 
@@ -186,14 +206,16 @@ const BlogAdmin = () => {
   const togglePublished = (post: BlogPost) => {
     updateMutation.mutate({
       id: post.id,
-      post: { published: !post.published }
+      post: { published: !post.published },
+      image: null
     });
   };
 
   const toggleFeatured = (post: BlogPost) => {
     updateMutation.mutate({
       id: post.id,
-      post: { featured: !post.featured }
+      post: { featured: !post.featured },
+      image: null
     });
   };
 
@@ -502,17 +524,11 @@ const BlogAdmin = () => {
                         />
                       </div>
                       
-                      <div>
-                        <label htmlFor="imageUrl" className="block text-sm font-medium mb-1">URL de la imagen</label>
-                        <input
-                          type="url"
-                          id="imageUrl"
-                          name="imageUrl"
-                          value={formData.imageUrl}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        />
-                      </div>
+                      <ImageUpload
+                        currentImageUrl={formData.imageUrl}
+                        onImageSelected={handleImageSelected}
+                        onImageUrlChange={handleImageUrlChange}
+                      />
                       
                       <div className="flex space-x-6">
                         <div className="flex items-center">
