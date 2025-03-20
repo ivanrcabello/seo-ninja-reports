@@ -3,19 +3,20 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OpenAISettings, DEFAULT_PROMPT } from './api/OpenAISettings';
 import GoogleSettings from './api/GoogleSettings';
-import LogoUpload from './LogoUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import usePersistentState from '@/hooks/usePersistentState';
 
 const ApiSettings = () => {
-  // State for OpenAI settings
-  const [apiKey, setApiKey] = useState('');
-  const [defaultPrompt, setDefaultPrompt] = useState(DEFAULT_PROMPT);
-  const [hasConfiguredKey, setHasConfiguredKey] = useState(false);
+  // Use persistent state for all settings
+  const [apiKey, setApiKey] = usePersistentState<string>('openai_api_key', '');
+  const [defaultPrompt, setDefaultPrompt] = usePersistentState<string>('default_seo_prompt', DEFAULT_PROMPT);
+  const [googleApiKey, setGoogleApiKey] = usePersistentState<string>('google_api_key', '');
   
-  // State for Google settings
-  const [googleApiKey, setGoogleApiKey] = useState('');
+  // State for tracking configuration status
+  const [hasConfiguredKey, setHasConfiguredKey] = useState(false);
   const [hasConfiguredGoogleKey, setHasConfiguredGoogleKey] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load settings on component mount
   useEffect(() => {
@@ -59,6 +60,8 @@ const ApiSettings = () => {
 
   const handleSaveSettings = async () => {
     try {
+      setIsSaving(true);
+      
       const { error } = await supabase
         .from('settings')
         .update({
@@ -76,10 +79,17 @@ const ApiSettings = () => {
       setHasConfiguredKey(!!apiKey);
       setHasConfiguredGoogleKey(!!googleApiKey);
 
+      // Also save to localStorage as backup
+      localStorage.setItem('openai_api_key', apiKey);
+      localStorage.setItem('google_api_key', googleApiKey);
+      localStorage.setItem('default_seo_prompt', defaultPrompt);
+
       toast.success('Configuración guardada correctamente');
     } catch (error: any) {
       console.error('Error saving settings:', error);
       toast.error('Error al guardar la configuración: ' + error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -108,15 +118,16 @@ const ApiSettings = () => {
         <div className="flex justify-end mt-6">
           <button
             onClick={handleSaveSettings}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+            disabled={isSaving}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Guardar configuración
+            {isSaving ? 'Guardando...' : 'Guardar configuración'}
           </button>
         </div>
       </TabsContent>
       
       <TabsContent value="customization" className="space-y-4">
-        <LogoUpload />
+        {/* No need to include LogoUpload here as it's already in the main settings page */}
       </TabsContent>
     </Tabs>
   );

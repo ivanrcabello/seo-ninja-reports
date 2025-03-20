@@ -27,14 +27,29 @@ export const createSettingsTableIfNeeded = async (): Promise<void> => {
  */
 export const createSettingsRecord = async (): Promise<void> => {
   try {
-    const { error } = await supabase
+    // First check if record exists
+    const { count, error: countError } = await supabase
       .from('settings')
-      .insert({ id: 1, logo_url: null })
-      .select();
+      .select('id', { count: 'exact', head: true })
+      .eq('id', 1);
       
-    if (error) {
-      console.error('Error creating settings record:', error);
-      throw error;
+    if (countError) {
+      console.error('Error checking settings record:', countError);
+      throw countError;
+    }
+    
+    // Only insert if no record exists
+    if (!count || count === 0) {
+      console.log('Creating new settings record...');
+      const { error } = await supabase
+        .from('settings')
+        .insert({ id: 1, logo_url: null })
+        .select();
+        
+      if (error) {
+        console.error('Error creating settings record:', error);
+        throw error;
+      }
     }
   } catch (error) {
     console.error('Error creating settings record:', error);
@@ -60,6 +75,7 @@ export const fetchLogoFromSettings = async (): Promise<string | null> => {
       if (error.code === 'PGRST116') {
         // No settings record, create one
         await createSettingsRecord();
+        return null;
       } else {
         console.error('Error fetching logo:', error);
       }
@@ -124,7 +140,12 @@ export const updateLogoInSettings = async (logoUrl: string | null): Promise<void
       .from('settings')
       .select('*', { count: 'exact', head: true });
       
-    if (countError || count === 0) {
+    if (countError) {
+      console.error('Error checking settings record:', countError);
+      throw countError;
+    }
+    
+    if (!count || count === 0) {
       console.log('Creating settings record...');
       await createSettingsRecord();
     }
@@ -132,8 +153,8 @@ export const updateLogoInSettings = async (logoUrl: string | null): Promise<void
     // Save URL to settings table
     const { error: updateError } = await supabase
       .from('settings')
-      .upsert({ id: 1, logo_url: logoUrl })
-      .select();
+      .update({ id: 1, logo_url: logoUrl })
+      .eq('id', 1);
     
     if (updateError) {
       console.error('Error updating logo in settings:', updateError);

@@ -101,8 +101,15 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
         
         // Reload the page to refresh the logo in the header
         setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+          // Instead of reloading, just update the logo in localStorage
+          localStorage.setItem('app_logo_url', publicUrl);
+          
+          // Only refresh header if explicitly needed
+          const headerLogo = document.querySelector('header img');
+          if (headerLogo && headerLogo instanceof HTMLImageElement) {
+            headerLogo.src = publicUrl;
+          }
+        }, 500);
       }
     } catch (error: any) {
       console.error('Error uploading logo:', error);
@@ -142,10 +149,14 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
         variant: "default",
       });
       
-      // Reload the page to refresh the header
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Update localStorage instead of reloading
+      localStorage.removeItem('app_logo_url');
+      
+      // Only refresh header if explicitly needed
+      const headerLogo = document.querySelector('header img');
+      if (headerLogo && headerLogo instanceof HTMLImageElement) {
+        headerLogo.src = '/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png';
+      }
     } catch (error: any) {
       console.error('Error removing logo:', error);
       setUploadError(error.message || "Ha ocurrido un error al eliminar el logo");

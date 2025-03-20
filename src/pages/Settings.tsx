@@ -9,24 +9,53 @@ import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import useAuth from '@/hooks/useAuth';
 import { Loader2, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
 
   // Handle visibility changes to ensure page state is preserved
   useEffect(() => {
+    // Load persisted form data from local storage
+    const loadPersistedData = () => {
+      try {
+        console.log('Loading persisted settings data');
+        // We're using the usePersistentState hook in child components
+        // so we don't need to do anything here
+      } catch (error) {
+        console.error('Error loading persisted settings:', error);
+      }
+    };
+
+    // Initial load
+    loadPersistedData();
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // When returning to the tab, check if we need to restore any state
         console.log('Returned to Settings page, checking for state to restore');
-        // State restoration would happen in child components
+        loadPersistedData();
+      } else if (document.visibilityState === 'hidden') {
+        // When leaving the tab, persist important state
+        console.log('Leaving Settings page, persisting current state');
+        // The child components handle their own state persistence
       }
     };
 
+    // Add event listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Handle unload events to persist data
+    const handleBeforeUnload = () => {
+      console.log('Page unloading, persisting settings state');
+      // The child components handle their own state persistence
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 

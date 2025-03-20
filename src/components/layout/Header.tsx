@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,14 @@ const Header: React.FC = () => {
   const { user, signOut } = useAuth();
 
   useEffect(() => {
+    // Try to load from localStorage first for immediate display
+    const cachedLogo = localStorage.getItem('app_logo_url');
+    if (cachedLogo) {
+      setLogoUrl(cachedLogo);
+      setLogoLoading(false);
+    }
+    
+    // Then fetch from database to ensure it's up to date
     fetchLogo();
   }, []);
 
@@ -29,6 +38,8 @@ const Header: React.FC = () => {
       
       if (logoUrl) {
         setLogoUrl(logoUrl);
+        // Cache the logo URL in localStorage
+        localStorage.setItem('app_logo_url', logoUrl);
       } else {
         // Fallback to static logo if no custom logo is set
         setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
