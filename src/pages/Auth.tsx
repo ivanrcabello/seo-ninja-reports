@@ -1,40 +1,17 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import AuthForm from '@/components/auth/AuthForm';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import useAuth from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const { user, loading } = useAuth();
-  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
 
   // Redirect if already logged in
   if (user && !loading) {
     return <Navigate to="/dashboard" replace />;
   }
-
-  const createAdminUser = async () => {
-    try {
-      setIsCreatingAdmin(true);
-      
-      const { data, error } = await supabase.functions.invoke('create-admin');
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      toast.success(data.message || 'Usuario administrador creado exitosamente');
-    } catch (error: any) {
-      console.error('Error al crear usuario administrador:', error);
-      toast.error(error.message || 'Error al crear usuario administrador');
-    } finally {
-      setIsCreatingAdmin(false);
-    }
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
@@ -53,18 +30,6 @@ const Auth = () => {
           <p className="text-muted-foreground">
             Inicia sesión o crea una nueva cuenta
           </p>
-
-          <div className="mt-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={createAdminUser}
-              disabled={isCreatingAdmin}
-              className="text-xs"
-            >
-              {isCreatingAdmin ? 'Creando...' : 'Crear Admin (ivan@soyseolocal.com)'}
-            </Button>
-          </div>
         </AnimatedContainer>
         
         <AuthForm />
