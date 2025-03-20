@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { renderServiceItems, renderProductItems, renderResourceItems } from './NavDropdown';
-import { useAuth } from '@/hooks/useAuth';
+import useAuth from '@/hooks/useAuth';
 
-const MobileNavbar: React.FC = () => {
-  const { user, logout } = useAuth();
+const MobileNavbar: React.FC<{ closeMenu?: () => void }> = ({ closeMenu = () => {} }) => {
+  const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
@@ -19,9 +18,10 @@ const MobileNavbar: React.FC = () => {
   const productItems = renderProductItems();
   const resourceItems = renderResourceItems();
 
-  const closeMenu = () => {
+  const handleCloseMenu = () => {
     setIsOpen(false);
     setExpandedSection(null);
+    closeMenu();
   };
 
   return (
@@ -33,10 +33,10 @@ const MobileNavbar: React.FC = () => {
       {isOpen && (
         <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col">
           <div className="flex justify-between items-center p-4 border-b">
-            <Link to="/" onClick={closeMenu}>
+            <Link to="/" onClick={handleCloseMenu}>
               <span className="font-bold text-xl">SoySeoLocal</span>
             </Link>
-            <Button variant="ghost" size="icon" onClick={closeMenu}>
+            <Button variant="ghost" size="icon" onClick={handleCloseMenu}>
               <X className="h-6 w-6" />
             </Button>
           </div>
@@ -59,7 +59,7 @@ const MobileNavbar: React.FC = () => {
                         key={index} 
                         to={item.href} 
                         className="block py-1"
-                        onClick={closeMenu}
+                        onClick={handleCloseMenu}
                       >
                         <div className="font-medium">{item.label}</div>
                         {item.description && <div className="text-xs text-muted-foreground">{item.description}</div>}
@@ -85,7 +85,7 @@ const MobileNavbar: React.FC = () => {
                         key={index} 
                         to={item.href} 
                         className="block py-1"
-                        onClick={closeMenu}
+                        onClick={handleCloseMenu}
                       >
                         <div className="font-medium">{item.label}</div>
                         {item.description && <div className="text-xs text-muted-foreground">{item.description}</div>}
@@ -111,7 +111,7 @@ const MobileNavbar: React.FC = () => {
                         key={index} 
                         to={item.href} 
                         className="block py-1"
-                        onClick={closeMenu}
+                        onClick={handleCloseMenu}
                       >
                         <div className="font-medium">{item.label}</div>
                         {item.description && <div className="text-xs text-muted-foreground">{item.description}</div>}
@@ -122,7 +122,7 @@ const MobileNavbar: React.FC = () => {
               </div>
 
               <div className="py-2">
-                <Link to="/contacto" className="block py-2 font-medium" onClick={closeMenu}>
+                <Link to="/contacto" className="block py-2 font-medium" onClick={handleCloseMenu}>
                   Contacto
                 </Link>
               </div>
@@ -132,17 +132,17 @@ const MobileNavbar: React.FC = () => {
           <div className="p-4 border-t">
             {user ? (
               <div className="flex flex-col gap-2">
-                <Link to="/dashboard" onClick={closeMenu}>
+                <Link to="/dashboard" onClick={handleCloseMenu}>
                   <Button className="w-full">Dashboard</Button>
                 </Link>
                 {user.email?.includes('@soyseolocal.com') && (
-                  <Link to="/blog-admin" onClick={closeMenu}>
+                  <Link to="/blog-admin" onClick={handleCloseMenu}>
                     <Button variant="outline" className="w-full">Blog Admin</Button>
                   </Link>
                 )}
               </div>
             ) : (
-              <Link to="/auth" onClick={closeMenu}>
+              <Link to="/auth" onClick={handleCloseMenu}>
                 <Button className="w-full">Iniciar sesión</Button>
               </Link>
             )}

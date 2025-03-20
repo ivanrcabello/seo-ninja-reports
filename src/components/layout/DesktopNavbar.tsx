@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { NavDropdown, renderServiceItems, renderProductItems, renderResourceItems } from './NavDropdown';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import useAuth from '@/hooks/useAuth';
 
 const DesktopNavbar = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
