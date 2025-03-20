@@ -8,6 +8,8 @@ import { Menu, X, User, LogOut } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
 import Navbar from './Navbar';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { handleServiceError } from '@/services/api/baseService';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -22,13 +24,19 @@ const Header: React.FC = () => {
 
   const fetchLogo = async () => {
     try {
-      const { data: settings } = await supabase
+      const { data, error } = await supabase
         .from('settings')
         .select('logo_url')
+        .eq('id', 1)
         .single();
       
-      if (settings?.logo_url) {
-        setLogoUrl(settings.logo_url);
+      if (error) {
+        console.error('Error fetching logo:', error);
+        return;
+      }
+      
+      if (data?.logo_url) {
+        setLogoUrl(data.logo_url);
       }
     } catch (error) {
       console.error('Error fetching logo:', error);

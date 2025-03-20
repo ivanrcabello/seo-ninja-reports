@@ -6,6 +6,8 @@ import { X, Upload, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { handleServiceError } from '@/services/api/baseService';
 
 const LogoUpload = () => {
   const [logo, setLogo] = useState<string | null>(null);
@@ -18,13 +20,19 @@ const LogoUpload = () => {
 
   const fetchLogo = async () => {
     try {
-      const { data: settings } = await supabase
+      const { data, error } = await supabase
         .from('settings')
         .select('logo_url')
+        .eq('id', 1)
         .single();
       
-      if (settings?.logo_url) {
-        setLogo(settings.logo_url);
+      if (error) {
+        console.error('Error fetching logo:', error);
+        return;
+      }
+      
+      if (data?.logo_url) {
+        setLogo(data.logo_url);
       }
     } catch (error) {
       console.error('Error fetching logo:', error);
@@ -59,10 +67,8 @@ const LogoUpload = () => {
         // Save URL to settings table
         const { error: updateError } = await supabase
           .from('settings')
-          .upsert({ 
-            id: 1, // Using a fixed ID for settings
-            logo_url: publicURL.publicUrl 
-          });
+          .update({ logo_url: publicURL.publicUrl })
+          .eq('id', 1);
         
         if (updateError) {
           throw updateError;
@@ -95,10 +101,8 @@ const LogoUpload = () => {
       // Update the settings to remove the logo URL
       const { error } = await supabase
         .from('settings')
-        .upsert({ 
-          id: 1,
-          logo_url: null 
-        });
+        .update({ logo_url: null })
+        .eq('id', 1);
       
       if (error) {
         throw error;

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import OpenAISettings from './api/OpenAISettings';
+import { OpenAISettings } from './api/OpenAISettings';
 import GoogleSettings from './api/GoogleSettings';
 import GoogleBusinessSettings from './api/GoogleBusinessSettings';
 import LogoUpload from './LogoUpload';
