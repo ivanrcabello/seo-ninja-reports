@@ -1,96 +1,74 @@
 
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { Settings2, Mail } from 'lucide-react';
-import NavDropdown from './NavDropdown';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { NavDropdown, renderServiceItems, renderProductItems, renderResourceItems } from './NavDropdown';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
-const DesktopNavbar: React.FC = () => {
-  const location = useLocation();
-
-  const navItems = [
-    { label: 'Inicio', href: '/' },
-    { label: 'Dashboard', href: '/dashboard' },
-  ];
-
-  const servicios = [
-    { title: "Posicionamiento SEO Local", description: "Mejora tu visibilidad en búsquedas locales" },
-    { title: "SEO Técnico", description: "Optimización técnica para mejorar el rendimiento de tu web" },
-    { title: "Auditoría SEO", description: "Análisis completo de tu web para identificar oportunidades" },
-    { title: "Contenido SEO", description: "Creación de contenido optimizado para motores de búsqueda" },
-  ];
-
-  const paquetes = [
-    { title: "Plan Starter", description: "Ideal para pequeños negocios locales", href: "/paquetes/starter" },
-    { title: "Plan Ascenso", description: "Para empresas que buscan expandir su presencia online", href: "/paquetes/ascenso" },
-    { title: "Plan Master", description: "Servicios avanzados para máximos resultados", href: "/paquetes/master" },
-  ];
+const DesktopNavbar = () => {
+  const { user, logout } = useAuth();
+  
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  
+  const handleDropdownToggle = (name: string) => {
+    setOpenDropdown(openDropdown === name ? null : name);
+  };
 
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        {navItems.map((item) => (
-          <NavigationMenuItem key={item.href}>
-            <Link to={item.href}>
-              <NavigationMenuLink 
-                className={cn(
-                  navigationMenuTriggerStyle(),
-                  location.pathname === item.href
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground'
-                )}
-              >
-                {item.label}
-              </NavigationMenuLink>
+    <div className="hidden md:flex items-center gap-x-1">
+      <NavDropdown
+        title="Servicios"
+        items={renderServiceItems()}
+        open={openDropdown === 'services'}
+        setOpen={(isOpen) => {
+          if (isOpen) handleDropdownToggle('services');
+          else setOpenDropdown(null);
+        }}
+      />
+      
+      <NavDropdown
+        title="Productos"
+        items={renderProductItems()}
+        open={openDropdown === 'products'}
+        setOpen={(isOpen) => {
+          if (isOpen) handleDropdownToggle('products');
+          else setOpenDropdown(null);
+        }}
+      />
+      
+      <NavDropdown
+        title="Recursos"
+        items={renderResourceItems()}
+        open={openDropdown === 'resources'}
+        setOpen={(isOpen) => {
+          if (isOpen) handleDropdownToggle('resources');
+          else setOpenDropdown(null);
+        }}
+      />
+      
+      <Link to="/contacto">
+        <Button variant="ghost" className="font-medium text-base">Contacto</Button>
+      </Link>
+
+      <div className="pl-4 flex items-center">
+        {user ? (
+          <div className="flex items-center gap-2">
+            <Link to="/dashboard">
+              <Button variant="default" size="sm">Dashboard</Button>
             </Link>
-          </NavigationMenuItem>
-        ))}
-        
-        <NavigationMenuItem>
-          <NavigationMenuTrigger>Servicios</NavigationMenuTrigger>
-          <NavDropdown items={servicios} columns={2} />
-        </NavigationMenuItem>
-        
-        <NavigationMenuItem>
-          <NavigationMenuTrigger>Paquetes</NavigationMenuTrigger>
-          <NavDropdown items={paquetes} columns={3} />
-        </NavigationMenuItem>
-        
-        <NavigationMenuItem>
-          <Link to="/blog">
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              Blog
-            </NavigationMenuLink>
+            {user.email?.includes('@soyseolocal.com') && (
+              <Link to="/blog-admin">
+                <Button variant="outline" size="sm">Blog Admin</Button>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <Link to="/auth">
+            <Button>Iniciar sesión</Button>
           </Link>
-        </NavigationMenuItem>
-        
-        <NavigationMenuItem>
-          <Link to="/contacto">
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              <Mail className="h-4 w-4 mr-2" />
-              Contacto
-            </NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
-        
-        <NavigationMenuItem>
-          <Link to="/settings">
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              <Settings2 className="h-4 w-4 mr-2" />
-              Configuración
-            </NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+        )}
+      </div>
+    </div>
   );
 };
 

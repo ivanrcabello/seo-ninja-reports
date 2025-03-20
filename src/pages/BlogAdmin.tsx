@@ -1,15 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { PlusCircle, Edit, Trash2, Eye } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { BlogPost, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, generateSlugFromTitle } from '@/services/api/blogService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const BlogAdmin = () => {
   const { toast } = useToast();
-  const [posts, setPosts] = useState(initialBlogPosts);
+  const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<BlogPost | null>(null);
   const [formData, setFormData] = useState({
@@ -18,7 +21,73 @@ const BlogAdmin = () => {
     content: '',
     author: '',
     category: '',
-    imageUrl: ''
+    imageUrl: '',
+    published: false,
+    featured: false,
+    slug: ''
+  });
+
+  // Fetch blog posts
+  const { data: posts = [], isLoading, error } = useQuery({
+    queryKey: ['blogPosts'],
+    queryFn: fetchBlogPosts
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (post: Omit<BlogPost, 'id' | 'created_at' | 'updated_at'>) => createBlogPost(post),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blogPosts'] });
+      toast({
+        title: "Post creado",
+        description: "El nuevo artículo del blog ha sido creado correctamente.",
+      });
+      handleCloseForm();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo crear el artículo: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, post }: { id: string; post: Partial<BlogPost> }) => updateBlogPost(id, post),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blogPosts'] });
+      toast({
+        title: "Post actualizado",
+        description: "El artículo del blog ha sido actualizado correctamente.",
+      });
+      handleCloseForm();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar el artículo: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteBlogPost(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blogPosts'] });
+      toast({
+        title: "Post eliminado",
+        description: "El artículo del blog ha sido eliminado correctamente.",
+        variant: "destructive"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo eliminar el artículo: ${error.message}`,
+        variant: "destructive"
+      });
+    }
   });
 
   const handleOpenForm = (post?: BlogPost) => {
@@ -30,7 +99,10 @@ const BlogAdmin = () => {
         content: post.content || '',
         author: post.author,
         category: post.category,
-        imageUrl: post.imageUrl
+        imageUrl: post.image_url || '',
+        published: post.published,
+        featured: post.featured,
+        slug: post.slug
       });
     } else {
       setCurrentPost(null);
@@ -40,7 +112,10 @@ const BlogAdmin = () => {
         content: '',
         author: '',
         category: '',
-        imageUrl: ''
+        imageUrl: '',
+        published: false,
+        featured: false,
+        slug: ''
       });
     }
     setIsFormOpen(true);
@@ -52,58 +127,83 @@ const BlogAdmin = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    
+    // Handle checkbox inputs
+    if (type === 'checkbox') {
+      const checkbox = e.target as HTMLInputElement;
+      setFormData(prev => ({ ...prev, [name]: checkbox.checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+      
+      // Generate slug from title
+      if (name === 'title' && (!currentPost || (currentPost && currentPost.slug === formData.slug))) {
+        setFormData(prev => ({ ...prev, slug: generateSlugFromTitle(value) }));
+      }
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const postData = {
+      title: formData.title,
+      excerpt: formData.excerpt,
+      content: formData.content,
+      author: formData.author,
+      category: formData.category,
+      image_url: formData.imageUrl,
+      published: formData.published,
+      featured: formData.featured,
+      slug: formData.slug
+    };
+    
     if (currentPost) {
       // Update existing post
-      const updatedPosts = posts.map(post => 
-        post.id === currentPost.id 
-          ? { ...post, ...formData, updatedAt: new Date().toISOString() } 
-          : post
-      );
-      setPosts(updatedPosts);
-      toast({
-        title: "Post actualizado",
-        description: "El artículo del blog ha sido actualizado correctamente.",
+      updateMutation.mutate({ 
+        id: currentPost.id, 
+        post: postData 
       });
     } else {
       // Add new post
-      const newPost: BlogPost = {
-        id: Date.now(),
-        ...formData,
-        date: new Date().toLocaleDateString('es-ES', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        }),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setPosts([newPost, ...posts]);
-      toast({
-        title: "Post creado",
-        description: "El nuevo artículo del blog ha sido creado correctamente.",
-      });
+      createMutation.mutate(postData);
     }
-    
-    handleCloseForm();
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar este artículo?")) {
-      setPosts(posts.filter(post => post.id !== id));
-      toast({
-        title: "Post eliminado",
-        description: "El artículo del blog ha sido eliminado correctamente.",
-        variant: "destructive"
-      });
+      deleteMutation.mutate(id);
     }
   };
+
+  const togglePublished = (post: BlogPost) => {
+    updateMutation.mutate({
+      id: post.id,
+      post: { published: !post.published }
+    });
+  };
+
+  const toggleFeatured = (post: BlogPost) => {
+    updateMutation.mutate({
+      id: post.id,
+      post: { featured: !post.featured }
+    });
+  };
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="pt-20 container px-4 sm:px-6 mx-auto">
+          <BlurredCard>
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-destructive">Error al cargar los artículos</h2>
+              <p className="text-muted-foreground mt-2">No se pudieron cargar los artículos del blog. Por favor, inténtelo de nuevo más tarde.</p>
+            </div>
+          </BlurredCard>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -129,65 +229,109 @@ const BlogAdmin = () => {
           <div className="container px-4 sm:px-6 mx-auto">
             <BlurredCard>
               <div className="p-6">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-border">
-                    <thead>
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Título
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">
-                          Autor
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
-                          Categoría
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
-                          Fecha
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Acciones
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {posts.map((post) => (
-                        <tr key={post.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium truncate max-w-xs">{post.title}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                            <div className="text-sm text-muted-foreground">{post.author}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
-                              {post.category}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground hidden lg:table-cell">
-                            {post.date}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {/* View action */}}>
-                                <span className="sr-only">Ver</span>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleOpenForm(post)}>
-                                <span className="sr-only">Editar</span>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => handleDelete(post.id)}>
-                                <span className="sr-only">Eliminar</span>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-4 text-muted-foreground">Cargando artículos...</p>
+                  </div>
+                ) : posts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No hay artículos publicados aún.</p>
+                    <Button onClick={() => handleOpenForm()} className="mt-4">Crear primer artículo</Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-border">
+                      <thead>
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Título
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">
+                            Autor
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
+                            Categoría
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
+                            Fecha
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
+                            Estado
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Acciones
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {posts.map((post) => (
+                          <tr key={post.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium truncate max-w-xs">{post.title}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                              <div className="text-sm text-muted-foreground">{post.author}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                {post.category}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground hidden lg:table-cell">
+                              {post.date}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center hidden sm:table-cell">
+                              <div className="flex justify-center space-x-2">
+                                <span 
+                                  className={`cursor-pointer inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    post.published 
+                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                                      : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                                  }`}
+                                  onClick={() => togglePublished(post)}
+                                  title={post.published ? "Publicado" : "Borrador"}
+                                >
+                                  {post.published ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                                  {post.published ? "Publicado" : "Borrador"}
+                                </span>
+                                
+                                <span 
+                                  className={`cursor-pointer inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    post.featured 
+                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' 
+                                      : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                                  }`}
+                                  onClick={() => toggleFeatured(post)}
+                                  title={post.featured ? "Destacado" : "No destacado"}
+                                >
+                                  {post.featured ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                                  {post.featured ? "Destacado" : "Normal"}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {/* View action */}}>
+                                  <span className="sr-only">Ver</span>
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleOpenForm(post)}>
+                                  <span className="sr-only">Editar</span>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => handleDelete(post.id)}>
+                                  <span className="sr-only">Eliminar</span>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </BlurredCard>
           </div>
@@ -211,6 +355,19 @@ const BlogAdmin = () => {
                           id="title"
                           name="title"
                           value={formData.title}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="slug" className="block text-sm font-medium mb-1">Slug *</label>
+                        <input
+                          type="text"
+                          id="slug"
+                          name="slug"
+                          value={formData.slug}
                           onChange={handleChange}
                           className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                           required
@@ -244,7 +401,7 @@ const BlogAdmin = () => {
                       </div>
                       
                       <div>
-                        <label htmlFor="imageUrl" className="block text-sm font-medium mb-1">URL de la imagen *</label>
+                        <label htmlFor="imageUrl" className="block text-sm font-medium mb-1">URL de la imagen</label>
                         <input
                           type="url"
                           id="imageUrl"
@@ -252,8 +409,33 @@ const BlogAdmin = () => {
                           value={formData.imageUrl}
                           onChange={handleChange}
                           className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          required
                         />
+                      </div>
+                      
+                      <div className="flex space-x-6">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="published"
+                            name="published"
+                            checked={formData.published}
+                            onChange={handleChange}
+                            className="mr-2 h-4 w-4"
+                          />
+                          <label htmlFor="published" className="text-sm font-medium">Publicado</label>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="featured"
+                            name="featured"
+                            checked={formData.featured}
+                            onChange={handleChange}
+                            className="mr-2 h-4 w-4"
+                          />
+                          <label htmlFor="featured" className="text-sm font-medium">Destacado</label>
+                        </div>
                       </div>
                     </div>
                     
@@ -278,7 +460,7 @@ const BlogAdmin = () => {
                           name="content"
                           value={formData.content}
                           onChange={handleChange}
-                          rows={8}
+                          rows={10}
                           className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                           required
                         ></textarea>
@@ -303,57 +485,5 @@ const BlogAdmin = () => {
     </Layout>
   );
 };
-
-interface BlogPost {
-  id: number;
-  title: string;
-  excerpt: string;
-  content?: string;
-  author: string;
-  date: string;
-  category: string;
-  imageUrl: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const initialBlogPosts: BlogPost[] = [
-  {
-    id: 1,
-    title: "Cómo optimizar Google Business Profile para SEO local",
-    excerpt: "Aprende las mejores prácticas para optimizar tu ficha de Google Business Profile y mejorar tu visibilidad en búsquedas locales.",
-    content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet, nulla et dictum interdum, nisi lorem egestas vitae scelerisque enim ligula venenatis dolor. Maecenas nisl est, ultrices nec congue eget, auctor vitae massa. Fusce luctus vestibulum augue ut aliquet.",
-    author: "Iván Rodríguez",
-    date: "15 mayo, 2023",
-    category: "SEO Local",
-    imageUrl: "https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80",
-    createdAt: "2023-05-15T10:00:00Z",
-    updatedAt: "2023-05-15T10:00:00Z"
-  },
-  {
-    id: 2,
-    title: "Las 10 claves del SEO local para pequeños negocios",
-    excerpt: "Descubre las estrategias fundamentales que todo pequeño negocio debe implementar para destacar en su área local.",
-    content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet, nulla et dictum interdum, nisi lorem egestas vitae scelerisque enim ligula venenatis dolor. Maecenas nisl est, ultrices nec congue eget, auctor vitae massa. Fusce luctus vestibulum augue ut aliquet.",
-    author: "María López",
-    date: "3 junio, 2023",
-    category: "Estrategia SEO",
-    imageUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1115&q=80",
-    createdAt: "2023-06-03T10:00:00Z",
-    updatedAt: "2023-06-03T10:00:00Z"
-  },
-  {
-    id: 3,
-    title: "SEO técnico: factores que afectan a tu posicionamiento local",
-    excerpt: "Análisis de los aspectos técnicos que impactan directamente en el posicionamiento de tu negocio en búsquedas locales.",
-    content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet, nulla et dictum interdum, nisi lorem egestas vitae scelerisque enim ligula venenatis dolor. Maecenas nisl est, ultrices nec congue eget, auctor vitae massa. Fusce luctus vestibulum augue ut aliquet.",
-    author: "Carlos Sánchez",
-    date: "22 julio, 2023",
-    category: "SEO Técnico",
-    imageUrl: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1172&q=80",
-    createdAt: "2023-07-22T10:00:00Z",
-    updatedAt: "2023-07-22T10:00:00Z"
-  }
-];
 
 export default BlogAdmin;
