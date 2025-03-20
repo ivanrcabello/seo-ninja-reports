@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { handleServiceError } from "./baseService";
 
@@ -38,6 +37,31 @@ export const fetchBlogPosts = async (): Promise<BlogPost[]> => {
     }));
   } catch (error) {
     return handleServiceError(error, 'Error al cargar los artículos del blog');
+  }
+};
+
+export const getBlogPostBySlug = async (slug: string): Promise<BlogPost | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) throw error;
+
+    if (!data) return null;
+    
+    return {
+      ...data,
+      date: new Date(data.created_at).toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })
+    };
+  } catch (error) {
+    return handleServiceError(error, `Error al cargar el artículo con slug: ${slug}`);
   }
 };
 

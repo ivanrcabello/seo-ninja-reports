@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import BlurredCard from '@/components/ui/BlurredCard';
@@ -9,9 +9,16 @@ import { PlusCircle, Edit, Trash2, Eye, CheckCircle, XCircle } from 'lucide-reac
 import { BlogPost, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, generateSlugFromTitle } from '@/services/api/blogService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const BlogAdmin = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<BlogPost | null>(null);
@@ -312,18 +319,62 @@ const BlogAdmin = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {/* View action */}}>
-                                  <span className="sr-only">Ver</span>
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleOpenForm(post)}>
-                                  <span className="sr-only">Editar</span>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => handleDelete(post.id)}>
-                                  <span className="sr-only">Eliminar</span>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8 w-8 p-0" 
+                                        onClick={() => navigate(`/blog/${post.slug}`)}
+                                      >
+                                        <span className="sr-only">Ver</span>
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Ver artículo</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8 w-8 p-0" 
+                                        onClick={() => handleOpenForm(post)}
+                                      >
+                                        <span className="sr-only">Editar</span>
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Editar artículo</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive/90 hover:bg-destructive/10" 
+                                        onClick={() => handleDelete(post.id)}
+                                      >
+                                        <span className="sr-only">Eliminar</span>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Eliminar artículo</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               </div>
                             </td>
                           </tr>
