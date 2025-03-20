@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Gauge, Loader2 } from 'lucide-react';
+import { Gauge, Loader2, ExternalLink } from 'lucide-react';
 import { fetchPageSpeedData } from '@/services/api/pagespeed';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
@@ -72,6 +72,25 @@ const ClientPageSpeedTest: React.FC<ClientPageSpeedTestProps> = ({ websiteUrl, o
         <p className="text-sm text-muted-foreground">
           Analiza la velocidad y rendimiento del sitio web utilizando Google PageSpeed
         </p>
+        
+        <div className="p-3 border rounded-md bg-muted/30">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center">
+                <span className="text-sm font-medium text-muted-foreground mr-2">URL:</span>
+                <a 
+                  href={websiteUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-sm text-primary truncate hover:underline flex items-center"
+                >
+                  {websiteUrl}
+                  <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
         
         <div className="flex justify-center">
           <Button 

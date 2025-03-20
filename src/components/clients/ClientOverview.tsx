@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { Globe, Calendar, FileText, ExternalLink, Phone, Activity } from 'lucide-react';
 import { Client } from '@/types/client.types';
-import { Report } from '@/types/report.types';
+import { Report, BusinessProfile } from '@/types/report.types';
 import ClientCredentials from './ClientCredentials';
 import ClientNotes from './ClientNotes';
 import ClientPerformanceCards from './ClientPerformanceCards';
@@ -15,7 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ClientGmbTest from './tests/ClientGmbTest';
 import ClientPageSpeedTest from './tests/ClientPageSpeedTest';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BusinessProfile } from '@/types/report.types';
+import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
+import { fetchPageSpeedData } from '@/services/api/pagespeed';
 
 interface ClientOverviewProps {
   client: Client;
@@ -33,17 +34,11 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
   const [activeTab, setActiveTab] = useState<string>('summary');
   const [businessProfile, setBusinessProfile] = useState<Partial<BusinessProfile> | null>(null);
   const [pageSpeedScore, setPageSpeedScore] = useState<number | null>(null);
+  const [isRefreshingPageSpeed, setIsRefreshingPageSpeed] = useState(false);
+  const [isRefreshingBusinessProfile, setIsRefreshingBusinessProfile] = useState(false);
   
   // Get latest GMB data and PageSpeed score from most recent report if available
   const latestReport = reports.length > 0 ? reports[0] : null;
-  
-  const handleBusinessProfileUpdate = (profile: Partial<BusinessProfile>) => {
-    setBusinessProfile(profile);
-  };
-  
-  const handlePageSpeedUpdate = (score: number) => {
-    setPageSpeedScore(score);
-  };
   
   // Extract business profile and pagespeed data from the report content
   const reportBusinessProfile = latestReport?.content?.businessProfile || null;
@@ -51,6 +46,57 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
     ? Math.round(latestReport.content.pageSpeedData.desktop.performance * 100) 
     : null;
   
+  // Use the latest data we have, either from a manual refresh or from the latest report
+  const displayBusinessProfile = businessProfile || reportBusinessProfile;
+  const displayPageSpeedScore = pageSpeedScore !== null ? pageSpeedScore : reportPageSpeedScore;
+  
+  const handleRefreshPageSpeed = async () => {
+    if (!client.website) {
+      return;
+    }
+    
+    setIsRefreshingPageSpeed(true);
+    
+    try {
+      const result = await fetchPageSpeedData(client.website);
+      
+      if (result && result.desktop && typeof result.desktop.performance !== 'undefined') {
+        const desktopScore = Math.round(result.desktop.performance * 100);
+        setPageSpeedScore(desktopScore);
+      }
+    } catch (error) {
+      console.error('Error refreshing PageSpeed data:', error);
+    } finally {
+      setIsRefreshingPageSpeed(false);
+    }
+  };
+  
+  const handleRefreshBusinessProfile = async () => {
+    setIsRefreshingBusinessProfile(true);
+    
+    try {
+      // Primero intentamos con el sitio web del cliente
+      const result = await extractGmbData(client.website, false);
+      
+      if (result) {
+        setBusinessProfile(result);
+      }
+    } catch (error) {
+      console.error('Error refreshing business profile:', error);
+    } finally {
+      setIsRefreshingBusinessProfile(false);
+    }
+  };
+  
+  // Handlers for tests
+  const handleBusinessProfileUpdate = (profile: Partial<BusinessProfile>) => {
+    setBusinessProfile(profile);
+  };
+  
+  const handlePageSpeedUpdate = (score: number) => {
+    setPageSpeedScore(score);
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -125,8 +171,13 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
       
       {/* Visual indicators for GMB and PageSpeed */}
       <ClientPerformanceCards 
-        businessProfile={businessProfile || reportBusinessProfile}
-        pageSpeedScore={pageSpeedScore || reportPageSpeedScore}
+        businessProfile={displayBusinessProfile}
+        pageSpeedScore={displayPageSpeedScore}
+        clientWebsite={client.website}
+        onRefreshPageSpeed={handleRefreshPageSpeed}
+        onRefreshBusinessProfile={handleRefreshBusinessProfile}
+        isRefreshingPageSpeed={isRefreshingPageSpeed}
+        isRefreshingBusinessProfile={isRefreshingBusinessProfile}
       />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">

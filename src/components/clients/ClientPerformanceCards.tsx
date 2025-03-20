@@ -1,15 +1,21 @@
 
 import React from 'react';
-import { Star, Gauge, Globe, MapPin, Phone, Activity } from 'lucide-react';
+import { Star, Gauge, Globe, MapPin, Phone, Activity, RefreshCw } from 'lucide-react';
 import { BusinessProfile } from '@/types/report.types';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface ClientPerformanceCardsProps {
   businessProfile: Partial<BusinessProfile> | null;
   pageSpeedScore?: number | null;
+  clientWebsite: string;
+  onRefreshPageSpeed?: () => void;
+  onRefreshBusinessProfile?: () => void;
+  isRefreshingPageSpeed?: boolean;
+  isRefreshingBusinessProfile?: boolean;
 }
 
 const getScoreColor = (score: number) => {
@@ -26,7 +32,12 @@ const getRatingColor = (rating: number) => {
 
 export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({ 
   businessProfile,
-  pageSpeedScore
+  pageSpeedScore,
+  clientWebsite,
+  onRefreshPageSpeed,
+  onRefreshBusinessProfile,
+  isRefreshingPageSpeed = false,
+  isRefreshingBusinessProfile = false
 }) => {
   const hasBusinessData = Boolean(businessProfile?.businessName);
   const hasPageSpeedData = pageSpeedScore !== undefined && pageSpeedScore !== null;
@@ -44,15 +55,31 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
               <MapPin className="h-4 w-4 mr-2 text-primary" />
               Perfil de Google Business
             </CardTitle>
-            {hasBusinessData ? (
-              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                Activo
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
-                No configurado
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {hasBusinessData ? (
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                  Activo
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+                  No configurado
+                </Badge>
+              )}
+              {onRefreshBusinessProfile && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={onRefreshBusinessProfile}
+                  disabled={isRefreshingBusinessProfile}
+                >
+                  <RefreshCw className={cn(
+                    "h-4 w-4", 
+                    isRefreshingBusinessProfile && "animate-spin"
+                  )} />
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -101,9 +128,31 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
               <p className="text-sm text-muted-foreground">
                 No hay datos de Google Business disponibles
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Realiza un informe para obtener información
-              </p>
+              {onRefreshBusinessProfile ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3" 
+                  onClick={onRefreshBusinessProfile}
+                  disabled={isRefreshingBusinessProfile}
+                >
+                  {isRefreshingBusinessProfile ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Analizando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Obtener datos GMB
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Actualiza los datos para obtener información
+                </p>
+              )}
             </div>
           )}
         </CardContent>
@@ -120,24 +169,40 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
               <Gauge className="h-4 w-4 mr-2 text-primary" />
               Rendimiento Web
             </CardTitle>
-            {hasPageSpeedData ? (
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  "border",
-                  pageSpeedScore >= 90 ? "bg-green-100 text-green-800 border-green-200" :
-                  pageSpeedScore >= 50 ? "bg-amber-100 text-amber-800 border-amber-200" :
-                  "bg-red-100 text-red-800 border-red-200"
-                )}
-              >
-                {pageSpeedScore >= 90 ? "Rápido" : 
-                 pageSpeedScore >= 50 ? "Medio" : "Lento"}
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
-                No analizado
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {hasPageSpeedData ? (
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "border",
+                    pageSpeedScore >= 90 ? "bg-green-100 text-green-800 border-green-200" :
+                    pageSpeedScore >= 50 ? "bg-amber-100 text-amber-800 border-amber-200" :
+                    "bg-red-100 text-red-800 border-red-200"
+                  )}
+                >
+                  {pageSpeedScore >= 90 ? "Rápido" : 
+                   pageSpeedScore >= 50 ? "Medio" : "Lento"}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+                  No analizado
+                </Badge>
+              )}
+              {onRefreshPageSpeed && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={onRefreshPageSpeed}
+                  disabled={isRefreshingPageSpeed}
+                >
+                  <RefreshCw className={cn(
+                    "h-4 w-4", 
+                    isRefreshingPageSpeed && "animate-spin"
+                  )} />
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -180,9 +245,31 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
               <p className="text-sm text-muted-foreground">
                 No hay datos de rendimiento disponibles
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Realiza un análisis de velocidad para obtener información
-              </p>
+              {onRefreshPageSpeed ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3" 
+                  onClick={onRefreshPageSpeed}
+                  disabled={isRefreshingPageSpeed}
+                >
+                  {isRefreshingPageSpeed ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Analizando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Analizar rendimiento
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Actualiza los datos para obtener información
+                </p>
+              )}
             </div>
           )}
         </CardContent>
