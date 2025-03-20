@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import BlurredCard from '../ui/BlurredCard';
@@ -11,6 +12,7 @@ import ReportGeneratorStep2 from './report-steps/ReportGeneratorStep2';
 import ReportGeneratorStep3 from './report-steps/ReportGeneratorStep3';
 import ReportGeneratorStep4 from './report-steps/ReportGeneratorStep4';
 import { BusinessProfile } from '@/types/report.types';
+import usePersistentState from '@/hooks/usePersistentState';
 
 interface ReportGeneratorProps {
   clientId: string;
@@ -23,18 +25,18 @@ interface Keyword {
 }
 
 const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = usePersistentState<string>(`report-generator-url-${clientId}`, '');
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = usePersistentState<1 | 2 | 3 | 4>(`report-generator-step-${clientId}`, 1);
   const [pageSpeedData, setPageSpeedData] = useState<any>(null);
-  const [customPrompt, setCustomPrompt] = useState(() => {
-    return localStorage.getItem('default_seo_prompt') || '';
-  });
-  const [keywords, setKeywords] = useState<Keyword[]>([]);
-  const [notes, setNotes] = useState('');
-  const [businessUrl, setBusinessUrl] = useState('');
-  const [businessProfile, setBusinessProfile] = useState<Partial<BusinessProfile> | null>(null);
+  const [customPrompt, setCustomPrompt] = usePersistentState<string>('report-generator-prompt', 
+    localStorage.getItem('default_seo_prompt') || '');
+  const [keywords, setKeywords] = usePersistentState<Keyword[]>(`report-generator-keywords-${clientId}`, []);
+  const [notes, setNotes] = usePersistentState<string>(`report-generator-notes-${clientId}`, '');
+  const [businessUrl, setBusinessUrl] = usePersistentState<string>(`report-generator-business-url-${clientId}`, '');
+  const [businessProfile, setBusinessProfile] = usePersistentState<Partial<BusinessProfile> | null>(
+    `report-generator-business-profile-${clientId}`, null);
   
   const { generateReport } = useReports();
   const { getClient } = useClients();
@@ -43,6 +45,43 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const client = getClient(clientId);
   const hasGoogleApiKey = !!localStorage.getItem('google_pagespeed_api_key');
   const hasOpenAIApiKey = !!localStorage.getItem('openai_api_key');
+  
+  // Handle visibility change to persist pageSpeedData
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && pageSpeedData === null) {
+        // Try to restore pageSpeedData
+        const savedData = sessionStorage.getItem(`report-generator-pagespeed-${clientId}`);
+        if (savedData) {
+          try {
+            setPageSpeedData(JSON.parse(savedData));
+          } catch (e) {
+            console.error('Error parsing saved PageSpeed data:', e);
+          }
+        }
+      } else if (pageSpeedData !== null) {
+        // Save pageSpeedData
+        sessionStorage.setItem(`report-generator-pagespeed-${clientId}`, JSON.stringify(pageSpeedData));
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [clientId, pageSpeedData]);
+  
+  // Clear persisted data on successful report generation
+  const clearPersistedData = () => {
+    sessionStorage.removeItem(`report-generator-url-${clientId}`);
+    sessionStorage.removeItem(`report-generator-step-${clientId}`);
+    sessionStorage.removeItem(`report-generator-keywords-${clientId}`);
+    sessionStorage.removeItem(`report-generator-notes-${clientId}`);
+    sessionStorage.removeItem(`report-generator-business-url-${clientId}`);
+    sessionStorage.removeItem(`report-generator-business-profile-${clientId}`);
+    sessionStorage.removeItem(`report-generator-pagespeed-${clientId}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +130,9 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         toast.success('Informe creado', {
           description: 'Informe creado exitosamente',
         });
+        
+        // Clear persisted data
+        clearPersistedData();
         
         // Small delay to ensure the report is fully saved in the database
         setTimeout(() => {

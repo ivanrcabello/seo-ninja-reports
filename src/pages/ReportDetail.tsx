@@ -7,6 +7,7 @@ import useAuth from '@/hooks/useAuth';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
 import ReportDetailContent from '@/components/reports/detail/ReportDetailContent';
+import usePersistentState from '@/hooks/usePersistentState';
 
 const ReportDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,7 +15,7 @@ const ReportDetail = () => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const initialIsEditing = searchParams.get('mode') === 'edit';
-  const [isEditing, setIsEditing] = useState(initialIsEditing);
+  const [isEditing, setIsEditing] = usePersistentState<boolean>(`report-edit-state-${id}`, initialIsEditing);
   
   const { user, loading: authLoading } = useAuth();
   const { getClient } = useClients();
