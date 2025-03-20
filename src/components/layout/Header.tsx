@@ -8,8 +8,6 @@ import { Menu, X, User, LogOut } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
 import Navbar from './Navbar';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { handleServiceError } from '@/services/api/baseService';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -19,9 +17,36 @@ const Header: React.FC = () => {
   const { user, signOut } = useAuth();
 
   useEffect(() => {
-    // Use the static logo instead of fetching from settings
-    setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+    fetchLogo();
   }, []);
+
+  const fetchLogo = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('logo_url')
+        .eq('id', 1)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching logo:', error);
+        // Fallback to static logo
+        setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+        return;
+      }
+      
+      if (data?.logo_url) {
+        setLogoUrl(data.logo_url);
+      } else {
+        // Fallback to static logo if no custom logo is set
+        setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+      }
+    } catch (error) {
+      console.error('Error fetching logo:', error);
+      // Fallback to static logo
+      setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+    }
+  };
 
   // Check if we're on the auth page to avoid showing the header
   const isAuthPage = location.pathname === '/auth';
