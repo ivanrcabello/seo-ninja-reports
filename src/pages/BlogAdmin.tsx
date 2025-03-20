@@ -5,7 +5,7 @@ import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { PlusCircle, Edit, Trash2, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Eye, CheckCircle, XCircle, Info } from 'lucide-react';
 import { BlogPost, fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, generateSlugFromTitle } from '@/services/api/blogService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -211,6 +211,57 @@ const BlogAdmin = () => {
       </Layout>
     );
   }
+
+  const insertHtmlTag = (fieldName: 'content' | 'excerpt', tag: string) => {
+    const textarea = document.getElementById(fieldName) as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = formData[fieldName].substring(start, end);
+    let newText = '';
+
+    switch (tag) {
+      case 'b':
+        newText = `<strong>${selectedText}</strong>`;
+        break;
+      case 'i':
+        newText = `<em>${selectedText}</em>`;
+        break;
+      case 'h2':
+        newText = `<h2>${selectedText}</h2>`;
+        break;
+      case 'h3':
+        newText = `<h3>${selectedText}</h3>`;
+        break;
+      case 'p':
+        newText = `<p>${selectedText}</p>`;
+        break;
+      case 'ul':
+        newText = `<ul>\n  <li>${selectedText}</li>\n</ul>`;
+        break;
+      case 'ol':
+        newText = `<ol>\n  <li>${selectedText}</li>\n</ol>`;
+        break;
+      case 'li':
+        newText = `<li>${selectedText}</li>`;
+        break;
+      case 'a':
+        newText = `<a href="URL" target="_blank">${selectedText}</a>`;
+        break;
+      default:
+        newText = selectedText;
+    }
+
+    const newContent = formData[fieldName].substring(0, start) + newText + formData[fieldName].substring(end);
+    setFormData(prev => ({ ...prev, [fieldName]: newContent }));
+
+    // Set the cursor position after the operation
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + newText.length, start + newText.length);
+    }, 0);
+  };
 
   return (
     <Layout>
@@ -492,27 +543,316 @@ const BlogAdmin = () => {
                     
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor="excerpt" className="block text-sm font-medium mb-1">Extracto *</label>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="excerpt" className="block text-sm font-medium">Extracto *</label>
+                          <div className="flex space-x-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('excerpt', 'b')}
+                                  >
+                                    <span className="font-bold">B</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Negrita</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('excerpt', 'i')}
+                                  >
+                                    <span className="italic">I</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Cursiva</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('excerpt', 'p')}
+                                  >
+                                    <span>P</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Párrafo</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('excerpt', 'a')}
+                                  >
+                                    <span className="underline">A</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Enlace</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 px-2 py-0"
+                                  >
+                                    <Info className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Este campo admite HTML para formatear el texto. Selecciona el texto y usa los botones para aplicar formato.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
                         <textarea
                           id="excerpt"
                           name="excerpt"
                           value={formData.excerpt}
                           onChange={handleChange}
                           rows={3}
-                          className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
                           required
                         ></textarea>
                       </div>
                       
                       <div>
-                        <label htmlFor="content" className="block text-sm font-medium mb-1">Contenido *</label>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="content" className="block text-sm font-medium">Contenido *</label>
+                          <div className="flex space-x-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'h2')}
+                                  >
+                                    <span className="font-bold">H2</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Título H2</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'h3')}
+                                  >
+                                    <span className="font-bold">H3</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Título H3</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'b')}
+                                  >
+                                    <span className="font-bold">B</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Negrita</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'i')}
+                                  >
+                                    <span className="italic">I</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Cursiva</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'p')}
+                                  >
+                                    <span>P</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Párrafo</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'ul')}
+                                  >
+                                    <span>UL</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Lista no ordenada</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'ol')}
+                                  >
+                                    <span>OL</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Lista ordenada</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'li')}
+                                  >
+                                    <span>LI</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Elemento de lista</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => insertHtmlTag('content', 'a')}
+                                  >
+                                    <span className="underline">A</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Enlace</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 px-2 py-0"
+                                  >
+                                    <Info className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Este campo admite HTML para formatear el texto. Selecciona el texto y usa los botones para aplicar formato.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
                         <textarea
                           id="content"
                           name="content"
                           value={formData.content}
                           onChange={handleChange}
                           rows={10}
-                          className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
                           required
                         ></textarea>
                       </div>

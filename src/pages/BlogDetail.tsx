@@ -114,15 +114,17 @@ const BlogDetail = () => {
             
             <BlurredCard>
               <div className="p-6 sm:p-8">
-                <p className="text-lg font-medium mb-6">{post.excerpt}</p>
+                <div 
+                  className="text-lg font-medium mb-6 prose dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: post.excerpt }}
+                />
                 
                 <Separator className="mb-6" />
                 
-                <div className="prose prose-lg dark:prose-invert max-w-none">
-                  {post.content.split('\n\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4">{paragraph}</p>
-                  ))}
-                </div>
+                <div 
+                  className="prose prose-lg dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: post.content }}
+                />
               </div>
             </BlurredCard>
           </article>

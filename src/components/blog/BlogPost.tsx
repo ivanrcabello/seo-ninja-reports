@@ -34,7 +34,10 @@ const BlogPost: React.FC<BlogPostProps> = ({ post, index }) => {
               )}
             </div>
             <h3 className="text-xl font-bold mb-2">{post.title}</h3>
-            <p className="text-muted-foreground mb-4 flex-1">{post.excerpt}</p>
+            <div 
+              className="text-muted-foreground mb-4 flex-1 prose prose-sm dark:prose-invert"
+              dangerouslySetInnerHTML={{ __html: post.excerpt }}
+            />
             <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/40">
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-primary" />
