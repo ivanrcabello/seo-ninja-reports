@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Gauge, Loader2 } from 'lucide-react';
-import { fetchPageSpeedData } from '@/services/api';
+import { fetchPageSpeedData } from '@/services/api/pagespeed';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -34,8 +34,8 @@ const ClientPageSpeedTest: React.FC<ClientPageSpeedTestProps> = ({ websiteUrl, o
     try {
       const result = await fetchPageSpeedData(websiteUrl);
       
-      if (result.success && result.data) {
-        const desktopScore = Math.round(result.data.desktop.performance * 100);
+      if (result && result.desktop && result.desktop.performance !== undefined) {
+        const desktopScore = Math.round(result.desktop.performance * 100);
         setScore(desktopScore);
         
         if (onScoreUpdate) {
@@ -47,7 +47,7 @@ const ClientPageSpeedTest: React.FC<ClientPageSpeedTestProps> = ({ websiteUrl, o
         });
       } else {
         toast.error('Error al analizar el sitio', {
-          description: result.error || 'No se pudo obtener datos de rendimiento'
+          description: 'No se pudo obtener datos de rendimiento'
         });
       }
     } catch (error: any) {
@@ -117,8 +117,7 @@ const ClientPageSpeedTest: React.FC<ClientPageSpeedTestProps> = ({ websiteUrl, o
               </div>
               <Progress 
                 value={score} 
-                className="h-2"
-                indicatorClassName={getScoreColor(score)}
+                className={cn("h-2", getScoreColor(score))}
               />
             </div>
             
