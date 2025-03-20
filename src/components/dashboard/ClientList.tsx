@@ -11,6 +11,7 @@ import useClients from '@/hooks/useClients';
 import AnimatedContainer from '../ui/AnimatedContainer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Client } from '@/types/client.types';
+import usePersistentState from '@/hooks/usePersistentState';
 
 type NewClientData = Omit<Client, 'id' | 'createdAt' | 'reportsCount'> & {
   wpCredentials: {
@@ -30,7 +31,8 @@ const ClientList: React.FC = () => {
   const { clients, isLoading, addClient } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newClient, setNewClient] = useState<NewClientData>({
+  // Use persistent state for client form data
+  const [newClient, setNewClient] = usePersistentState<NewClientData>('new-client-form', {
     name: '',
     website: '',
     industry: '',

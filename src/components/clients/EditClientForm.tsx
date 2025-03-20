@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { Client } from '@/types/client.types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useEffect } from 'react';
 
 const wpCredentialsSchema = z.object({
   username: z.string().optional(),
@@ -62,6 +62,31 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, isSub
       }
     },
   });
+
+  useEffect(() => {
+    const formStateKey = `edit-client-form-${client.id}`;
+    const subscription = form.watch((value) => {
+      try {
+        sessionStorage.setItem(formStateKey, JSON.stringify(value));
+      } catch (error) {
+        console.error('Error storing form state:', error);
+      }
+    });
+    
+    try {
+      const savedState = sessionStorage.getItem(formStateKey);
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        Object.keys(parsedState).forEach(key => {
+          form.setValue(key as any, parsedState[key]);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading saved form state:', error);
+    }
+    
+    return () => subscription.unsubscribe();
+  }, [client.id, form]);
 
   return (
     <Form {...form}>
