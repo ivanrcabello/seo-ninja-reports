@@ -77,8 +77,7 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
                   </div>
                   <Progress 
                     value={businessProfile.businessRating * 20} 
-                    className="h-1.5"
-                    indicatorClassName={getRatingColor(businessProfile.businessRating)}
+                    className={cn("h-1.5", getRatingColor(businessProfile.businessRating))}
                   />
                 </div>
               )}
@@ -164,12 +163,11 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
                 </div>
                 <Progress 
                   value={pageSpeedScore} 
-                  className="h-2"
-                  indicatorClassName={
+                  className={cn("h-2", 
                     pageSpeedScore >= 90 ? "bg-green-500" :
                     pageSpeedScore >= 50 ? "bg-amber-500" :
                     "bg-red-500"
-                  }
+                  )}
                 />
               </div>
               

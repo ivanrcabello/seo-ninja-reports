@@ -45,6 +45,12 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
     setPageSpeedScore(score);
   };
   
+  // Extract business profile and pagespeed data from the report content
+  const reportBusinessProfile = latestReport?.content?.businessProfile || null;
+  const reportPageSpeedScore = latestReport?.content?.pageSpeedData?.desktop?.performance 
+    ? Math.round(latestReport.content.pageSpeedData.desktop.performance * 100) 
+    : null;
+  
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -119,10 +125,8 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
       
       {/* Visual indicators for GMB and PageSpeed */}
       <ClientPerformanceCards 
-        businessProfile={businessProfile || (latestReport?.businessProfile || null)}
-        pageSpeedScore={pageSpeedScore || (latestReport?.pagespeed?.desktop?.performance 
-          ? Math.round(latestReport.pagespeed.desktop.performance * 100) 
-          : null)}
+        businessProfile={businessProfile || reportBusinessProfile}
+        pageSpeedScore={pageSpeedScore || reportPageSpeedScore}
       />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
