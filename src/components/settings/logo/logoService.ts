@@ -146,3 +146,27 @@ export const updateLogoInSettings = async (logoUrl: string | null): Promise<void
     throw error;
   }
 };
+
+/**
+ * Deletes a logo file from storage
+ */
+export const deleteLogoFromStorage = async (logoUrl: string): Promise<void> => {
+  try {
+    const urlParts = logoUrl.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+    
+    const { error } = await supabase.storage
+      .from('logos')
+      .remove([fileName]);
+      
+    if (error) {
+      console.error('Error deleting logo from storage:', error);
+      throw error;
+    }
+    
+    console.log('Logo deleted from storage:', fileName);
+  } catch (error) {
+    console.error('Error deleting logo from storage:', error);
+    throw error;
+  }
+};
