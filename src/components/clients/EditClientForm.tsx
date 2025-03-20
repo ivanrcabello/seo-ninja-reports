@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { Client } from '@/types/client.types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useEffect } from 'react';
+import usePersistentState from '@/hooks/usePersistentState';
 
 const wpCredentialsSchema = z.object({
   username: z.string().optional(),
@@ -42,9 +42,19 @@ interface EditClientFormProps {
 }
 
 const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, isSubmitting }) => {
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientSchema),
-    defaultValues: {
+  const formStateKey = `edit-client-form-${client.id}`;
+
+  const getInitialState = (): ClientFormValues => {
+    try {
+      const savedState = sessionStorage.getItem(formStateKey);
+      if (savedState) {
+        return JSON.parse(savedState);
+      }
+    } catch (error) {
+      console.error('Error loading saved form state:', error);
+    }
+    
+    return {
       name: client.name,
       website: client.website,
       industry: client.industry || '',
@@ -60,37 +70,55 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, isSub
         password: '',
         url: ''
       }
-    },
+    };
+  };
+
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: getInitialState(),
   });
 
   useEffect(() => {
-    const formStateKey = `edit-client-form-${client.id}`;
-    const subscription = form.watch((value) => {
+    const subscription = form.watch((formValues) => {
       try {
-        sessionStorage.setItem(formStateKey, JSON.stringify(value));
+        sessionStorage.setItem(formStateKey, JSON.stringify(formValues));
       } catch (error) {
         console.error('Error storing form state:', error);
       }
     });
     
-    try {
-      const savedState = sessionStorage.getItem(formStateKey);
-      if (savedState) {
-        const parsedState = JSON.parse(savedState);
-        Object.keys(parsedState).forEach(key => {
-          form.setValue(key as any, parsedState[key]);
-        });
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const savedState = sessionStorage.getItem(formStateKey);
+          if (savedState) {
+            const parsedState = JSON.parse(savedState);
+            Object.keys(parsedState).forEach(key => {
+              form.setValue(key as any, parsedState[key]);
+            });
+          }
+        } catch (error) {
+          console.error('Error loading saved form state:', error);
+        }
       }
-    } catch (error) {
-      console.error('Error loading saved form state:', error);
-    }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    return () => subscription.unsubscribe();
-  }, [client.id, form]);
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [form, formStateKey]);
+
+  const handleFormSubmit = async (values: ClientFormValues) => {
+    await onSubmit(values);
+    sessionStorage.removeItem(formStateKey);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"

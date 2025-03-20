@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/layout/Header';
@@ -10,11 +10,13 @@ import useAuth from '@/hooks/useAuth';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
 import { Loader2 } from 'lucide-react';
+import usePersistentState from '@/hooks/usePersistentState';
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const { clients, isLoading: clientsLoading } = useClients();
   const { reports, isLoading: reportsLoading } = useReports();
+  const [lastVisitedSection, setLastVisitedSection] = usePersistentState<string>('dashboard-section', '');
 
   // Redirect if not logged in
   if (!user && !authLoading) {
@@ -27,6 +29,30 @@ const Dashboard = () => {
   const recentReportsCount = reports.filter(
     r => new Date(r.date) > new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
   ).length;
+
+  // Store page visibility state
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // When page becomes visible again, we ensure we're at the last viewed section
+      if (document.visibilityState === 'visible' && lastVisitedSection) {
+        const element = document.getElementById(lastVisitedSection);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [lastVisitedSection]);
+
+  // Track section visibility
+  const trackSectionVisibility = (sectionId: string) => {
+    setLastVisitedSection(sectionId);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -55,6 +81,7 @@ const Dashboard = () => {
                     description="Clientes activos en tu cuenta"
                     linkText="Ver todos los clientes"
                     linkUrl="#clients"
+                    onClick={() => trackSectionVisibility('clients')}
                   />
                   <DashboardCard
                     title="Total Informes"
@@ -98,15 +125,16 @@ interface DashboardCardProps {
   description: string;
   linkText: string;
   linkUrl: string;
+  onClick?: () => void;
 }
 
-const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, description, linkText, linkUrl }) => {
+const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, description, linkText, linkUrl, onClick }) => {
   return (
     <div className="glass-card rounded-xl p-6 transition-all duration-300 hover:shadow-lg">
       <h3 className="text-lg font-medium mb-1">{title}</h3>
       <p className="text-3xl font-bold mb-2">{value}</p>
       <p className="text-sm text-muted-foreground mb-4">{description}</p>
-      <Button variant="link" className="p-0 h-auto text-primary" asChild>
+      <Button variant="link" className="p-0 h-auto text-primary" asChild onClick={onClick}>
         <Link to={linkUrl}>{linkText}</Link>
       </Button>
     </div>

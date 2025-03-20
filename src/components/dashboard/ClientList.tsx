@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -29,8 +29,9 @@ type NewClientData = Omit<Client, 'id' | 'createdAt' | 'reportsCount'> & {
 
 const ClientList: React.FC = () => {
   const { clients, isLoading, addClient } = useClients();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = usePersistentState<string>('client-search-query', '');
+  // Use persistent state for dialog open state to prevent dialog from closing when tab loses focus
+  const [isDialogOpen, setIsDialogOpen] = usePersistentState<boolean>('new-client-dialog-open', false);
   // Use persistent state for client form data
   const [newClient, setNewClient] = usePersistentState<NewClientData>('new-client-form', {
     name: '',
@@ -49,8 +50,9 @@ const ClientList: React.FC = () => {
       url: ''
     }
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = usePersistentState<boolean>('new-client-submitting', false);
 
+  // Filter clients based on search query
   const filteredClients = clients.filter(client => {
     const query = searchQuery.toLowerCase();
     return (
@@ -133,6 +135,11 @@ const ClientList: React.FC = () => {
     }
   };
 
+  // Handle dialog close to ensure form data is not lost
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -154,7 +161,7 @@ const ClientList: React.FC = () => {
           />
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button className="gap-1.5">
               <Plus className="h-4 w-4" />

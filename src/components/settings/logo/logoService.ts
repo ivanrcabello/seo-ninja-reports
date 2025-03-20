@@ -8,8 +8,8 @@ export const createSettingsTableIfNeeded = async (): Promise<void> => {
   try {
     // Create the settings table if it doesn't exist
     const { data, error } = await supabase.rpc(
-      'create_settings_table_if_not_exists' as unknown as string,
-      {} as unknown as Record<string, unknown>,
+      'create_settings_table_if_not_exists' as any,
+      {} as any,
       { count: 'exact' }
     );
     
