@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -11,6 +11,23 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
+
+  // Handle visibility changes to ensure page state is preserved
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // When returning to the tab, check if we need to restore any state
+        console.log('Returned to Settings page, checking for state to restore');
+        // State restoration would happen in child components
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Redirect if not logged in
   if (!user && !authLoading) {

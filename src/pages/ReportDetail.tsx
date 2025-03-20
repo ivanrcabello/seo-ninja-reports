@@ -15,7 +15,12 @@ const ReportDetail = () => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const initialIsEditing = searchParams.get('mode') === 'edit';
-  const [isEditing, setIsEditing] = usePersistentState<boolean>(`report-edit-state-${id}`, initialIsEditing);
+  
+  // Use persistent state to maintain editing state across tab changes
+  const [isEditing, setIsEditing] = usePersistentState<boolean>(
+    `report-edit-state-${id}`, 
+    initialIsEditing
+  );
   
   const { user, loading: authLoading } = useAuth();
   const { getClient } = useClients();
@@ -33,6 +38,28 @@ const ReportDetail = () => {
     const newUrl = `${location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
     navigate(newUrl, { replace: true });
   }, [isEditing, location.pathname, navigate]);
+  
+  // Additional visibility change handling
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // When coming back to the tab, check if we need to restore state
+        const storedEditingState = sessionStorage.getItem(`report-edit-state-${id}`);
+        if (storedEditingState) {
+          const parsedState = JSON.parse(storedEditingState);
+          if (parsedState !== isEditing) {
+            setIsEditing(parsedState);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [id, isEditing, setIsEditing]);
   
   // Redirect if not logged in
   if (!user && !authLoading) {

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import usePersistentState from '@/hooks/usePersistentState';
 
 const DEFAULT_PROMPT = `Genera un informe profesional de SEO para clientes de una empresa de marketing digital, claramente estructurado y formateado en secciones específicas con títulos fáciles de entender para clientes sin conocimientos técnicos profundos. Usa lenguaje sencillo, directo y con un tono profesional, asegurando claridad y precisión.
 
@@ -74,9 +75,43 @@ const OpenAISettings: React.FC<OpenAISettingsProps> = ({
   hasConfiguredKey,
   onSave,
 }) => {
+  // Use persistent state for the form inputs
+  const [localApiKey, setLocalApiKey] = usePersistentState<string>('openai_settings_api_key', apiKey);
+  const [localPrompt, setLocalPrompt] = usePersistentState<string>('openai_settings_prompt', defaultPrompt);
+
+  // Update props when local state changes
+  useEffect(() => {
+    setApiKey(localApiKey);
+  }, [localApiKey, setApiKey]);
+
+  useEffect(() => {
+    setDefaultPrompt(localPrompt);
+  }, [localPrompt, setDefaultPrompt]);
+
+  // Update local state when props change (initial load)
+  useEffect(() => {
+    if (apiKey !== localApiKey) {
+      setLocalApiKey(apiKey);
+    }
+    if (defaultPrompt !== localPrompt) {
+      setLocalPrompt(defaultPrompt);
+    }
+  }, [apiKey, defaultPrompt]);
+
   const handleReset = () => {
-    setDefaultPrompt(DEFAULT_PROMPT);
+    setLocalPrompt(DEFAULT_PROMPT);
     toast.info('Prompt restaurado a su valor predeterminado');
+  };
+
+  const handleSaveWithPersistence = () => {
+    // Save to localStorage
+    localStorage.setItem('openai_api_key', localApiKey);
+    localStorage.setItem('default_seo_prompt', localPrompt);
+    
+    // Call the original onSave
+    onSave();
+    
+    toast.success('Configuración guardada correctamente');
   };
 
   return (
@@ -95,8 +130,8 @@ const OpenAISettings: React.FC<OpenAISettingsProps> = ({
         <Input
           id="apiKey"
           type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
+          value={localApiKey}
+          onChange={(e) => setLocalApiKey(e.target.value)}
           className="glass-input"
           placeholder="sk-..."
           required
@@ -121,14 +156,21 @@ const OpenAISettings: React.FC<OpenAISettingsProps> = ({
         </div>
         <Textarea
           id="defaultPrompt"
-          value={defaultPrompt}
-          onChange={(e) => setDefaultPrompt(e.target.value)}
+          value={localPrompt}
+          onChange={(e) => setLocalPrompt(e.target.value)}
           className="min-h-[300px] glass-input"
         />
         <p className="text-xs text-muted-foreground">
           Este prompt será utilizado como base para generar todos los informes SEO
         </p>
       </div>
+
+      <Button 
+        onClick={handleSaveWithPersistence} 
+        className="w-full"
+      >
+        Guardar configuración
+      </Button>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -23,20 +22,34 @@ const ReportEditDialog: React.FC<ReportEditDialogProps> = ({
   onSave,
   getSectionTitle
 }) => {
-  // Save the current edit content to sessionStorage when tab changes
+  // Generate a unique storage key for this section
+  const storageKey = activeSection ? `report-edit-content-${activeSection}` : null;
+  
+  // Initialize from sessionStorage when dialog opens
   useEffect(() => {
-    if (!activeSection) return;
+    if (open && activeSection && storageKey) {
+      const savedContent = sessionStorage.getItem(storageKey);
+      if (savedContent) {
+        setEditContent(savedContent);
+      }
+    }
+  }, [open, activeSection, storageKey, setEditContent]);
+
+  // Save to sessionStorage when content changes
+  useEffect(() => {
+    if (activeSection && storageKey && editContent) {
+      sessionStorage.setItem(storageKey, editContent);
+    }
+  }, [activeSection, storageKey, editContent]);
+
+  // Save content to sessionStorage when tab visibility changes
+  useEffect(() => {
+    if (!activeSection || !storageKey) return;
     
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // When coming back to the tab, try to restore from sessionStorage
-        const savedContent = sessionStorage.getItem(`report-edit-content-${activeSection}`);
-        if (savedContent) {
-          setEditContent(savedContent);
-        }
-      } else {
+      if (document.visibilityState === 'hidden' && editContent) {
         // When leaving the tab, save the current content
-        sessionStorage.setItem(`report-edit-content-${activeSection}`, editContent);
+        sessionStorage.setItem(storageKey, editContent);
       }
     };
 
@@ -45,15 +58,28 @@ const ReportEditDialog: React.FC<ReportEditDialogProps> = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [activeSection, editContent, setEditContent]);
+  }, [activeSection, storageKey, editContent]);
 
   // Clean up stored content when dialog is closed
   useEffect(() => {
-    if (!open && activeSection) {
-      // When dialog is closed, remove the saved content from sessionStorage
-      sessionStorage.removeItem(`report-edit-content-${activeSection}`);
+    if (!open && activeSection && storageKey) {
+      // Only remove if the dialog is closed by saving (not by canceling)
+      // We'll handle this in the onSave function
     }
-  }, [open, activeSection]);
+  }, [open, activeSection, storageKey]);
+
+  const handleSave = () => {
+    onSave();
+    // After saving, we can remove the temporary storage
+    if (storageKey) {
+      sessionStorage.removeItem(storageKey);
+    }
+  };
+
+  const handleCancel = () => {
+    onOpenChange(false);
+    // Keep the content in storage when canceling in case user accidentally closed the dialog
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,8 +98,8 @@ const ReportEditDialog: React.FC<ReportEditDialogProps> = ({
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={onSave}>Guardar cambios</Button>
+          <Button variant="outline" onClick={handleCancel}>Cancelar</Button>
+          <Button onClick={handleSave}>Guardar cambios</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

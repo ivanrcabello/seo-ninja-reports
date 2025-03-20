@@ -31,6 +31,48 @@ export function usePersistentState<T>(key: string, initialValue: T): [T, (value:
     }
   }, [key, value]);
 
+  // Handle visibility change events
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // When tab becomes visible again, check if the value was updated in another tab
+      if (document.visibilityState === 'visible') {
+        try {
+          const storedValue = sessionStorage.getItem(key);
+          if (storedValue !== null) {
+            const parsedValue = JSON.parse(storedValue);
+            // Only update if the value is different to avoid unnecessary renders
+            if (JSON.stringify(parsedValue) !== JSON.stringify(value)) {
+              setValue(parsedValue);
+            }
+          }
+        } catch (error) {
+          console.error('Error handling visibility change:', error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Add storage event listener to detect changes in other tabs
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === key && event.newValue) {
+        try {
+          const newValue = JSON.parse(event.newValue);
+          setValue(newValue);
+        } catch (error) {
+          console.error('Error handling storage change:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [key, value, setValue]);
+
   return [value, setValue];
 }
 
