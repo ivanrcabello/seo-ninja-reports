@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -7,12 +7,33 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
 import Navbar from './Navbar';
+import { supabase } from '@/integrations/supabase/client';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const location = useLocation();
   const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    fetchLogo();
+  }, []);
+
+  const fetchLogo = async () => {
+    try {
+      const { data: settings } = await supabase
+        .from('settings')
+        .select('logo_url')
+        .single();
+      
+      if (settings?.logo_url) {
+        setLogoUrl(settings.logo_url);
+      }
+    } catch (error) {
+      console.error('Error fetching logo:', error);
+    }
+  };
 
   // Check if we're on the auth page to avoid showing the header
   const isAuthPage = location.pathname === '/auth';
@@ -26,9 +47,18 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
-              SoySeoLocal.com
-            </span>
+            {logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt="SoySeoLocal.com" 
+                className="h-10 w-auto object-contain"
+                onError={() => setLogoUrl(null)}
+              />
+            ) : (
+              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
+                SoySeoLocal.com
+              </span>
+            )}
           </Link>
 
           {isMobile ? (

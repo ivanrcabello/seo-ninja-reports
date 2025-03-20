@@ -18,6 +18,10 @@ import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
 import Settings from '@/pages/Settings';
 import Servicios from './pages/Servicios';
+import SeoLocal from './pages/servicios/SeoLocal';
+import SeoTecnico from './pages/servicios/SeoTecnico';
+import SeoIA from './pages/servicios/SeoIA';
+import ContenidoSeo from './pages/servicios/ContenidoSeo';
 import Paquetes from './pages/Paquetes';
 import PackStarter from './pages/packs/PackStarter';
 import PackAscenso from './pages/packs/PackAscenso';
@@ -54,6 +58,10 @@ const App = () => (
                 <Route path="/activity" element={<Activity />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/servicios" element={<Servicios />} />
+                <Route path="/servicios/seo-local" element={<SeoLocal />} />
+                <Route path="/servicios/seo-tecnico" element={<SeoTecnico />} />
+                <Route path="/servicios/seo-ia" element={<SeoIA />} />
+                <Route path="/servicios/contenido-seo" element={<ContenidoSeo />} />
                 <Route path="/paquetes" element={<Paquetes />} />
                 <Route path="/paquetes/starter" element={<PackStarter />} />
                 <Route path="/paquetes/ascenso" element={<PackAscenso />} />

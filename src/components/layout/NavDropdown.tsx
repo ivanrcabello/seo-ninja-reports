@@ -62,25 +62,25 @@ const NavDropdown: React.FC<NavDropdownProps> = ({ title, items, open, setOpen }
 
 const renderServiceItems = () => [
   {
-    href: "/servicios#seo-local",
+    href: "/servicios/seo-local",
     label: "SEO Local",
     description: "Mejora la visibilidad de tu negocio en búsquedas locales",
     icon: <Compass className="h-4 w-4 text-primary" />,
   },
   {
-    href: "/servicios#seo-tecnico",
+    href: "/servicios/seo-tecnico",
     label: "SEO Técnico",
     description: "Optimización técnica de tu sitio web para buscadores",
     icon: <Code className="h-4 w-4 text-primary" />,
   },
   {
-    href: "/servicios#ia-seo",
+    href: "/servicios/seo-ia",
     label: "SEO con IA",
     description: "Análisis y estrategias impulsadas por inteligencia artificial",
     icon: <Cpu className="h-4 w-4 text-primary" />,
   },
   {
-    href: "/servicios#contenido-seo",
+    href: "/servicios/contenido-seo",
     label: "Contenido SEO",
     description: "Creación de contenido optimizado para buscadores",
     icon: <FileText className="h-4 w-4 text-primary" />,
