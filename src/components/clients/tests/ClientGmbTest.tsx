@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Search, AlertCircle, CheckCircle, Globe } from 'lucide-react';
+import { MapPin, Search, AlertCircle, CheckCircle, Globe, Info } from 'lucide-react';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData'; 
 import { toast } from 'sonner';
@@ -23,6 +23,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
   const [error, setError] = useState<string | null>(null);
   const [businessProfile, setBusinessProfile] = useState<Partial<BusinessProfile> | null>(null);
   const [useWebsite, setUseWebsite] = useState(false);
+  const [isSimulated, setIsSimulated] = useState(false);
   
   const handleAnalyze = async () => {
     if (useWebsite && clientWebsite) {
@@ -45,6 +46,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
     
     setIsAnalyzing(true);
     setError(null);
+    setIsSimulated(false);
     
     try {
       const profileData = await extractGmbData(clientWebsite, false);
@@ -52,11 +54,23 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
       if (profileData) {
         setBusinessProfile(profileData);
         
+        // Check if the data is from simulation (we can tell by checking if the name contains "ejemplo")
+        const isMockData = profileData.businessName?.includes('ejemplo') || 
+                          profileData.businessName === 'Negocio de ejemplo';
+                          
+        setIsSimulated(isMockData);
+        
         if (onProfileUpdate) {
           onProfileUpdate(profileData);
         }
         
-        toast.success('Perfil analizado correctamente');
+        if (isMockData) {
+          toast.warning('Se están usando datos simulados', {
+            description: 'No se pudo encontrar un perfil de GMB para este sitio web'
+          });
+        } else {
+          toast.success('Perfil analizado correctamente');
+        }
       } else {
         setError('No se pudo extraer información');
         toast.error('Error al analizar perfil');
@@ -64,6 +78,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
     } catch (error: any) {
       setError(error.message || 'Error al analizar perfil');
       toast.error('Error al analizar perfil');
+      setIsSimulated(true);
     } finally {
       setIsAnalyzing(false);
     }
@@ -80,6 +95,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
     
     setIsAnalyzing(true);
     setError(null);
+    setIsSimulated(false);
     
     try {
       const profileData = await extractBusinessInfo(businessUrl);
@@ -87,11 +103,23 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
       if (profileData) {
         setBusinessProfile(profileData);
         
+        // Check if the data is from simulation (we can tell by checking if the name contains "ejemplo")
+        const isMockData = profileData.businessName?.includes('ejemplo') || 
+                          profileData.businessName === 'Negocio de ejemplo';
+                          
+        setIsSimulated(isMockData);
+        
         if (onProfileUpdate) {
           onProfileUpdate(profileData);
         }
         
-        toast.success('Perfil analizado correctamente');
+        if (isMockData) {
+          toast.warning('Se están usando datos simulados', {
+            description: 'No se pudieron extraer datos reales del perfil'
+          });
+        } else {
+          toast.success('Perfil analizado correctamente');
+        }
       } else {
         setError('No se pudo extraer información');
         toast.error('Error al analizar perfil');
@@ -99,6 +127,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
     } catch (error: any) {
       setError(error.message || 'Error al analizar perfil');
       toast.error('Error al analizar perfil');
+      setIsSimulated(true);
     } finally {
       setIsAnalyzing(false);
     }
@@ -197,11 +226,15 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
         )}
         
         {businessProfile && (
-          <div className="mt-4 p-4 rounded-md bg-primary/5 border border-primary/10">
+          <div className={`mt-4 p-4 rounded-md ${isSimulated ? 'bg-amber-50 border border-amber-200' : 'bg-primary/5 border border-primary/10'}`}>
             <div className="flex items-start gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+              {isSimulated ? (
+                <Info className="h-5 w-5 text-amber-600 mt-0.5" />
+              ) : (
+                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+              )}
               <div>
-                <h4 className="font-medium">Información detectada</h4>
+                <h4 className="font-medium">{isSimulated ? "Datos simulados" : "Información detectada"}</h4>
                 <ul className="mt-2 space-y-1 text-sm">
                   {businessProfile.businessName && (
                     <li>Nombre: <span className="font-medium">{businessProfile.businessName}</span></li>
@@ -216,6 +249,11 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
                     <li>Dirección: <span className="font-medium">{businessProfile.businessAddress}</span></li>
                   )}
                 </ul>
+                {isSimulated && (
+                  <p className="mt-2 text-xs text-amber-600">
+                    Estos son datos simulados. Para obtener datos reales, proporciona una URL directa al perfil de GMB.
+                  </p>
+                )}
               </div>
             </div>
           </div>

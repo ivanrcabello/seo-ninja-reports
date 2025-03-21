@@ -12,27 +12,26 @@ export const extractGmbData = async (
   isGmbUrl: boolean = false
 ): Promise<Partial<BusinessProfile> | null> => {
   try {
-    // Si es una URL de sitio web, intentamos primero con nuestros datos simulados
-    // En producción, esto podría ser reemplazado por un servicio que busque
-    // el perfil GMB asociado a un sitio web
+    // Si es una URL de sitio web, intentamos buscar el perfil GMB asociado
     if (!isGmbUrl) {
       console.log('Extracting GMB data from website URL:', urlOrWebsite);
       toast.info('Buscando perfil de Google Business', {
         description: 'Intentando localizar datos para este negocio',
       });
       
-      // En un entorno real, aquí consultaríamos una API que pueda encontrar
-      // perfiles GMB basados en dominio o se utilizaría una API como Google Places
+      // Aquí en un futuro podríamos implementar una función que busque
+      // perfiles GMB basados en el dominio del sitio web
+      // Por ahora, usamos datos simulados
       const mockData = simulateBusinessProfileData(urlOrWebsite);
       
-      toast.warning('Datos simulados generados', {
+      toast.warning('No se pudo encontrar perfil de GMB', {
         description: 'Se han generado datos simulados para demostración',
       });
       
       return mockData;
     }
     
-    // Si tenemos una URL GMB, procedemos con la extracción normal
+    // Validar URL de Google My Business
     if (!isValidGoogleBusinessUrl(urlOrWebsite)) {
       toast.error('URL no válida', {
         description: 'Debes proporcionar una URL válida de Google Maps o Google Business',
@@ -49,11 +48,10 @@ export const extractGmbData = async (
     // Intentos máximos para obtener datos
     const maxRetries = 2;
     let attempts = 0;
-    let data = null;
     let error = null;
     
     // Intentar hasta tener éxito o agotar intentos
-    while (attempts < maxRetries && !data) {
+    while (attempts < maxRetries) {
       attempts++;
       console.log(`Intento ${attempts} de extraer información de GMB`);
       
@@ -73,12 +71,25 @@ export const extractGmbData = async (
         }
         
         const responseData = await result.json();
-        data = responseData;
         
         if (!responseData.success) {
-          error = new Error(responseData.error || 'Error desconocido en la extracción de datos');
+          throw new Error(responseData.error || 'Error desconocido en la extracción de datos');
         }
-      } catch (requestError) {
+        
+        console.log('Business profile data extracted:', responseData.data);
+        
+        // Validate received data
+        if (!responseData.data.businessName && !responseData.data.businessAddress) {
+          throw new Error('No se pudo extraer información esencial del negocio');
+        }
+        
+        toast.success('Información extraída correctamente', {
+          description: 'Se ha obtenido información del perfil de negocio',
+        });
+        
+        return responseData.data as Partial<BusinessProfile>;
+        
+      } catch (requestError: any) {
         console.error(`Error en intento ${attempts}:`, requestError);
         error = requestError;
         
@@ -89,51 +100,14 @@ export const extractGmbData = async (
       }
     }
     
-    if (error) {
-      console.error('Error final al extraer datos de GMB:', error);
-      toast.error('Error en extracción de datos', {
-        description: error.message || 'No se pudo extraer información del perfil',
-      });
-      return simulateBusinessProfileData(urlOrWebsite);
-    }
-    
-    if (!data || !data.success) {
-      console.error('Invalid response from scrape-business function:', data);
-      toast.error('Error en extracción de datos', {
-        description: 'No se pudo extraer información del perfil',
-      });
-      return simulateBusinessProfileData(urlOrWebsite);
-    }
-    
-    console.log('Business profile data extracted:', data.data);
-    
-    // Validate received data
-    if (!data.data.businessName && !data.data.businessAddress) {
-      console.log('No significant business data received, using simulated data');
-      const mockData = simulateBusinessProfileData(urlOrWebsite);
-      
-      toast.warning('Información simulada generada', {
-        description: 'Se ha simulado información del perfil para demostración',
-      });
-      
-      return {
-        businessUrl: mockData.businessUrl,
-        businessName: mockData.businessName,
-        businessAddress: mockData.businessAddress,
-        businessPhone: mockData.businessPhone,
-        businessCategory: mockData.businessCategory,
-        businessRating: mockData.businessRating,
-        businessReviewsCount: mockData.businessReviewsCount,
-        businessWebsite: mockData.businessWebsite,
-        businessHours: mockData.businessHours
-      };
-    }
-    
-    toast.success('Información extraída correctamente', {
-      description: 'Se ha obtenido información del perfil de negocio',
+    // Si llegamos aquí, todos los intentos fallaron
+    console.error('Error final al extraer datos de GMB:', error);
+    toast.error('Error en extracción de datos', {
+      description: error?.message || 'No se pudo extraer información del perfil',
     });
     
-    return data.data as Partial<BusinessProfile>;
+    // Devolver datos simulados como último recurso
+    return simulateBusinessProfileData(urlOrWebsite);
     
   } catch (error: any) {
     console.error('Error extracting business information:', error);

@@ -35,7 +35,7 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
     console.log(`Fetching HTML content from: ${finalUrl}`);
     const response = await fetch(finalUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
         'Cache-Control': 'no-cache',
@@ -46,29 +46,25 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
     
     if (!response.ok) {
       console.error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-      console.log('Returning simulated data due to fetch error');
-      return simulateBusinessProfileData(url);
+      throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
     }
     
     const html = await response.text();
-    console.log(`Fetched HTML content: ${html.length} characters`);
-    
-    // Log a small sample of the HTML for debugging
-    console.log('HTML sample:', html.substring(0, 500) + '...');
+    console.log(`Fetched HTML content length: ${html.length} characters`);
     
     // Check if the HTML content is valid
     if (!html || html.length < 500) {
       console.error('Invalid HTML content received, possibly blocked by Google');
-      return simulateBusinessProfileData(url);
+      throw new Error('Invalid HTML content received, possibly blocked by Google');
     }
+    
+    // Use Cheerio to parse the HTML
+    const $ = cheerio.load(html);
     
     // Create BusinessData object with the original URL
     const businessData: BusinessProfileData = {
       businessUrl: url
     };
-    
-    // Use Cheerio to parse the HTML
-    const $ = cheerio.load(html);
     
     // Extract business name
     businessData.businessName = extractBusinessName($);
@@ -98,12 +94,12 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
     
     // Extract hours
     businessData.businessHours = extractBusinessHours($);
-    console.log(`Extracted business hours: ${JSON.stringify(businessData.businessHours, null, 2)}`);
+    console.log(`Extracted business hours:`, businessData.businessHours);
     
-    // If no significant data was extracted, use simulated data for development
+    // If no significant data was extracted, throw an error
     if (!businessData.businessName && !businessData.businessAddress) {
-      console.log("Could not extract real information, using simulated data");
-      return simulateBusinessProfileData(url);
+      console.error("Could not extract real information");
+      throw new Error("Could not extract essential business information");
     }
     
     console.log("Profile data extraction complete:", businessData);
@@ -111,9 +107,6 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
     
   } catch (error) {
     console.error(`Error scraping ${url}:`, error);
-    
-    // In case of error, return simulated data for development
-    console.log("Error during scraping, using simulated data");
-    return simulateBusinessProfileData(url);
+    throw error; // Let the calling function handle the error and decide if simulation is needed
   }
 }

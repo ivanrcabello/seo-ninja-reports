@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Store, Check, Search, AlertTriangle } from 'lucide-react';
+import { Store, Check, Search, AlertTriangle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { BusinessProfile } from '@/types/report.types';
@@ -24,10 +24,12 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isSimulated, setIsSimulated] = useState(false);
   
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusinessUrl(e.target.value);
     setHasError(false);
+    setIsSimulated(false);
   };
   
   const analyzeBusinessUrl = async () => {
@@ -46,6 +48,7 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
     
     setIsAnalyzing(true);
     setHasError(false);
+    setIsSimulated(false);
     
     try {
       // Use the extractBusinessInfo function to get profile information
@@ -55,10 +58,15 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
         setBusinessProfile(profileData);
         console.log('Perfil de negocio extraído:', profileData);
         
-        // Check if the data is meaningful
-        if (!profileData.businessName && !profileData.businessAddress) {
-          toast.warning('Datos limitados obtenidos', {
-            description: 'Se han obtenido datos simulados para demostración'
+        // Check if the data is from simulation (we can tell by checking if the name contains "ejemplo")
+        const isMockData = profileData.businessName?.includes('ejemplo') || 
+                           profileData.businessName === 'Negocio de ejemplo';
+                           
+        setIsSimulated(isMockData);
+        
+        if (isMockData) {
+          toast.warning('Datos simulados obtenidos', {
+            description: 'Se están mostrando datos de ejemplo'
           });
         } else {
           toast.success('Información extraída correctamente');
@@ -71,6 +79,7 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
       }
     } catch (error: any) {
       setHasError(true);
+      setIsSimulated(true);
       console.error('Error al analizar URL:', error);
       toast.error('Error al analizar URL', {
         description: error.message || 'No se pudo extraer información'
@@ -118,16 +127,25 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
       </div>
       
       {businessProfile && (
-        <Card className={`p-4 ${hasError ? 'bg-red-50 border-red-200' : 'bg-primary/5 border-primary/20'}`}>
+        <Card className={`p-4 ${hasError ? 'bg-red-50 border-red-200' : isSimulated ? 'bg-amber-50 border-amber-200' : 'bg-primary/5 border-primary/20'}`}>
           <div className="flex items-start gap-3">
-            <div className={`${hasError ? 'bg-red-500/20' : 'bg-green-500/20'} p-1.5 rounded-full mt-0.5`}>
+            <div className={`${hasError ? 'bg-red-500/20' : isSimulated ? 'bg-amber-500/20' : 'bg-green-500/20'} p-1.5 rounded-full mt-0.5`}>
               {hasError ? 
                 <AlertTriangle className="h-4 w-4 text-red-600" /> : 
+                isSimulated ?
+                <Info className="h-4 w-4 text-amber-600" /> :
                 <Check className="h-4 w-4 text-green-600" />
               }
             </div>
             <div className="flex-1">
-              <h4 className="font-medium text-md">{hasError ? 'Datos limitados' : 'Información detectada'}</h4>
+              <h4 className="font-medium text-md">
+                {hasError 
+                  ? 'Datos limitados' 
+                  : isSimulated 
+                    ? 'Datos simulados' 
+                    : 'Información detectada'
+                }
+              </h4>
               <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                 {businessProfile.businessName && (
                   <li>Nombre: <span className="text-foreground">{businessProfile.businessName}</span></li>
@@ -142,8 +160,8 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
                   <li>Dirección: <span className="text-foreground">{businessProfile.businessAddress}</span></li>
                 )}
               </ul>
-              {hasError && (
-                <p className="mt-2 text-xs text-red-600">
+              {(hasError || isSimulated) && (
+                <p className="mt-2 text-xs text-amber-600">
                   Nota: Se están utilizando datos simulados. Para obtener datos reales, asegúrate de proporcionar una URL válida de Google Business.
                 </p>
               )}
