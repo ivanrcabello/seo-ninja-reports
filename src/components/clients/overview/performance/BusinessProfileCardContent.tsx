@@ -36,15 +36,24 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
     }
   }, [clientId]);
   
+  // Update display profile when businessProfile prop changes
   useEffect(() => {
-    if (businessProfile) {
+    if (businessProfile && !isSimulatedData(businessProfile)) {
+      // Only update from props if it's not simulated data
       setDisplayProfile(businessProfile);
-      console.log("Perfil de negocio actualizado en BusinessProfileCardContent:", businessProfile);
+      console.log("Received non-simulated business profile from props:", businessProfile);
     }
   }, [businessProfile]);
   
+  const isSimulatedData = (profile: Partial<BusinessProfile>) => {
+    return profile?.businessName === 'Negocio de ejemplo' || 
+           profile?.businessName?.includes('ejemplo');
+  };
+  
   const fetchLatestBusinessListing = async (clientId: string) => {
     try {
+      console.log("Fetching latest business listing for client:", clientId);
+      
       const { data, error } = await supabase
         .from('google_business_listings')
         .select('*')
@@ -57,9 +66,18 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
         return;
       }
       
+      console.log("Fetched business listing data:", data);
+      
       if (data && data.length > 0) {
         // Convert the database record to BusinessProfile format
         const listing = data[0];
+        
+        // Ensure the data is not simulated
+        if (listing.title === 'Negocio de ejemplo' || listing.title?.includes('ejemplo')) {
+          console.log("Skipping simulated data from database");
+          return;
+        }
+        
         const profile: Partial<BusinessProfile> = {
           businessName: listing.title,
           businessAddress: listing.address,
@@ -68,11 +86,13 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
           businessReviewsCount: listing.reviews,
           businessHours: listing.hours ? { "Hours": listing.hours } : {},
           businessWebsite: listing.website,
-          businessUrl: `https://www.google.com/maps/place/?q=place_id:${listing.place_id}`
+          businessUrl: listing.place_id ? `https://www.google.com/maps/place/?q=place_id:${listing.place_id}` : undefined
         };
         
         setDisplayProfile(profile);
-        console.log("Loaded business profile from database:", profile);
+        console.log("Loaded real business profile from database:", profile);
+      } else {
+        console.log("No business listings found in database");
       }
     } catch (error) {
       console.error('Error in fetchLatestBusinessListing:', error);
@@ -100,10 +120,21 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
     saveBusinessProfileData(displayProfile);
   };
 
+  // Handle refresh explicitly
+  const handleRefresh = () => {
+    onRefreshBusinessProfile();
+    // Refetch from database after a short delay to allow data to be updated
+    if (clientId) {
+      setTimeout(() => {
+        fetchLatestBusinessListing(clientId);
+      }, 1000);
+    }
+  };
+
   if (!hasData) {
     return (
       <BusinessProfileEmptyState
-        onRefreshBusinessProfile={onRefreshBusinessProfile}
+        onRefreshBusinessProfile={handleRefresh}
         isRefreshingBusinessProfile={isRefreshingBusinessProfile}
       />
     );
@@ -119,7 +150,7 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
       />
 
       <BusinessProfileActions 
-        onRefreshBusinessProfile={onRefreshBusinessProfile}
+        onRefreshBusinessProfile={handleRefresh}
         isRefreshingBusinessProfile={isRefreshingBusinessProfile}
         saveBusinessProfileData={handleSaveBusinessProfile}
       />

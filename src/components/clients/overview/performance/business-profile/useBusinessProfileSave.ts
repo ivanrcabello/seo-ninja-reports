@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { BusinessProfile } from '@/types/report.types';
 import { saveBusinessProfile } from '@/services/api/businessProfile/saveBusinessProfile';
@@ -14,10 +13,20 @@ export const useBusinessProfileSave = (clientId?: string) => {
       toast.error("No se puede guardar: faltan datos");
       return;
     }
+    
+    // Don't save simulated data
+    if (displayProfile.businessName === 'Negocio de ejemplo' || 
+        displayProfile.businessName?.includes('ejemplo')) {
+      toast.error("No se pueden guardar datos simulados");
+      console.error("Attempted to save simulated data, operation aborted");
+      return;
+    }
 
     setIsSaving(true);
 
     try {
+      console.log("Saving business profile data:", displayProfile);
+      
       // Save to Google Business Listings table
       await saveToBusinessListings(clientId, displayProfile);
       
@@ -66,21 +75,47 @@ export const useBusinessProfileSave = (clientId?: string) => {
         hours: typeof profile.businessHours === 'object' ? 
           JSON.stringify(profile.businessHours) : (profile.businessHours || ''),
         website: profile.businessWebsite || '',
-        place_id: placeId
+        place_id: placeId,
+        updated_at: new Date().toISOString() // Explicitly set updated_at
       };
       
-      // Save to the database
-      const { data, error } = await supabase
+      // First check if we already have a record for this client
+      const { data: existingData, error: checkError } = await supabase
         .from('google_business_listings')
-        .insert(listingData)
-        .select();
+        .select('id')
+        .eq('client_id', clientId)
+        .order('updated_at', { ascending: false })
+        .limit(1);
         
-      if (error) {
-        throw new Error(`Error saving to business listings: ${error.message}`);
+      if (checkError) {
+        console.error('Error checking existing listings:', checkError);
+        throw new Error(`Error checking existing listings: ${checkError.message}`);
       }
       
-      console.log('Saved to google_business_listings:', data);
-      return data;
+      let result;
+      
+      // Update if exists, insert if not
+      if (existingData && existingData.length > 0) {
+        console.log('Updating existing business listing record');
+        result = await supabase
+          .from('google_business_listings')
+          .update(listingData)
+          .eq('id', existingData[0].id)
+          .select();
+      } else {
+        console.log('Inserting new business listing record');
+        result = await supabase
+          .from('google_business_listings')
+          .insert(listingData)
+          .select();
+      }
+      
+      if (result.error) {
+        throw new Error(`Error saving to business listings: ${result.error.message}`);
+      }
+      
+      console.log('Saved to google_business_listings:', result.data);
+      return result.data;
     } catch (error) {
       console.error('Error in saveToBusinessListings:', error);
       throw error;
