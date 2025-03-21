@@ -34,7 +34,7 @@ export const extractValueserpData = async (
       .from('settings')
       .select('value_serp_key')
       .eq('id', 1)
-      .single();
+      .maybeSingle();
     
     if (settingsError) {
       console.error('Error obteniendo la clave API de ValueSerp:', settingsError);

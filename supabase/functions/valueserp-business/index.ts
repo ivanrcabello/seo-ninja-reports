@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
           .from('settings')
           .select('value_serp_key')
           .eq('id', 1)
-          .single();
+          .maybeSingle();
           
         if (!error && data?.value_serp_key) {
           console.log('Using API key from settings');
@@ -72,16 +72,15 @@ Deno.serve(async (req) => {
 
     console.log(`Searching for business data using ValueSerp API: ${query || place_id}`);
     
-    // Prepare params for ValueSerp API
+    // Prepare params for ValueSerp API according to documentation
     const params = new URLSearchParams({
       api_key: apiKey,
       q: query || `place_id:${place_id}`,
-      google_domain: 'google.com',
+      google_domain: 'google.es',
       location: 'Spain',
       gl: 'es',
       hl: 'es',
-      output: 'json',
-      include_fields: 'local_results,knowledge_graph',
+      search_type: 'places',  // Important: specify places search type
     });
 
     // Call ValueSerp API
@@ -193,8 +192,44 @@ function extractBusinessDataFromValueSerp(data: any, searchQuery: string): Busin
     businessHours: {}
   };
   
-  // Try to extract from knowledge graph first (most detailed)
-  if (data.knowledge_graph) {
+  // Extract place data from places_results which is the correct field for places search
+  if (data.places_results && data.places_results.length > 0) {
+    const place = data.places_results[0]; // Use the first (most relevant) result
+    
+    businessData.businessName = place.title || '';
+    businessData.businessAddress = place.address || '';
+    businessData.businessCategory = place.type || '';
+    businessData.businessPhone = place.phone || '';
+    businessData.businessWebsite = place.website || '';
+    
+    if (place.rating) {
+      businessData.businessRating = parseFloat(place.rating) || null;
+    }
+    
+    if (place.reviews) {
+      businessData.businessReviewsCount = parseInt(place.reviews) || 0;
+    }
+    
+    // Extract hours if available
+    if (place.hours && typeof place.hours === 'object') {
+      businessData.businessHours = place.hours;
+    } else if (place.hours_table && Array.isArray(place.hours_table)) {
+      const hoursObj: Record<string, string> = {};
+      place.hours_table.forEach((item: any) => {
+        if (item.day && item.hours) {
+          hoursObj[item.day] = item.hours;
+        }
+      });
+      businessData.businessHours = hoursObj;
+    }
+    
+    // URL might be in the place_id or directions link
+    businessData.businessUrl = place.place_id 
+      ? `https://www.google.com/maps/place/?q=place_id:${place.place_id}` 
+      : (place.directions || '');
+  } 
+  // Fallback to knowledge_graph if available
+  else if (data.knowledge_graph) {
     const kg = data.knowledge_graph;
     
     businessData.businessName = kg.title || '';
@@ -228,34 +263,27 @@ function extractBusinessDataFromValueSerp(data: any, searchQuery: string): Busin
     // URL might be in the knowledge graph
     businessData.businessUrl = kg.google_map_url || '';
   }
-  
-  // If no data from knowledge graph, try local results
-  if ((!businessData.businessName || !businessData.businessAddress) && 
-      data.local_results && data.local_results.results) {
+  // Fallback to local_results if available
+  else if (data.local_results && data.local_results.results && data.local_results.results.length > 0) {
+    const result = data.local_results.results[0]; // Use the first (most relevant) result
     
-    // Find the most relevant result
-    const results = data.local_results.results;
-    if (results.length > 0) {
-      const result = results[0]; // Use the first (most relevant) result
-      
-      businessData.businessName = businessData.businessName || result.title || '';
-      businessData.businessAddress = businessData.businessAddress || result.address || '';
-      businessData.businessPhone = businessData.businessPhone || result.phone || '';
-      businessData.businessWebsite = businessData.businessWebsite || result.website || '';
-      
-      if (!businessData.businessRating && result.rating) {
-        businessData.businessRating = parseFloat(result.rating) || null;
-      }
-      
-      if (!businessData.businessReviewsCount && result.reviews) {
-        businessData.businessReviewsCount = parseInt(result.reviews) || 0;
-      }
-      
-      // URL might be in the place_id or directions link
-      businessData.businessUrl = businessData.businessUrl || (result.place_id 
-        ? `https://www.google.com/maps/place/?q=place_id:${result.place_id}` 
-        : (result.directions || ''));
+    businessData.businessName = result.title || '';
+    businessData.businessAddress = result.address || '';
+    businessData.businessPhone = result.phone || '';
+    businessData.businessWebsite = result.website || '';
+    
+    if (result.rating) {
+      businessData.businessRating = parseFloat(result.rating) || null;
     }
+    
+    if (result.reviews) {
+      businessData.businessReviewsCount = parseInt(result.reviews) || 0;
+    }
+    
+    // URL might be in the place_id or directions link
+    businessData.businessUrl = result.place_id 
+      ? `https://www.google.com/maps/place/?q=place_id:${result.place_id}` 
+      : (result.directions || '');
   }
   
   // If no URL was found, create a generic one from the search query
