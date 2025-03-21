@@ -12,6 +12,7 @@ import AnimatedContainer from '../ui/AnimatedContainer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Client } from '@/types/client.types';
 import usePersistentState from '@/hooks/usePersistentState';
+import { Switch } from '@/components/ui/switch';
 
 type NewClientData = Omit<Client, 'id' | 'createdAt' | 'reportsCount'> & {
   wpCredentials: {
@@ -38,6 +39,7 @@ const ClientList: React.FC = () => {
     website: '',
     industry: '',
     phoneNumber: '',
+    active: true,
     wpCredentials: {
       username: '',
       password: '',
@@ -84,6 +86,10 @@ const ClientList: React.FC = () => {
     setNewClient(prev => ({ ...prev, industry: value }));
   };
 
+  const handleActiveChange = (checked: boolean) => {
+    setNewClient(prev => ({ ...prev, active: checked }));
+  };
+
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -115,6 +121,7 @@ const ClientList: React.FC = () => {
         website: '',
         industry: '',
         phoneNumber: '',
+        active: true,
         wpCredentials: {
           username: '',
           password: '',
@@ -237,6 +244,15 @@ const ClientList: React.FC = () => {
                       <SelectItem value="Otro">Otro</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="client-active" 
+                    checked={newClient.active}
+                    onCheckedChange={handleActiveChange}
+                  />
+                  <Label htmlFor="client-active">Cliente Activo</Label>
                 </div>
                 
                 <Accordion type="single" collapsible className="w-full">

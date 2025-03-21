@@ -151,6 +151,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          active: boolean
           created_at: string
           hosting_credentials: Json | null
           id: string
@@ -163,6 +164,7 @@ export type Database = {
           wp_credentials: Json | null
         }
         Insert: {
+          active?: boolean
           created_at?: string
           hosting_credentials?: Json | null
           id?: string
@@ -175,6 +177,7 @@ export type Database = {
           wp_credentials?: Json | null
         }
         Update: {
+          active?: boolean
           created_at?: string
           hosting_credentials?: Json | null
           id?: string

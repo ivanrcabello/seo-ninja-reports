@@ -1,15 +1,16 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Pencil, Trash2, Link, ExternalLink, Toggle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Client } from '@/types/client.types';
-import { ChevronLeft, Trash2, PenLine, Loader2 } from 'lucide-react';
-import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import EditClientForm from './EditClientForm';
-import useClients from '@/hooks/useClients';
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction, AlertDialogHeader, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { Client } from '@/types/client.types';
+import EditClientForm from './EditClientForm';
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import useClients from '@/hooks/useClients';
 
 interface ClientHeaderProps {
   client: Client;
@@ -22,99 +23,122 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({
   isDeleting,
   onDeleteClient
 }) => {
+  const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isTogglingActive, setIsTogglingActive] = useState(false);
   const { updateClient } = useClients();
 
-  const handleEditSubmit = async (values: { name: string, website: string, industry: string }) => {
-    setIsSubmitting(true);
+  const copyClientUrl = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success('URL copiada al portapapeles');
+  };
+
+  const handleToggleActive = async () => {
     try {
-      await updateClient(client.id, values);
-      setIsEditDialogOpen(false);
-      toast.success('Cliente actualizado exitosamente');
-    } catch (error: any) {
-      toast.error(error.message || 'Error al actualizar cliente');
+      setIsTogglingActive(true);
+      await updateClient(client.id, { active: !client.active });
+      toast.success(`Cliente marcado como ${!client.active ? 'activo' : 'inactivo'}`);
+    } catch (error) {
+      console.error('Error toggling client active status:', error);
+      toast.error('Error actualizando estado del cliente');
     } finally {
-      setIsSubmitting(false);
+      setIsTogglingActive(false);
     }
   };
 
   return (
-    <AnimatedContainer animation="slide-up" className="mb-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/dashboard">
-              <ChevronLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary mb-1">
-              {client.industry}
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-bold">{client.name}</h1>
+    <div className="flex flex-col space-y-6 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">{client.name}</h1>
+          <div className="flex items-center mt-1.5 gap-2">
+            <a 
+              href={client.website} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+            >
+              {client.website.replace(/^https?:\/\//, '')}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <span className="text-muted-foreground mx-1">•</span>
+            <span className="text-muted-foreground">{client.industry}</span>
           </div>
         </div>
+        
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          <AlertDialog>
+          <div className="flex items-center space-x-2 mr-4">
+            <Switch 
+              id="active-status" 
+              checked={client.active}
+              onCheckedChange={handleToggleActive}
+              disabled={isTogglingActive}
+            />
+            <Label htmlFor="active-status" className={client.active ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}>
+              {client.active ? "Cliente Activo" : "Cliente Inactivo"}
+            </Label>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1.5"
+            onClick={copyClientUrl}
+          >
+            <Link className="h-4 w-4" />
+            <span className="hidden sm:inline">Copiar URL</span>
+          </Button>
+          
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Pencil className="h-4 w-4" />
+                <span className="hidden sm:inline">Editar</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl glass">
+              <EditClientForm 
+                client={client} 
+                onSuccess={() => setIsEditDialogOpen(false)} 
+              />
+            </DialogContent>
+          </Dialog>
+          
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1 text-destructive">
+              <Button variant="destructive" size="sm" className="gap-1.5">
                 <Trash2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Delete</span>
+                <span className="hidden sm:inline">Eliminar</span>
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="glass">
+            <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete {client.name} and all associated reports.
-                  This action cannot be undone.
+                  Esta acción eliminará permanentemente el cliente "{client.name}" y todos sus informes asociados. Esta acción no se puede deshacer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={onDeleteClient}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    await onDeleteClient();
+                    setIsDeleteDialogOpen(false);
+                  }}
                   disabled={isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    'Delete'
-                  )}
+                  {isDeleting ? 'Eliminando...' : 'Eliminar'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-1"
-              onClick={() => setIsEditDialogOpen(true)}
-            >
-              <PenLine className="h-4 w-4" />
-              <span className="hidden sm:inline">Edit</span>
-            </Button>
-            <DialogContent className="glass sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Editar Cliente</DialogTitle>
-              </DialogHeader>
-              <EditClientForm 
-                client={client} 
-                onSubmit={handleEditSubmit}
-                isSubmitting={isSubmitting}
-              />
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
-    </AnimatedContainer>
+    </div>
   );
 };
 

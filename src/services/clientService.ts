@@ -60,7 +60,7 @@ export async function addClientToDb(
   }
 
   try {
-    const { name, website, industry, phoneNumber, wpCredentials, hostingCredentials } = data;
+    const { name, website, industry, phoneNumber, active, wpCredentials, hostingCredentials } = data;
     
     const { data: newClient, error } = await supabase
       .from('clients')
@@ -70,6 +70,7 @@ export async function addClientToDb(
         industry,
         user_id: userId,
         phone_number: phoneNumber,
+        active,
         wp_credentials: wpCredentials || null,
         hosting_credentials: hostingCredentials || null
       })
@@ -99,6 +100,7 @@ export async function updateClientInDb(
     if (data.website !== undefined) transformedData.website = data.website;
     if (data.industry !== undefined) transformedData.industry = data.industry;
     if (data.phoneNumber !== undefined) transformedData.phone_number = data.phoneNumber;
+    if (data.active !== undefined) transformedData.active = data.active;
     if (data.wpCredentials !== undefined) transformedData.wp_credentials = data.wpCredentials;
     if (data.hostingCredentials !== undefined) transformedData.hosting_credentials = data.hostingCredentials;
     

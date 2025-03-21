@@ -1,311 +1,261 @@
-import React, { useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import * as z from 'zod';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import useClients from '@/hooks/useClients';
 import { Client } from '@/types/client.types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import usePersistentState from '@/hooks/usePersistentState';
 
-const wpCredentialsSchema = z.object({
-  username: z.string().optional(),
-  password: z.string().optional(),
-  url: z.string().url({ message: 'Debe ser una URL válida' }).optional().or(z.literal(''))
-}).optional();
-
-const hostingCredentialsSchema = z.object({
-  provider: z.string().optional(),
-  username: z.string().optional(),
-  password: z.string().optional(),
-  url: z.string().url({ message: 'Debe ser una URL válida' }).optional().or(z.literal(''))
-}).optional();
-
-const clientSchema = z.object({
-  name: z.string().min(1, { message: 'El nombre es requerido' }),
-  website: z.string().url({ message: 'Debe ser una URL válida' }),
-  industry: z.string().min(1, { message: 'Seleccione una industria' }),
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: 'El nombre debe tener al menos 2 caracteres.',
+  }),
+  website: z.string().url({
+    message: 'Por favor, introduce una URL válida.',
+  }),
+  industry: z.string().min(1, {
+    message: 'Por favor, selecciona una industria.',
+  }),
   phoneNumber: z.string().optional(),
-  wpCredentials: wpCredentialsSchema,
-  hostingCredentials: hostingCredentialsSchema
+  active: z.boolean().default(true),
+  wpUsername: z.string().optional(),
+  wpPassword: z.string().optional(),
+  wpUrl: z.string().optional(),
+  hostingProvider: z.string().optional(),
+  hostingUsername: z.string().optional(),
+  hostingPassword: z.string().optional(),
+  hostingUrl: z.string().optional(),
 });
-
-type ClientFormValues = z.infer<typeof clientSchema>;
 
 interface EditClientFormProps {
   client: Client;
-  onSubmit: (values: ClientFormValues) => Promise<void>;
-  isSubmitting: boolean;
+  onSuccess: () => void;
 }
 
-const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, isSubmitting }) => {
-  const formStateKey = `edit-client-form-${client.id}`;
-
-  const getInitialState = (): ClientFormValues => {
-    try {
-      const savedState = sessionStorage.getItem(formStateKey);
-      if (savedState) {
-        return JSON.parse(savedState);
-      }
-    } catch (error) {
-      console.error('Error loading saved form state:', error);
-    }
-    
-    return {
+const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSuccess }) => {
+  const { updateClient } = useClients();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const { 
+    register, 
+    handleSubmit, 
+    setValue, 
+    watch,
+    formState: { errors } 
+  } = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
       name: client.name,
       website: client.website,
-      industry: client.industry || '',
+      industry: client.industry,
       phoneNumber: client.phoneNumber || '',
-      wpCredentials: client.wpCredentials || {
-        username: '',
-        password: '',
-        url: ''
-      },
-      hostingCredentials: client.hostingCredentials || {
-        provider: '',
-        username: '',
-        password: '',
-        url: ''
-      }
-    };
-  };
-
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientSchema),
-    defaultValues: getInitialState(),
+      active: client.active,
+      wpUsername: client.wpCredentials?.username || '',
+      wpPassword: client.wpCredentials?.password || '',
+      wpUrl: client.wpCredentials?.url || '',
+      hostingProvider: client.hostingCredentials?.provider || '',
+      hostingUsername: client.hostingCredentials?.username || '',
+      hostingPassword: client.hostingCredentials?.password || '',
+      hostingUrl: client.hostingCredentials?.url || '',
+    }
   });
 
-  useEffect(() => {
-    const subscription = form.watch((formValues) => {
-      try {
-        sessionStorage.setItem(formStateKey, JSON.stringify(formValues));
-      } catch (error) {
-        console.error('Error storing form state:', error);
-      }
-    });
+  const activeValue = watch('active');
+  
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
     
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        try {
-          const savedState = sessionStorage.getItem(formStateKey);
-          if (savedState) {
-            const parsedState = JSON.parse(savedState);
-            Object.keys(parsedState).forEach(key => {
-              form.setValue(key as any, parsedState[key]);
-            });
-          }
-        } catch (error) {
-          console.error('Error loading saved form state:', error);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      subscription.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [form, formStateKey]);
-
-  const handleFormSubmit = async (values: ClientFormValues) => {
-    await onSubmit(values);
-    sessionStorage.removeItem(formStateKey);
+    try {
+      const updateData = {
+        name: data.name,
+        website: data.website,
+        industry: data.industry,
+        phoneNumber: data.phoneNumber,
+        active: data.active,
+        wpCredentials: data.wpUsername ? {
+          username: data.wpUsername,
+          password: data.wpPassword,
+          url: data.wpUrl
+        } : null,
+        hostingCredentials: data.hostingProvider && data.hostingUsername ? {
+          provider: data.hostingProvider,
+          username: data.hostingUsername,
+          password: data.hostingPassword,
+          url: data.hostingUrl
+        } : null
+      };
+      
+      await updateClient(client.id, updateData);
+      onSuccess();
+    } catch (error) {
+      console.error('Error updating client:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre del Cliente</FormLabel>
-              <FormControl>
-                <Input placeholder="Acme Corporation" {...field} className="glass-input" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div>
+        <Label htmlFor="name">Nombre del Cliente</Label>
+        <Input
+          id="name"
+          className="glass-input mt-1"
+          {...register('name')}
         />
-        
-        <FormField
-          control={form.control}
-          name="website"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Sitio Web</FormLabel>
-              <FormControl>
-                <Input placeholder="https://ejemplo.com" {...field} className="glass-input" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        {errors.name && (
+          <p className="text-destructive text-sm mt-1">{errors.name.message}</p>
+        )}
+      </div>
+      
+      <div>
+        <Label htmlFor="website">Sitio Web</Label>
+        <Input
+          id="website"
+          className="glass-input mt-1"
+          {...register('website')}
         />
-        
-        <FormField
-          control={form.control}
-          name="phoneNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Teléfono</FormLabel>
-              <FormControl>
-                <Input placeholder="+34 600 000 000" {...field} className="glass-input" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        {errors.website && (
+          <p className="text-destructive text-sm mt-1">{errors.website.message}</p>
+        )}
+      </div>
+      
+      <div>
+        <Label htmlFor="phoneNumber">Teléfono</Label>
+        <Input
+          id="phoneNumber"
+          className="glass-input mt-1"
+          {...register('phoneNumber')}
         />
-        
-        <FormField
-          control={form.control}
-          name="industry"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Industria</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger className="glass-input">
-                    <SelectValue placeholder="Seleccionar industria" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Tecnología">Tecnología</SelectItem>
-                  <SelectItem value="E-commerce">E-commerce</SelectItem>
-                  <SelectItem value="Salud">Salud</SelectItem>
-                  <SelectItem value="Finanzas">Finanzas</SelectItem>
-                  <SelectItem value="Educación">Educación</SelectItem>
-                  <SelectItem value="Viajes">Viajes</SelectItem>
-                  <SelectItem value="Alimentación">Alimentación</SelectItem>
-                  <SelectItem value="Inmobiliaria">Inmobiliaria</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+      </div>
+      
+      <div>
+        <Label htmlFor="industry">Industria</Label>
+        <Select
+          value={watch('industry')}
+          onValueChange={(value) => setValue('industry', value)}
+        >
+          <SelectTrigger className="glass-input mt-1">
+            <SelectValue placeholder="Seleccionar industria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Tecnología">Tecnología</SelectItem>
+            <SelectItem value="E-commerce">E-commerce</SelectItem>
+            <SelectItem value="Salud">Salud</SelectItem>
+            <SelectItem value="Finanzas">Finanzas</SelectItem>
+            <SelectItem value="Educación">Educación</SelectItem>
+            <SelectItem value="Viajes">Viajes</SelectItem>
+            <SelectItem value="Alimentación">Alimentación</SelectItem>
+            <SelectItem value="Inmobiliaria">Inmobiliaria</SelectItem>
+            <SelectItem value="Otro">Otro</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.industry && (
+          <p className="text-destructive text-sm mt-1">{errors.industry.message}</p>
+        )}
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Switch 
+          id="client-active" 
+          checked={activeValue}
+          onCheckedChange={(checked) => setValue('active', checked)}
         />
-        
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="wordpress">
-            <AccordionTrigger>Credenciales de WordPress</AccordionTrigger>
-            <AccordionContent>
-              <div className="grid gap-3 mt-2">
-                <FormField
-                  control={form.control}
-                  name="wpCredentials.username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre de Usuario</FormLabel>
-                      <FormControl>
-                        <Input placeholder="admin" {...field} className="glass-input" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="wpCredentials.password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contraseña</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} className="glass-input" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="wpCredentials.url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL de Admin</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://ejemplo.com/wp-admin" {...field} className="glass-input" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+        <Label htmlFor="client-active" className={activeValue ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}>
+          {activeValue ? "Cliente Activo" : "Cliente Inactivo"}
+        </Label>
+      </div>
+      
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="wordpress">
+          <AccordionTrigger className="py-2">
+            Credenciales de WordPress
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="grid gap-3 mt-2">
+              <div>
+                <Label htmlFor="wpUsername">Nombre de Usuario</Label>
+                <Input
+                  id="wpUsername"
+                  className="glass-input mt-1"
+                  {...register('wpUsername')}
                 />
               </div>
-            </AccordionContent>
-          </AccordionItem>
-          
-          <AccordionItem value="hosting">
-            <AccordionTrigger>Credenciales de Hosting</AccordionTrigger>
-            <AccordionContent>
-              <div className="grid gap-3 mt-2">
-                <FormField
-                  control={form.control}
-                  name="hostingCredentials.provider"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Proveedor</FormLabel>
-                      <FormControl>
-                        <Input placeholder="cPanel, Plesk, etc." {...field} className="glass-input" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="hostingCredentials.username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre de Usuario</FormLabel>
-                      <FormControl>
-                        <Input placeholder="usuario" {...field} className="glass-input" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="hostingCredentials.password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contraseña</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} className="glass-input" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="hostingCredentials.url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL del Panel</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://ejemplo.com:2083" {...field} className="glass-input" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div>
+                <Label htmlFor="wpPassword">Contraseña</Label>
+                <Input
+                  id="wpPassword"
+                  type="password"
+                  className="glass-input mt-1"
+                  {...register('wpPassword')}
                 />
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              <div>
+                <Label htmlFor="wpUrl">URL de Admin</Label>
+                <Input
+                  id="wpUrl"
+                  className="glass-input mt-1"
+                  {...register('wpUrl')}
+                />
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
         
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? (
+        <AccordionItem value="hosting">
+          <AccordionTrigger className="py-2">
+            Credenciales de Hosting
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="grid gap-3 mt-2">
+              <div>
+                <Label htmlFor="hostingProvider">Proveedor</Label>
+                <Input
+                  id="hostingProvider"
+                  className="glass-input mt-1"
+                  {...register('hostingProvider')}
+                />
+              </div>
+              <div>
+                <Label htmlFor="hostingUsername">Nombre de Usuario</Label>
+                <Input
+                  id="hostingUsername"
+                  className="glass-input mt-1"
+                  {...register('hostingUsername')}
+                />
+              </div>
+              <div>
+                <Label htmlFor="hostingPassword">Contraseña</Label>
+                <Input
+                  id="hostingPassword"
+                  type="password"
+                  className="glass-input mt-1"
+                  {...register('hostingPassword')}
+                />
+              </div>
+              <div>
+                <Label htmlFor="hostingUrl">URL del Panel</Label>
+                <Input
+                  id="hostingUrl"
+                  className="glass-input mt-1"
+                  {...register('hostingUrl')}
+                />
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      
+      <div className="flex justify-end">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Guardando...
@@ -314,8 +264,8 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, isSub
             'Guardar Cambios'
           )}
         </Button>
-      </form>
-    </Form>
+      </div>
+    </form>
   );
 };
 

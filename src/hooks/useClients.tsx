@@ -62,6 +62,7 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
             createdAt: client.created_at,
             reportsCount: reportCountMap[client.id] || 0,
             phoneNumber: client.phone_number,
+            active: client.active,
             wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
             hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
           };
@@ -99,6 +100,7 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         createdAt: newClient.created_at,
         reportsCount: 0,
         phoneNumber: newClient.phone_number,
+        active: newClient.active,
         wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
         hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
       };
@@ -133,6 +135,7 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         createdAt: updatedClient.created_at,
         reportsCount: clientToUpdate.reportsCount,
         phoneNumber: updatedClient.phone_number,
+        active: updatedClient.active,
         wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
         hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
       };

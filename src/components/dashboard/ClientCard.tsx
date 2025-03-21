@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Activity, File, Calendar } from 'lucide-react';
+import { ChevronRight, Activity, File, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import BlurredCard from '../ui/BlurredCard';
 import { formatDistanceToNow } from 'date-fns';
 import { Client } from '@/hooks/useClients';
@@ -15,12 +15,12 @@ interface ClientCardProps {
 }
 
 const ClientCard: React.FC<ClientCardProps> = ({ client, index }) => {
-  const { id, name, website, industry, createdAt, reportsCount } = client;
+  const { id, name, website, industry, createdAt, reportsCount, active } = client;
   
   return (
     <BlurredCard
       delay={index * 100}
-      className="transition-all duration-300 hover:translate-y-[-2px]"
+      className={`transition-all duration-300 hover:translate-y-[-2px] ${!active ? 'opacity-75' : ''}`}
     >
       <div className="flex flex-col h-full">
         <div className="flex justify-between items-start">
@@ -38,6 +38,17 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, index }) => {
               {website.replace(/^https?:\/\//, '')}
             </a>
           </div>
+          {active ? (
+            <span className="inline-flex items-center text-green-600 dark:text-green-400 text-xs">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Activo
+            </span>
+          ) : (
+            <span className="inline-flex items-center text-muted-foreground text-xs">
+              <XCircle className="h-3 w-3 mr-1" />
+              Inactivo
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4 my-6">

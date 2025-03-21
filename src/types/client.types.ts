@@ -7,6 +7,7 @@ export interface Client {
   createdAt: string;
   reportsCount: number;
   phoneNumber?: string;
+  active: boolean;
   wpCredentials?: {
     username: string;
     password: string;
