@@ -26,7 +26,7 @@ const KeywordsSection: React.FC<KeywordsSectionProps> = ({
   return (
     <div className="space-y-8">
       {/* Display keywords tags if available */}
-      {keywords.length > 0 && (
+      {keywords && keywords.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-semibold">Palabras Clave</h2>

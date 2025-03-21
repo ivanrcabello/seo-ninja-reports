@@ -163,7 +163,7 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
               </h2>
               <KeywordsSection
                 keywordsContent={content?.keywords || ''}
-                keywords={keywords}
+                keywords={keywords || []}
                 isPublic={true}
               />
             </CardContent>
@@ -181,9 +181,7 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
                 Ficha de Negocio
               </h2>
               {content?.businessProfile ? (
-                <BusinessProfileSection 
-                  businessProfile={content.businessProfile} 
-                />
+                <BusinessProfileSection businessProfile={content.businessProfile} />
               ) : (
                 <p className="text-muted-foreground">No hay información de ficha de negocio disponible.</p>
               )}
