@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Report } from '@/types/report.types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
