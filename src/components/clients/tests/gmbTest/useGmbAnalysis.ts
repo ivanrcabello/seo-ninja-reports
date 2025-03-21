@@ -1,0 +1,248 @@
+
+import { useState } from 'react';
+import { extractBusinessInfo } from '@/services/api/businessProfile';
+import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
+import { isValidGoogleBusinessUrl } from '@/services/api/businessProfile/utils';
+import { BusinessProfile } from '@/types/report.types';
+import { toast } from 'sonner';
+
+interface UseGmbAnalysisProps {
+  clientId: string;
+  clientWebsite?: string;
+  onProfileUpdate?: (profile: Partial<BusinessProfile>) => void;
+}
+
+export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: UseGmbAnalysisProps) => {
+  const [businessUrl, setBusinessUrl] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [businessProfile, setBusinessProfile] = useState<Partial<BusinessProfile> | null>(null);
+  const [useWebsite, setUseWebsite] = useState(false);
+  const [isSimulated, setIsSimulated] = useState(false);
+  
+  const handleAnalyze = async () => {
+    if (useWebsite && clientWebsite) {
+      // Usar la URL del sitio web para intentar encontrar el perfil GMB
+      await analyzeWithWebsite();
+    } else if (businessUrl.trim()) {
+      // Usar la URL de GMB proporcionada
+      await analyzeWithGmbUrl();
+    } else {
+      toast.error('Introduce una URL válida o usa el sitio web del cliente');
+      return;
+    }
+  };
+  
+  const analyzeWithWebsite = async () => {
+    if (!clientWebsite) {
+      toast.error('No hay URL de sitio web disponible para este cliente');
+      return;
+    }
+    
+    setIsAnalyzing(true);
+    setError(null);
+    setIsSimulated(false);
+    
+    try {
+      // Safety wrapper to ensure we always get data back and never show a blank screen
+      let profileData = null;
+      
+      try {
+        profileData = await extractGmbData(clientWebsite, false);
+      } catch (extractError) {
+        console.error('Error extracting GMB data from website:', extractError);
+        throw new Error('No se pudo extraer información del sitio web');
+      }
+      
+      if (profileData && (profileData.businessName || profileData.businessAddress)) {
+        // Ensure businessHours is a proper object or empty object if null/undefined
+        if (!profileData.businessHours) {
+          profileData.businessHours = {};
+        } else if (typeof profileData.businessHours === 'string') {
+          try {
+            profileData.businessHours = JSON.parse(profileData.businessHours);
+          } catch (parseError) {
+            console.error('Error parsing business hours:', parseError);
+            profileData.businessHours = {}; // Fallback to empty object
+          }
+        }
+        
+        setBusinessProfile(profileData);
+        
+        // Check if the data is from simulation
+        const isMockData = profileData.businessName?.includes('ejemplo') || 
+                          profileData.businessName === 'Negocio de ejemplo';
+                          
+        setIsSimulated(isMockData);
+        
+        if (onProfileUpdate && !isMockData) {
+          onProfileUpdate(profileData);
+        }
+        
+        if (isMockData) {
+          toast.warning('Se están usando datos simulados', {
+            description: 'No se pudo encontrar un perfil de GMB para este sitio web'
+          });
+        } else {
+          toast.success('Perfil analizado correctamente');
+        }
+      } else {
+        // Si es null o datos insuficientes, usar un perfil simulado
+        const mockData = {
+          businessName: 'Negocio de ejemplo',
+          businessAddress: 'Dirección de ejemplo',
+          businessCategory: 'Categoría de ejemplo',
+          businessRating: 4.5,
+          businessReviewsCount: 123,
+          businessPhone: '+34 123 456 789',
+          businessWebsite: clientWebsite,
+          businessHours: {} // Empty object by default
+        };
+        
+        setBusinessProfile(mockData);
+        setIsSimulated(true);
+        setError('No se pudo extraer información real');
+        toast.warning('Usando datos simulados', {
+          description: 'No se pudo obtener datos reales del perfil'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al analizar con sitio web:', error);
+      
+      // Usar datos simulados en caso de error para evitar pantalla en blanco
+      const mockData = {
+        businessName: 'Negocio de ejemplo',
+        businessAddress: 'Dirección de ejemplo',
+        businessCategory: 'Categoría de ejemplo',
+        businessRating: 4.5,
+        businessReviewsCount: 123,
+        businessPhone: '+34 123 456 789',
+        businessWebsite: clientWebsite,
+        businessHours: {} // Empty object by default
+      };
+      
+      setBusinessProfile(mockData);
+      setError(error.message || 'Error al analizar perfil');
+      toast.error('Error al analizar perfil');
+      setIsSimulated(true);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+  
+  const analyzeWithGmbUrl = async () => {
+    if (!isValidGoogleBusinessUrl(businessUrl)) {
+      setError('La URL debe ser de Google Business o Google Maps');
+      toast.error('URL no válida', {
+        description: 'Debes proporcionar una URL válida de Google Maps o Google Business'
+      });
+      return;
+    }
+    
+    setIsAnalyzing(true);
+    setError(null);
+    setIsSimulated(false);
+    
+    try {
+      // Safety wrapper to ensure we always get data back
+      let profileData = null;
+      
+      try {
+        profileData = await extractBusinessInfo(businessUrl);
+      } catch (extractError) {
+        console.error('Error extracting business info:', extractError);
+        throw new Error('No se pudo extraer información del perfil');
+      }
+      
+      if (profileData && (profileData.businessName || profileData.businessAddress)) {
+        // Ensure businessHours is a proper object or empty object if null/undefined
+        if (!profileData.businessHours) {
+          profileData.businessHours = {};
+        } else if (typeof profileData.businessHours === 'string') {
+          try {
+            profileData.businessHours = JSON.parse(profileData.businessHours);
+          } catch (parseError) {
+            console.error('Error parsing business hours:', parseError);
+            profileData.businessHours = {}; // Fallback to empty object
+          }
+        }
+        
+        setBusinessProfile(profileData);
+        
+        // Check if the data is from simulation
+        const isMockData = profileData.businessName?.includes('ejemplo') || 
+                          profileData.businessName === 'Negocio de ejemplo';
+                          
+        setIsSimulated(isMockData);
+        
+        // Only update the parent component with real data
+        if (onProfileUpdate && !isMockData) {
+          onProfileUpdate(profileData);
+        }
+        
+        if (isMockData) {
+          toast.warning('Se están usando datos simulados', {
+            description: 'No se pudieron extraer datos reales del perfil'
+          });
+        } else {
+          toast.success('Perfil analizado correctamente');
+        }
+      } else {
+        // Si es null o datos insuficientes, usar un perfil simulado para evitar la pantalla en blanco
+        const mockData = {
+          businessUrl: businessUrl,
+          businessName: 'Negocio de ejemplo',
+          businessAddress: 'Dirección de ejemplo',
+          businessCategory: 'Categoría de ejemplo',
+          businessRating: 4.5,
+          businessReviewsCount: 123,
+          businessPhone: '+34 123 456 789',
+          businessWebsite: 'https://example.com',
+          businessHours: {} // Empty object by default
+        };
+        
+        setBusinessProfile(mockData);
+        setIsSimulated(true);
+        setError('No se pudo extraer información real');
+        toast.warning('Usando datos simulados', {
+          description: 'No se pudo obtener datos reales del perfil'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al analizar URL de GMB:', error);
+      
+      // Usar datos simulados en caso de error para evitar pantalla en blanco
+      const mockData = {
+        businessUrl: businessUrl,
+        businessName: 'Negocio de ejemplo',
+        businessAddress: 'Dirección de ejemplo',
+        businessCategory: 'Categoría de ejemplo',
+        businessRating: 4.5,
+        businessReviewsCount: 123,
+        businessPhone: '+34 123 456 789',
+        businessWebsite: 'https://example.com',
+        businessHours: {} // Empty object by default
+      };
+      
+      setBusinessProfile(mockData);
+      setError(error.message || 'Error al analizar perfil');
+      toast.error('Error al analizar perfil');
+      setIsSimulated(true);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return {
+    businessUrl,
+    setBusinessUrl,
+    isAnalyzing,
+    error,
+    setError,
+    businessProfile,
+    useWebsite,
+    setUseWebsite,
+    isSimulated,
+    handleAnalyze
+  };
+};
