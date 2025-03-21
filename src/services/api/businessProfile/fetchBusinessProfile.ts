@@ -45,6 +45,7 @@ export const fetchBusinessProfile = async (reportId: string): Promise<BusinessPr
       } catch (parseError) {
         console.error('Error parsing business hours:', parseError);
         // Continue with empty hours if there's a problem
+        businessHours = {};
       }
     }
       
@@ -52,14 +53,14 @@ export const fetchBusinessProfile = async (reportId: string): Promise<BusinessPr
     return {
       id: data.id,
       reportId: data.report_id,
-      businessName: data.business_name,
-      businessAddress: data.business_address,
-      businessPhone: data.business_phone,
-      businessCategory: data.business_category,
-      businessRating: data.business_rating,
-      businessReviewsCount: data.business_reviews_count,
-      businessWebsite: data.business_website,
-      businessUrl: data.business_url,
+      businessName: data.business_name || '',
+      businessAddress: data.business_address || '',
+      businessPhone: data.business_phone || '',
+      businessCategory: data.business_category || '',
+      businessRating: data.business_rating !== undefined ? data.business_rating : null,
+      businessReviewsCount: data.business_reviews_count || 0,
+      businessWebsite: data.business_website || '',
+      businessUrl: data.business_url || '',
       businessHours,
       createdAt: data.created_at,
       updatedAt: data.updated_at

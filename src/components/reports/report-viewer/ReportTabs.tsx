@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Report, BusinessProfile } from '@/types/report.types';
-import { ReportSection } from '../report-section';
+import ReportSection from '../report-section';
 import PageSpeedTab from './pagespeed/PageSpeedTab';
 import BusinessProfileTable from './business-profile/BusinessProfileTable';
 import KeywordsSection from './keywords/KeywordsSection';
@@ -34,7 +34,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('content');
   const reportContent = report.content || {};
-  const hasKeywords = report.content?.keywords && report.content.keywords.length > 0;
+  const hasKeywords = report.content?.keywords && Array.isArray(report.content.keywords) && report.content.keywords.length > 0;
   
   const getTabCount = () => {
     let count = 1; // "Content" tab is always present
@@ -127,7 +127,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
       
       <TabsContent value="pagespeed" className="pt-2">
         <PageSpeedTab 
-          pageSpeedData={pageSpeedData} 
+          data={pageSpeedData} 
           isLoading={isLoadingPageSpeed} 
         />
       </TabsContent>
@@ -143,7 +143,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="keywords" className="p-6">
-        {hasKeywords && (
+        {hasKeywords && reportContent.keywords && (
           <KeywordsSection keywords={reportContent.keywords} />
         )}
       </TabsContent>
