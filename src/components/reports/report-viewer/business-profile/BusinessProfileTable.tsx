@@ -1,169 +1,229 @@
 
 import React from 'react';
 import { BusinessProfile } from '@/types/report.types';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
-import { Star, MapPin, Phone, Globe, Clock, Info } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Star, MapPin, Phone, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface BusinessProfileTableProps {
-  businessProfile: BusinessProfile;
+  businessProfile: BusinessProfile | null | undefined;
+  isLoading: boolean;
+  onSaveBusinessProfile?: (profile: Partial<BusinessProfile>) => Promise<void>;
+  isSaving?: boolean;
+  reportContent?: any;
 }
 
-const BusinessProfileTable: React.FC<BusinessProfileTableProps> = ({ businessProfile }) => {
-  // Format business hours if available
-  const formatHours = (hours: Record<string, string> | undefined) => {
-    if (!hours || Object.keys(hours).length === 0) return 'No disponible';
-    
-    return (
-      <div className="space-y-1">
-        {Object.entries(hours).map(([day, time]) => (
-          <div key={day} className="grid grid-cols-2 gap-2">
-            <span className="font-medium">{day}:</span> 
-            <span>{time}</span>
-          </div>
-        ))}
-      </div>
-    );
+const BusinessProfileTable: React.FC<BusinessProfileTableProps> = ({ 
+  businessProfile, 
+  isLoading,
+  onSaveBusinessProfile,
+  isSaving = false,
+  reportContent
+}) => {
+  const reportHasBusinessProfile = reportContent?.businessProfile;
+
+  const handleSave = () => {
+    if (businessProfile && onSaveBusinessProfile) {
+      onSaveBusinessProfile(businessProfile);
+    }
   };
 
-  // Format rating with stars if available
-  const formatRating = (rating: number | undefined, reviewsCount: number | undefined) => {
-    if (!rating) return 'No disponible';
-    
-    const ratingClass = 
-      rating >= 4.5 ? "text-green-500" :
-      rating >= 3.5 ? "text-amber-500" :
-      "text-red-500";
-    
+  if (isLoading) {
     return (
-      <div className="flex items-center gap-2">
-        <Badge 
-          variant="outline" 
-          className={cn(
-            "px-2 py-0.5 font-medium",
-            rating >= 4.5 ? "bg-green-50 text-green-700 border-green-200" :
-            rating >= 3.5 ? "bg-amber-50 text-amber-700 border-amber-200" :
-            "bg-red-50 text-red-700 border-red-200"
-          )}
-        >
-          <span className="flex items-center">
-            {rating.toFixed(1)} 
-            <Star className="h-3.5 w-3.5 ml-1 fill-current" />
-          </span>
-        </Badge>
-        {reviewsCount !== undefined && (
-          <span className="text-muted-foreground text-sm">{reviewsCount} reseñas</span>
-        )}
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-32 w-full" />
       </div>
     );
+  }
+
+  if (!businessProfile && !reportHasBusinessProfile) {
+    return (
+      <div className="text-center py-8">
+        <h3 className="text-xl font-semibold mb-3">No hay datos de perfil de negocio</h3>
+        <p className="text-muted-foreground mb-4">
+          Este informe no contiene información de perfil de Google My Business.
+        </p>
+      </div>
+    );
+  }
+
+  // Use businessProfile from the API or fallback to the content in the report
+  const profile = businessProfile || reportHasBusinessProfile;
+
+  const getRatingColor = (rating: number) => {
+    if (rating >= 4.5) return "text-green-500";
+    if (rating >= 3.5) return "text-amber-500";
+    return "text-red-500";
   };
+
+  // Check if we need to show the save button
+  // Show if we have fresh data from API and a save function
+  const showSaveButton = businessProfile && onSaveBusinessProfile && !isSaving;
+
+  // Show update button if we have content in the report but newer data is available
+  const showUpdateButton = businessProfile && reportHasBusinessProfile && onSaveBusinessProfile && 
+                          JSON.stringify(businessProfile) !== JSON.stringify(reportHasBusinessProfile);
 
   return (
-    <div className="rounded-lg border overflow-hidden">
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold mb-3">Información del perfil de negocio</h3>
+        <p className="text-muted-foreground mb-4">
+          Detalles actuales del perfil de Google My Business.
+        </p>
+      </div>
+
+      {showUpdateButton && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertDescription className="flex justify-between items-center">
+            <span>Hay datos actualizados disponibles para este perfil</span>
+            <Button 
+              onClick={handleSave} 
+              size="sm" 
+              disabled={isSaving}
+            >
+              {isSaving ? 'Actualizando...' : 'Actualizar perfil'}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-1/3">Propiedad</TableHead>
+            <TableHead className="w-1/3">Campo</TableHead>
             <TableHead>Valor</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow>
-            <TableCell className="font-medium flex items-center">
-              <Info className="h-4 w-4 mr-2 text-primary" />
-              Nombre del negocio
-            </TableCell>
-            <TableCell>{businessProfile.businessName || 'No disponible'}</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium flex items-center">
-              <Globe className="h-4 w-4 mr-2 text-primary" />
-              Categoría
-            </TableCell>
-            <TableCell>
-              {businessProfile.businessCategory ? (
-                <Badge variant="outline" className="font-normal">
-                  {businessProfile.businessCategory}
-                </Badge>
-              ) : 'No disponible'}
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium flex items-center">
-              <MapPin className="h-4 w-4 mr-2 text-primary" />
-              Dirección
-            </TableCell>
-            <TableCell>{businessProfile.businessAddress || 'No disponible'}</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium flex items-center">
-              <Phone className="h-4 w-4 mr-2 text-primary" />
-              Teléfono
-            </TableCell>
-            <TableCell>{businessProfile.businessPhone || 'No disponible'}</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium flex items-center">
-              <Globe className="h-4 w-4 mr-2 text-primary" />
-              Sitio web
-            </TableCell>
-            <TableCell>
-              {businessProfile.businessWebsite ? (
+          {profile?.businessName && (
+            <TableRow>
+              <TableCell className="font-medium">Nombre</TableCell>
+              <TableCell>{profile.businessName}</TableCell>
+            </TableRow>
+          )}
+          
+          {profile?.businessRating !== undefined && (
+            <TableRow>
+              <TableCell className="font-medium">Valoración</TableCell>
+              <TableCell>
+                <span className={cn("flex items-center", getRatingColor(profile.businessRating))}>
+                  {profile.businessRating.toFixed(1)}
+                  <Star className="h-4 w-4 ml-1 fill-current" />
+                  <span className="text-sm text-muted-foreground ml-1">
+                    ({profile.businessReviewsCount || 0} reseñas)
+                  </span>
+                </span>
+              </TableCell>
+            </TableRow>
+          )}
+          
+          {profile?.businessCategory && (
+            <TableRow>
+              <TableCell className="font-medium">Categoría</TableCell>
+              <TableCell>{profile.businessCategory}</TableCell>
+            </TableRow>
+          )}
+          
+          {profile?.businessAddress && (
+            <TableRow>
+              <TableCell className="font-medium">
+                <span className="flex items-center">
+                  <MapPin className="h-4 w-4 mr-1 text-muted-foreground" /> 
+                  Dirección
+                </span>
+              </TableCell>
+              <TableCell>{profile.businessAddress}</TableCell>
+            </TableRow>
+          )}
+          
+          {profile?.businessPhone && (
+            <TableRow>
+              <TableCell className="font-medium">
+                <span className="flex items-center">
+                  <Phone className="h-4 w-4 mr-1 text-muted-foreground" /> 
+                  Teléfono
+                </span>
+              </TableCell>
+              <TableCell>{profile.businessPhone}</TableCell>
+            </TableRow>
+          )}
+          
+          {profile?.businessWebsite && (
+            <TableRow>
+              <TableCell className="font-medium">
+                <span className="flex items-center">
+                  <Link2 className="h-4 w-4 mr-1 text-muted-foreground" /> 
+                  Sitio web
+                </span>
+              </TableCell>
+              <TableCell>
                 <a 
-                  href={businessProfile.businessWebsite} 
+                  href={profile.businessWebsite} 
                   target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline flex items-center"
+                  rel="noopener noreferrer" 
+                  className="text-primary hover:underline"
                 >
-                  {businessProfile.businessWebsite}
+                  {profile.businessWebsite}
                 </a>
-              ) : 'No disponible'}
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium flex items-center">
-              <Star className="h-4 w-4 mr-2 text-primary" />
-              Valoración
-            </TableCell>
-            <TableCell>
-              {formatRating(businessProfile.businessRating, businessProfile.businessReviewsCount)}
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium flex items-center">
-              <Globe className="h-4 w-4 mr-2 text-primary" />
-              URL de Google Business
-            </TableCell>
-            <TableCell>
-              {businessProfile.businessUrl ? (
+              </TableCell>
+            </TableRow>
+          )}
+          
+          {profile?.businessUrl && (
+            <TableRow>
+              <TableCell className="font-medium">GMB URL</TableCell>
+              <TableCell>
                 <a 
-                  href={businessProfile.businessUrl} 
+                  href={profile.businessUrl} 
                   target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline flex items-center"
+                  rel="noopener noreferrer" 
+                  className="text-primary hover:underline"
                 >
-                  {businessProfile.businessUrl}
+                  Ver en Google Maps
                 </a>
-              ) : 'No disponible'}
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium flex items-center">
-              <Clock className="h-4 w-4 mr-2 text-primary" />
-              Horario
-            </TableCell>
-            <TableCell>{formatHours(businessProfile.businessHours)}</TableCell>
-          </TableRow>
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
+
+      {profile?.businessHours && Object.keys(profile.businessHours).length > 0 && (
+        <div className="mt-6">
+          <h4 className="text-lg font-medium mb-3">Horario de apertura</h4>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Día</TableHead>
+                <TableHead>Horario</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Object.entries(profile.businessHours).map(([day, hours]) => (
+                <TableRow key={day}>
+                  <TableCell className="font-medium">{day}</TableCell>
+                  <TableCell>{hours}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {showSaveButton && !showUpdateButton && (
+        <div className="flex justify-end mt-4">
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+          >
+            {isSaving ? 'Guardando...' : 'Guardar en informe'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

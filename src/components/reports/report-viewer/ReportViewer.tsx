@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Report, BusinessProfile } from '@/types/report.types';
 import ReportHeader from './ReportHeader';
@@ -8,11 +8,11 @@ import BlurredCard from '@/components/ui/BlurredCard';
 import { SkeletonReport } from './SkeletonReport';
 import useReports from '@/hooks/useReports';
 import { toast } from 'sonner';
-import NotFoundPage from '@/pages/NotFoundPage';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPageSpeedData } from '@/services/api/pagespeed';
 import { fetchBusinessProfile } from '@/services/api/businessProfile/fetchBusinessProfile';
+import { saveBusinessProfile } from '@/services/api/businessProfile/saveBusinessProfile';
 
 const ReportViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +20,7 @@ const ReportViewer: React.FC = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [isSavingBusinessProfile, setIsSavingBusinessProfile] = useState(false);
 
   // If no ID is provided, redirect to reports page
   if (!id) {
@@ -42,15 +43,49 @@ const ReportViewer: React.FC = () => {
   // Query to fetch Business Profile data for this report
   const {
     data: businessProfile,
-    isLoading: isLoadingBusinessProfile
+    isLoading: isLoadingBusinessProfile,
+    refetch: refetchBusinessProfile
   } = useQuery({
     queryKey: ['businessProfile', id],
     queryFn: () => fetchBusinessProfile(id),
     enabled: !!id && report?.status === 'completed' && report?.hasBusinessProfile === true,
   });
 
+  // Function to save GMB data to the report
+  const handleSaveBusinessProfile = async (profile: Partial<BusinessProfile>) => {
+    if (!id) return;
+    
+    setIsSavingBusinessProfile(true);
+    
+    try {
+      await saveBusinessProfile(id, profile);
+      
+      // Update the report to indicate it has a business profile
+      await updateReport(id, {
+        hasBusinessProfile: true
+      });
+      
+      toast.success('Perfil de negocio guardado correctamente');
+      
+      // Refetch the business profile
+      refetchBusinessProfile();
+    } catch (error) {
+      console.error('Error saving business profile:', error);
+      toast.error('Error al guardar el perfil de negocio');
+    } finally {
+      setIsSavingBusinessProfile(false);
+    }
+  };
+
   if (!report) {
-    return <NotFoundPage />;
+    return (
+      <div className="w-full max-w-5xl mx-auto p-8 text-center">
+        <h2 className="text-xl font-semibold mb-2">Informe no encontrado</h2>
+        <p className="text-muted-foreground">
+          El informe solicitado no existe o ha sido eliminado.
+        </p>
+      </div>
+    );
   }
 
   const handleEdit = (section: string) => {
@@ -142,6 +177,8 @@ const ReportViewer: React.FC = () => {
               isLoadingBusinessProfile={isLoadingBusinessProfile}
               isEditing={isEditing}
               onEdit={(sectionKey, content) => handleSaveEdit(sectionKey, content)}
+              onSaveBusinessProfile={handleSaveBusinessProfile}
+              isSavingBusinessProfile={isSavingBusinessProfile}
             />
           </>
         ) : report.status === 'failed' ? (

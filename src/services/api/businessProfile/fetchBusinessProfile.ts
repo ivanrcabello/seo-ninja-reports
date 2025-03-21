@@ -1,69 +1,70 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessProfile } from '@/types/report.types';
-import { toast } from 'sonner';
 import { handleServiceError } from '../baseService';
 
 /**
- * Obtiene el perfil de negocio para un informe específico
+ * Fetches the business profile for a specific report
  */
 export const fetchBusinessProfile = async (reportId: string): Promise<BusinessProfile | null> => {
   try {
+    if (!reportId) {
+      throw new Error('reportId is required');
+    }
+
     console.log(`Fetching business profile for report: ${reportId}`);
     
-    const { data: businessProfileData, error } = await supabase
+    const { data, error } = await supabase
       .from('business_profiles')
       .select('*')
       .eq('report_id', reportId)
       .maybeSingle();
-
+      
     if (error) {
       console.error('Error fetching business profile:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.log('No business profile found for report:', reportId);
       return null;
     }
-
-    if (!businessProfileData) {
-      console.log('No business profile found for this report');
-      return null;
-    }
-
-    console.log('Loaded business profile data:', businessProfileData);
-
-    // Transform database record to frontend BusinessProfile object
+    
+    console.log('Business profile found:', data);
+    
+    // Parse business hours
     let businessHours: Record<string, string> = {};
-    if (businessProfileData.business_hours) {
+    
+    if (data.business_hours) {
       try {
-        if (typeof businessProfileData.business_hours === 'string') {
-          businessHours = JSON.parse(businessProfileData.business_hours);
-        } else if (typeof businessProfileData.business_hours === 'object') {
-          // Convert non-string values to strings to satisfy type constraints
-          const hours = businessProfileData.business_hours as Record<string, any>;
-          Object.keys(hours).forEach(key => {
-            businessHours[key] = String(hours[key]);
-          });
+        if (typeof data.business_hours === 'string') {
+          businessHours = JSON.parse(data.business_hours);
+        } else if (typeof data.business_hours === 'object') {
+          businessHours = data.business_hours as Record<string, string>;
         }
       } catch (parseError) {
         console.error('Error parsing business hours:', parseError);
+        // Continue with empty hours if there's a problem
       }
     }
-
+      
+    // Transform to frontend format
     return {
-      id: businessProfileData.id,
-      reportId: businessProfileData.report_id,
-      businessUrl: businessProfileData.business_url,
-      businessName: businessProfileData.business_name,
-      businessAddress: businessProfileData.business_address,
-      businessPhone: businessProfileData.business_phone,
-      businessCategory: businessProfileData.business_category,
-      businessRating: businessProfileData.business_rating,
-      businessReviewsCount: businessProfileData.business_reviews_count,
-      businessWebsite: businessProfileData.business_website,
+      id: data.id,
+      reportId: data.report_id,
+      businessName: data.business_name,
+      businessAddress: data.business_address,
+      businessPhone: data.business_phone,
+      businessCategory: data.business_category,
+      businessRating: data.business_rating,
+      businessReviewsCount: data.business_reviews_count,
+      businessWebsite: data.business_website,
+      businessUrl: data.business_url,
       businessHours,
-      createdAt: businessProfileData.created_at,
-      updatedAt: businessProfileData.updated_at
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
     };
   } catch (error: any) {
-    console.error('Error retrieving business profile:', error);
-    return handleServiceError(error, 'Error al obtener perfil de negocio');
+    return handleServiceError(error, 'Error fetching business profile');
   }
 };
