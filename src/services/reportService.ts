@@ -41,7 +41,7 @@ export const fetchReports = async (): Promise<Report[]> => {
       status: report.status as 'processing' | 'completed' | 'failed',
       url: report.url,
       summary: report.summary,
-      content: report.content as Report['content'],
+      content: report.content ? (report.content as unknown as Report['content']) : undefined,
       customPrompt: report.custom_prompt,
       notes: report.notes,
       hasBusinessProfile: report.has_business_profile
@@ -57,6 +57,9 @@ export const fetchReports = async (): Promise<Report[]> => {
  */
 export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status'>): Promise<Report> => {
   try {
+    // Convert content to a JSON-compatible structure
+    const contentForDb = data.content ? JSON.parse(JSON.stringify(data.content)) : null;
+    
     const { data: reportData, error } = await supabase
       .from('reports')
       .insert({
@@ -64,7 +67,7 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
         title: data.title,
         url: data.url,
         summary: data.summary || '',
-        content: data.content || null,
+        content: contentForDb,
         custom_prompt: data.customPrompt || '',
         notes: data.notes || '',
         status: 'completed'
@@ -87,7 +90,7 @@ export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status
       status: reportData.status as 'processing' | 'completed' | 'failed',
       url: reportData.url,
       summary: reportData.summary,
-      content: reportData.content as Report['content'],
+      content: reportData.content ? (reportData.content as unknown as Report['content']) : undefined,
       customPrompt: reportData.custom_prompt,
       notes: reportData.notes
     };
@@ -108,7 +111,10 @@ export const updateExistingReport = async (id: string, data: Partial<Report>): P
     if (data.title !== undefined) updateData.title = data.title;
     if (data.url !== undefined) updateData.url = data.url;
     if (data.summary !== undefined) updateData.summary = data.summary;
-    if (data.content !== undefined) updateData.content = data.content;
+    if (data.content !== undefined) {
+      // Convert content to a JSON-compatible structure
+      updateData.content = JSON.parse(JSON.stringify(data.content));
+    }
     if (data.status !== undefined) updateData.status = data.status;
     if (data.customPrompt !== undefined) updateData.custom_prompt = data.customPrompt;
     if (data.notes !== undefined) updateData.notes = data.notes;
@@ -138,7 +144,7 @@ export const updateExistingReport = async (id: string, data: Partial<Report>): P
       status: reportData.status as 'processing' | 'completed' | 'failed',
       url: reportData.url,
       summary: reportData.summary,
-      content: reportData.content as Report['content'],
+      content: reportData.content ? (reportData.content as unknown as Report['content']) : undefined,
       customPrompt: reportData.custom_prompt,
       notes: reportData.notes,
       hasBusinessProfile: reportData.has_business_profile
@@ -183,6 +189,11 @@ export {
 };
 
 /**
+ * Re-export the fetchPageSpeedData function from the pagespeed module
+ */
+export { fetchPageSpeedData } from './api/pagespeed/fetchPageSpeedData';
+
+/**
  * Saves a business profile for a report
  */
 export const saveBusinessProfile = async (reportId: string, profileData: Partial<BusinessProfile>): Promise<void> => {
@@ -218,7 +229,7 @@ export const saveBusinessProfile = async (reportId: string, profileData: Partial
     if (profileData.businessHours) {
       if (typeof profileData.businessHours === 'string') {
         try {
-          businessHours = JSON.parse(profileData.businessHours);
+          businessHours = JSON.parse(profileData.businessHours as string);
         } catch (e) {
           console.error('Error parsing business hours:', e);
         }
@@ -290,20 +301,21 @@ export const saveBusinessProfile = async (reportId: string, profileData: Partial
       
       if (typeof content !== 'object') {
         try {
-          content = JSON.parse(content);
+          content = JSON.parse(String(content));
         } catch (e) {
           content = {};
         }
       }
       
       // Add business profile to content
-      content.businessProfile = profileData;
+      const typedContent = content as any;
+      typedContent.businessProfile = profileData;
       
       // Update report with business profile in content
       const { error: updateContentError } = await supabase
         .from('reports')
         .update({ 
-          content,
+          content: typedContent,
           updated_at: new Date().toISOString() 
         })
         .eq('id', reportId);
