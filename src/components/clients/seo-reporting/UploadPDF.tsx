@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, Upload } from 'lucide-react';
+import { FileUp, Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { parseSemrushPdf, createSeoReport } from '@/services/seoReportService';
 
@@ -14,6 +14,7 @@ interface UploadPDFProps {
 const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -56,6 +57,7 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
     console.log('Starting PDF upload and processing for client:', clientId);
     
     try {
+      setProcessingStatus('Leyendo archivo PDF...');
       console.log('Processing PDF file:', selectedFile.name);
       toast.info('Procesando informe', {
         description: 'Extrayendo datos del PDF...'
@@ -70,9 +72,11 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
           description: 'No se pudieron extraer datos del PDF'
         });
         setIsUploading(false);
+        setProcessingStatus('');
         return;
       }
 
+      setProcessingStatus('Datos extraídos. Guardando informe...');
       console.log('Parsed data successfully:', parsedData);
       toast.info('Guardando informe', {
         description: `Creando informe para ${parsedData.domain}...`
@@ -87,18 +91,21 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
           description: `Se ha creado un nuevo informe para ${parsedData.domain}`
         });
         setSelectedFile(null);
+        setProcessingStatus('');
         onUploadSuccess();
       } else {
         console.error('Failed to create SEO report, no result returned');
         toast.error('Error al guardar informe', {
           description: 'No se pudo guardar el informe en la base de datos'
         });
+        setProcessingStatus('Error al guardar el informe');
       }
     } catch (error) {
       console.error('Error uploading/processing PDF:', error);
       toast.error('Error al procesar el PDF', {
         description: 'Ocurrió un error al procesar el archivo'
       });
+      setProcessingStatus('Error en el procesamiento');
     } finally {
       setIsUploading(false);
     }
@@ -126,7 +133,11 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
               htmlFor="pdf-upload"
               className="cursor-pointer flex flex-col items-center justify-center gap-2"
             >
-              <FileUp className="h-10 w-10 text-muted-foreground" />
+              {selectedFile ? (
+                <FileText className="h-10 w-10 text-primary" />
+              ) : (
+                <FileUp className="h-10 w-10 text-muted-foreground" />
+              )}
               <div className="text-sm text-muted-foreground">
                 {selectedFile ? selectedFile.name : 'Haz clic para seleccionar un PDF de Semrush'}
               </div>
@@ -146,6 +157,12 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
             {isUploading ? 'Procesando...' : 'Subir y Procesar PDF'}
             <Upload className="ml-2 h-4 w-4" />
           </Button>
+          
+          {processingStatus && (
+            <div className="text-sm text-muted-foreground text-center">
+              Estado: {processingStatus}
+            </div>
+          )}
           
           <div className="text-xs text-muted-foreground mt-2">
             Cliente ID: {clientId}
