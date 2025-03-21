@@ -11,6 +11,7 @@ import KeywordForm from '@/components/reports/keywords/KeywordForm';
 import KeywordsList from './KeywordsList';
 import KeywordImport from './KeywordImport';
 import KeywordExport from './KeywordExport';
+import { getClientKeywords } from '@/services/clientKeywordsService';
 
 interface ClientKeywordsProps {
   clientId: string;
@@ -20,6 +21,8 @@ interface ClientKeywordsProps {
 const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [keywordTab, setKeywordTab] = useState<'list' | 'import' | 'export'>('list');
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   // If there are reports, use the most recent one
   useEffect(() => {
@@ -31,20 +34,32 @@ const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) =>
     }
   }, [reports]);
   
+  // Fetch keywords when the selected report changes
+  useEffect(() => {
+    const fetchKeywords = async () => {
+      if (clientId) {
+        setIsLoading(true);
+        try {
+          const fetchedKeywords = await getClientKeywords(clientId);
+          setKeywords(fetchedKeywords);
+        } catch (error) {
+          console.error('Error fetching keywords:', error);
+          toast.error('Error al cargar palabras clave');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    fetchKeywords();
+  }, [clientId]);
+  
+  // Use the hooks only when selectedReportId is available
   const { 
-    keywords, 
-    loading, 
     isSaving, 
-    fetchKeywords, 
     addKeyword, 
     removeKeyword 
   } = useKeywords(selectedReportId || '');
-  
-  useEffect(() => {
-    if (selectedReportId) {
-      fetchKeywords();
-    }
-  }, [selectedReportId, fetchKeywords]);
   
   const handleReportChange = (reportId: string) => {
     setSelectedReportId(reportId);
@@ -57,9 +72,14 @@ const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) =>
     }
     
     try {
-      await addKeyword(keyword, searchVolume, difficulty);
-      toast.success('Palabra clave añadida con éxito');
-      return true;
+      const newKeyword = await addKeyword(keyword, searchVolume, difficulty);
+      if (newKeyword) {
+        // Add new keyword to the local state
+        setKeywords(prevKeywords => [newKeyword, ...prevKeywords]);
+        toast.success('Palabra clave añadida con éxito');
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Error adding keyword:', error);
       toast.error('Error al añadir palabra clave');
@@ -71,6 +91,8 @@ const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) =>
     try {
       const success = await removeKeyword(keywordId);
       if (success) {
+        // Remove keyword from local state
+        setKeywords(prevKeywords => prevKeywords.filter(k => k.id !== keywordId));
         toast.success('Palabra clave eliminada');
       }
       return success;
@@ -88,18 +110,27 @@ const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) =>
     }
     
     let successful = 0;
+    const newKeywords: Keyword[] = [];
     
     for (const kw of keywords) {
       try {
-        const success = await addKeyword(
+        const newKeyword = await addKeyword(
           kw.keyword, 
           kw.searchVolume ? kw.searchVolume.toString() : '', 
           kw.difficulty ? kw.difficulty.toString() : ''
         );
-        if (success) successful++;
+        if (newKeyword) {
+          successful++;
+          newKeywords.push(newKeyword);
+        }
       } catch (error) {
         console.error(`Error importing keyword ${kw.keyword}:`, error);
       }
+    }
+    
+    // Update the local state with all new keywords
+    if (newKeywords.length > 0) {
+      setKeywords(prevKeywords => [...newKeywords, ...prevKeywords]);
     }
     
     toast.success(`Importadas ${successful} de ${keywords.length} palabras clave`);
@@ -175,7 +206,7 @@ const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) =>
                 </div>
               </div>
               
-              {loading ? (
+              {isLoading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
