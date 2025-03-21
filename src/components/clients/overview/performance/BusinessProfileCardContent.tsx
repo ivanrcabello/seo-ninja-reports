@@ -53,8 +53,21 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
       if (reports && reports.length > 0) {
         const latestReportId = reports[0].id;
         
+        // Make sure businessUrl is always provided
+        const profileToSave = {
+          businessUrl: businessProfile.businessUrl || '',
+          businessName: businessProfile.businessName,
+          businessAddress: businessProfile.businessAddress,
+          businessPhone: businessProfile.businessPhone,
+          businessCategory: businessProfile.businessCategory,
+          businessRating: businessProfile.businessRating,
+          businessReviewsCount: businessProfile.businessReviewsCount,
+          businessWebsite: businessProfile.businessWebsite,
+          businessHours: businessProfile.businessHours || {}
+        };
+        
         // Save the business profile to this report
-        await saveBusinessProfile(latestReportId, businessProfile);
+        await saveBusinessProfile(latestReportId, profileToSave);
         toast.success('Perfil de negocio guardado correctamente');
       } else {
         toast.error('No hay informes disponibles para guardar el perfil');

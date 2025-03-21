@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessProfile } from '@/types/report.types';
@@ -56,7 +57,20 @@ const ClientBusinessCard: React.FC<ClientBusinessCardProps> = ({
       if (reports && reports.length > 0) {
         const latestReportId = reports[0].id;
         
-        await saveBusinessProfile(latestReportId, businessProfile);
+        // Make sure businessUrl is always provided
+        const profileToSave = {
+          businessUrl: businessProfile.businessUrl || '',
+          businessName: businessProfile.businessName,
+          businessAddress: businessProfile.businessAddress,
+          businessPhone: businessProfile.businessPhone,
+          businessCategory: businessProfile.businessCategory,
+          businessRating: businessProfile.businessRating,
+          businessReviewsCount: businessProfile.businessReviewsCount,
+          businessWebsite: businessProfile.businessWebsite,
+          businessHours: businessProfile.businessHours || {}
+        };
+        
+        await saveBusinessProfile(latestReportId, profileToSave);
         toast.success('Perfil de negocio guardado correctamente');
       }
     } catch (error) {
