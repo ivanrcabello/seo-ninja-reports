@@ -18,9 +18,9 @@ export const extractValueserpData = async (
   }
   
   try {
-    console.log(`Intento de extraer información con ValueSerp: ${query} ${location ? `(${location})` : ''}, clientId: ${clientId || 'not provided'}`);
-    toast.info('Extrayendo información de negocio', {
-      description: 'Buscando datos con ValueSerp...'
+    console.log(`Extrayendo información con ValueSerp: ${query} ${location ? `(${location})` : ''}, clientId: ${clientId || 'not provided'}`);
+    toast.info('Consultando API de ValueSerp', {
+      description: 'Buscando datos del negocio...'
     });
     
     // Obtener la API key desde localStorage
@@ -46,7 +46,8 @@ export const extractValueserpData = async (
       body: {
         query: searchQuery,
         apiKey: valueSerpApiKey,
-        clientId: clientId
+        clientId: clientId,
+        saveToDb: true  // Explicitly request to save the data to database
       }
     });
     
@@ -70,6 +71,14 @@ export const extractValueserpData = async (
       } catch (e) {
         console.warn('Could not store raw data in localStorage:', e);
       }
+    }
+    
+    // Check if the data was saved to the database
+    if (data.savedToDb) {
+      console.log('Los datos fueron guardados en la base de datos:', data.savedToDb);
+      toast.success('Datos guardados en la base de datos', {
+        description: 'La información del negocio ha sido almacenada'
+      });
     }
     
     // Process local results if available

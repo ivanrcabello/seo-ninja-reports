@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
@@ -48,8 +49,10 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
       
       try {
         const query = extractDomainFromUrl(clientWebsite);
-        console.log(`Using clientId: ${clientId} for ValueSerp query`);
-        profileData = await extractBusinessInfoWithValueSerp(query);
+        console.log(`Using clientId: ${clientId} for ValueSerp query: ${query}`);
+        
+        // Pass only the one required argument, with the clientId included
+        profileData = await extractValueserpData(query, '', clientId);
       } catch (valueSerpError) {
         console.error('Error extracting with ValueSerp:', valueSerpError);
         extractionMethod = 'scraper';
@@ -149,7 +152,8 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
       let profileData = null;
       
       try {
-        profileData = await extractBusinessInfo(businessUrl);
+        // Pass the clientId as a parameter to ensure data can be saved to DB
+        profileData = await extractBusinessInfo(businessUrl, clientId);
       } catch (extractError) {
         console.error('Error extracting business info:', extractError);
         throw new Error('No se pudo extraer información del perfil');

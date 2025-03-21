@@ -1,343 +1,322 @@
 
-import { corsHeaders } from '../_shared/cors.ts'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
-// Environment variables
-const ENV_API_KEY = Deno.env.get('VALUE_SERP_KEY') || '';
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight request
+serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { query, apiKey, clientId, test = false } = await req.json();
-    
+    const { query, apiKey, clientId, saveToDb, test } = await req.json()
+
+    // Validate request
     if (!query) {
-      console.error('Query not provided in request');
       return new Response(
-        JSON.stringify({ success: false, error: 'Query not provided' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
-
-    console.log(`Processing ValueSerp request for query: "${query}", clientId: ${clientId || 'not provided'}, test: ${test}`);
-    
-    // Use API key from request if provided, otherwise use env var
-    const valueSerp_API_KEY = apiKey || ENV_API_KEY;
-    
-    // If no API key is available, return error with fallback data
-    if (!valueSerp_API_KEY) {
-      console.error('ValueSerp API key not configured');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'ValueSerp API key not configured',
-          data: getFallbackData(query)
+        JSON.stringify({
+          success: false,
+          error: 'Query parameter is required',
+          data: simulateBusinessProfile(query || 'Example Business')
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    // For test connections, just return success
-    if (test) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'API key is valid' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create ValueSerp API URL with more detailed parameters
-    const url = new URL('https://api.valueserp.com/search');
-    url.searchParams.append('api_key', valueSerp_API_KEY);
-    url.searchParams.append('q', query);
-    url.searchParams.append('location', 'Spain');
-    url.searchParams.append('gl', 'es');
-    url.searchParams.append('hl', 'es');
-    url.searchParams.append('google_domain', 'google.es');
-    url.searchParams.append('output', 'json');
-    url.searchParams.append('include_fields', 'search_information,knowledge_graph,local_results,organic_results');
-    url.searchParams.append('include_html', 'false');
-    
-    console.log(`Making request to ValueSerp API for query: "${query}"`);
-    
-    // Add timeout to the fetch request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
-    
-    try {
-      const response = await fetch(url.toString(), { 
-        signal: controller.signal 
-      });
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`ValueSerp API error: ${response.status} ${errorText}`);
-        throw new Error(`ValueSerp API error: ${response.status} ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('ValueSerp API response received');
-      
-      // Check if local_results is available and has entries
-      if (data.local_results && data.local_results.results && data.local_results.results.length > 0) {
-        const localResults = data.local_results.results;
-        console.log(`Found ${localResults.length} local results`);
-        
-        // Save local results to database if clientId is provided
-        if (clientId && SUPABASE_URL && SUPABASE_ANON_KEY) {
-          const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-          
-          try {
-            // First, find existing listing for this client
-            const { data: existingData, error: checkError } = await supabase
-              .from('google_business_listings')
-              .select('id')
-              .eq('client_id', clientId)
-              .maybeSingle();
-              
-            if (checkError) {
-              console.error('Error checking existing listings:', checkError);
-            }
-            
-            // Get the first result which is typically the most relevant
-            const firstResult = localResults[0];
-            
-            if (!firstResult || !firstResult.title) {
-              console.error('No valid local results found');
-            } else {
-              const listingData = {
-                client_id: clientId,
-                title: firstResult.title,
-                address: firstResult.address || '',
-                phone: firstResult.phone || '',
-                rating: firstResult.rating ? parseFloat(firstResult.rating) : null,
-                reviews: firstResult.reviews ? parseInt(firstResult.reviews.toString().replace(/[^0-9]/g, ''), 10) : null,
-                hours: firstResult.hours || '',
-                website: firstResult.website || '',
-                place_id: firstResult.data_cid || firstResult.place_id || '',
-                updated_at: new Date().toISOString()
-              };
-              
-              let dbResult;
-              
-              if (existingData?.id) {
-                // Update existing record
-                console.log(`Updating existing listing with id ${existingData.id}`);
-                dbResult = await supabase
-                  .from('google_business_listings')
-                  .update(listingData)
-                  .eq('id', existingData.id);
-              } else {
-                // Insert new record
-                console.log('Inserting new listing record');
-                dbResult = await supabase
-                  .from('google_business_listings')
-                  .insert(listingData);
-              }
-              
-              if (dbResult.error) {
-                console.error('Error saving to database:', dbResult.error);
-              } else {
-                console.log('Successfully saved business listing to database');
-              }
-            }
-          } catch (dbError) {
-            console.error('Database operation error:', dbError);
-          }
-        } else {
-          console.log('Not saving to database: clientId or Supabase credentials missing');
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
         }
+      )
+    }
+
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'ValueSerp API key is required',
+          data: simulateBusinessProfile(query)
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      )
+    }
+
+    // If it's a test request, just validate the API key
+    if (test) {
+      try {
+        const testResponse = await fetch(
+          `https://api.valueserp.com/search?api_key=${apiKey}&q=test&location=Spain&gl=es&hl=es&google_domain=google.es&output=json&include_fields=search_information&include_html=false&engine=google`
+        )
         
-        // Return the local_results array and the first result in the businessProfile format
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            local_results: localResults,
-            // Also include the first result in the businessProfile format for backward compatibility
-            data: mapToBusinessProfile(localResults[0])
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // If knowledge_graph is available, use that
-      if (data.knowledge_graph) {
-        console.log('Knowledge graph found, but no local results');
-        const kg = data.knowledge_graph;
+        const testData = await testResponse.json()
         
-        const businessData = mapKnowledgeGraphToBusinessProfile(kg);
-        
-        // Save to database if clientId is provided
-        if (clientId && SUPABASE_URL && SUPABASE_ANON_KEY && businessData.businessName) {
-          const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-          
-          try {
-            // Find existing listing for this client
-            const { data: existingData, error: checkError } = await supabase
-              .from('google_business_listings')
-              .select('id')
-              .eq('client_id', clientId)
-              .maybeSingle();
-              
-            if (checkError) {
-              console.error('Error checking existing listings:', checkError);
+        if (testData.request_info && testData.request_info.success) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: 'API key is valid'
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200
             }
-            
-            const listingData = {
-              client_id: clientId,
+          )
+        } else {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'API key is invalid or request failed'
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400
+            }
+          )
+        }
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Error testing API key: ${error.message}`
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500
+          }
+        )
+      }
+    }
+
+    // Make request to ValueSerp API
+    console.log(`Making request to ValueSerp API for query: "${query}"\n`)
+    
+    const url = new URL('https://api.valueserp.com/search')
+    url.searchParams.append('api_key', apiKey)
+    url.searchParams.append('q', query)
+    url.searchParams.append('location', 'Spain')
+    url.searchParams.append('gl', 'es')
+    url.searchParams.append('hl', 'es')
+    url.searchParams.append('google_domain', 'google.es')
+    url.searchParams.append('output', 'json')
+    url.searchParams.append('include_fields', 'search_information,knowledge_graph,local_results,organic_results')
+    url.searchParams.append('include_html', 'false')
+    url.searchParams.append('engine', 'google')
+
+    const response = await fetch(url.toString())
+    const data = await response.json()
+
+    // Check if the request was successful
+    if (!data.request_info || !data.request_info.success) {
+      console.error('ValueSerp API request failed:', data)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'ValueSerp API request failed',
+          data: simulateBusinessProfile(query)
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      )
+    }
+
+    // Extract business data from the response
+    const businessData = extractBusinessData(data, query)
+    let savedToDb = null
+
+    // Save to database if requested and we have valid data
+    if (saveToDb && clientId && businessData.businessName && businessData.businessName !== 'Negocio de ejemplo') {
+      try {
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') || '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+        )
+
+        console.log(`Saving business data to database for client: ${clientId}`)
+
+        // Check if a record already exists for this client
+        const { data: existingListing, error: fetchError } = await supabaseClient
+          .from('google_business_listings')
+          .select('id')
+          .eq('client_id', clientId)
+          .maybeSingle()
+
+        if (fetchError) {
+          console.error('Error checking for existing listing:', fetchError)
+        }
+
+        if (existingListing?.id) {
+          // Update existing record
+          const { data: updatedListing, error: updateError } = await supabaseClient
+            .from('google_business_listings')
+            .update({
               title: businessData.businessName,
-              address: businessData.businessAddress || '',
-              phone: businessData.businessPhone || '',
+              address: businessData.businessAddress,
+              phone: businessData.businessPhone,
               rating: businessData.businessRating,
               reviews: businessData.businessReviewsCount,
-              hours: typeof businessData.businessHours === 'object' ? JSON.stringify(businessData.businessHours) : '',
-              website: businessData.businessWebsite || '',
-              place_id: '',
+              website: businessData.businessWebsite,
+              hours: JSON.stringify(businessData.businessHours),
               updated_at: new Date().toISOString()
-            };
-              
-            let dbResult;
-              
-            if (existingData?.id) {
-              // Update existing record
-              console.log(`Updating existing listing with id ${existingData.id}`);
-              dbResult = await supabase
-                .from('google_business_listings')
-                .update(listingData)
-                .eq('id', existingData.id);
-            } else {
-              // Insert new record
-              console.log('Inserting new listing record');
-              dbResult = await supabase
-                .from('google_business_listings')
-                .insert(listingData);
-            }
-              
-            if (dbResult.error) {
-              console.error('Error saving to database:', dbResult.error);
-            } else {
-              console.log('Successfully saved knowledge graph data to database');
-            }
-          } catch (dbError) {
-            console.error('Database operation error:', dbError);
+            })
+            .eq('id', existingListing.id)
+            .select()
+            .single()
+
+          if (updateError) {
+            console.error('Error updating business listing:', updateError)
+          } else {
+            console.log('Updated business listing:', updatedListing)
+            savedToDb = updatedListing
+          }
+        } else {
+          // Insert new record
+          const { data: newListing, error: insertError } = await supabaseClient
+            .from('google_business_listings')
+            .insert({
+              client_id: clientId,
+              title: businessData.businessName,
+              address: businessData.businessAddress,
+              phone: businessData.businessPhone,
+              rating: businessData.businessRating,
+              reviews: businessData.businessReviewsCount,
+              website: businessData.businessWebsite,
+              hours: JSON.stringify(businessData.businessHours),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select()
+            .single()
+
+          if (insertError) {
+            console.error('Error inserting business listing:', insertError)
+          } else {
+            console.log('Inserted new business listing:', newListing)
+            savedToDb = newListing
           }
         }
-        
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            data: businessData,
-            knowledge_graph: kg
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      } catch (error) {
+        console.error('Error saving to database:', error)
       }
-      
-      // No usable business data found
-      console.log('No business data found in ValueSerp response');
-      
-      // Return fallback data
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'No business data found in ValueSerp response',
-          data: getFallbackData(query),
-          raw_response: data
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } catch (fetchError) {
-      console.error('Fetch error:', fetchError.message);
-      
-      // Return fallback data with fetch error
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: fetchError.message,
-          data: getFallbackData(query)
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
-  } catch (error) {
-    console.error('General error processing request:', error.message);
-    
+
+    // Return the formatted response
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Unknown error',
-        data: getFallbackData('fallback')
+      JSON.stringify({
+        success: true,
+        data: businessData,
+        source: determineDataSource(data),
+        raw_response: data,
+        local_results: data.local_results,
+        savedToDb
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    );
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: `Unexpected error: ${error.message}`,
+        data: simulateBusinessProfile('Error')
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    )
   }
-});
+})
 
-// Map local result to BusinessProfile format
-function mapToBusinessProfile(localResult: any) {
-  if (!localResult) return getFallbackData('');
-  
-  return {
-    businessName: localResult.title || '',
-    businessUrl: localResult.link || '',
-    businessHours: typeof localResult.hours === 'string' ? { 'Hours': localResult.hours } : {}, 
-    businessAddress: localResult.address || '',
-    businessCategory: localResult.business_type || '',
-    businessPhone: localResult.phone || '',
-    businessWebsite: localResult.website || '',
-    businessRating: localResult.rating !== undefined ? parseFloat(localResult.rating) : null,
-    businessReviewsCount: localResult.reviews !== undefined 
-      ? parseInt(localResult.reviews.toString().replace(/[^0-9]/g, ''), 10) 
-      : 0
-  };
-}
-
-// Map knowledge graph to BusinessProfile format
-function mapKnowledgeGraphToBusinessProfile(kg: any) {
-  return {
-    businessName: kg.title || '',
-    businessUrl: kg.website || '',
-    businessHours: extractHoursFromKnowledgeGraph(kg),
-    businessAddress: kg.address || '',
-    businessCategory: kg.type || '',
-    businessPhone: kg.phone || '',
-    businessWebsite: kg.website || '',
-    businessRating: kg.rating ? parseFloat(kg.rating) : null,
-    businessReviewsCount: kg.reviews !== undefined 
-      ? parseInt(kg.reviews.toString().replace(/[^0-9]/g, ''), 10) 
-      : 0
-  };
-}
-
-// Helper function to extract hours from knowledge graph
-function extractHoursFromKnowledgeGraph(kg: any): Record<string, string> {
-  if (!kg.hours) return {};
-  
-  const hoursText = kg.hours;
-  if (typeof hoursText !== 'string') return {};
-  
-  // Try to parse hours in format like "Monday: 9:00 AM - 5:00 PM, Tuesday: ..."
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const hours: Record<string, string> = {};
-  
-  for (const day of days) {
-    const regex = new RegExp(`${day}:\\s*([^,]+)`, 'i');
-    const match = hoursText.match(regex);
-    if (match && match[1]) {
-      hours[day] = match[1].trim();
+// Helper function to extract business data from ValueSerp response
+function extractBusinessData(data: any, query: string) {
+  // First try local results
+  if (data.local_results && data.local_results.length > 0) {
+    const localResult = data.local_results[0]
+    
+    // Extract business hours
+    let businessHours = {}
+    if (localResult.hours_table) {
+      businessHours = localResult.hours_table
+    } else if (localResult.hours) {
+      // For simpler hours format
+      businessHours = { 'Hours': localResult.hours }
+    }
+    
+    return {
+      businessName: localResult.title,
+      businessAddress: localResult.address || '',
+      businessPhone: localResult.phone || '',
+      businessRating: localResult.rating ? parseFloat(localResult.rating) : null,
+      businessReviewsCount: localResult.reviews ? parseInt(localResult.reviews.toString()) : 0,
+      businessWebsite: localResult.website || '',
+      businessHours,
+      businessUrl: localResult.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
     }
   }
-  
-  return hours;
+
+  // Then try knowledge graph
+  if (data.knowledge_graph) {
+    const kg = data.knowledge_graph
+    
+    // Extract business hours
+    let businessHours = {}
+    if (kg.hours) {
+      businessHours = { 'Hours': kg.hours }
+    }
+    
+    return {
+      businessName: kg.title || '',
+      businessAddress: kg.address || '',
+      businessPhone: kg.phone || '',
+      businessRating: kg.rating ? parseFloat(kg.rating) : null,
+      businessReviewsCount: kg.reviews_count ? parseInt(kg.reviews_count.toString()) : 0,
+      businessWebsite: kg.website || '',
+      businessHours,
+      businessUrl: kg.website || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    }
+  }
+
+  // If organic results exist and no business data found yet, try to extract from the first relevant result
+  if (data.organic_results && data.organic_results.length > 0) {
+    const organicResult = data.organic_results[0]
+    
+    return {
+      businessName: organicResult.title || query,
+      businessAddress: '',  // Usually not available in organic results
+      businessPhone: '',    // Usually not available in organic results
+      businessRating: null,
+      businessReviewsCount: 0,
+      businessWebsite: organicResult.link || '',
+      businessHours: {},
+      businessUrl: organicResult.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    }
+  }
+
+  // Return simulated data if no useful information found
+  return simulateBusinessProfile(query)
 }
 
-// Helper function to get fallback data
-function getFallbackData(query: string) {
+// Determine the source of data
+function determineDataSource(data: any) {
+  if (data.local_results && data.local_results.length > 0) {
+    return 'local_results'
+  }
+  if (data.knowledge_graph) {
+    return 'knowledge_graph'
+  }
+  if (data.organic_results && data.organic_results.length > 0) {
+    return 'organic_results'
+  }
+  return 'simulated'
+}
+
+// Generate simulated business profile for fallback
+function simulateBusinessProfile(query: string) {
   return {
     businessName: 'Negocio de ejemplo',
     businessAddress: 'Calle Ejemplo 123, Ciudad',
@@ -356,5 +335,5 @@ function getFallbackData(query: string) {
       'Sunday': 'Cerrado'
     },
     businessUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
-  };
+  }
 }

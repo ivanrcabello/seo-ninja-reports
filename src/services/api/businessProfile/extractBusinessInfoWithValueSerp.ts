@@ -1,3 +1,4 @@
+
 import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +8,8 @@ import { simulateBusinessProfileData } from './mocks';
  * Extract business information using ValueSerp API
  */
 export const extractBusinessInfoWithValueSerp = async (
-  query: string
+  query: string,
+  clientId?: string
 ): Promise<Partial<BusinessProfile> | null> => {
   if (!query) {
     toast.error('Invalid query');
@@ -15,7 +17,7 @@ export const extractBusinessInfoWithValueSerp = async (
   }
 
   try {
-    console.log(`Extracting business info with ValueSerp: "${query}"`);
+    console.log(`Extracting business info with ValueSerp: "${query}" for clientId: ${clientId || 'not provided'}`);
     toast.info('Consultando ValueSerp API', {
       description: 'Extrayendo datos del negocio...'
     });
@@ -37,7 +39,9 @@ export const extractBusinessInfoWithValueSerp = async (
     const { data, error } = await supabase.functions.invoke('valueserp-business', {
       body: {
         query,
-        apiKey: valueSerpApiKey
+        apiKey: valueSerpApiKey,
+        clientId,
+        saveToDb: true  // Explicitly request to save to database
       }
     });
 
@@ -52,6 +56,11 @@ export const extractBusinessInfoWithValueSerp = async (
     }
 
     console.log('ValueSerp response:', data);
+
+    // If data was saved to database, log it
+    if (data.savedToDb) {
+      console.log('Business data saved to database:', data.savedToDb);
+    }
 
     // Store raw data in localStorage for debugging
     try {
