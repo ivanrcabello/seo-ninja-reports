@@ -11,6 +11,8 @@ interface ClientPerformanceCardsProps {
   businessProfile: Partial<BusinessProfile> | null;
   pageSpeedScore?: number | null;
   clientWebsite: string;
+  clientName?: string; // Nuevo prop para el nombre del cliente
+  clientLocation?: string; // Nuevo prop para la ubicación del cliente
   onRefreshPageSpeed?: () => void;
   onRefreshBusinessProfile?: () => void;
   isRefreshingPageSpeed?: boolean;
@@ -21,6 +23,8 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
   businessProfile,
   pageSpeedScore,
   clientWebsite,
+  clientName,
+  clientLocation,
   onRefreshPageSpeed = () => {},
   onRefreshBusinessProfile = () => {},
   isRefreshingPageSpeed = false,
@@ -50,12 +54,14 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
         isDataAvailable={hasBusinessData}
         onRefresh={onRefreshBusinessProfile}
         isRefreshing={isRefreshingBusinessProfile}
-        tooltipText="Actualizar datos de GMB"
+        tooltipText="Actualizar datos con ValueSerp"
       >
         <BusinessProfileCardContent
           businessProfile={businessProfile}
           isRefreshingBusinessProfile={isRefreshingBusinessProfile}
           onRefreshBusinessProfile={onRefreshBusinessProfile}
+          clientName={clientName}
+          clientLocation={clientLocation}
         />
       </PerformanceCard>
       

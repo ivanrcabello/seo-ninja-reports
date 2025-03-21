@@ -2,10 +2,9 @@
 import React, { useState } from 'react';
 import { Client } from '@/types/client.types';
 import { Report, BusinessProfile } from '@/types/report.types';
-import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
 import { fetchPageSpeedData } from '@/services/api/pagespeed';
 import { toast } from 'sonner';
-import { extractBusinessInfo } from '@/services/api/businessProfile';
+import { extractValueserpData } from '@/services/api/businessProfile/extractValueserpData';
 
 // Importing refactored components
 import ClientInfoCards from './overview/ClientInfoCards';
@@ -71,22 +70,13 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
     setIsRefreshingBusinessProfile(true);
     
     try {
-      const gmbUrl = reportBusinessProfile?.businessUrl;
-      let result = null;
+      // Cambio para usar exclusivamente ValueSerp
+      toast.info('Consultando API de ValueSerp', {
+        description: 'Extrayendo información detallada del negocio...',
+      });
       
-      if (gmbUrl && (gmbUrl.includes('google.com/maps') || gmbUrl?.includes('maps.app.goo.gl'))) {
-        toast.info('Usando URL de GMB existente', {
-          description: 'Actualizando datos desde el perfil previamente analizado'
-        });
-        
-        result = await extractBusinessInfo(gmbUrl);
-      } else {
-        toast.info('Buscando perfil desde sitio web', {
-          description: 'Intentando encontrar perfil de GMB basado en el sitio web'
-        });
-        
-        result = await extractGmbData(client.website, false);
-      }
+      // Usamos el nombre del cliente para buscar con ValueSerp
+      const result = await extractValueserpData(client.name, client.industry || '');
       
       if (result) {
         setBusinessProfile(result);
@@ -96,17 +86,17 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
                           
         if (isSimulated) {
           toast.warning('Datos simulados obtenidos', {
-            description: 'Intenta usar Tests Rápidos para proporcionar una URL directa de GMB'
+            description: 'Intenta refinar la búsqueda con ubicación específica'
           });
         } else {
-          toast.success('Datos de GMB actualizados correctamente');
+          toast.success('Datos de negocio actualizados correctamente con ValueSerp');
         }
       } else {
-        toast.error('No se pudieron obtener datos de GMB');
+        toast.error('No se pudieron obtener datos del negocio');
       }
     } catch (error) {
       console.error('Error refreshing business profile:', error);
-      toast.error('Error al actualizar datos de GMB');
+      toast.error('Error al actualizar datos de negocio');
     } finally {
       setIsRefreshingBusinessProfile(false);
     }
@@ -132,6 +122,8 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
         businessProfile={displayBusinessProfile}
         pageSpeedScore={displayPageSpeedScore}
         clientWebsite={client.website}
+        clientName={client.name}
+        clientLocation={client.industry}
         onRefreshPageSpeed={handleRefreshPageSpeed}
         onRefreshBusinessProfile={handleRefreshBusinessProfile}
         isRefreshingPageSpeed={isRefreshingPageSpeed}

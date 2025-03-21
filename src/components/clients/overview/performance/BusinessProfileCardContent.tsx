@@ -5,21 +5,59 @@ import { Star, MapPin, Phone, Link2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getRatingColor } from './PerformanceUtils';
+import { extractValueserpData } from '@/services/api/businessProfile/extractValueserpData';
+import { toast } from 'sonner';
 
 interface BusinessProfileCardContentProps {
   businessProfile: Partial<BusinessProfile> | null;
   isRefreshingBusinessProfile: boolean;
   onRefreshBusinessProfile: () => void;
+  clientName?: string;
+  clientLocation?: string;
 }
 
 const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   businessProfile,
   isRefreshingBusinessProfile,
-  onRefreshBusinessProfile
+  onRefreshBusinessProfile,
+  clientName,
+  clientLocation
 }) => {
   const hasBusinessData = Boolean(businessProfile?.businessName);
   const isSimulatedData = businessProfile?.businessName === 'Negocio de ejemplo' || 
                          businessProfile?.businessName?.includes('ejemplo');
+
+  // Nueva función para actualizar usando ValueSerp
+  const handleRefreshWithValueSerp = async () => {
+    if (!clientName) {
+      toast.error('No hay nombre de negocio disponible', {
+        description: 'Se necesita el nombre del negocio para buscar con ValueSerp'
+      });
+      return;
+    }
+    
+    onRefreshBusinessProfile(); // Inicia el estado de carga
+    
+    try {
+      // Consulta ValueSerp con el nombre del cliente y ubicación opcional
+      const profileData = await extractValueserpData(clientName, clientLocation);
+      
+      if (profileData) {
+        toast.success('Información actualizada con ValueSerp', {
+          description: 'Los datos del negocio han sido actualizados'
+        });
+      } else {
+        toast.error('No se pudieron obtener datos', {
+          description: 'ValueSerp no pudo encontrar información para este negocio'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al actualizar con ValueSerp:', error);
+      toast.error('Error al actualizar con ValueSerp', {
+        description: error.message || 'No se pudo consultar la API de ValueSerp'
+      });
+    }
+  };
 
   if (!hasBusinessData) {
     return (
@@ -37,12 +75,12 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
           {isRefreshingBusinessProfile ? (
             <>
               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Analizando...
+              Analizando con ValueSerp...
             </>
           ) : (
             <>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Obtener datos GMB
+              Obtener datos con ValueSerp
             </>
           )}
         </Button>
@@ -117,7 +155,7 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
       {isSimulatedData && (
         <div className="mt-2 py-2 px-3 bg-amber-50 border border-amber-200 rounded-md">
           <p className="text-xs text-amber-700">
-            Se muestran datos simulados. Usa el botón de actualizar para obtener datos reales.
+            Se muestran datos simulados. Usa el botón de actualizar para obtener datos reales con ValueSerp.
           </p>
         </div>
       )}
