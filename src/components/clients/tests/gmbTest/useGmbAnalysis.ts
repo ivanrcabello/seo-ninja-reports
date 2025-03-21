@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
 import { extractBusinessInfoWithValueSerp } from '@/services/api/businessProfile/extractBusinessInfoWithValueSerp';
+import { extractValueserpData } from '@/services/api/businessProfile/extractValueserpData';
 import { isValidGoogleBusinessUrl } from '@/services/api/businessProfile/utils';
 import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
