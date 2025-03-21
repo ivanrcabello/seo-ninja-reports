@@ -34,8 +34,9 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('content');
   const reportContent = report.content || {};
-  const keywordsContent = reportContent.keywords || '';
-  const hasKeywords = reportContent.keywords && Array.isArray(reportContent.keywords) && reportContent.keywords.length > 0;
+  const keywordsContent = typeof reportContent.keywords === 'string' ? reportContent.keywords : '';
+  const hasKeywords = reportContent.keywords && 
+    (Array.isArray(reportContent.keywords) && reportContent.keywords.length > 0);
   
   const getTabCount = () => {
     let count = 1; // "Content" tab is always present

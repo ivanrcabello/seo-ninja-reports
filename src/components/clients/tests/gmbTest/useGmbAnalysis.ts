@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
+import { extractBusinessInfoWithValueSerp } from '@/services/api/businessProfile/extractBusinessInfoWithValueSerp';
 import { isValidGoogleBusinessUrl } from '@/services/api/businessProfile/utils';
 import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
@@ -44,18 +44,24 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
     setIsSimulated(false);
     
     try {
-      // Safety wrapper to ensure we always get data back and never show a blank screen
+      // First try with ValueSerp for better data
       let profileData = null;
+      let extractionMethod = 'valueserp';
       
       try {
+        // Use ValueSerp with the client name or domain as the query
+        const query = extractDomainFromUrl(clientWebsite);
+        profileData = await extractBusinessInfoWithValueSerp(query);
+      } catch (valueSerpError) {
+        console.error('Error extracting with ValueSerp:', valueSerpError);
+        extractionMethod = 'scraper';
+        
+        // Fallback to original method
         profileData = await extractGmbData(clientWebsite, false);
-      } catch (extractError) {
-        console.error('Error extracting GMB data from website:', extractError);
-        throw new Error('No se pudo extraer información del sitio web');
       }
       
       if (profileData && (profileData.businessName || profileData.businessAddress)) {
-        // Ensure businessHours is a proper object or empty object if null/undefined
+        // Ensure businessHours is a proper object
         if (!profileData.businessHours) {
           profileData.businessHours = {};
         } else if (typeof profileData.businessHours === 'string') {
@@ -68,6 +74,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
         }
         
         setBusinessProfile(profileData);
+        console.log('Updated GMB Tab with business profile:', profileData);
         
         // Check if the data is from simulation
         const isMockData = profileData.businessName?.includes('ejemplo') || 
@@ -84,7 +91,9 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
             description: 'No se pudo encontrar un perfil de GMB para este sitio web'
           });
         } else {
-          toast.success('Perfil analizado correctamente');
+          toast.success('Perfil analizado correctamente', {
+            description: `Datos extraídos usando ${extractionMethod === 'valueserp' ? 'ValueSerp API' : 'scraper'}`
+          });
         }
       } else {
         // Si es null o datos insuficientes, usar un perfil simulado
@@ -230,6 +239,16 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
       setIsSimulated(true);
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+  
+  // Helper function to extract domain from URL
+  const extractDomainFromUrl = (url: string): string => {
+    try {
+      const domain = url.replace(/^https?:\/\//, '').split('/')[0];
+      return domain;
+    } catch (error) {
+      return url;
     }
   };
 
