@@ -38,6 +38,20 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   const isSimulated = displayProfile?.businessName === 'Negocio de ejemplo' || 
                      displayProfile?.businessName?.includes('ejemplo');
 
+  // Check for missing important fields
+  const getMissingFields = () => {
+    if (!displayProfile) return [];
+    
+    const missingFields = [];
+    if (!displayProfile.businessRating) missingFields.push('Valoración');
+    if (!displayProfile.businessAddress) missingFields.push('Dirección');
+    if (!displayProfile.businessPhone) missingFields.push('Teléfono');
+    if (!displayProfile.businessCategory) missingFields.push('Categoría');
+    if (!displayProfile.businessWebsite) missingFields.push('Sitio web');
+    
+    return missingFields;
+  };
+
   const handleSaveBusinessProfile = () => {
     saveBusinessProfileData(displayProfile);
   };
@@ -55,7 +69,10 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
     <div className="space-y-4">
       <BusinessProfileDetail displayProfile={displayProfile} />
       
-      <BusinessProfileWarning isSimulated={Boolean(isSimulated)} />
+      <BusinessProfileWarning 
+        isSimulated={Boolean(isSimulated)} 
+        missingFields={!isSimulated ? getMissingFields() : []}
+      />
 
       <BusinessProfileActions 
         onRefreshBusinessProfile={onRefreshBusinessProfile}

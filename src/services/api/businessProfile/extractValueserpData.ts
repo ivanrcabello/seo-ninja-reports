@@ -60,6 +60,16 @@ export const extractValueserpData = async (
     
     console.log('Respuesta de valueserp-business:', data);
     
+    // Store raw data in localStorage for debugging
+    if (data.raw_data || data.raw_response) {
+      try {
+        localStorage.setItem('valueserp_last_raw_data', JSON.stringify(data.raw_data || data.raw_response));
+        console.log('Raw ValueSerp data stored in localStorage for debugging');
+      } catch (e) {
+        console.warn('Could not store raw data in localStorage:', e);
+      }
+    }
+    
     // Si hay datos pero no es exitoso, mostrar advertencia y devolver los datos fallback
     if (!data.success) {
       console.warn('La función ValueSerp reportó un fallo:', data.error);
@@ -86,6 +96,18 @@ export const extractValueserpData = async (
       toast.success('Información de negocio extraída correctamente', {
         description: `Datos obtenidos desde ${sourceText}`
       });
+      
+      // Save this query and result in localStorage cache
+      try {
+        const cacheKey = `valueserp_cache_${query.toLowerCase().replace(/\s+/g, '_')}`;
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: data.data,
+          timestamp: Date.now(),
+          source: data.source
+        }));
+      } catch (e) {
+        console.warn('Could not cache results:', e);
+      }
       
       return data.data;
     } else {

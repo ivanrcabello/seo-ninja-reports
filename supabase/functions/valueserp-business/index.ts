@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create ValueSerp API URL with simpler parameters
+    // Create ValueSerp API URL with more detailed parameters
     const url = new URL('https://api.valueserp.com/search');
     url.searchParams.append('api_key', valueSerp_API_KEY);
     url.searchParams.append('q', query);
@@ -48,6 +48,8 @@ Deno.serve(async (req) => {
     url.searchParams.append('hl', 'es');
     url.searchParams.append('google_domain', 'google.es');
     url.searchParams.append('output', 'json');
+    url.searchParams.append('include_fields', 'search_information,knowledge_graph,local_results,organic_results');
+    url.searchParams.append('include_html', 'false');
     
     console.log(`Making request to ValueSerp API for query: "${query}"`);
     
@@ -70,8 +72,8 @@ Deno.serve(async (req) => {
       const data = await response.json();
       console.log('ValueSerp API response received');
       
-      // For debugging - log response structure
-      console.log('Response structure keys:', Object.keys(data));
+      // Log full response for debugging
+      console.log('Full ValueSerp response:', JSON.stringify(data));
       
       // First try to extract from knowledge_graph if available
       if (data.knowledge_graph) {
@@ -92,12 +94,13 @@ Deno.serve(async (req) => {
             : 0
         };
         
-        console.log(`Business profile data extracted from knowledge graph`);
+        console.log(`Business profile data extracted from knowledge graph:`, businessData);
         return new Response(
           JSON.stringify({ 
             success: true, 
             data: businessData,
-            source: 'knowledge_graph'
+            source: 'knowledge_graph',
+            raw_data: kg // Include raw data for debugging and additional fields
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -122,12 +125,13 @@ Deno.serve(async (req) => {
             : 0
         };
         
-        console.log(`Business profile data extracted from local results`);
+        console.log(`Business profile data extracted from local results:`, businessData);
         return new Response(
           JSON.stringify({ 
             success: true, 
             data: businessData,
-            source: 'local_results'
+            source: 'local_results',
+            raw_data: business // Include raw data for debugging and additional fields
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -146,20 +150,21 @@ Deno.serve(async (req) => {
           businessName: potentialBusiness.title || query,
           businessUrl: potentialBusiness.link || `https://www.google.com/search?q=${encodeURIComponent(query)}`,
           businessHours: {}, 
-          businessAddress: '',
-          businessCategory: '',
-          businessPhone: '',
+          businessAddress: potentialBusiness.rich_snippet?.top?.detected_extensions?.address || '',
+          businessCategory: potentialBusiness.rich_snippet?.top?.extensions?.find((ext: string) => !ext.includes('://')) || '',
+          businessPhone: potentialBusiness.rich_snippet?.top?.detected_extensions?.phone || '',
           businessWebsite: potentialBusiness.link || '',
-          businessRating: null,
-          businessReviewsCount: 0
+          businessRating: potentialBusiness.rich_snippet?.top?.detected_extensions?.rating || null,
+          businessReviewsCount: potentialBusiness.rich_snippet?.top?.detected_extensions?.reviews_count || 0
         };
         
-        console.log(`Basic business data extracted from organic results`);
+        console.log(`Basic business data extracted from organic results:`, businessData);
         return new Response(
           JSON.stringify({ 
             success: true, 
             data: businessData,
-            source: 'organic_results'
+            source: 'organic_results',
+            raw_data: potentialBusiness // Include raw data
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -169,12 +174,13 @@ Deno.serve(async (req) => {
       console.error('No business data found in ValueSerp response');
       console.log('Response structure:', JSON.stringify(Object.keys(data)));
       
-      // Return fallback data with error message
+      // Return raw data with the fallback for future analysis
       return new Response(
         JSON.stringify({ 
           success: false,
           error: 'No business data found in ValueSerp response',
-          data: getFallbackData(query)
+          data: getFallbackData(query),
+          raw_response: data // Include the raw response for debugging
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
