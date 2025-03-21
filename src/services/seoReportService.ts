@@ -222,8 +222,13 @@ export const parseSemrushPdf = async (file: File): Promise<{
     console.log('Procesando PDF con pdf-parse...');
     let extractedText = '';
     try {
-      // Fix: Use pdfjs directly without trying to access default property
-      const pdfResult = await pdfjs(pdfData);
+      // Fix: Convert Uint8Array to a format that pdf-parse can handle in the browser
+      // pdf-parse expects a Buffer in Node.js but can work with TypedArray in browser
+      const pdfResult = await pdfjs(pdfData.buffer, {
+        // Pass any needed options here
+        pagerender: null, // Don't render pages to avoid browser compatibility issues
+      });
+      
       extractedText = pdfResult.text || '';
       console.log('Texto extraído con pdf-parse (primeros 500 caracteres):', extractedText.substring(0, 500));
       console.log('Longitud total del texto extraído:', extractedText.length);
