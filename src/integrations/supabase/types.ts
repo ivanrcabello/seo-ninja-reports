@@ -419,6 +419,7 @@ export type Database = {
           logo_url: string | null
           openai_key: string | null
           updated_at: string
+          value_serp_key: string | null
         }
         Insert: {
           created_at?: string
@@ -429,6 +430,7 @@ export type Database = {
           logo_url?: string | null
           openai_key?: string | null
           updated_at?: string
+          value_serp_key?: string | null
         }
         Update: {
           created_at?: string
@@ -439,6 +441,7 @@ export type Database = {
           logo_url?: string | null
           openai_key?: string | null
           updated_at?: string
+          value_serp_key?: string | null
         }
         Relationships: []
       }

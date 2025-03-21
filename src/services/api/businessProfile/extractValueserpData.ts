@@ -29,6 +29,26 @@ export const extractValueserpData = async (
     
     console.log('Calling ValueSerp edge function with query:', searchQuery);
     
+    // Obtener la API key desde la configuración
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('settings')
+      .select('value_serp_key')
+      .eq('id', 1)
+      .single();
+    
+    if (settingsError) {
+      console.error('Error obteniendo la clave API de ValueSerp:', settingsError);
+    }
+    
+    const hasValueSerpKey = settingsData?.value_serp_key && settingsData.value_serp_key.length > 5;
+    
+    if (!hasValueSerpKey) {
+      console.warn('No se ha configurado una clave API válida de ValueSerp');
+      toast.warning('API ValueSerp no configurada', {
+        description: 'Configure la API en la sección de configuración para obtener mejores resultados',
+      });
+    }
+    
     // Intentos máximos para obtener datos
     const maxRetries = 2;
     let attempts = 0;
@@ -42,7 +62,7 @@ export const extractValueserpData = async (
       try {
         // Llamar a nuestra función edge usando supabase.functions.invoke
         const { data, error: fnError } = await supabase.functions.invoke('valueserp-business', {
-          body: { query: searchQuery }
+          body: { query: searchQuery, use_configured_key: true }
         });
         
         if (fnError) {

@@ -90,74 +90,74 @@ export const extractBusinessInfo = async (
       console.error('Error checking database for cached profile:', dbError);
     }
     
+    // Extract business name from URL if possible
+    const businessName = extractBusinessNameFromUrl(businessUrl);
+    
     // Try to get real data via different methods
     let profileData = null;
     
-    // First try scraping directly from GMB
-    try {
-      profileData = await extractGmbData(businessUrl, true);
-      
-      // Verify if we got real data (not simulated)
-      if (profileData && 
-          (profileData.businessName || profileData.businessAddress) && 
-          profileData.businessName !== 'Negocio de ejemplo') {
+    // First try ValueSerp API if we have a business name
+    if (businessName) {
+      try {
+        console.log('Trying ValueSerp API with business name:', businessName);
+        toast.info('Consultando API ValueSerp', {
+          description: 'Intentando obtener datos mediante ValueSerp...'
+        });
         
-        console.log('Successfully extracted business profile data via GMB scraping');
+        profileData = await extractValueserpData(businessName);
         
-        // Ensure everything is properly structured
-        ensureValidProfileData(profileData);
-        
-        const isPartialData = !profileData.businessRating || !profileData.businessPhone || !profileData.businessWebsite;
-        
-        if (isPartialData) {
-          toast.warning('Datos incompletos', {
-            description: 'Se obtuvieron algunos datos del perfil, pero no está completo'
-          });
-        } else {
+        // Verify if we got real data
+        if (profileData && 
+            (profileData.businessName || profileData.businessAddress) && 
+            profileData.businessName !== 'Negocio de ejemplo') {
+          
+          console.log('Successfully extracted business profile data via ValueSerp');
+          
+          // Ensure everything is properly structured
+          ensureValidProfileData(profileData);
+          
           toast.success('Información extraída correctamente', {
-            description: 'Se ha obtenido información completa del perfil de negocio',
+            description: 'Datos obtenidos mediante ValueSerp',
           });
+          
+          return profileData;
         }
-        
-        return profileData;
+      } catch (valueserpError) {
+        console.error('Error during ValueSerp data extraction:', valueserpError);
       }
-    } catch (extractError) {
-      console.error('Error during GMB data extraction:', extractError);
     }
     
-    // If GMB scraping failed, try ValueSerp API if we have a business name
+    // If ValueSerp API failed, try scraping directly from GMB
     if (!profileData || profileData.businessName === 'Negocio de ejemplo') {
-      // Extract business name from URL if possible
-      const businessName = extractBusinessNameFromUrl(businessUrl);
-      
-      if (businessName) {
-        try {
-          console.log('Trying ValueSerp API with business name:', businessName);
-          toast.info('Consultando API alternativa', {
-            description: 'Intentando obtener datos mediante ValueSerp...'
-          });
+      try {
+        profileData = await extractGmbData(businessUrl, true);
+        
+        // Verify if we got real data (not simulated)
+        if (profileData && 
+            (profileData.businessName || profileData.businessAddress) && 
+            profileData.businessName !== 'Negocio de ejemplo') {
           
-          profileData = await extractValueserpData(businessName);
+          console.log('Successfully extracted business profile data via GMB scraping');
           
-          // Verify if we got real data
-          if (profileData && 
-              (profileData.businessName || profileData.businessAddress) && 
-              profileData.businessName !== 'Negocio de ejemplo') {
-            
-            console.log('Successfully extracted business profile data via ValueSerp');
-            
-            // Ensure everything is properly structured
-            ensureValidProfileData(profileData);
-            
-            toast.success('Información extraída correctamente', {
-              description: 'Datos obtenidos mediante ValueSerp',
+          // Ensure everything is properly structured
+          ensureValidProfileData(profileData);
+          
+          const isPartialData = !profileData.businessRating || !profileData.businessPhone || !profileData.businessWebsite;
+          
+          if (isPartialData) {
+            toast.warning('Datos incompletos', {
+              description: 'Se obtuvieron algunos datos del perfil, pero no está completo'
             });
-            
-            return profileData;
+          } else {
+            toast.success('Información extraída correctamente', {
+              description: 'Se ha obtenido información completa del perfil de negocio',
+            });
           }
-        } catch (valueserpError) {
-          console.error('Error during ValueSerp data extraction:', valueserpError);
+          
+          return profileData;
         }
+      } catch (extractError) {
+        console.error('Error during GMB data extraction:', extractError);
       }
     }
     

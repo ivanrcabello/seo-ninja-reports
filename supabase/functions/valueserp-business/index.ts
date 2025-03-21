@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query, place_id } = await req.json();
+    const { query, place_id, use_configured_key = false } = await req.json();
     
     if (!query && !place_id) {
       return new Response(
@@ -30,7 +30,27 @@ Deno.serve(async (req) => {
       );
     }
     
-    if (!valueSerpApiKey) {
+    // Obtener la API key configurada en settings si se solicita
+    let apiKey = valueSerpApiKey;
+    
+    if (use_configured_key) {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('value_serp_key')
+          .eq('id', 1)
+          .single();
+          
+        if (!error && data?.value_serp_key) {
+          console.log('Using API key from settings');
+          apiKey = data.value_serp_key;
+        }
+      } catch (err) {
+        console.error('Error getting API key from settings:', err);
+      }
+    }
+    
+    if (!apiKey) {
       console.error('ValueSerp API key not configured');
       return new Response(
         JSON.stringify({ success: false, error: 'ValueSerp API key not configured' }),
@@ -42,7 +62,7 @@ Deno.serve(async (req) => {
     
     // Prepare params for ValueSerp API
     const params = new URLSearchParams({
-      api_key: valueSerpApiKey,
+      api_key: apiKey,
       q: query || `place_id:${place_id}`,
       google_domain: 'google.com',
       location: 'Spain',
@@ -62,7 +82,7 @@ Deno.serve(async (req) => {
     }
     
     const data = await response.json();
-    console.log('ValueSerp API response:', JSON.stringify(data, null, 2));
+    console.log('ValueSerp API response received');
     
     // Extract business data from ValueSerp response
     const businessData = extractBusinessDataFromValueSerp(data, query || place_id);
