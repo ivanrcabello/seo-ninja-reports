@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, Upload, FileText } from 'lucide-react';
+import { FileUp, Upload, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { parseSemrushPdf, createSeoReport } from '@/services/seoReportService';
 
@@ -15,6 +15,7 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [processingProgress, setProcessingProgress] = useState<number>(0);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -54,6 +55,7 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
     }
 
     setIsUploading(true);
+    setProcessingProgress(10);
     console.log('Starting PDF upload and processing for client:', clientId);
     
     try {
@@ -63,8 +65,10 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
         description: 'Extrayendo datos del PDF...'
       });
       
+      setProcessingProgress(30);
       // Parse the PDF
       const parsedData = await parseSemrushPdf(selectedFile);
+      setProcessingProgress(60);
       
       if (!parsedData) {
         console.error('Failed to parse PDF, no data returned');
@@ -73,17 +77,20 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
         });
         setIsUploading(false);
         setProcessingStatus('');
+        setProcessingProgress(0);
         return;
       }
 
-      setProcessingStatus('Datos extraídos. Guardando informe...');
+      setProcessingStatus(`Datos extraídos para: ${parsedData.domain}. Guardando informe...`);
       console.log('Parsed data successfully:', parsedData);
       toast.info('Guardando informe', {
         description: `Creando informe para ${parsedData.domain}...`
       });
-
+      
+      setProcessingProgress(80);
       // Create a new SEO report
       const result = await createSeoReport(clientId, parsedData);
+      setProcessingProgress(100);
       
       if (result) {
         console.log('SEO report created successfully:', result);
@@ -108,6 +115,7 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
       setProcessingStatus('Error en el procesamiento');
     } finally {
       setIsUploading(false);
+      setProcessingProgress(0);
     }
   };
 
@@ -128,10 +136,11 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
               className="hidden"
               accept="application/pdf,.pdf"
               onChange={handleFileChange}
+              disabled={isUploading}
             />
             <label
               htmlFor="pdf-upload"
-              className="cursor-pointer flex flex-col items-center justify-center gap-2"
+              className={`cursor-pointer flex flex-col items-center justify-center gap-2 ${isUploading ? 'opacity-50' : ''}`}
             >
               {selectedFile ? (
                 <FileText className="h-10 w-10 text-primary" />
@@ -154,18 +163,38 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
             disabled={!selectedFile || isUploading}
             className="w-full"
           >
-            {isUploading ? 'Procesando...' : 'Subir y Procesar PDF'}
-            <Upload className="ml-2 h-4 w-4" />
+            {isUploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Procesando...
+              </>
+            ) : (
+              <>
+                Subir y Procesar PDF
+                <Upload className="ml-2 h-4 w-4" />
+              </>
+            )}
           </Button>
           
           {processingStatus && (
-            <div className="text-sm text-muted-foreground text-center">
-              Estado: {processingStatus}
+            <div className="text-sm text-muted-foreground">
+              <div className="flex items-center justify-between mb-1">
+                <span>Estado: {processingStatus}</span>
+                {isUploading && <span>{processingProgress}%</span>}
+              </div>
+              {isUploading && (
+                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                  <div 
+                    className="bg-primary h-2.5 rounded-full transition-all duration-300" 
+                    style={{ width: `${processingProgress}%` }}
+                  ></div>
+                </div>
+              )}
             </div>
           )}
           
           <div className="text-xs text-muted-foreground mt-2">
-            Cliente ID: {clientId}
+            ID de Cliente: {clientId}
           </div>
         </div>
       </CardContent>
