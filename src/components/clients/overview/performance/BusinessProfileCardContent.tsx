@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { BusinessProfile } from '@/types/report.types';
 import { Button } from '@/components/ui/button';
@@ -124,10 +125,19 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
     );
   }
 
-  const getRatingColor = (rating: number) => {
+  const getRatingColor = (rating: number | null | undefined) => {
+    if (!rating) return "text-muted-foreground";
     if (rating >= 4.5) return "text-green-500";
     if (rating >= 3.5) return "text-amber-500";
     return "text-red-500";
+  };
+
+  // Helper function to safely render the rating
+  const renderRating = (rating: number | null | undefined) => {
+    if (rating === null || rating === undefined) {
+      return "N/A";
+    }
+    return rating.toFixed(1);
   };
 
   return (
@@ -140,11 +150,11 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
           </div>
         )}
       
-        {displayProfile?.businessRating !== undefined && (
+        {displayProfile?.businessRating !== undefined && displayProfile?.businessRating !== null && (
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Valoración</span>
             <span className={cn("flex items-center", getRatingColor(displayProfile.businessRating))}>
-              {displayProfile.businessRating.toFixed(1)}
+              {renderRating(displayProfile.businessRating)}
               <Star className="h-3.5 w-3.5 ml-1 fill-current" />
               <span className="text-xs text-muted-foreground ml-1">
                 ({displayProfile.businessReviewsCount || 0})
