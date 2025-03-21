@@ -7,8 +7,7 @@ import { simulateBusinessProfileData } from './mocks';
  * Extract business information using ValueSerp API
  */
 export const extractBusinessInfoWithValueSerp = async (
-  query: string,
-  clientId?: string
+  query: string
 ): Promise<Partial<BusinessProfile> | null> => {
   if (!query) {
     toast.error('Invalid query');
@@ -16,7 +15,7 @@ export const extractBusinessInfoWithValueSerp = async (
   }
 
   try {
-    console.log(`Extracting business info with ValueSerp: "${query}", clientId: ${clientId || 'not provided'}`);
+    console.log(`Extracting business info with ValueSerp: "${query}"`);
     toast.info('Consultando ValueSerp API', {
       description: 'Extrayendo datos del negocio...'
     });
@@ -34,12 +33,11 @@ export const extractBusinessInfoWithValueSerp = async (
 
     console.log('Calling ValueSerp edge function...');
     
-    // Call the edge function with query and clientId
+    // Call the edge function with query
     const { data, error } = await supabase.functions.invoke('valueserp-business', {
       body: {
         query,
-        apiKey: valueSerpApiKey,
-        clientId
+        apiKey: valueSerpApiKey
       }
     });
 
