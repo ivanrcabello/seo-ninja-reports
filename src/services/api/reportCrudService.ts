@@ -2,188 +2,178 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Report } from '@/types/report.types';
 import { toast } from 'sonner';
-import { handleServiceError } from './baseService';
 
 /**
- * Fetches all reports from Supabase
+ * Fetches all reports for the current user
  */
-export const fetchReports = async () => {
+export const fetchReports = async (): Promise<Report[]> => {
   try {
-    const { data: reportsData, error } = await supabase
+    const { data, error } = await supabase
       .from('reports')
-      .select('*, clients!inner(*)')
+      .select(`
+        id, 
+        client_id,
+        title,
+        date,
+        status,
+        url,
+        summary,
+        content,
+        custom_prompt,
+        notes,
+        has_business_profile
+      `)
       .order('date', { ascending: false });
-    
+
     if (error) {
+      toast.error('Error al cargar informes', {
+        description: error.message,
+      });
       throw error;
     }
 
-    const formattedReports: Report[] = reportsData.map((report: any) => {
-      // Safely handle content object
-      const reportContent = report.content && typeof report.content === 'object' 
-        ? report.content 
-        : {
-            executiveSummary: '',
-            technicalAnalysis: '',
-            contentAnalysis: '',
-            backlinksAnalysis: '',
-            recommendations: ''
-          };
-      
-      return {
-        id: report.id,
-        clientId: report.client_id,
-        title: report.title,
-        date: report.date,
-        status: report.status as 'processing' | 'completed' | 'failed',
-        url: report.url,
-        summary: report.summary,
-        content: reportContent as any as Report['content'],
-        customPrompt: report.custom_prompt
-      };
-    });
-    
-    return formattedReports;
+    return data.map(report => ({
+      id: report.id,
+      clientId: report.client_id,
+      title: report.title,
+      date: report.date,
+      status: report.status as 'processing' | 'completed' | 'failed',
+      url: report.url,
+      summary: report.summary,
+      content: report.content ? (report.content as unknown as Report['content']) : undefined,
+      customPrompt: report.custom_prompt,
+      notes: report.notes,
+      hasBusinessProfile: report.has_business_profile
+    }));
   } catch (error: any) {
-    return handleServiceError(error, 'Error al cargar informes');
+    console.error('Error fetching reports:', error);
+    return [];
   }
 };
 
 /**
- * Creates a new report in the database
+ * Creates a new report
  */
-export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status'>) => {
+export const createNewReport = async (data: Omit<Report, 'id' | 'date' | 'status'>): Promise<Report> => {
   try {
-    const { clientId, title, url, summary, content, customPrompt } = data;
+    // Convert content to a JSON-compatible structure
+    const contentForDb = data.content ? JSON.parse(JSON.stringify(data.content)) : null;
     
-    // Prepare a properly structured content object that's compatible with Supabase JSON type
-    let validContent = content || {
-      executiveSummary: '',
-      technicalAnalysis: '',
-      contentAnalysis: '',
-      backlinksAnalysis: '',
-      recommendations: ''
-    };
-    
-    console.log('Creating new report with data:', { clientId, title, url, summary });
-    
-    // Convert the content to a simple object that Supabase can handle
-    const supabaseData = {
-      client_id: clientId,
-      title,
-      url,
-      summary,
-      content: validContent as any,
-      custom_prompt: customPrompt,
-      status: 'completed' as 'processing' | 'completed' | 'failed'
-    };
-    
-    const { data: newReport, error } = await supabase
+    const { data: reportData, error } = await supabase
       .from('reports')
-      .insert(supabaseData)
+      .insert({
+        client_id: data.clientId,
+        title: data.title,
+        url: data.url,
+        summary: data.summary || '',
+        content: contentForDb,
+        custom_prompt: data.customPrompt || '',
+        notes: data.notes || '',
+        status: 'completed'
+      })
       .select()
       .single();
-    
+
     if (error) {
-      console.error('Error in createNewReport Supabase query:', error);
+      toast.error('Error al crear informe', {
+        description: error.message,
+      });
       throw error;
     }
-    
-    if (!newReport) {
-      console.error('No report data returned after insert');
-      throw new Error('Error al crear informe: No se devolvieron datos');
-    }
-    
-    console.log('Report created successfully:', newReport);
-    
-    const formattedReport: Report = {
-      id: newReport.id,
-      clientId: newReport.client_id,
-      title: newReport.title,
-      date: newReport.date,
-      status: newReport.status as 'processing' | 'completed' | 'failed',
-      url: newReport.url,
-      summary: newReport.summary,
-      content: newReport.content && typeof newReport.content === 'object' 
-        ? (newReport.content as any) as Report['content']
-        : undefined,
-      customPrompt: newReport.custom_prompt
+
+    return {
+      id: reportData.id,
+      clientId: reportData.client_id,
+      title: reportData.title,
+      date: reportData.date,
+      status: reportData.status as 'processing' | 'completed' | 'failed',
+      url: reportData.url,
+      summary: reportData.summary,
+      content: reportData.content ? (reportData.content as unknown as Report['content']) : undefined,
+      customPrompt: reportData.custom_prompt,
+      notes: reportData.notes
     };
-    
-    toast.success('Informe creado exitosamente');
-    return formattedReport;
   } catch (error: any) {
-    return handleServiceError(error, 'Error al crear informe');
+    console.error('Error creating report:', error);
+    throw error;
   }
 };
 
 /**
- * Updates an existing report in the database
+ * Updates an existing report
  */
-export const updateExistingReport = async (id: string, data: Partial<Report>) => {
+export const updateExistingReport = async (id: string, data: Partial<Report>): Promise<Report> => {
   try {
-    const dbData: any = {};
-    if (data.clientId !== undefined) dbData.client_id = data.clientId;
-    if (data.title !== undefined) dbData.title = data.title;
-    if (data.status !== undefined) dbData.status = data.status;
-    if (data.url !== undefined) dbData.url = data.url;
-    if (data.summary !== undefined) dbData.summary = data.summary;
+    // Create an object with only the fields we need to update
+    const updateData: any = {};
     
-    // Handle content update
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.url !== undefined) updateData.url = data.url;
+    if (data.summary !== undefined) updateData.summary = data.summary;
     if (data.content !== undefined) {
-      dbData.content = data.content as any;
+      // Convert content to a JSON-compatible structure
+      updateData.content = JSON.parse(JSON.stringify(data.content));
     }
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.customPrompt !== undefined) updateData.custom_prompt = data.customPrompt;
+    if (data.notes !== undefined) updateData.notes = data.notes;
     
-    if (data.customPrompt !== undefined) dbData.custom_prompt = data.customPrompt;
+    // Add updated_at timestamp
+    updateData.updated_at = new Date().toISOString();
     
-    const { data: updatedReport, error } = await supabase
+    const { data: reportData, error } = await supabase
       .from('reports')
-      .update(dbData)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) {
+      toast.error('Error al actualizar informe', {
+        description: error.message,
+      });
       throw error;
     }
-    
-    const formattedReport: Report = {
-      id: updatedReport.id,
-      clientId: updatedReport.client_id,
-      title: updatedReport.title,
-      date: updatedReport.date,
-      status: updatedReport.status as 'processing' | 'completed' | 'failed',
-      url: updatedReport.url,
-      summary: updatedReport.summary,
-      content: updatedReport.content && typeof updatedReport.content === 'object' 
-        ? (updatedReport.content as any) as Report['content']
-        : undefined,
-      customPrompt: updatedReport.custom_prompt
+
+    return {
+      id: reportData.id,
+      clientId: reportData.client_id,
+      title: reportData.title,
+      date: reportData.date,
+      status: reportData.status as 'processing' | 'completed' | 'failed',
+      url: reportData.url,
+      summary: reportData.summary,
+      content: reportData.content ? (reportData.content as unknown as Report['content']) : undefined,
+      customPrompt: reportData.custom_prompt,
+      notes: reportData.notes,
+      hasBusinessProfile: reportData.has_business_profile
     };
-    
-    toast.success('Informe actualizado exitosamente');
-    return formattedReport;
   } catch (error: any) {
-    return handleServiceError(error, 'Error al actualizar informe');
+    console.error('Error updating report:', error);
+    throw error;
   }
 };
 
 /**
- * Deletes a report from the database
+ * Deletes a report by ID
  */
-export const deleteReportById = async (id: string) => {
+export const deleteReportById = async (id: string): Promise<void> => {
   try {
     const { error } = await supabase
       .from('reports')
       .delete()
       .eq('id', id);
-    
+
     if (error) {
+      toast.error('Error al eliminar informe', {
+        description: error.message,
+      });
       throw error;
     }
-    
-    toast.success('Informe eliminado exitosamente');
+
+    toast.success('Informe eliminado correctamente');
   } catch (error: any) {
-    return handleServiceError(error, 'Error al eliminar informe');
+    console.error('Error deleting report:', error);
+    throw error;
   }
 };
