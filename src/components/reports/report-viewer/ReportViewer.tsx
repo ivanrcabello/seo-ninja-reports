@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { Report } from '@/types/report.types';
+import { Report, BusinessProfile } from '@/types/report.types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import ReportHeader from '../ReportHeader';
 import ReportTabs from './ReportTabs';
 import { getPageSpeedData } from '@/services/api/pagespeed/getPageSpeedData';
+import { getBusinessProfile } from '@/services/api/businessProfile/getBusinessProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'react-router-dom';
 import ReportEditDialog from '../ReportEditDialog';
@@ -22,7 +23,9 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   setIsEditing = () => {} 
 }) => {
   const [pageSpeedData, setPageSpeedData] = useState<any>(null);
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
   const [isLoadingPageSpeed, setIsLoadingPageSpeed] = useState(false);
+  const [isLoadingBusinessProfile, setIsLoadingBusinessProfile] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -61,7 +64,33 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       }
     };
     
+    const fetchBusinessProfile = async () => {
+      if (!report || !report.id) return;
+      
+      try {
+        setIsLoadingBusinessProfile(true);
+        const data = await getBusinessProfile(report.id);
+        
+        if (data) {
+          console.log('Business Profile data loaded:', data);
+          setBusinessProfile(data);
+        } else {
+          console.log('No Business Profile data found for report:', report.id);
+        }
+      } catch (error) {
+        console.error('Error fetching Business Profile data:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los datos del perfil de negocio",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingBusinessProfile(false);
+      }
+    };
+    
     fetchPageSpeedData();
+    fetchBusinessProfile();
   }, [report, toast]);
 
   const handleEditSection = (section: string, content: string) => {
@@ -141,7 +170,9 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         <ReportTabs 
           report={report} 
           pageSpeedData={pageSpeedData} 
+          businessProfile={businessProfile}
           isLoadingPageSpeed={isLoadingPageSpeed} 
+          isLoadingBusinessProfile={isLoadingBusinessProfile}
           isEditing={isEditing}
           onEdit={handleEditSection}
         />
