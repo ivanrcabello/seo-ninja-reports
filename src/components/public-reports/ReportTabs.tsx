@@ -1,18 +1,9 @@
 
 import React from 'react';
-import { TabsList } from '@/components/ui/tabs';
-import TabItem from './TabItem';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Info, 
-  CheckCircle, 
-  ArrowUp, 
-  ArrowDown, 
-  AlertTriangle, 
-  MapPin, 
-  Star, 
-  FileText, 
-  Building,
-  ChevronRight
+  FileText, Code, FileSearch, ExternalLink, 
+  TrendingUp, MapPin, Briefcase, Search, Building2 
 } from 'lucide-react';
 
 interface ReportTabsProps {
@@ -28,91 +19,102 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
   hasLocalSeo, 
   hasProposal, 
   hasKeywords,
-  hasBusinessProfile 
+  hasBusinessProfile
 }) => {
-  // Calculate grid columns based on tab count
-  const gridCols = tabCount <= 5 ? 5 : (tabCount <= 7 ? 4 : 3);
+  // Calculate the width based on number of tabs
+  const tabWidth = tabCount > 0 ? `${Math.min(100 / tabCount, 20)}%` : '20%';
   
   return (
-    <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md py-4 border-b border-primary/10">
-      <TabsList className="w-full flex flex-wrap justify-center gap-1 h-auto p-2 bg-gradient-to-r from-primary/5 to-background backdrop-blur-sm rounded-lg border border-primary/10">
-        <TabItem 
-          value="executive-summary" 
-          icon={Info} 
-          label="Resumen Ejecutivo" 
-          shortLabel="Resumen" 
-          color="bg-primary/20 text-primary hover:bg-primary/30"
-        />
-        <TabItem 
-          value="technical" 
-          icon={CheckCircle} 
-          label="Técnico" 
-          shortLabel="Técnico" 
-          color="bg-green-500/20 text-green-500 hover:bg-green-500/30"
-        />
-        <TabItem 
-          value="content" 
-          icon={ArrowUp} 
-          label="Contenido" 
-          shortLabel="Contenido" 
-          color="bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
-        />
-        <TabItem 
-          value="backlinks" 
-          icon={ArrowDown} 
-          label="Backlinks" 
-          shortLabel="Backlinks" 
-          color="bg-purple-500/20 text-purple-500 hover:bg-purple-500/30"
-        />
-        <TabItem 
-          value="recommendations" 
-          icon={AlertTriangle} 
-          label="Recomendaciones" 
-          shortLabel="Recom." 
-          color="bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
-        />
-        
-        {hasLocalSeo && (
-          <TabItem 
-            value="local-seo" 
-            icon={MapPin} 
-            label="SEO Local" 
-            shortLabel="Local" 
-            color="bg-red-500/20 text-red-500 hover:bg-red-500/30"
-          />
-        )}
-        
-        {hasProposal && (
-          <TabItem 
-            value="proposal" 
-            icon={Star} 
-            label="Propuesta" 
-            shortLabel="Propuesta" 
-            color="bg-orange-500/20 text-orange-500 hover:bg-orange-500/30"
-          />
-        )}
-        
-        {hasKeywords && (
-          <TabItem 
-            value="keywords" 
-            icon={FileText} 
-            label="Palabras Clave" 
-            shortLabel="Keywords" 
-            color="bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30"
-          />
-        )}
-        
-        {hasBusinessProfile && (
-          <TabItem 
-            value="business-profile" 
-            icon={Building} 
-            label="Ficha de Negocio" 
-            shortLabel="GMB" 
-            color="bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30"
-          />
-        )}
-      </TabsList>
-    </div>
+    <TabsList className="mb-8 w-full h-auto flex flex-wrap bg-background/50 backdrop-blur-sm border p-1">
+      <TabsTrigger 
+        value="executive-summary" 
+        className="py-2 data-[state=active]:bg-primary/10"
+        style={{ width: tabWidth }}
+      >
+        <FileText className="h-4 w-4 mr-2" />
+        <span className="hidden sm:inline">Resumen</span>
+      </TabsTrigger>
+      
+      <TabsTrigger 
+        value="technical" 
+        className="py-2 data-[state=active]:bg-green-500/10"
+        style={{ width: tabWidth }}
+      >
+        <Code className="h-4 w-4 mr-2" />
+        <span className="hidden sm:inline">Técnico</span>
+      </TabsTrigger>
+      
+      <TabsTrigger 
+        value="content" 
+        className="py-2 data-[state=active]:bg-blue-500/10"
+        style={{ width: tabWidth }}
+      >
+        <FileSearch className="h-4 w-4 mr-2" />
+        <span className="hidden sm:inline">Contenido</span>
+      </TabsTrigger>
+      
+      <TabsTrigger 
+        value="backlinks" 
+        className="py-2 data-[state=active]:bg-purple-500/10"
+        style={{ width: tabWidth }}
+      >
+        <ExternalLink className="h-4 w-4 mr-2" />
+        <span className="hidden sm:inline">Backlinks</span>
+      </TabsTrigger>
+      
+      <TabsTrigger 
+        value="recommendations" 
+        className="py-2 data-[state=active]:bg-yellow-500/10"
+        style={{ width: tabWidth }}
+      >
+        <TrendingUp className="h-4 w-4 mr-2" />
+        <span className="hidden sm:inline">Recomendaciones</span>
+      </TabsTrigger>
+      
+      {hasLocalSeo && (
+        <TabsTrigger 
+          value="local-seo" 
+          className="py-2 data-[state=active]:bg-red-500/10"
+          style={{ width: tabWidth }}
+        >
+          <MapPin className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">SEO Local</span>
+        </TabsTrigger>
+      )}
+      
+      {hasProposal && (
+        <TabsTrigger 
+          value="proposal" 
+          className="py-2 data-[state=active]:bg-orange-500/10"
+          style={{ width: tabWidth }}
+        >
+          <Briefcase className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Propuesta</span>
+        </TabsTrigger>
+      )}
+      
+      {hasKeywords && (
+        <TabsTrigger 
+          value="keywords" 
+          className="py-2 data-[state=active]:bg-emerald-500/10"
+          style={{ width: tabWidth }}
+        >
+          <Search className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Keywords</span>
+        </TabsTrigger>
+      )}
+      
+      {hasBusinessProfile && (
+        <TabsTrigger 
+          value="business-profile" 
+          className="py-2 data-[state=active]:bg-indigo-500/10"
+          style={{ width: tabWidth }}
+        >
+          <Building2 className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Ficha de Negocio</span>
+        </TabsTrigger>
+      )}
+    </TabsList>
   );
 };
 

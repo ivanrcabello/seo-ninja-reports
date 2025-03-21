@@ -1,11 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Report } from '@/types/report.types';
+import { Report, BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
 import { fetchPageSpeedData, savePageSpeedData } from './pageSpeedService';
 import { uploadReportFiles } from './reportFileService';
 import { processOpenAIReport, markReportAsFailed, checkAndFixStuckReports } from './openaiProcessingService';
 import { handleServiceError } from './baseService';
+import { saveBusinessProfile } from '../reportService';
 
 interface Keyword {
   keyword: string;
@@ -23,7 +24,8 @@ export const generateSeoReport = async (
   customPrompt?: string,
   prefetchedPageSpeedData?: any,
   keywords?: Keyword[],
-  notes?: string
+  notes?: string,
+  businessProfile?: Partial<BusinessProfile> | null
 ): Promise<Report> => {
   try {
     const session = await supabase.auth.getSession();
@@ -35,6 +37,7 @@ export const generateSeoReport = async (
     console.log('¿Hay datos de PageSpeed prefetched?', !!prefetchedPageSpeedData);
     console.log('¿Hay palabras clave?', !!keywords && keywords.length > 0);
     console.log('¿Hay notas?', !!notes);
+    console.log('¿Hay perfil de negocio?', !!businessProfile);
 
     // Check for stuck reports and fix them
     await checkAndFixStuckReports();
@@ -50,7 +53,9 @@ export const generateSeoReport = async (
       serviceProposal: '',
       keywords: '',
       // Include prefetched PageSpeed data if available
-      pageSpeedData: prefetchedPageSpeedData || null
+      pageSpeedData: prefetchedPageSpeedData || null,
+      // Include business profile if available
+      businessProfile: businessProfile || null
     };
 
     // Create a new report with status "processing"
@@ -65,7 +70,8 @@ export const generateSeoReport = async (
         summary: 'Generando informe...',
         content: initialContent,
         custom_prompt: customPrompt || '',
-        notes: notes || null
+        notes: notes || null,
+        has_business_profile: !!businessProfile
       })
       .select()
       .single();
@@ -107,6 +113,17 @@ export const generateSeoReport = async (
         // Don't stop the process if keywords insertion fails
       }
     }
+    
+    // If we have business profile data, save it to the database
+    if (businessProfile) {
+      try {
+        await saveBusinessProfile(newReport.id, businessProfile);
+        console.log('Perfil de negocio guardado correctamente');
+      } catch (profileError) {
+        console.error('Error en proceso de guardado de perfil de negocio:', profileError);
+        // Don't stop the process if business profile save fails
+      }
+    }
 
     // Start the report generation process with prefetched PageSpeed data
     processReportGeneration(
@@ -116,7 +133,8 @@ export const generateSeoReport = async (
       files, 
       customPrompt, 
       prefetchedPageSpeedData,
-      notes
+      notes,
+      businessProfile
     ).catch(error => {
       console.error('Error no controlado en procesamiento de informe:', error);
       markReportAsFailed(newReport.id, `Error no controlado: ${error.message || 'Error desconocido'}`);
@@ -135,7 +153,8 @@ export const generateSeoReport = async (
       content: newReport.content && typeof newReport.content === 'object' 
         ? (newReport.content as any) as Report['content']
         : undefined,
-      customPrompt: newReport.custom_prompt
+      customPrompt: newReport.custom_prompt,
+      hasBusinessProfile: newReport.has_business_profile
     };
   } catch (error: any) {
     console.error('Error al iniciar generación del informe:', error);
@@ -153,7 +172,8 @@ const processReportGeneration = async (
   files: File[],
   customPrompt?: string,
   prefetchedPageSpeedData?: any,
-  notes?: string
+  notes?: string,
+  businessProfile?: Partial<BusinessProfile> | null
 ) => {
   try {
     console.log('Iniciando proceso de generación en segundo plano para reporte:', reportId);
@@ -199,7 +219,7 @@ const processReportGeneration = async (
     console.log('Procesando informe con OpenAI...');
     
     // Process the report with OpenAI
-    await processOpenAIReport(reportId, url, pageSpeedData, customPrompt, notes);
+    await processOpenAIReport(reportId, url, pageSpeedData, customPrompt, notes, businessProfile);
     console.log('Procesamiento de informe completado con éxito');
     
   } catch (error: any) {
@@ -263,10 +283,12 @@ export const retryFailedReport = async (reportId: string): Promise<boolean> => {
     
     // Get PageSpeed data if available
     let pageSpeedData = null;
+    let businessProfile = null;
     
-    // Check if content exists and is an object before trying to access pageSpeedData
+    // Check if content exists and is an object before trying to access properties
     if (report.content && typeof report.content === 'object') {
       pageSpeedData = (report.content as any).pageSpeedData || null;
+      businessProfile = (report.content as any).businessProfile || null;
     }
     
     // Process with OpenAI
@@ -275,7 +297,8 @@ export const retryFailedReport = async (reportId: string): Promise<boolean> => {
       report.url, 
       pageSpeedData,
       report.custom_prompt || undefined,
-      report.notes || undefined
+      report.notes || undefined,
+      businessProfile
     );
     
     return true;
@@ -284,3 +307,5 @@ export const retryFailedReport = async (reportId: string): Promise<boolean> => {
     return false;
   }
 };
+
+export { checkAndFixStuckReports };

@@ -113,8 +113,21 @@ Deno.serve(async (req) => {
         }
         
         // Format business hours to ensure it's a serializable object
-        const formattedHours = businessData.businessHours ? 
-          JSON.stringify(businessData.businessHours) : '{}';
+        let formattedHours = {};
+        
+        // Ensure businessHours is properly formatted
+        if (businessData.businessHours) {
+          if (typeof businessData.businessHours === 'string') {
+            try {
+              formattedHours = JSON.parse(businessData.businessHours);
+            } catch (e) {
+              console.error('Error parsing business hours string:', e);
+              formattedHours = {};
+            }
+          } else if (typeof businessData.businessHours === 'object') {
+            formattedHours = businessData.businessHours;
+          }
+        }
         
         const dbOperation = existingProfile?.id ? 
           // Update existing record
@@ -188,6 +201,7 @@ Deno.serve(async (req) => {
 // Function to extract business data from ValueSerp response
 function extractBusinessDataFromValueSerp(data: any, searchQuery: string): BusinessProfileData {
   const businessData: BusinessProfileData = {
+    businessName: '',
     businessUrl: '',
     businessHours: {}
   };

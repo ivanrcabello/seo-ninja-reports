@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Report } from '@/types/report.types';
+import { Report, BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
 import { formatPageSpeedData, getPageSpeedData } from './pageSpeedService';
 import { generateOpenAIReport } from './openaiService';
@@ -13,13 +13,15 @@ export const processOpenAIReport = async (
   url: string,
   pageSpeedData: any = null,
   customPrompt?: string,
-  notes?: string
+  notes?: string,
+  businessProfile?: Partial<BusinessProfile> | null
 ): Promise<Report | null> => {
   try {
     console.log('Iniciando procesamiento de informe con OpenAI para:', url);
     console.log('ID del informe:', reportId);
     console.log('¿Hay datos de PageSpeed?', !!pageSpeedData);
     console.log('¿Hay notas?', !!notes);
+    console.log('¿Hay perfil de negocio?', !!businessProfile);
     
     let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
     prompt = prompt.replace('[DOMINIO]', new URL(url).hostname);
@@ -39,6 +41,20 @@ export const processOpenAIReport = async (
       prompt += "\n\nNo se pudieron obtener datos de Google PageSpeed Insights. Por favor, incluye en el informe recomendaciones generales sobre la importancia de la velocidad de carga y rendimiento del sitio, sin datos específicos.";
     }
     
+    // Add business profile data to prompt if available
+    if (businessProfile && businessProfile.businessName) {
+      prompt += "\n\nA continuación se incluyen datos del perfil de negocio. Utiliza esta información para enriquecer la sección de SEO Local y análisis general:\n";
+      prompt += `Nombre del negocio: ${businessProfile.businessName}\n`;
+      if (businessProfile.businessAddress) prompt += `Dirección: ${businessProfile.businessAddress}\n`;
+      if (businessProfile.businessCategory) prompt += `Categoría: ${businessProfile.businessCategory}\n`;
+      if (businessProfile.businessPhone) prompt += `Teléfono: ${businessProfile.businessPhone}\n`;
+      if (businessProfile.businessWebsite) prompt += `Sitio web: ${businessProfile.businessWebsite}\n`;
+      if (businessProfile.businessRating) prompt += `Valoración: ${businessProfile.businessRating} (${businessProfile.businessReviewsCount || 0} reseñas)\n`;
+      if (businessProfile.businessUrl) prompt += `URL de Google Maps: ${businessProfile.businessUrl}\n`;
+      
+      prompt += "\nAnaliza estos datos y proporciona recomendaciones específicas para mejorar la presencia local del negocio.";
+    }
+    
     // Add notes to prompt if available
     if (notes && notes.trim()) {
       prompt += "\n\nAquí hay algunas notas importantes sobre este proyecto que debes tener en cuenta:\n" + notes;
@@ -50,7 +66,7 @@ export const processOpenAIReport = async (
           .from('reports')
           .select('notes')
           .eq('id', reportId)
-          .single();
+          .maybeSingle();
           
         if (!reportError && reportData && reportData.notes) {
           prompt += "\n\nAdicional, aquí hay algunas notas importantes sobre este proyecto que debes tener en cuenta:\n" + reportData.notes;
@@ -125,7 +141,9 @@ export const processOpenAIReport = async (
       serviceProposal: sections.serviceProposal || '',
       keywords: sections.keywords || '',
       // Add pageSpeedData explicitly to make sure it's saved with the report content
-      pageSpeedData: pageSpeedData || null
+      pageSpeedData: pageSpeedData || null,
+      // Include business profile if available
+      businessProfile: businessProfile || null
     };
     
     console.log('Actualización de content preparada con secciones:', Object.keys(reportContent));
@@ -163,7 +181,8 @@ export const processOpenAIReport = async (
         ? (completedReport.content as any) as Report['content']
         : undefined,
       customPrompt: completedReport.custom_prompt,
-      notes: completedReport.notes
+      notes: completedReport.notes,
+      hasBusinessProfile: completedReport.has_business_profile
     };
     
     toast.success('Informe generado exitosamente');

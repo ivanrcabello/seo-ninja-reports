@@ -1,26 +1,28 @@
 
-import React, { useState } from 'react';
-import { CardContent, CardFooter } from '@/components/ui/card';
+import React from 'react';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Upload, Info, RefreshCw, Building2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2 } from 'lucide-react';
-import FileUploader from '../FileUploader';
-import BusinessUrlInput from './BusinessUrlInput';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { BusinessProfile } from '@/types/report.types';
+import { extractValueserpData } from '@/services/api/businessProfile/extractValueserpData';
+import { Separator } from '@/components/ui/separator';
 
 interface ReportGeneratorStep2Props {
   files: File[];
-  setFiles: (files: File[]) => void;
+  setFiles: React.Dispatch<React.SetStateAction<File[]>>;
   customPrompt: string;
-  setCustomPrompt: (prompt: string) => void;
+  setCustomPrompt: React.Dispatch<React.SetStateAction<string>>;
   hasGoogleApiKey: boolean;
   pageSpeedDataFetched: boolean;
   isLoading: boolean;
   previousStep: () => void;
   nextStep: () => void;
-  businessUrl: string;
+  businessUrl?: string;
   setBusinessUrl: (url: string) => void;
   businessProfile: Partial<BusinessProfile> | null;
   setBusinessProfile: (profile: Partial<BusinessProfile> | null) => void;
@@ -39,140 +41,213 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
   businessUrl,
   setBusinessUrl,
   businessProfile,
-  setBusinessProfile,
+  setBusinessProfile
 }) => {
-  const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [isLoadingBusinessProfile, setIsLoadingBusinessProfile] = React.useState(false);
   
-  return (
-    <div>
-      <div className="mb-6 flex items-center justify-center">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-            1
-          </div>
-          <div className="h-0.5 w-10 bg-primary"></div>
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-            2
-          </div>
-          <div className="h-0.5 w-10 bg-muted"></div>
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
-            3
-          </div>
-          <div className="h-0.5 w-10 bg-muted"></div>
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
-            4
-          </div>
-        </div>
-      </div>
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const handleRemoveFile = (fileName: string) => {
+    setFiles(prev => prev.filter(file => file.name !== fileName));
+  };
+
+  const handleDefaultPrompt = () => {
+    const defaultPrompt = localStorage.getItem('default_seo_prompt');
+    if (defaultPrompt) {
+      setCustomPrompt(defaultPrompt);
+      toast.success('Prompt predeterminado cargado');
+    } else {
+      toast.error('No hay prompt predeterminado configurado');
+    }
+  };
+  
+  const handleFetchBusinessProfile = async () => {
+    if (!businessUrl || businessUrl.trim() === '') {
+      toast.error('Ingresa el nombre del negocio o página');
+      return;
+    }
+    
+    setIsLoadingBusinessProfile(true);
+    
+    try {
+      const searchTerm = businessUrl.trim();
+      const profileData = await extractValueserpData(searchTerm);
       
-      <CardContent className="space-y-6 pt-4">
-        <div className="space-y-2">
-          <Label>Subir Archivos de Apoyo</Label>
-          <FileUploader
-            onFilesChange={setFiles}
-            maxFiles={5}
-            acceptedTypes=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx,.xls"
-          />
-          <p className="text-xs text-muted-foreground">
-            Sube exportaciones de analytics, informes anteriores, capturas de pantalla u otros documentos para mejorar tu análisis
-          </p>
+      if (profileData) {
+        setBusinessProfile(profileData);
+        toast.success('Perfil de negocio extraído correctamente');
+        
+        // Si es un perfil simulado, mostrar advertencia
+        if (profileData.businessName === 'Negocio de ejemplo' || 
+            profileData.businessName?.includes('ejemplo')) {
+          toast.warning('Se están usando datos de perfil simulados', {
+            description: 'Intenta con un nombre de negocio más específico'
+          });
+        }
+      } else {
+        toast.error('No se pudo extraer el perfil del negocio');
+      }
+    } catch (error: any) {
+      console.error('Error al extraer perfil de negocio:', error);
+      toast.error('Error al extraer perfil de negocio', {
+        description: error.message || 'Intenta con un nombre más específico'
+      });
+    } finally {
+      setIsLoadingBusinessProfile(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <CardContent className="space-y-4 p-4 pt-0">
+        <h3 className="text-xl font-semibold mb-4">Añade material de apoyo</h3>
+        
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="businessUrl">Nombre del negocio</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="businessUrl"
+                placeholder="Nombre del negocio y ubicación"
+                value={businessUrl || ''}
+                onChange={(e) => setBusinessUrl(e.target.value)}
+              />
+              <Button 
+                variant="outline"
+                size="icon"
+                type="button"
+                onClick={handleFetchBusinessProfile}
+                disabled={isLoadingBusinessProfile}
+              >
+                {isLoadingBusinessProfile ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Building2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {businessProfile && (
+              <div className="mt-2 p-2 border rounded-md bg-muted/30 text-xs">
+                <p className="font-medium">Perfil extraído: {businessProfile.businessName}</p>
+                {businessProfile.businessAddress && (
+                  <p className="text-muted-foreground truncate">{businessProfile.businessAddress}</p>
+                )}
+                {businessProfile.businessRating && (
+                  <p className="text-muted-foreground">
+                    Rating: {businessProfile.businessRating} ({businessProfile.businessReviewsCount} reseñas)
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="file-upload">Archivos adicionales</Label>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  className="flex-1"
+                />
+              </div>
+              
+              {files.length > 0 && (
+                <div className="mt-2 p-2 border rounded-md bg-muted/30 max-h-20 overflow-auto">
+                  <div className="text-xs space-y-1">
+                    {files.map((file, index) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="truncate">{file.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={() => handleRemoveFile(file.name)}
+                        >
+                          <span className="sr-only">Eliminar</span>
+                          <span aria-hidden="true">×</span>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         
-        {hasGoogleApiKey && pageSpeedDataFetched && (
-          <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">Datos de rendimiento obtenidos</h3>
-                <p className="mt-1 text-xs text-green-700">
-                  Se han obtenido datos de Google PageSpeed Insights y se incluirán en el informe final, incluyendo métricas de rendimiento para móvil y escritorio.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <Separator className="my-4" />
         
-        {hasGoogleApiKey && !pageSpeedDataFetched && (
-          <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-amber-800">No se obtuvieron datos de rendimiento</h3>
-                <p className="mt-1 text-xs text-amber-700">
-                  No se pudieron obtener datos de Google PageSpeed Insights. El informe se generará sin esta información.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
-          <DialogTrigger asChild>
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full flex justify-between items-center"
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="custom-prompt">Instrucciones personalizadas</Label>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDefaultPrompt}
             >
-              <span>Personalizar prompt de generación</span>
-              <Wand2 className="h-4 w-4 ml-2" />
+              Cargar predeterminado
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-2xl glass">
-            <DialogHeader>
-              <DialogTitle>Personalizar Prompt de Generación</DialogTitle>
-              <DialogDescription>
-                Personaliza el prompt que se utilizará para generar el informe SEO con la API de OpenAI.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <Textarea
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="Introduce el prompt personalizado..."
-                className="min-h-[300px]"
-              />
-              <p className="text-xs text-muted-foreground">
-                Utiliza [DOMINIO] para referirte al dominio del sitio web que se está analizando.
-              </p>
-            </div>
-            <DialogFooter>
-              <Button 
-                onClick={() => setShowPromptDialog(false)}
-              >
-                Guardar Prompt
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
+          
+          <ScrollArea className="h-[150px] rounded-md border">
+            <Textarea
+              id="custom-prompt"
+              placeholder="Instrucciones específicas para generar este informe..."
+              className="min-h-[150px] border-0 focus-visible:ring-0"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+            />
+          </ScrollArea>
+          
+          <div className="flex items-start gap-2 text-sm text-muted-foreground">
+            <Info className="h-4 w-4 mt-0.5" />
+            <p>
+              Puedes personalizar las instrucciones para el informe. El sistema
+              aún generará todas las secciones requeridas.
+            </p>
+          </div>
+        </div>
         
-        <div className="mt-6 border-t border-border pt-6">
-          <BusinessUrlInput 
-            businessUrl={businessUrl}
-            setBusinessUrl={setBusinessUrl}
-            businessProfile={businessProfile}
-            setBusinessProfile={setBusinessProfile}
-          />
+        <div className="mt-4 space-y-2">
+          <div className="flex gap-2 items-center">
+            <Upload className={`h-4 w-4 ${pageSpeedDataFetched ? 'text-green-500' : 'text-muted-foreground'}`} />
+            <span className={`text-sm ${pageSpeedDataFetched ? 'text-green-500' : 'text-muted-foreground'}`}>
+              {pageSpeedDataFetched 
+                ? 'Datos de PageSpeed obtenidos exitosamente' 
+                : (hasGoogleApiKey 
+                  ? 'Se obtendrán datos de PageSpeed para el análisis técnico' 
+                  : 'No hay clave API configurada para PageSpeed')}
+            </span>
+          </div>
+          
+          <div className="flex gap-2 items-center">
+            <Building2 className={`h-4 w-4 ${businessProfile ? 'text-green-500' : 'text-muted-foreground'}`} />
+            <span className={`text-sm ${businessProfile ? 'text-green-500' : 'text-muted-foreground'}`}>
+              {businessProfile 
+                ? 'Datos de perfil de negocio obtenidos correctamente' 
+                : 'Datos de perfil de negocio (opcional)'}
+            </span>
+          </div>
         </div>
       </CardContent>
       
-      <CardFooter className="flex justify-between pt-4">
-        <Button
-          type="button"
-          variant="outline"
+      <CardFooter className="flex justify-between">
+        <Button 
+          variant="outline" 
           onClick={previousStep}
+          disabled={isLoading}
         >
           Atrás
         </Button>
-        <Button
-          type="button"
+        <Button 
           onClick={nextStep}
           disabled={isLoading}
         >
