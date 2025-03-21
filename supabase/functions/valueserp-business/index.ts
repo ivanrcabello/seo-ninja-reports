@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
     const { query, apiKey } = await req.json();
     
     if (!query) {
+      console.error('Query not provided in request');
       return new Response(
         JSON.stringify({ success: false, error: 'Query not provided' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -38,7 +39,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create ValueSerp API URL for local business information
+    // Create ValueSerp API URL with simpler parameters
     const url = new URL('https://api.valueserp.com/search');
     url.searchParams.append('api_key', valueSerp_API_KEY);
     url.searchParams.append('q', query);
@@ -47,13 +48,12 @@ Deno.serve(async (req) => {
     url.searchParams.append('hl', 'es');
     url.searchParams.append('google_domain', 'google.es');
     url.searchParams.append('output', 'json');
-    url.searchParams.append('include_fields', 'local_results');
     
     console.log(`Making request to ValueSerp API for query: "${query}"`);
     
     // Add timeout to the fetch request
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
     
     try {
       const response = await fetch(url.toString(), { 
@@ -70,26 +70,43 @@ Deno.serve(async (req) => {
       const data = await response.json();
       console.log('ValueSerp API response received');
       
-      // For debugging - log the local_results structure
-      if (data.local_results) {
-        console.log('Local results structure:', JSON.stringify({
-          has_results: !!data.local_results.results,
-          results_count: data.local_results.results ? data.local_results.results.length : 0
-        }));
-      } else {
-        console.log('No local_results in API response');
+      // For debugging - log response structure
+      console.log('Response structure keys:', Object.keys(data));
+      
+      // First try to extract from knowledge_graph if available
+      if (data.knowledge_graph) {
+        console.log('Knowledge graph found in response');
+        const kg = data.knowledge_graph;
+        
+        const businessData = {
+          businessName: kg.title || '',
+          businessUrl: kg.website || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+          businessHours: extractHoursFromKnowledgeGraph(kg),
+          businessAddress: kg.address || '',
+          businessCategory: kg.type || '',
+          businessPhone: kg.phone || '',
+          businessWebsite: kg.website || '',
+          businessRating: kg.rating ? parseFloat(kg.rating) : null,
+          businessReviewsCount: kg.reviews !== undefined 
+            ? parseInt(kg.reviews.replace(/[^0-9]/g, ''), 10) 
+            : 0
+        };
+        
+        console.log(`Business profile data extracted from knowledge graph`);
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            data: businessData,
+            source: 'knowledge_graph'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
-      // Extract business data from ValueSerp response
+      // Then try local_results if available
       if (data.local_results && data.local_results.results && data.local_results.results.length > 0) {
+        console.log('Local results found:', data.local_results.results.length);
         const business = data.local_results.results[0];
-        
-        // Debug the first business result
-        console.log('First business result:', JSON.stringify({
-          title: business.title || null,
-          address: business.address || null,
-          type: business.type || null
-        }));
         
         const businessData = {
           businessName: business.title || '',
@@ -105,28 +122,62 @@ Deno.serve(async (req) => {
             : 0
         };
         
-        console.log(`Business profile data extracted: ${JSON.stringify(businessData)}`);
+        console.log(`Business profile data extracted from local results`);
         return new Response(
           JSON.stringify({ 
             success: true, 
-            data: businessData 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      } else {
-        console.error('No business data found in ValueSerp response');
-        console.log('Full API response:', JSON.stringify(data));
-        
-        // Return fallback data with error message
-        return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: 'No business data found in ValueSerp response',
-            data: getFallbackData(query)
+            data: businessData,
+            source: 'local_results'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      
+      // Finally try organic_results if available
+      if (data.organic_results && data.organic_results.length > 0) {
+        console.log('Organic results found:', data.organic_results.length);
+        
+        // Find a result that seems business-like (has a rich snippet or sitelinks)
+        const potentialBusiness = data.organic_results.find(
+          r => r.rich_snippet || r.sitelinks || (r.title && r.title.includes(query))
+        ) || data.organic_results[0];
+        
+        const businessData = {
+          businessName: potentialBusiness.title || query,
+          businessUrl: potentialBusiness.link || `https://www.google.com/search?q=${encodeURIComponent(query)}`,
+          businessHours: {}, 
+          businessAddress: '',
+          businessCategory: '',
+          businessPhone: '',
+          businessWebsite: potentialBusiness.link || '',
+          businessRating: null,
+          businessReviewsCount: 0
+        };
+        
+        console.log(`Basic business data extracted from organic results`);
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            data: businessData,
+            source: 'organic_results'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // No usable business data found
+      console.error('No business data found in ValueSerp response');
+      console.log('Response structure:', JSON.stringify(Object.keys(data)));
+      
+      // Return fallback data with error message
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'No business data found in ValueSerp response',
+          data: getFallbackData(query)
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     } catch (fetchError) {
       console.error('Fetch error:', fetchError.message);
       
@@ -153,6 +204,28 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Helper function to extract hours from knowledge graph
+function extractHoursFromKnowledgeGraph(kg: any): Record<string, string> {
+  if (!kg.hours) return {};
+  
+  const hoursText = kg.hours;
+  if (typeof hoursText !== 'string') return {};
+  
+  // Try to parse hours in format like "Monday: 9:00 AM - 5:00 PM, Tuesday: ..."
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const hours: Record<string, string> = {};
+  
+  for (const day of days) {
+    const regex = new RegExp(`${day}:\\s*([^,]+)`, 'i');
+    const match = hoursText.match(regex);
+    if (match && match[1]) {
+      hours[day] = match[1].trim();
+    }
+  }
+  
+  return hours;
+}
 
 // Helper function to get fallback data
 function getFallbackData(query: string) {
