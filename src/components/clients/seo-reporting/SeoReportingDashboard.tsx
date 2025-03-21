@@ -25,6 +25,8 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isLoading, setIsLoading] = useState(true);
 
+  console.log('SeoReportingDashboard rendering with clientId:', clientId);
+
   useEffect(() => {
     loadReports();
   }, [clientId]);
@@ -32,7 +34,9 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
   const loadReports = async () => {
     setIsLoading(true);
     try {
+      console.log('Loading SEO reports for client:', clientId);
       const data = await fetchClientSeoReports(clientId);
+      console.log('Loaded SEO reports:', data);
       setReports(data);
       
       // If we have reports and none selected, select the first one
