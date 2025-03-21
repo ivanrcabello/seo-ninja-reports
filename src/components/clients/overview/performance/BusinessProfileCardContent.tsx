@@ -27,7 +27,7 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   const isSimulatedData = businessProfile?.businessName === 'Negocio de ejemplo' || 
                          businessProfile?.businessName?.includes('ejemplo');
 
-  // Nueva función para actualizar usando ValueSerp
+  // Función para actualizar usando ValueSerp
   const handleRefreshWithValueSerp = async () => {
     if (!clientName) {
       toast.error('No hay nombre de negocio disponible', {
@@ -37,26 +37,6 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
     }
     
     onRefreshBusinessProfile(); // Inicia el estado de carga
-    
-    try {
-      // Consulta ValueSerp con el nombre del cliente y ubicación opcional
-      const profileData = await extractValueserpData(clientName, clientLocation);
-      
-      if (profileData) {
-        toast.success('Información actualizada con ValueSerp', {
-          description: 'Los datos del negocio han sido actualizados'
-        });
-      } else {
-        toast.error('No se pudieron obtener datos', {
-          description: 'ValueSerp no pudo encontrar información para este negocio'
-        });
-      }
-    } catch (error: any) {
-      console.error('Error al actualizar con ValueSerp:', error);
-      toast.error('Error al actualizar con ValueSerp', {
-        description: error.message || 'No se pudo consultar la API de ValueSerp'
-      });
-    }
   };
 
   if (!hasBusinessData) {
@@ -159,6 +139,28 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
           </p>
         </div>
       )}
+      
+      <div className="pt-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full" 
+          onClick={onRefreshBusinessProfile}
+          disabled={isRefreshingBusinessProfile}
+        >
+          {isRefreshingBusinessProfile ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              Actualizando datos...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Actualizar con ValueSerp
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 };

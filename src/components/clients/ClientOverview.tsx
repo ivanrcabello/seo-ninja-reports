@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Client } from '@/types/client.types';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { fetchPageSpeedData } from '@/services/api/pagespeed';
@@ -31,6 +31,13 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
   const [isRefreshingBusinessProfile, setIsRefreshingBusinessProfile] = useState(false);
   
   const latestReport = reports.length > 0 ? reports[0] : null;
+  
+  // Use the latest report's business profile as initial data if available
+  useEffect(() => {
+    if (latestReport?.content?.businessProfile && !businessProfile) {
+      setBusinessProfile(latestReport.content.businessProfile);
+    }
+  }, [latestReport, businessProfile]);
   
   const reportBusinessProfile = latestReport?.content?.businessProfile || null;
   const reportPageSpeedScore = latestReport?.content?.pageSpeedData?.desktop?.performance 
