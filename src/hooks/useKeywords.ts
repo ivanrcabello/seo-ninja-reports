@@ -1,11 +1,54 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Keyword } from '@/types/report.types';
 import { toast } from 'sonner';
 
 export const useKeywords = (reportId: string) => {
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
+  const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const fetchKeywords = async () => {
+    if (!reportId) return;
+    
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('keywords')
+        .select('*')
+        .eq('report_id', reportId)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Transform to Keyword objects
+      const fetchedKeywords: Keyword[] = data.map((item: any) => ({
+        id: item.id,
+        reportId: item.report_id,
+        keyword: item.keyword,
+        searchVolume: item.search_volume,
+        difficulty: item.difficulty,
+        createdAt: item.created_at
+      }));
+      
+      setKeywords(fetchedKeywords);
+    } catch (error: any) {
+      console.error('Error fetching keywords:', error);
+      toast.error('Error al cargar palabras clave');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch keywords when reportId changes
+  useEffect(() => {
+    if (reportId) {
+      fetchKeywords();
+    }
+  }, [reportId]);
 
   const addKeyword = async (newKeyword: string, searchVolume: string, difficulty: string) => {
     if (!reportId || !newKeyword.trim()) {
@@ -41,6 +84,9 @@ export const useKeywords = (reportId: string) => {
         createdAt: data.created_at
       };
       
+      // Update local state
+      setKeywords(prevKeywords => [newKeywordObject, ...prevKeywords]);
+      
       await updateReportKeywords(reportId);
       
       return newKeywordObject;
@@ -67,6 +113,9 @@ export const useKeywords = (reportId: string) => {
       if (error) {
         throw error;
       }
+      
+      // Update local state
+      setKeywords(prevKeywords => prevKeywords.filter(k => k.id !== id));
       
       // Update the report content in the database
       await updateReportKeywords(reportId);
@@ -151,7 +200,10 @@ export const useKeywords = (reportId: string) => {
   };
 
   return {
+    keywords,
+    loading,
     isSaving,
+    fetchKeywords,
     addKeyword,
     removeKeyword,
   };

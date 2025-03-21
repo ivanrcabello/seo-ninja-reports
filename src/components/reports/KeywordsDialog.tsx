@@ -33,7 +33,7 @@ const KeywordsDialog: React.FC<KeywordsDialogProps> = ({
     if (open && reportId) {
       fetchKeywords();
     }
-  }, [open, reportId]);
+  }, [open, reportId, fetchKeywords]);
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
