@@ -6,10 +6,12 @@ import BusinessProfileTable from '../report-viewer/business-profile/BusinessProf
 
 interface BusinessProfileSectionProps {
   businessProfile: BusinessProfile;
+  view?: string;
 }
 
 export const BusinessProfileSection: React.FC<BusinessProfileSectionProps> = ({
-  businessProfile
+  businessProfile,
+  view
 }) => {
   if (!businessProfile) {
     return null;

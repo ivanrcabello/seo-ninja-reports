@@ -34,6 +34,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('content');
   const reportContent = report.content || {};
+  const keywordsContent = reportContent.keywords || '';
   const hasKeywords = report.content?.keywords && Array.isArray(report.content.keywords) && report.content.keywords.length > 0;
   
   const getTabCount = () => {
@@ -47,7 +48,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
       count++;
     }
     
-    if (hasKeywords) {
+    if (hasKeywords || keywordsContent) {
       count++;
     }
     
@@ -89,7 +90,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
             </TabsTrigger>
           )}
           
-          {hasKeywords && (
+          {(hasKeywords || keywordsContent) && (
             <TabsTrigger 
               value="keywords" 
               className="data-[state=active]:border-primary rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-b-2 px-4"
@@ -143,8 +144,11 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="keywords" className="p-6">
-        {hasKeywords && reportContent.keywords && (
+        {hasKeywords && (
           <KeywordsSection keywords={reportContent.keywords} />
+        )}
+        {!hasKeywords && keywordsContent && (
+          <KeywordsSection keywordsContent={keywordsContent} />
         )}
       </TabsContent>
     </Tabs>

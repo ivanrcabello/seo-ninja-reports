@@ -183,7 +183,6 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
               {content?.businessProfile ? (
                 <BusinessProfileSection 
                   businessProfile={content.businessProfile} 
-                  view="full" 
                 />
               ) : (
                 <p className="text-muted-foreground">No hay información de ficha de negocio disponible.</p>

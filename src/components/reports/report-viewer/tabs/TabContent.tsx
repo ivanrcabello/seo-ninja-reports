@@ -130,7 +130,7 @@ const TabContent: React.FC<TabContentProps> = ({
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : businessProfileToUse ? (
-          <BusinessProfileSection businessProfile={businessProfileToUse} view="full" />
+          <BusinessProfileSection businessProfile={businessProfileToUse} />
         ) : (
           <p className="text-muted-foreground">No hay información de ficha de negocio disponible.</p>
         )}
@@ -143,7 +143,7 @@ const TabContent: React.FC<TabContentProps> = ({
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <PageSpeedTab data={pageSpeedDataToUse} />
+          <PageSpeedTab data={pageSpeedDataToUse} isLoading={isLoadingPageSpeed} />
         )}
       </TabsContent>
       

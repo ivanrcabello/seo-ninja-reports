@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ReportHeader from './ReportHeader';
 import ReportTabs from './ReportTabs';
 import BlurredCard from '@/components/ui/BlurredCard';
-import { SkeletonReport } from '@/components/reports/SkeletonReport';
+import { SkeletonReport } from './SkeletonReport';
 import useReports from '@/hooks/useReports';
 import { toast } from 'sonner';
 import NotFoundPage from '@/pages/NotFoundPage';
@@ -48,7 +48,7 @@ const ReportViewer = () => {
     return <NotFoundPage />;
   }
   
-  const handleEdit = (section: string) => {
+  const handleEdit = () => {
     setIsEditing(true);
   };
   
@@ -161,7 +161,6 @@ const ReportViewer = () => {
               isEditing={isEditing}
               reportId={id}
               setIsEditing={setIsEditing}
-              onEdit={handleEdit}
               onCancelEdit={handleCancelEdit}
               onSaveEdit={handleSaveEdit}
             />

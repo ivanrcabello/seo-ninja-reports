@@ -29,11 +29,12 @@ interface PageSpeedDataProps {
       cumulativeLayoutShift?: number;
     };
   };
+  isLoading?: boolean;
 }
 
 // This is a wrapper component to maintain backward compatibility
-const PageSpeedTab: React.FC<PageSpeedDataProps> = ({ data }) => {
-  return <PageSpeedTabComponent data={data} />;
+const PageSpeedTab: React.FC<PageSpeedDataProps> = ({ data, isLoading = false }) => {
+  return <PageSpeedTabComponent data={data} isLoading={isLoading} />;
 };
 
 export default PageSpeedTab;
