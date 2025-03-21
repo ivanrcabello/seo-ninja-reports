@@ -123,8 +123,23 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
         };
         
         // Save the business profile to this report
-        await saveBusinessProfile(latestReportId, profileToSave);
-        toast.success('Perfil de negocio guardado correctamente');
+        const savedProfile = await saveBusinessProfile(latestReportId, profileToSave);
+        
+        if (savedProfile) {
+          // Update the flag in reports table to indicate it has a business profile
+          const { error: updateError } = await supabase
+            .from('reports')
+            .update({ has_business_profile: true })
+            .eq('id', latestReportId);
+            
+          if (updateError) {
+            console.error('Error updating has_business_profile flag:', updateError);
+          }
+          
+          toast.success('Perfil de negocio guardado correctamente');
+        } else {
+          toast.error('Error al guardar el perfil de negocio');
+        }
       } else {
         toast.error('No hay informes disponibles para guardar el perfil');
       }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BusinessProfile } from '@/types/report.types';
 import { Button } from '@/components/ui/button';
@@ -27,7 +26,6 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
 }) => {
   const [displayProfile, setDisplayProfile] = useState<Partial<BusinessProfile> | null>(null);
   
-  // Actualizar el perfil a mostrar cuando cambia businessProfile
   useEffect(() => {
     if (businessProfile) {
       setDisplayProfile(businessProfile);
@@ -39,7 +37,6 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   const isSimulated = displayProfile?.businessName === 'Negocio de ejemplo' || 
                      displayProfile?.businessName?.includes('ejemplo');
 
-  // Function to save business profile
   const saveBusinessProfileData = async () => {
     if (!clientId || !displayProfile) {
       console.error("Cannot save business profile: missing clientId or profile data");
@@ -47,7 +44,6 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
     }
 
     try {
-      // Get the latest report for this client
       const { data: reports, error: reportsError } = await supabase
         .from('reports')
         .select('id')
@@ -63,7 +59,6 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
       if (reports && reports.length > 0) {
         const latestReportId = reports[0].id;
         
-        // Make sure businessUrl is always provided
         const profileToSave = {
           businessUrl: displayProfile.businessUrl || '',
           businessName: displayProfile.businessName,
@@ -76,9 +71,22 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
           businessHours: displayProfile.businessHours || {}
         };
         
-        // Save the business profile to this report
-        await saveBusinessProfile(latestReportId, profileToSave);
-        toast.success('Perfil de negocio guardado correctamente');
+        const savedProfile = await saveBusinessProfile(latestReportId, profileToSave);
+        
+        if (savedProfile) {
+          const { error: updateError } = await supabase
+            .from('reports')
+            .update({ has_business_profile: true })
+            .eq('id', latestReportId);
+            
+          if (updateError) {
+            console.error('Error updating has_business_profile flag:', updateError);
+          }
+          
+          toast.success('Perfil de negocio guardado correctamente');
+        } else {
+          toast.error('Error al guardar el perfil de negocio');
+        }
       } else {
         toast.error('No hay informes disponibles para guardar el perfil');
       }

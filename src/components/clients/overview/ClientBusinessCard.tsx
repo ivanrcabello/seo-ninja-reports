@@ -80,11 +80,28 @@ const ClientBusinessCard: React.FC<ClientBusinessCardProps> = ({
           businessHours: displayProfile.businessHours || {}
         };
         
-        await saveBusinessProfile(latestReportId, profileToSave);
-        toast.success('Perfil de negocio guardado correctamente');
+        // Save the business profile to this report
+        const savedProfile = await saveBusinessProfile(latestReportId, profileToSave);
+        
+        if (savedProfile) {
+          // Update the flag in reports table to indicate it has a business profile
+          const { error: updateError } = await supabase
+            .from('reports')
+            .update({ has_business_profile: true })
+            .eq('id', latestReportId);
+            
+          if (updateError) {
+            console.error('Error updating has_business_profile flag:', updateError);
+          }
+          
+          toast.success('Perfil de negocio guardado correctamente');
+        } else {
+          toast.error('Error al guardar el perfil de negocio');
+        }
       }
     } catch (error) {
       console.error('Error saving business profile:', error);
+      toast.error('Error al guardar el perfil de negocio');
     }
   };
   

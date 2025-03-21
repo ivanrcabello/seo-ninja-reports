@@ -1,193 +1,162 @@
 
-import React, { useEffect, useState } from 'react';
-import { Report, BusinessProfile } from '@/types/report.types';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import ReportHeader from '../ReportHeader';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ReportContent, Report, BusinessProfile } from '@/types/report.types';
+import ReportHeader from './ReportHeader';
 import ReportTabs from './ReportTabs';
-import { getPageSpeedData } from '@/services/api/pagespeed/getPageSpeedData';
-import { getBusinessProfile } from '@/services/api/businessProfile/getBusinessProfile';
-import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'react-router-dom';
-import ReportEditDialog from '../ReportEditDialog';
-import { updateExistingReport } from '@/services/reportService';
+import BlurredCard from '@/components/ui/BlurredCard';
+import { SkeletonReport } from './SkeletonReport';
+import useReports from '@/hooks/useReports';
+import { toast } from 'sonner';
+import NotFoundPage from '@/pages/NotFoundPage';
+import { Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchPageSpeedDataForReport } from '@/services/api/pagespeed';
+import { fetchBusinessProfile } from '@/services/api/businessProfile/fetchBusinessProfile';
 
-interface ReportViewerProps {
-  report: Report | undefined;
-  isEditing?: boolean;
-  setIsEditing?: (value: boolean) => void;
-}
+const ReportViewer: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const { getReport, updateReport } = useReports();
+  const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingSection, setEditingSection] = useState<string | null>(null);
 
-const ReportViewer: React.FC<ReportViewerProps> = ({ 
-  report, 
-  isEditing = false, 
-  setIsEditing = () => {} 
-}) => {
-  const [pageSpeedData, setPageSpeedData] = useState<any>(null);
-  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
-  const [isLoadingPageSpeed, setIsLoadingPageSpeed] = useState(false);
-  const [isLoadingBusinessProfile, setIsLoadingBusinessProfile] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const { toast } = useToast();
-  const location = useLocation();
-  
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const editMode = searchParams.get('mode') === 'edit';
-    setIsEditing(editMode);
-  }, [location.search, setIsEditing]);
-  
-  useEffect(() => {
-    const fetchPageSpeedData = async () => {
-      if (!report || !report.id) return;
-      
-      try {
-        setIsLoadingPageSpeed(true);
-        const data = await getPageSpeedData(report.id);
-        
-        if (data) {
-          console.log('PageSpeed data loaded:', data);
-          setPageSpeedData(data);
-        } else {
-          console.log('No PageSpeed data found for report:', report.id);
-        }
-      } catch (error) {
-        console.error('Error fetching PageSpeed data:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los datos de PageSpeed",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoadingPageSpeed(false);
-      }
-    };
-    
-    const fetchBusinessProfile = async () => {
-      if (!report || !report.id) return;
-      
-      try {
-        setIsLoadingBusinessProfile(true);
-        const data = await getBusinessProfile(report.id);
-        
-        if (data) {
-          console.log('Business Profile data loaded:', data);
-          setBusinessProfile(data);
-        } else {
-          console.log('No Business Profile data found for report:', report.id);
-        }
-      } catch (error) {
-        console.error('Error fetching Business Profile data:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los datos del perfil de negocio",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoadingBusinessProfile(false);
-      }
-    };
-    
-    fetchPageSpeedData();
-    fetchBusinessProfile();
-  }, [report, toast]);
+  // If no ID is provided, redirect to reports page
+  if (!id) {
+    navigate('/reports');
+    return null;
+  }
 
-  const handleEditSection = (section: string, content: string) => {
-    setActiveSection(section);
-    setEditContent(content);
-    setEditDialogOpen(true);
-  };
+  const report = getReport(id);
 
-  const handleSaveEdit = async () => {
-    if (!report || !activeSection) return;
-    
-    try {
-      const updatedContent = {
-        ...report.content,
-        [activeSection]: editContent
-      };
-      
-      await updateExistingReport(report.id, { content: updatedContent });
-      
-      if (report && report.content) {
-        report.content[activeSection as keyof typeof report.content] = editContent as never;
-      }
-      
-      toast({
-        title: "Guardado",
-        description: "Contenido actualizado correctamente",
-      });
-      
-      setEditDialogOpen(false);
-    } catch (error) {
-      console.error('Error saving content:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo guardar el contenido",
-        variant: "destructive"
-      });
-    }
-  };
+  // Query to fetch PageSpeed data for this report if it has been processed
+  const { 
+    data: pageSpeedData, 
+    isLoading: isLoadingPageSpeed 
+  } = useQuery({
+    queryKey: ['pageSpeed', id],
+    queryFn: () => fetchPageSpeedDataForReport(id),
+    enabled: !!id && report?.status === 'completed' && report?.url !== undefined,
+  });
 
-  const getSectionTitle = (section: string): string => {
-    switch (section) {
-      case 'executiveSummary': return 'Resumen Ejecutivo';
-      case 'technicalAnalysis': return 'Análisis Técnico SEO';
-      case 'contentAnalysis': return 'Análisis de Contenido';
-      case 'backlinksAnalysis': return 'Análisis de Backlinks';
-      case 'localSeo': return 'SEO Local';
-      case 'recommendations': return 'Recomendaciones';
-      case 'serviceProposal': return 'Propuesta de Servicios';
-      case 'keywords': return 'Palabras Clave';
-      default: return 'Sección';
-    }
-  };
+  // Query to fetch Business Profile data for this report
+  const {
+    data: businessProfile,
+    isLoading: isLoadingBusinessProfile
+  } = useQuery({
+    queryKey: ['businessProfile', id],
+    queryFn: () => fetchBusinessProfile(id),
+    enabled: !!id && report?.status === 'completed' && report?.hasBusinessProfile === true,
+  });
 
   if (!report) {
+    return <NotFoundPage />;
+  }
+
+  const handleEdit = (section: string) => {
+    setIsEditing(true);
+    setEditingSection(section);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditingSection(null);
+  };
+
+  const handleSaveEdit = async (section: string, content: string) => {
+    if (!report.content) return;
+    
+    try {
+      // Create updated content
+      const updatedContent: ReportContent = {
+        ...report.content,
+        [section]: content
+      };
+      
+      // Update report with new content
+      await updateReport(id, {
+        content: updatedContent
+      });
+      
+      setIsEditing(false);
+      setEditingSection(null);
+      
+      toast.success('Contenido actualizado', {
+        description: 'Los cambios se han guardado correctamente',
+      });
+    } catch (error) {
+      console.error('Error updating report content:', error);
+      toast.error('Error al guardar', {
+        description: 'No se pudieron guardar los cambios',
+      });
+    }
+  };
+  
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('es', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  };
+
+  if (report.status === 'processing') {
     return (
-      <div className="p-8 text-center rounded-lg border bg-card/50 backdrop-blur-sm shadow-sm">
-        <h2 className="text-xl font-medium text-muted-foreground">Informe no encontrado</h2>
-        <p className="mt-2 text-sm text-muted-foreground">El informe que buscas no existe o no está disponible.</p>
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <h2 className="text-xl font-semibold mb-2">Generando informe...</h2>
+            <p className="text-muted-foreground">
+              Esto puede tardar unos minutos dependiendo del tamaño del sitio web.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
+  const isLoadingData = isLoadingPageSpeed || isLoadingBusinessProfile;
+
   return (
-    <Card className="w-full h-full flex flex-col overflow-hidden backdrop-blur-sm border-primary/10">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-background to-background/80">
-        <ReportHeader 
-          title={report.title} 
-          date={report.date} 
-          url={report.url} 
-          isEditing={isEditing} 
-          setIsEditing={setIsEditing}
-          reportId={report.id}
-          variant="simple"
-        />
-      </CardHeader>
-      <CardContent className="overflow-auto flex-1 p-0 pt-4">
-        <ReportTabs 
-          report={report} 
-          pageSpeedData={pageSpeedData} 
-          businessProfile={businessProfile}
-          isLoadingPageSpeed={isLoadingPageSpeed} 
-          isLoadingBusinessProfile={isLoadingBusinessProfile}
-          isEditing={isEditing}
-          onEdit={handleEditSection}
-        />
-      </CardContent>
-      
-      <ReportEditDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        activeSection={activeSection}
-        editContent={editContent}
-        setEditContent={setEditContent}
-        onSave={handleSaveEdit}
-        getSectionTitle={getSectionTitle}
-      />
-    </Card>
+    <div className="w-full mx-auto">
+      <BlurredCard className="p-0 overflow-hidden">
+        {report.status === 'completed' ? (
+          <>
+            <ReportHeader 
+              report={report}
+              formattedDate={formatDate(report.date)}
+              isEditing={isEditing} 
+              editingSection={editingSection}
+              onEdit={handleEdit}
+              onCancelEdit={handleCancelEdit}
+              onSaveEdit={handleSaveEdit}
+            />
+            
+            <ReportTabs 
+              report={report}
+              pageSpeedData={pageSpeedData}
+              businessProfile={businessProfile}
+              isLoadingPageSpeed={isLoadingPageSpeed}
+              isLoadingBusinessProfile={isLoadingBusinessProfile}
+              isEditing={isEditing}
+              onEdit={(sectionKey, content) => handleSaveEdit(sectionKey, content)}
+            />
+          </>
+        ) : report.status === 'failed' ? (
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4 text-red-500">Error en la generación del informe</h2>
+            <p className="mb-4">{report.summary || 'No se pudo completar la generación del informe.'}</p>
+            <p className="text-muted-foreground text-sm">
+              Por favor, comprueba la URL y vuelve a intentarlo, o contacta con soporte si el problema persiste.
+            </p>
+          </div>
+        ) : (
+          <SkeletonReport />
+        )}
+      </BlurredCard>
+    </div>
   );
 };
 
