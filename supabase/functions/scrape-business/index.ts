@@ -27,18 +27,32 @@ Deno.serve(async (req) => {
 
     console.log(`Scraping business data from URL: ${url}`);
     
-    // Function to extract data from Google Business profile
-    const businessData = await scrapeBusinessProfile(url);
-    
-    console.log('Scraped business data:', JSON.stringify(businessData, null, 2));
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        data: businessData 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    try {
+      // Function to extract data from Google Business profile
+      const businessData = await scrapeBusinessProfile(url);
+      
+      console.log('Scraped business data:', JSON.stringify(businessData, null, 2));
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          data: businessData 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (scrapingError) {
+      console.error('Error scraping business profile:', scrapingError);
+      
+      // Return a more detailed error message for debugging
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Error scraping business profile: ${scrapingError.message}`,
+          details: scrapingError.stack
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
     
   } catch (error) {
     console.error('Error al procesar la solicitud:', error);

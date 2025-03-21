@@ -31,6 +31,20 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
       }
     }
     
+    // For Google Maps URLs, we may need to ensure the place details are in the URL
+    if (!finalUrl.includes('/place/') && (finalUrl.includes('google.com/maps') || finalUrl.includes('maps.google'))) {
+      console.log('URL does not contain place details path, attempting to extract from parameters');
+      // Try to extract place ID or details from URL parameters if available
+      const urlObj = new URL(finalUrl);
+      const placeParam = urlObj.searchParams.get('q') || '';
+      if (placeParam) {
+        console.log(`Found place parameter: ${placeParam}`);
+        // If we have a place parameter, try to format a better URL
+        finalUrl = `https://www.google.com/maps/place/${encodeURIComponent(placeParam)}`;
+        console.log(`Reformatted URL: ${finalUrl}`);
+      }
+    }
+    
     // Get the HTML content of the page
     console.log(`Fetching HTML content from: ${finalUrl}`);
     const response = await fetch(finalUrl, {
@@ -57,6 +71,9 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
       console.error('Invalid HTML content received, possibly blocked by Google');
       throw new Error('Invalid HTML content received, possibly blocked by Google');
     }
+    
+    // For debugging: save a sample of the HTML
+    console.log(`HTML preview: ${html.substring(0, 500)}...`);
     
     // Use Cheerio to parse the HTML
     const $ = cheerio.load(html);

@@ -24,13 +24,16 @@ export const extractBusinessInfo = async (
     // Intentar obtener datos reales a través de la función de extracción
     const profileData = await extractGmbData(businessUrl, true);
     
-    // Verificar si se obtuvieron datos significativos
-    if (profileData && (profileData.businessName || profileData.businessAddress)) {
+    // Verificar si se obtuvieron datos significativos y si son reales (no simulados)
+    // Los datos simulados siempre incluyen "Negocio de ejemplo" como nombre
+    if (profileData && 
+        (profileData.businessName || profileData.businessAddress) && 
+        profileData.businessName !== 'Negocio de ejemplo') {
       console.log('Successfully extracted business profile data:', profileData);
       return profileData;
     }
     
-    // Si llegamos aquí, no se obtuvieron datos significativos
+    // Si llegamos aquí, no se obtuvieron datos significativos o son simulados
     console.warn('No significant business data extracted, using simulation');
     
     // En caso de fallo, devolver datos simulados pero con una nota clara

@@ -3,6 +3,7 @@ import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
 import { simulateBusinessProfileData } from './mocks';
 import { isValidGoogleBusinessUrl } from './utils';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Extrae información de una URL de Google My Business directamente o a partir de una URL de sitio web
@@ -56,30 +57,24 @@ export const extractGmbData = async (
       console.log(`Intento ${attempts} de extraer información de GMB`);
       
       try {
-        // Llamar a nuestra función edge para hacer scraping del perfil
-        const result = await fetch('https://ctidzqynewvqxguhhknp.supabase.co/functions/v1/scrape-business', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url: urlOrWebsite })
+        // Llamar a nuestra función edge usando supabase.functions.invoke en lugar de fetch directo
+        // Esto manejará automáticamente la autenticación con el anon key
+        const { data, error: fnError } = await supabase.functions.invoke('scrape-business', {
+          body: { url: urlOrWebsite }
         });
         
-        if (!result.ok) {
-          const errorText = await result.text();
-          throw new Error(`Error en la respuesta: ${result.status} - ${errorText}`);
+        if (fnError) {
+          throw new Error(`Error en la función edge: ${fnError.message}`);
         }
         
-        const responseData = await result.json();
-        
-        if (!responseData.success) {
-          throw new Error(responseData.error || 'Error desconocido en la extracción de datos');
+        if (!data.success) {
+          throw new Error(data.error || 'Error desconocido en la extracción de datos');
         }
         
-        console.log('Business profile data extracted:', responseData.data);
+        console.log('Business profile data extracted:', data.data);
         
         // Validate received data
-        if (!responseData.data.businessName && !responseData.data.businessAddress) {
+        if (!data.data.businessName && !data.data.businessAddress) {
           throw new Error('No se pudo extraer información esencial del negocio');
         }
         
@@ -87,7 +82,7 @@ export const extractGmbData = async (
           description: 'Se ha obtenido información del perfil de negocio',
         });
         
-        return responseData.data as Partial<BusinessProfile>;
+        return data.data as Partial<BusinessProfile>;
         
       } catch (requestError: any) {
         console.error(`Error en intento ${attempts}:`, requestError);
