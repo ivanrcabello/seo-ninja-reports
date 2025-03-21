@@ -49,6 +49,7 @@ export const extractBusinessInfoWithValueSerp = async (
         const { error: dbError } = await supabase
           .from('business_profiles')
           .insert({
+            report_id: '00000000-0000-0000-0000-000000000000', // Temporary ID
             business_url: data.data.businessUrl,
             business_name: data.data.businessName,
             business_address: data.data.businessAddress || '',
@@ -57,10 +58,7 @@ export const extractBusinessInfoWithValueSerp = async (
             business_reviews_count: data.data.businessReviewsCount || 0,
             business_phone: data.data.businessPhone || '',
             business_website: data.data.businessWebsite || '',
-            business_hours: formattedHours,
-            // We're creating a temporary profile without report_id
-            // The actual profile with report_id will be created when saving the report
-            report_id: '00000000-0000-0000-0000-000000000000'
+            business_hours: formattedHours
           });
           
         if (dbError) {

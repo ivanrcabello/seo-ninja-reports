@@ -27,10 +27,30 @@ const DesktopPerformance: React.FC<DesktopPerformanceProps> = ({ data }) => {
     <div className="space-y-8">
       {/* Score Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <ScoreCard title="Rendimiento" value={data.performance} type="performance" />
-        <ScoreCard title="Accesibilidad" value={data.accessibility} type="accessibility" />
-        <ScoreCard title="Buenas prácticas" value={data.bestPractices} type="bestPractices" />
-        <ScoreCard title="SEO" value={data.seo} type="seo" />
+        <ScoreCard 
+          title="Rendimiento" 
+          score={data.performance}
+          type="performance"
+          description="Puntuación global de rendimiento"
+        />
+        <ScoreCard 
+          title="Accesibilidad" 
+          score={data.accessibility}
+          type="accessibility"
+          description="Puntuación de accesibilidad"
+        />
+        <ScoreCard 
+          title="Buenas prácticas" 
+          score={data.bestPractices}
+          type="bestPractices"
+          description="Puntuación de buenas prácticas web"
+        />
+        <ScoreCard 
+          title="SEO" 
+          score={data.seo}
+          type="seo"
+          description="Puntuación de optimización para buscadores"
+        />
       </div>
 
       {/* Metrics */}

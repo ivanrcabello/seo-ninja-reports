@@ -9,12 +9,12 @@ import MobilePerformance from './MobilePerformance';
 
 export interface PageSpeedDataProps {
   data: any;
-  isLoading?: boolean; // Make isLoading optional with default value
+  isLoading: boolean;
 }
 
 const PageSpeedTab: React.FC<PageSpeedDataProps> = ({ 
   data,
-  isLoading = false // Default value if not provided
+  isLoading
 }) => {
   const [activeDevice, setActiveDevice] = React.useState('desktop');
 

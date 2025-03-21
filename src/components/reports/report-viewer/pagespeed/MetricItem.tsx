@@ -1,52 +1,31 @@
 
 import React from 'react';
-import { formatNumber, getMetricClass, getMetricLabel } from './utils';
 
-interface MetricItemProps {
-  label: string;
-  value: number | null | undefined;
+export interface MetricItemProps {
+  title?: string;
+  value?: number;
   unit?: string;
-  type?: 'time' | 'score' | 'percent';
+  description?: string;
 }
 
-const MetricItem: React.FC<MetricItemProps> = ({ 
-  label, 
-  value, 
-  unit = 'ms', 
-  type = 'time' 
-}) => {
-  // If value is undefined or null, show "N/A"
-  if (value === undefined || value === null) {
-    return (
-      <div className="flex justify-between items-baseline py-2 border-b border-muted/30 last:border-0">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <span className="text-sm font-medium">N/A</span>
-      </div>
-    );
-  }
+const MetricItem: React.FC<MetricItemProps> = ({ title, value, unit, description }) => {
+  // Format the value based on the unit
+  const formattedValue = value !== undefined ? 
+    (unit === 'ms' ? Math.round(value) : value.toFixed(2)) : 
+    'N/A';
 
-  // Format value based on type
-  const formattedValue = type === 'time' 
-    ? `${formatNumber(value)} ${unit}` 
-    : type === 'percent' 
-      ? `${formatNumber(value)}%` 
-      : formatNumber(value);
-  
-  // Determine class based on value
-  const valueClass = getMetricClass(label, value);
-  
-  // Get metric label if applicable
-  const metricLabel = type === 'time' ? getMetricLabel(label, value) : null;
-  
   return (
-    <div className="flex justify-between items-baseline py-2 border-b border-muted/30 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="flex flex-col items-end">
-        <span className={`text-sm font-medium ${valueClass}`}>{formattedValue}</span>
-        {metricLabel && (
-          <span className={`text-xs ${valueClass}/70`}>{metricLabel}</span>
-        )}
+    <div className="p-3 rounded-lg border border-border/50 bg-card">
+      <h4 className="text-sm font-medium mb-1">{title}</h4>
+      <div className="flex items-baseline">
+        <span className="text-lg font-semibold mr-1">
+          {formattedValue}
+        </span>
+        {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
+      {description && (
+        <p className="mt-2 text-xs text-muted-foreground">{description}</p>
+      )}
     </div>
   );
 };

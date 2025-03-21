@@ -36,11 +36,11 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
   const reportContent = report.content || {};
   
   // Safely handle keywords content - ensure it exists before accessing
-  const keywordsContent = reportContent.keywords ? 
+  const keywordsContent = reportContent && 'keywords' in reportContent ? 
     (typeof reportContent.keywords === 'string' ? reportContent.keywords : '') : '';
   
   // Check if keywords array exists
-  const hasKeywords = reportContent.keywords && 
+  const hasKeywords = reportContent && 'keywords' in reportContent && 
     (Array.isArray(reportContent.keywords) && reportContent.keywords.length > 0);
   
   const getTabCount = () => {
@@ -150,7 +150,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="keywords" className="p-6">
-        {hasKeywords ? (
+        {hasKeywords && 'keywords' in reportContent ? (
           <KeywordsSection 
             keywords={Array.isArray(reportContent.keywords) ? reportContent.keywords : []} 
             keywordsContent={keywordsContent}
