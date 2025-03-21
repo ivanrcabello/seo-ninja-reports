@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import { BlurredCard } from '@/components/ui/BlurredCard';
+import BlurredCard from '@/components/ui/BlurredCard';
 import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
