@@ -38,21 +38,21 @@ export const extractBusinessInfoWithValueSerp = async (
       throw new Error(data.error || 'Error al extraer información de negocio');
     }
     
-    // Store data in database for future reference
-    if (data.data && data.data.businessName) {
-      try {
-        // Format business hours for storage
-        const formattedHours = data.data.businessHours ? JSON.stringify(data.data.businessHours) : '{}';
-        
-        // Note: We're not storing the data directly in the business_profiles table
-        // as it requires a report_id which might not be available at this point
-        console.log('Business profile data extracted successfully:', data.data);
-      } catch (dbError) {
-        console.error('Error accessing database:', dbError);
-      }
+    // Check if we received valid data (not from fallback)
+    const isRealData = data.data && 
+                      data.data.businessName && 
+                      data.data.businessName !== 'Negocio de ejemplo';
+    
+    if (isRealData) {
+      console.log('Business profile data extracted successfully:', data.data);
+      toast.success('Información de negocio extraída correctamente');
+    } else {
+      console.warn('Using fallback data for business profile');
+      toast.warning('No se encontraron datos reales', {
+        description: 'Se utilizarán datos simulados para la demostración'
+      });
     }
     
-    toast.success('Información de negocio extraída correctamente');
     return data.data;
   } catch (error) {
     console.error('Error extracting business info with ValueSerp:', error);

@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ValueSerpSettingsProps {
   valueSerpApiKey: string;
@@ -20,6 +21,14 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   const handleValueSerpKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValueSerpApiKey(e.target.value);
   };
+
+  // Set API key to local storage for edge function to use
+  useEffect(() => {
+    if (valueSerpApiKey) {
+      localStorage.setItem('value_serp_api_key', valueSerpApiKey);
+      console.log('ValueSerp API key stored in localStorage');
+    }
+  }, [valueSerpApiKey]);
 
   return (
     <Card>

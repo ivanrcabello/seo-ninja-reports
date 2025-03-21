@@ -80,8 +80,6 @@ export const extractValueserpData = async (
           throw new Error(data.error || 'Error desconocido en la extracción de datos');
         }
         
-        console.log('Business profile data extracted via ValueSerp:', data.data);
-        
         // Validar los datos recibidos
         if (!data.data.businessName && !data.data.businessAddress) {
           throw new Error('No se pudo extraer información esencial del negocio');
@@ -103,6 +101,8 @@ export const extractValueserpData = async (
         if (data.data.businessRating === undefined) {
           data.data.businessRating = null;
         }
+        
+        console.log('Business profile data extracted via ValueSerp:', data.data);
         
         toast.success('Información extraída correctamente', {
           description: 'Datos obtenidos mediante ValueSerp',
