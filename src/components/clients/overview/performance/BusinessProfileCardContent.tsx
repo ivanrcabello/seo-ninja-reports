@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BusinessProfile } from '@/types/report.types';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Star, MapPin, Phone, Link2 } from 'lucide-react';
@@ -14,7 +14,7 @@ interface BusinessProfileCardContentProps {
   onRefreshBusinessProfile: () => void;
   clientName?: string;
   clientLocation?: string;
-  clientId?: string; // Add clientId prop
+  clientId?: string;
 }
 
 const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
@@ -23,15 +23,25 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   onRefreshBusinessProfile,
   clientName,
   clientLocation,
-  clientId // Add clientId
+  clientId
 }) => {
-  const hasData = Boolean(businessProfile?.businessName);
-  const isSimulated = businessProfile?.businessName === 'Negocio de ejemplo' || 
-                     businessProfile?.businessName?.includes('ejemplo');
+  const [displayProfile, setDisplayProfile] = useState<Partial<BusinessProfile> | null>(null);
+  
+  // Actualizar el perfil a mostrar cuando cambia businessProfile
+  useEffect(() => {
+    if (businessProfile) {
+      setDisplayProfile(businessProfile);
+      console.log("Perfil de negocio actualizado en BusinessProfileCardContent:", businessProfile);
+    }
+  }, [businessProfile]);
+  
+  const hasData = Boolean(displayProfile?.businessName);
+  const isSimulated = displayProfile?.businessName === 'Negocio de ejemplo' || 
+                     displayProfile?.businessName?.includes('ejemplo');
 
   // Function to save business profile
   const saveBusinessProfileData = async () => {
-    if (!clientId || !businessProfile) {
+    if (!clientId || !displayProfile) {
       console.error("Cannot save business profile: missing clientId or profile data");
       return;
     }
@@ -55,15 +65,15 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
         
         // Make sure businessUrl is always provided
         const profileToSave = {
-          businessUrl: businessProfile.businessUrl || '',
-          businessName: businessProfile.businessName,
-          businessAddress: businessProfile.businessAddress,
-          businessPhone: businessProfile.businessPhone,
-          businessCategory: businessProfile.businessCategory,
-          businessRating: businessProfile.businessRating,
-          businessReviewsCount: businessProfile.businessReviewsCount,
-          businessWebsite: businessProfile.businessWebsite,
-          businessHours: businessProfile.businessHours || {}
+          businessUrl: displayProfile.businessUrl || '',
+          businessName: displayProfile.businessName,
+          businessAddress: displayProfile.businessAddress,
+          businessPhone: displayProfile.businessPhone,
+          businessCategory: displayProfile.businessCategory,
+          businessRating: displayProfile.businessRating,
+          businessReviewsCount: displayProfile.businessReviewsCount,
+          businessWebsite: displayProfile.businessWebsite,
+          businessHours: displayProfile.businessHours || {}
         };
         
         // Save the business profile to this report
@@ -115,59 +125,59 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   return (
     <div className="space-y-4">
       <div className="space-y-4">
-        {businessProfile?.businessName && (
+        {displayProfile?.businessName && (
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Nombre</span>
-            <span className="text-sm truncate max-w-[200px]">{businessProfile.businessName}</span>
+            <span className="text-sm truncate max-w-[200px]">{displayProfile.businessName}</span>
           </div>
         )}
       
-        {businessProfile?.businessRating !== undefined && (
+        {displayProfile?.businessRating !== undefined && (
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Valoración</span>
-            <span className={cn("flex items-center", getRatingColor(businessProfile.businessRating))}>
-              {businessProfile.businessRating.toFixed(1)}
+            <span className={cn("flex items-center", getRatingColor(displayProfile.businessRating))}>
+              {displayProfile.businessRating.toFixed(1)}
               <Star className="h-3.5 w-3.5 ml-1 fill-current" />
               <span className="text-xs text-muted-foreground ml-1">
-                ({businessProfile.businessReviewsCount || 0})
+                ({displayProfile.businessReviewsCount || 0})
               </span>
             </span>
           </div>
         )}
       
-        {businessProfile?.businessAddress && (
+        {displayProfile?.businessAddress && (
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium flex items-center">
               <MapPin className="h-3 w-3 mr-1 text-muted-foreground" /> 
               Dirección
             </span>
-            <span className="text-sm truncate max-w-[200px]">{businessProfile.businessAddress}</span>
+            <span className="text-sm truncate max-w-[200px]">{displayProfile.businessAddress}</span>
           </div>
         )}
         
-        {businessProfile?.businessPhone && (
+        {displayProfile?.businessPhone && (
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium flex items-center">
               <Phone className="h-3 w-3 mr-1 text-muted-foreground" /> 
               Teléfono
             </span>
-            <span className="text-sm">{businessProfile.businessPhone}</span>
+            <span className="text-sm">{displayProfile.businessPhone}</span>
           </div>
         )}
         
-        {businessProfile?.businessWebsite && (
+        {displayProfile?.businessWebsite && (
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium flex items-center">
               <Link2 className="h-3 w-3 mr-1 text-muted-foreground" /> 
               Web
             </span>
             <a 
-              href={businessProfile.businessWebsite} 
+              href={displayProfile.businessWebsite} 
               target="_blank" 
               rel="noopener noreferrer" 
               className="text-sm text-primary hover:underline truncate max-w-[200px]"
             >
-              {businessProfile.businessWebsite.replace(/^https?:\/\//, '')}
+              {displayProfile.businessWebsite.replace(/^https?:\/\//, '')}
             </a>
           </div>
         )}
