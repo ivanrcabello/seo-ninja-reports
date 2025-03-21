@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
@@ -35,12 +36,25 @@ export const saveBusinessProfile = async (
     // Ensure business_hours is properly formatted for the database
     let formattedBusinessHours;
     if (businessProfile.businessHours) {
-      // If businessHours is already a string, use it directly
+      // If businessHours is already a string, validate it's proper JSON
       if (typeof businessProfile.businessHours === 'string') {
-        formattedBusinessHours = businessProfile.businessHours;
+        try {
+          // Check if it's valid JSON by parsing and re-stringifying
+          const parsed = JSON.parse(businessProfile.businessHours);
+          formattedBusinessHours = JSON.stringify(parsed);
+        } catch (error) {
+          console.error('Invalid JSON string in businessHours:', error);
+          // If invalid JSON, use an empty object
+          formattedBusinessHours = '{}';
+        }
       } else {
-        // Otherwise, stringify the object
-        formattedBusinessHours = JSON.stringify(businessProfile.businessHours);
+        // If businessHours is an object, stringify it for storage
+        try {
+          formattedBusinessHours = JSON.stringify(businessProfile.businessHours);
+        } catch (error) {
+          console.error('Error stringifying businessHours:', error);
+          formattedBusinessHours = '{}';
+        }
       }
     } else {
       formattedBusinessHours = null;
@@ -126,9 +140,11 @@ export const saveBusinessProfile = async (
     let businessHours: Record<string, string> = {};
     if (result.business_hours) {
       try {
-        businessHours = typeof result.business_hours === 'string' 
-          ? JSON.parse(result.business_hours) 
-          : result.business_hours as Record<string, string>;
+        if (typeof result.business_hours === 'string') {
+          businessHours = JSON.parse(result.business_hours);
+        } else if (typeof result.business_hours === 'object') {
+          businessHours = result.business_hours as Record<string, string>;
+        }
       } catch (parseError) {
         console.error('Error parsing business hours:', parseError);
         // Continue with empty business hours

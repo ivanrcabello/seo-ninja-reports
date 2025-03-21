@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,12 +49,30 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
     setIsSimulated(false);
     
     try {
-      const profileData = await extractGmbData(clientWebsite, false);
+      // Safety wrapper to ensure we always get data back and never show a blank screen
+      let profileData = null;
       
-      if (profileData) {
+      try {
+        profileData = await extractGmbData(clientWebsite, false);
+      } catch (extractError) {
+        console.error('Error extracting GMB data from website:', extractError);
+        throw new Error('No se pudo extraer información del sitio web');
+      }
+      
+      if (profileData && (profileData.businessName || profileData.businessAddress)) {
+        // Ensure businessHours is a proper object
+        if (profileData.businessHours && typeof profileData.businessHours === 'string') {
+          try {
+            profileData.businessHours = JSON.parse(profileData.businessHours);
+          } catch (parseError) {
+            console.error('Error parsing business hours:', parseError);
+            profileData.businessHours = {}; // Fallback to empty object
+          }
+        }
+        
         setBusinessProfile(profileData);
         
-        // Check if the data is from simulation (we can tell by checking if the name contains "ejemplo")
+        // Check if the data is from simulation
         const isMockData = profileData.businessName?.includes('ejemplo') || 
                           profileData.businessName === 'Negocio de ejemplo';
                           
@@ -72,7 +90,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
           toast.success('Perfil analizado correctamente');
         }
       } else {
-        // Si es null, seguir usando un perfil simulado para evitar la pantalla en blanco
+        // Si es null o datos insuficientes, usar un perfil simulado
         const mockData = {
           businessName: 'Negocio de ejemplo',
           businessAddress: 'Dirección de ejemplo',
@@ -80,7 +98,8 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
           businessRating: 4.5,
           businessReviewsCount: 123,
           businessPhone: '+34 123 456 789',
-          businessWebsite: clientWebsite
+          businessWebsite: clientWebsite,
+          businessHours: {} // Empty object by default
         };
         
         setBusinessProfile(mockData);
@@ -101,7 +120,8 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
         businessRating: 4.5,
         businessReviewsCount: 123,
         businessPhone: '+34 123 456 789',
-        businessWebsite: clientWebsite
+        businessWebsite: clientWebsite,
+        businessHours: {} // Empty object by default
       };
       
       setBusinessProfile(mockData);
@@ -127,13 +147,30 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
     setIsSimulated(false);
     
     try {
-      // Use the extractBusinessInfo function to get profile information
-      const profileData = await extractBusinessInfo(businessUrl);
+      // Safety wrapper to ensure we always get data back
+      let profileData = null;
       
-      if (profileData) {
+      try {
+        profileData = await extractBusinessInfo(businessUrl);
+      } catch (extractError) {
+        console.error('Error extracting business info:', extractError);
+        throw new Error('No se pudo extraer información del perfil');
+      }
+      
+      if (profileData && (profileData.businessName || profileData.businessAddress)) {
+        // Ensure businessHours is a proper object
+        if (profileData.businessHours && typeof profileData.businessHours === 'string') {
+          try {
+            profileData.businessHours = JSON.parse(profileData.businessHours);
+          } catch (parseError) {
+            console.error('Error parsing business hours:', parseError);
+            profileData.businessHours = {}; // Fallback to empty object
+          }
+        }
+        
         setBusinessProfile(profileData);
         
-        // Check if the data is from simulation (we can tell by checking if the name contains "ejemplo")
+        // Check if the data is from simulation
         const isMockData = profileData.businessName?.includes('ejemplo') || 
                           profileData.businessName === 'Negocio de ejemplo';
                           
@@ -152,7 +189,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
           toast.success('Perfil analizado correctamente');
         }
       } else {
-        // Si es null, usar un perfil simulado para evitar la pantalla en blanco
+        // Si es null o datos insuficientes, usar un perfil simulado para evitar la pantalla en blanco
         const mockData = {
           businessUrl: businessUrl,
           businessName: 'Negocio de ejemplo',
@@ -161,7 +198,8 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
           businessRating: 4.5,
           businessReviewsCount: 123,
           businessPhone: '+34 123 456 789',
-          businessWebsite: 'https://example.com'
+          businessWebsite: 'https://example.com',
+          businessHours: {} // Empty object by default
         };
         
         setBusinessProfile(mockData);
@@ -183,7 +221,8 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
         businessRating: 4.5,
         businessReviewsCount: 123,
         businessPhone: '+34 123 456 789',
-        businessWebsite: 'https://example.com'
+        businessWebsite: 'https://example.com',
+        businessHours: {} // Empty object by default
       };
       
       setBusinessProfile(mockData);
@@ -361,7 +400,9 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
                       </div>
                     </li>
                   )}
-                  {businessProfile.businessHours && Object.keys(businessProfile.businessHours).length > 0 && (
+                  {businessProfile.businessHours && 
+                   typeof businessProfile.businessHours === 'object' && 
+                   Object.keys(businessProfile.businessHours).length > 0 && (
                     <li className="pt-2 pb-1">
                       <div className="font-medium flex items-center">
                         <Clock className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 

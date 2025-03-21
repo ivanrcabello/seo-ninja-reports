@@ -57,11 +57,15 @@ export const extractBusinessInfo = async (
           let businessHours: Record<string, string> = {};
           if (cachedProfile.business_hours) {
             try {
-              businessHours = typeof cachedProfile.business_hours === 'string'
-                ? JSON.parse(cachedProfile.business_hours)
-                : cachedProfile.business_hours as Record<string, string>;
+              if (typeof cachedProfile.business_hours === 'string') {
+                businessHours = JSON.parse(cachedProfile.business_hours);
+              } else if (typeof cachedProfile.business_hours === 'object') {
+                // If it's already an object, ensure it's the correct type
+                businessHours = cachedProfile.business_hours as Record<string, string>;
+              }
             } catch (parseError) {
               console.error('Error parsing business hours:', parseError);
+              // Continue with empty business hours rather than failing
             }
           }
           
@@ -132,8 +136,7 @@ export const extractBusinessInfo = async (
       description: error.message || 'No se pudo procesar la URL proporcionada',
     });
     
-    // En caso de error, devolver null en lugar de datos simulados
-    // para que los componentes puedan gestionarlo adecuadamente
-    return null;
+    // En caso de error, devolver datos simulados para evitar pantalla en blanco
+    return simulateBusinessProfileData(businessUrl);
   }
 };

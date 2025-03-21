@@ -28,9 +28,11 @@ export const getBusinessProfile = async (reportId: string): Promise<BusinessProf
     let businessHours: Record<string, string> = {};
     if (data.business_hours) {
       try {
-        businessHours = typeof data.business_hours === 'string' 
-          ? JSON.parse(data.business_hours) 
-          : data.business_hours as Record<string, string>;
+        if (typeof data.business_hours === 'string') {
+          businessHours = JSON.parse(data.business_hours);
+        } else if (typeof data.business_hours === 'object') {
+          businessHours = data.business_hours as Record<string, string>;
+        }
       } catch (parseError) {
         console.error('Error parsing business hours:', parseError);
         // Continue with empty business hours
