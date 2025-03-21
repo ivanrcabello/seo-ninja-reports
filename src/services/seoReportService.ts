@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SeoReport, SeoKeyword, SeoCompetitor } from '@/types/seo-reporting.types';
 import { toast } from 'sonner';
-import * as pdfParse from 'pdf-parse';
+import * as pdfjs from 'pdf-parse';
 
 export const fetchClientSeoReports = async (clientId: string): Promise<SeoReport[]> => {
   try {
@@ -222,7 +222,8 @@ export const parseSemrushPdf = async (file: File): Promise<{
     console.log('Procesando PDF con pdf-parse...');
     let extractedText = '';
     try {
-      const pdfResult = await pdfParse.default(pdfData);
+      // Fix: Use pdfjs directly without trying to access default property
+      const pdfResult = await pdfjs(pdfData);
       extractedText = pdfResult.text || '';
       console.log('Texto extraído con pdf-parse (primeros 500 caracteres):', extractedText.substring(0, 500));
       console.log('Longitud total del texto extraído:', extractedText.length);
