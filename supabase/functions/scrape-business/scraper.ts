@@ -83,33 +83,33 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
       businessUrl: url
     };
     
-    // Extract business name
+    // Enhanced extraction attempts for business name
     businessData.businessName = extractBusinessName($);
     console.log(`Extracted business name: ${businessData.businessName}`);
     
-    // Extract address
+    // Extract address with enhanced method
     businessData.businessAddress = extractBusinessAddress($);
     console.log(`Extracted business address: ${businessData.businessAddress}`);
     
-    // Extract category
+    // Extract category with enhanced method
     businessData.businessCategory = extractBusinessCategory($);
     console.log(`Extracted business category: ${businessData.businessCategory}`);
     
-    // Extract phone
+    // Extract phone with enhanced method
     businessData.businessPhone = extractBusinessPhone($);
     console.log(`Extracted business phone: ${businessData.businessPhone}`);
     
-    // Extract website
+    // Extract website with enhanced method
     businessData.businessWebsite = extractBusinessWebsite($);
     console.log(`Extracted business website: ${businessData.businessWebsite}`);
     
-    // Extract rating and reviews count
+    // Extract rating and reviews count with enhanced method
     const ratingData = extractBusinessRating($);
     businessData.businessRating = ratingData.rating;
     businessData.businessReviewsCount = ratingData.reviewsCount;
     console.log(`Extracted rating: ${businessData.businessRating}, reviews: ${businessData.businessReviewsCount}`);
     
-    // Extract hours
+    // Extract hours with enhanced method
     businessData.businessHours = extractBusinessHours($);
     console.log(`Extracted business hours:`, businessData.businessHours);
     
