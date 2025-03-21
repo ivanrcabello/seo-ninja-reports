@@ -20,22 +20,23 @@ import KeywordsDialog from '../../KeywordsDialog';
 interface TabNavigationProps {
   content: Report['content'];
   hasPageSpeedData: boolean;
+  hasBusinessProfile?: boolean;
   isLoadingPageSpeed: boolean;
+  isLoadingBusinessProfile?: boolean;
   reportId: string;
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ 
   content, 
   hasPageSpeedData, 
+  hasBusinessProfile = false,
   isLoadingPageSpeed,
+  isLoadingBusinessProfile = false,
   reportId
 }) => {
   const [keywordsDialogOpen, setKeywordsDialogOpen] = useState(false);
   
   if (!content) return null;
-
-  // Check if we have business profile data to display
-  const hasBusinessProfile = content.businessProfile && !!content.businessProfile.businessUrl;
 
   return (
     <div className="bg-background/80 backdrop-blur-sm sticky top-0 z-10 pb-2">
@@ -95,7 +96,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
             <span>SEO Local</span>
           </TabsTrigger>
         )}
-        {hasBusinessProfile && (
+        {(hasBusinessProfile || isLoadingBusinessProfile) && (
           <TabsTrigger value="businessProfile" className="flex items-center gap-1 py-2">
             <Building className="h-4 w-4" />
             <span>GMB</span>

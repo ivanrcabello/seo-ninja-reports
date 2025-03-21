@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Report } from '@/types/report.types';
+import { Report, BusinessProfile } from '@/types/report.types';
 import { TabsContent } from "@/components/ui/tabs";
 import ReportSection from '../../report-section/ReportSection';
 import RecommendationsList from '../../report-section/RecommendationsList';
@@ -14,7 +14,9 @@ import { Loader2 } from 'lucide-react';
 interface TabContentProps {
   report: Report;
   pageSpeedData?: any;
+  businessProfile?: BusinessProfile | null;
   isLoadingPageSpeed?: boolean;
+  isLoadingBusinessProfile?: boolean;
   isEditing?: boolean;
   onEdit?: (sectionKey: string, content: string) => void;
 }
@@ -22,7 +24,9 @@ interface TabContentProps {
 const TabContent: React.FC<TabContentProps> = ({ 
   report, 
   pageSpeedData,
+  businessProfile,
   isLoadingPageSpeed = false,
+  isLoadingBusinessProfile = false,
   isEditing = false,
   onEdit = () => {}
 }) => {
@@ -41,6 +45,9 @@ const TabContent: React.FC<TabContentProps> = ({
   
   // Use pageSpeed data from the passed props or from the report content
   const pageSpeedDataToUse = pageSpeedData || content?.pageSpeedData;
+  
+  // Use business profile data from the passed props or from the report content
+  const businessProfileToUse = businessProfile || content?.businessProfile;
   
   return (
     <div className="p-4 mt-4">
@@ -118,8 +125,12 @@ const TabContent: React.FC<TabContentProps> = ({
       
       {/* Business Profile Tab */}
       <TabsContent value="businessProfile" className="focus-visible:outline-none">
-        {content.businessProfile ? (
-          <BusinessProfileSection businessProfile={content.businessProfile} view="full" />
+        {isLoadingBusinessProfile ? (
+          <div className="py-12 flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : businessProfileToUse ? (
+          <BusinessProfileSection businessProfile={businessProfileToUse} view="full" />
         ) : (
           <p className="text-muted-foreground">No hay información de ficha de negocio disponible.</p>
         )}
