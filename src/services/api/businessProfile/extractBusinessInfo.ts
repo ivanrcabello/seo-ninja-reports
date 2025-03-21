@@ -4,6 +4,7 @@ import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
 import { simulateBusinessProfileData } from './mocks';
 import { extractGmbData } from './extractGmbData';
+import { extractValueserpData } from './extractValueserpData';
 
 /**
  * Extrae información de una URL de Google Business
@@ -89,47 +90,23 @@ export const extractBusinessInfo = async (
       console.error('Error checking database for cached profile:', dbError);
     }
     
-    // Intentar obtener datos reales a través de la función de extracción
+    // Try to get real data via different methods
+    let profileData = null;
+    
+    // First try scraping directly from GMB
     try {
-      const profileData = await extractGmbData(businessUrl, true);
+      profileData = await extractGmbData(businessUrl, true);
       
-      // Verificar si se obtuvieron datos significativos y si son reales (no simulados)
+      // Verify if we got real data (not simulated)
       if (profileData && 
           (profileData.businessName || profileData.businessAddress) && 
           profileData.businessName !== 'Negocio de ejemplo') {
         
-        console.log('Successfully extracted business profile data:', profileData);
+        console.log('Successfully extracted business profile data via GMB scraping');
         
-        // Ensure businessHours is an object
-        if (!profileData.businessHours) {
-          profileData.businessHours = {};
-        } else if (typeof profileData.businessHours === 'string') {
-          try {
-            profileData.businessHours = JSON.parse(profileData.businessHours) as Record<string, string>;
-          } catch (e) {
-            console.error('Error parsing business hours string:', e);
-            profileData.businessHours = {};
-          }
-        }
+        // Ensure everything is properly structured
+        ensureValidProfileData(profileData);
         
-        // Ensure businessRating is a number or explicitly null
-        if (profileData.businessRating === undefined) {
-          profileData.businessRating = null;
-        }
-        
-        // Ensure businessReviewsCount is a number
-        if (profileData.businessReviewsCount === undefined) {
-          profileData.businessReviewsCount = 0;
-        }
-        
-        // Provide default empty strings for text fields if they're missing
-        profileData.businessName = profileData.businessName || '';
-        profileData.businessAddress = profileData.businessAddress || '';
-        profileData.businessCategory = profileData.businessCategory || '';
-        profileData.businessPhone = profileData.businessPhone || '';
-        profileData.businessWebsite = profileData.businessWebsite || '';
-        
-        // Verificar si el perfil tiene datos completos o parciales
         const isPartialData = !profileData.businessRating || !profileData.businessPhone || !profileData.businessWebsite;
         
         if (isPartialData) {
@@ -148,10 +125,46 @@ export const extractBusinessInfo = async (
       console.error('Error during GMB data extraction:', extractError);
     }
     
-    // Si llegamos aquí, no se obtuvieron datos significativos o son simulados
+    // If GMB scraping failed, try ValueSerp API if we have a business name
+    if (!profileData || profileData.businessName === 'Negocio de ejemplo') {
+      // Extract business name from URL if possible
+      const businessName = extractBusinessNameFromUrl(businessUrl);
+      
+      if (businessName) {
+        try {
+          console.log('Trying ValueSerp API with business name:', businessName);
+          toast.info('Consultando API alternativa', {
+            description: 'Intentando obtener datos mediante ValueSerp...'
+          });
+          
+          profileData = await extractValueserpData(businessName);
+          
+          // Verify if we got real data
+          if (profileData && 
+              (profileData.businessName || profileData.businessAddress) && 
+              profileData.businessName !== 'Negocio de ejemplo') {
+            
+            console.log('Successfully extracted business profile data via ValueSerp');
+            
+            // Ensure everything is properly structured
+            ensureValidProfileData(profileData);
+            
+            toast.success('Información extraída correctamente', {
+              description: 'Datos obtenidos mediante ValueSerp',
+            });
+            
+            return profileData;
+          }
+        } catch (valueserpError) {
+          console.error('Error during ValueSerp data extraction:', valueserpError);
+        }
+      }
+    }
+    
+    // If we reach here, no significant data was obtained or it's simulated
     console.warn('No significant business data extracted, using simulation');
     
-    // En caso de fallo, devolver datos simulados pero con una nota clara
+    // Return simulated data with a clear note
     const simulatedData = simulateBusinessProfileData(businessUrl);
     toast.warning('Se están usando datos simulados', {
       description: 'No se pudieron extraer datos reales del perfil, se muestran datos de ejemplo'
@@ -165,7 +178,67 @@ export const extractBusinessInfo = async (
       description: error.message || 'No se pudo procesar la URL proporcionada',
     });
     
-    // En caso de error, devolver datos simulados para evitar pantalla en blanco
+    // In case of error, return simulated data to avoid blank screen
     return simulateBusinessProfileData(businessUrl);
   }
 };
+
+// Helper function to ensure all profile data is valid
+function ensureValidProfileData(profileData: Partial<BusinessProfile>) {
+  // Ensure businessHours is an object
+  if (!profileData.businessHours) {
+    profileData.businessHours = {};
+  } else if (typeof profileData.businessHours === 'string') {
+    try {
+      profileData.businessHours = JSON.parse(profileData.businessHours) as Record<string, string>;
+    } catch (e) {
+      console.error('Error parsing business hours string:', e);
+      profileData.businessHours = {};
+    }
+  }
+  
+  // Ensure businessRating is a number or explicitly null
+  if (profileData.businessRating === undefined) {
+    profileData.businessRating = null;
+  }
+  
+  // Ensure businessReviewsCount is a number
+  if (profileData.businessReviewsCount === undefined) {
+    profileData.businessReviewsCount = 0;
+  }
+  
+  // Provide default empty strings for text fields if they're missing
+  profileData.businessName = profileData.businessName || '';
+  profileData.businessAddress = profileData.businessAddress || '';
+  profileData.businessCategory = profileData.businessCategory || '';
+  profileData.businessPhone = profileData.businessPhone || '';
+  profileData.businessWebsite = profileData.businessWebsite || '';
+}
+
+// Extract business name from Google Maps URL
+function extractBusinessNameFromUrl(url: string): string | null {
+  try {
+    // Try to extract from place path segment
+    if (url.includes('/place/')) {
+      const placeMatch = url.match(/\/place\/([^\/]+)/);
+      if (placeMatch && placeMatch[1]) {
+        // Decode URI component and replace plus signs with spaces
+        const decoded = decodeURIComponent(placeMatch[1]).replace(/\+/g, ' ');
+        // Remove any trailing parameters or coordinates
+        return decoded.split(',')[0].split('@')[0];
+      }
+    }
+    
+    // Try to extract from query parameter
+    const urlObj = new URL(url);
+    const query = urlObj.searchParams.get('q');
+    if (query) {
+      return query.split(',')[0];
+    }
+    
+    return null;
+  } catch (e) {
+    console.error('Error extracting business name from URL:', e);
+    return null;
+  }
+}

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import ClientPerformanceCards from './ClientPerformanceCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ClientGmbTest from './tests/ClientGmbTest';
 import ClientPageSpeedTest from './tests/ClientPageSpeedTest';
+import ClientBusinessSearch from './tests/ClientBusinessSearch';
 import { AnimatePresence, motion } from 'framer-motion';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
 import { fetchPageSpeedData } from '@/services/api/pagespeed';
@@ -285,6 +287,12 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
                   onScoreUpdate={handlePageSpeedUpdate}
                 />
               </div>
+              
+              {/* Add the new ValueSerp-based business search component */}
+              <ClientBusinessSearch 
+                clientId={client.id}
+                onProfileUpdate={handleBusinessProfileUpdate}
+              />
             </TabsContent>
             
             <TabsContent value="credentials">

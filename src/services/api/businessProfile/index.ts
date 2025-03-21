@@ -1,7 +1,9 @@
 
-// Export the business profile service functions
-export { saveBusinessProfile } from './saveBusinessProfile';
+// Export business profile services
 export { getBusinessProfile } from './getBusinessProfile';
+export { saveBusinessProfile } from './saveBusinessProfile';
 export { extractBusinessInfo } from './extractBusinessInfo';
-export { extractGmbData } from './extractGmbData';
 export { isValidGoogleBusinessUrl } from './utils';
+export { extractGmbData } from './extractGmbData';
+export { extractValueserpData } from './extractValueserpData';
+export { simulateBusinessProfileData } from './mocks';

@@ -41,6 +41,7 @@ export {
   saveBusinessProfile,
   getBusinessProfile,
   extractBusinessInfo,
+  extractValueserpData,
   isValidGoogleBusinessUrl
 } from './api/businessProfile';
 
