@@ -18,14 +18,21 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      
+      console.log('File selected:', file.name, 'Size:', (file.size / 1024).toFixed(2), 'KB, Type:', file.type);
+      
       if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+        console.error('Invalid file format:', file.type);
         toast.error('Formato no válido', {
           description: 'Por favor, sube un archivo PDF'
         });
         return;
       }
-      console.log('File selected:', file.name);
+      
       setSelectedFile(file);
+      toast.info('Archivo seleccionado', {
+        description: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
+      });
     }
   };
 
@@ -37,7 +44,17 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
       return;
     }
 
+    if (!clientId) {
+      console.error('No client ID provided');
+      toast.error('Error de configuración', {
+        description: 'ID de cliente no especificado'
+      });
+      return;
+    }
+
     setIsUploading(true);
+    console.log('Starting PDF upload and processing for client:', clientId);
+    
     try {
       console.log('Processing PDF file:', selectedFile.name);
       toast.info('Procesando informe', {
@@ -48,13 +65,15 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
       const parsedData = await parseSemrushPdf(selectedFile);
       
       if (!parsedData) {
+        console.error('Failed to parse PDF, no data returned');
         toast.error('Error al procesar el informe', {
           description: 'No se pudieron extraer datos del PDF'
         });
+        setIsUploading(false);
         return;
       }
 
-      console.log('Parsed data:', parsedData);
+      console.log('Parsed data successfully:', parsedData);
       toast.info('Guardando informe', {
         description: `Creando informe para ${parsedData.domain}...`
       });
@@ -70,6 +89,7 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
         setSelectedFile(null);
         onUploadSuccess();
       } else {
+        console.error('Failed to create SEO report, no result returned');
         toast.error('Error al guardar informe', {
           description: 'No se pudo guardar el informe en la base de datos'
         });
@@ -99,7 +119,7 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
               type="file"
               id="pdf-upload"
               className="hidden"
-              accept="application/pdf"
+              accept="application/pdf,.pdf"
               onChange={handleFileChange}
             />
             <label
@@ -126,6 +146,10 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
             {isUploading ? 'Procesando...' : 'Subir y Procesar PDF'}
             <Upload className="ml-2 h-4 w-4" />
           </Button>
+          
+          <div className="text-xs text-muted-foreground mt-2">
+            Cliente ID: {clientId}
+          </div>
         </div>
       </CardContent>
     </Card>

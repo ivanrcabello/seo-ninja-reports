@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 export const fetchClientSeoReports = async (clientId: string): Promise<SeoReport[]> => {
   try {
+    console.log('Fetching SEO reports for client:', clientId);
     const { data: reports, error } = await supabase
       .from('seo_reports')
       .select('*')
@@ -12,6 +13,7 @@ export const fetchClientSeoReports = async (clientId: string): Promise<SeoReport
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+    console.log('Raw reports from database:', reports);
 
     // For each report, fetch its keywords and competitors
     const reportsWithData = await Promise.all(
@@ -37,6 +39,8 @@ export const fetchClientSeoReports = async (clientId: string): Promise<SeoReport
         if (competitorsError) {
           console.error('Error fetching competitors:', competitorsError);
         }
+
+        console.log(`Report ${report.id} has ${keywords?.length || 0} keywords and ${competitors?.length || 0} competitors`);
 
         // Convert database fields to match our TypeScript types
         return {
@@ -185,6 +189,11 @@ export const uploadSeoReport = async (
   }
 };
 
+/**
+ * Parses a SEMrush PDF file to extract SEO data
+ * Since we can't actually parse PDFs in the browser, this is a mock implementation
+ * that extracts basic info and generates realistic sample data
+ */
 export const parseSemrushPdf = async (file: File): Promise<{
   domain: string;
   traffic?: number;
@@ -194,27 +203,35 @@ export const parseSemrushPdf = async (file: File): Promise<{
   competitorsData?: { domain: string; keywordsOverlap?: number; competitionLevel?: number }[];
 } | null> => {
   try {
-    console.log('Parsing PDF file:', file.name);
+    console.log('Parsing PDF file:', file.name, 'Size:', (file.size / 1024).toFixed(2), 'KB, Type:', file.type);
     
-    // Check file extension
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
+    // Check file extension and type
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      console.error('Invalid file format:', file.type);
       toast.error('Formato no válido', {
         description: 'El archivo debe ser un PDF de Semrush'
       });
       return null;
     }
     
-    // In a real implementation, you'd send the file to a server for processing
-    // For this demo, extract domain from filename or generate a mock domain
-    let domain = file.name.replace('.pdf', '').replace(/semrush_|semrush-/gi, '');
+    // In a real implementation, we would use a PDF parsing library
+    // For now, we'll extract domain from filename or generate a mock domain
+    let domain = file.name.replace('.pdf', '').replace(/semrush_|semrush-|report_|report-/gi, '');
     
     // If domain is empty or doesn't look like a domain, generate a placeholder
     if (!domain.includes('.') || domain.length < 4) {
       domain = `example-${Math.floor(Math.random() * 1000)}.com`;
+      console.log('Could not extract domain from filename, using placeholder:', domain);
     }
     
+    console.log('Extracted domain:', domain);
+    
+    // In a real implementation, we would read the PDF content
+    // For now, let's just log that we're working with the file
+    console.log(`Processing PDF for domain: ${domain}`);
+    
     // Generate more realistic sample data
-    return {
+    const mockData = {
       domain,
       traffic: Math.floor(Math.random() * 10000) + 1000,
       keywords: Math.floor(Math.random() * 2000) + 500,
@@ -226,7 +243,8 @@ export const parseSemrushPdf = async (file: File): Promise<{
         { keyword: 'local seo company', position: 1, volume: 1250, trafficPercent: 25.2 },
         { keyword: 'content marketing strategy', position: 4, volume: 1700, trafficPercent: 16.8 },
         { keyword: 'seo audit tool', position: 8, volume: 950, trafficPercent: 12.4 },
-        { keyword: 'search engine optimization', position: 6, volume: 4800, trafficPercent: 14.1 }
+        { keyword: 'search engine optimization', position: 6, volume: 4800, trafficPercent: 14.1 },
+        { keyword: domain.replace('.com', '').replace(/[^a-zA-Z0-9]/g, ' ').trim(), position: 3, volume: 2200, trafficPercent: 20.1 },
       ],
       competitorsData: [
         { domain: 'topcompetitor.com', keywordsOverlap: 187, competitionLevel: 0.82 },
@@ -236,6 +254,10 @@ export const parseSemrushPdf = async (file: File): Promise<{
         { domain: 'webmarketingpros.com', keywordsOverlap: 76, competitionLevel: 0.47 }
       ]
     };
+    
+    console.log('Generated mock data:', mockData);
+    
+    return mockData;
   } catch (error) {
     console.error('Error parsing PDF:', error);
     toast.error('Error al procesar el PDF', {
@@ -246,11 +268,17 @@ export const parseSemrushPdf = async (file: File): Promise<{
 };
 
 export const createSeoReport = async (clientId: string, data: ReturnType<typeof parseSemrushPdf> extends Promise<infer T> ? T : never) => {
-  if (!data) return null;
+  if (!data) {
+    console.error('No data provided to createSeoReport');
+    return null;
+  }
   
   try {
     console.log('Creating SEO report with data:', data);
+    console.log('Client ID:', clientId);
+    
     const result = await uploadSeoReport(clientId, data);
+    console.log('SEO report created successfully:', result);
     return result;
   } catch (error) {
     console.error('Error creating SEO report:', error);
