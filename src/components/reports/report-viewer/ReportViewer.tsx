@@ -129,12 +129,9 @@ const ReportViewer: React.FC = () => {
               date={report.date}
               url={report.url}
               isEditing={isEditing}
-              editingSection={editingSection}
               reportId={report.id}
-              setIsEditing={(value) => setIsEditing(value)}
-              onEdit={handleEdit}
-              onCancelEdit={handleCancelEdit}
-              onSaveEdit={handleSaveEdit}
+              setIsEditing={setIsEditing}
+              variant="detailed"
             />
             
             <ReportTabs 

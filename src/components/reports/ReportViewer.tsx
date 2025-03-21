@@ -1,3 +1,3 @@
 
-import ReportViewer from './report-viewer';
+import ReportViewer from './report-viewer/ReportViewer';
 export default ReportViewer;

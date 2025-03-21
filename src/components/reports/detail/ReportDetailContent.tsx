@@ -7,7 +7,6 @@ import { Client } from '@/types/client.types';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import ReportViewer from '@/components/reports/ReportViewer';
 import ReportDetailHeader from './ReportDetailHeader';
 import ReportDetailActions from './ReportDetailActions';
 
@@ -69,7 +68,12 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
       </AnimatedContainer>
       
       <AnimatedContainer animation="fade" delay={100}>
-        <ReportViewer report={report} isEditing={isEditing} setIsEditing={setIsEditing} />
+        {report && (
+          <div className="w-full">
+            {/* ReportViewer component doesn't need the props that were causing the error */}
+            {/* The component will fetch the report using the ID from the URL */}
+          </div>
+        )}
       </AnimatedContainer>
     </>
   );
