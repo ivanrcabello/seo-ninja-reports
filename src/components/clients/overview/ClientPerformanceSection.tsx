@@ -2,7 +2,7 @@
 import React from 'react';
 import { BusinessProfile } from '@/types/report.types';
 import ClientBusinessCard from './ClientBusinessCard';
-import ClientPageSpeedCard from './ClientPageSpeedCard';
+import { ClientPerformanceCards } from '../ClientPerformanceCards';
 
 interface ClientPerformanceSectionProps {
   businessProfile: Partial<BusinessProfile> | null;
@@ -24,19 +24,15 @@ const ClientPerformanceSection: React.FC<ClientPerformanceSectionProps> = ({
   isRefreshingBusinessProfile
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <ClientBusinessCard 
-        businessProfile={businessProfile}
-        isRefreshingBusinessProfile={isRefreshingBusinessProfile}
-        onRefreshBusinessProfile={onRefreshBusinessProfile}
-      />
-      
-      <ClientPageSpeedCard 
-        pageSpeedScore={pageSpeedScore}
-        isRefreshingPageSpeed={isRefreshingPageSpeed}
-        onRefreshPageSpeed={onRefreshPageSpeed}
-      />
-    </div>
+    <ClientPerformanceCards
+      businessProfile={businessProfile}
+      pageSpeedScore={pageSpeedScore}
+      clientWebsite={clientWebsite}
+      onRefreshPageSpeed={onRefreshPageSpeed}
+      onRefreshBusinessProfile={onRefreshBusinessProfile}
+      isRefreshingPageSpeed={isRefreshingPageSpeed}
+      isRefreshingBusinessProfile={isRefreshingBusinessProfile}
+    />
   );
 };
 
