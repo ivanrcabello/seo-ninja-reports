@@ -25,11 +25,17 @@ export const getBusinessProfile = async (reportId: string): Promise<BusinessProf
     if (!data) return null;
     
     // Transformar el resultado a formato de frontend
-    const businessHours = data.business_hours ? 
-      (typeof data.business_hours === 'string' ? 
-        JSON.parse(data.business_hours) : 
-        data.business_hours) : 
-      {};
+    let businessHours: Record<string, string> = {};
+    if (data.business_hours) {
+      try {
+        businessHours = typeof data.business_hours === 'string' 
+          ? JSON.parse(data.business_hours) 
+          : data.business_hours as Record<string, string>;
+      } catch (parseError) {
+        console.error('Error parsing business hours:', parseError);
+        // Continue with empty business hours
+      }
+    }
       
     return {
       id: data.id,
@@ -42,7 +48,7 @@ export const getBusinessProfile = async (reportId: string): Promise<BusinessProf
       businessRating: data.business_rating,
       businessReviewsCount: data.business_reviews_count,
       businessWebsite: data.business_website,
-      businessHours: businessHours as Record<string, string>,
+      businessHours,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };

@@ -53,6 +53,18 @@ export const extractBusinessInfo = async (
             description: 'Usando datos recientes del perfil de GMB',
           });
           
+          // Parse the business_hours JSON if it's a string
+          let businessHours: Record<string, string> = {};
+          if (cachedProfile.business_hours) {
+            try {
+              businessHours = typeof cachedProfile.business_hours === 'string'
+                ? JSON.parse(cachedProfile.business_hours)
+                : cachedProfile.business_hours as Record<string, string>;
+            } catch (parseError) {
+              console.error('Error parsing business hours:', parseError);
+            }
+          }
+          
           // Transform database record to frontend format
           return {
             businessUrl: cachedProfile.business_url,
@@ -63,7 +75,7 @@ export const extractBusinessInfo = async (
             businessReviewsCount: cachedProfile.business_reviews_count,
             businessPhone: cachedProfile.business_phone,
             businessWebsite: cachedProfile.business_website,
-            businessHours: cachedProfile.business_hours
+            businessHours
           };
         } else {
           console.log('Cached profile is too old or not substantial, refreshing data');

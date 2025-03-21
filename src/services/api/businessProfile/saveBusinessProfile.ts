@@ -110,12 +110,12 @@ export const saveBusinessProfile = async (
       throw new Error('No result returned from database operation');
     }
     
-    let businessHours = {};
+    let businessHours: Record<string, string> = {};
     if (result.business_hours) {
       try {
         businessHours = typeof result.business_hours === 'string' 
           ? JSON.parse(result.business_hours) 
-          : result.business_hours;
+          : result.business_hours as Record<string, string>;
       } catch (parseError) {
         console.error('Error parsing business hours:', parseError);
         // Continue with empty business hours
@@ -133,7 +133,7 @@ export const saveBusinessProfile = async (
       businessRating: result.business_rating,
       businessReviewsCount: result.business_reviews_count,
       businessWebsite: result.business_website,
-      businessHours: businessHours as Record<string, string>,
+      businessHours,
       createdAt: result.created_at,
       updatedAt: result.updated_at
     };
