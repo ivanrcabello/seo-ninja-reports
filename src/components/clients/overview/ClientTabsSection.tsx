@@ -6,9 +6,8 @@ import { BusinessProfile } from '@/types/report.types';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
 import ClientSummaryTab from './ClientSummaryTab';
-import ClientGmbTest from '../tests/ClientGmbTest';
-import ClientPageSpeedTest from '../tests/ClientPageSpeedTest';
-import ClientBusinessSearch from '../tests/ClientBusinessSearch';
+import ClientGmbTab from '../tabs/ClientGmbTab';
+import ClientPageSpeedTab from '../tabs/ClientPageSpeedTab';
 import ClientCredentials from '../ClientCredentials';
 import ClientKeywords from '../keywords/ClientKeywords';
 
@@ -21,6 +20,16 @@ interface ClientTabsSectionProps {
   onCreateReport: () => void;
   onBusinessProfileUpdate: (profile: Partial<BusinessProfile>) => void;
   onPageSpeedUpdate: (score: number) => void;
+  businessProfile: Partial<BusinessProfile> | null;
+  pageSpeedScore: number | null | undefined;
+  clientWebsite: string;
+  clientName?: string;
+  clientLocation?: string;
+  clientId: string;
+  isRefreshingBusinessProfile: boolean;
+  isRefreshingPageSpeed: boolean;
+  onRefreshBusinessProfile: () => void;
+  onRefreshPageSpeed: () => void;
 }
 
 const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
@@ -31,13 +40,24 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
   onViewReports,
   onCreateReport,
   onBusinessProfileUpdate,
-  onPageSpeedUpdate
+  onPageSpeedUpdate,
+  businessProfile,
+  pageSpeedScore,
+  clientWebsite,
+  clientName,
+  clientLocation,
+  clientId,
+  isRefreshingBusinessProfile,
+  isRefreshingPageSpeed,
+  onRefreshBusinessProfile,
+  onRefreshPageSpeed
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
       <TabsList className="grid grid-cols-4 mb-4">
         <TabsTrigger value="summary">Resumen</TabsTrigger>
-        <TabsTrigger value="tests">Tests Rápidos</TabsTrigger>
+        <TabsTrigger value="gmb">Google My Business</TabsTrigger>
+        <TabsTrigger value="pagespeed">PageSpeed</TabsTrigger>
         <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
         <TabsTrigger value="credentials">Credenciales</TabsTrigger>
       </TabsList>
@@ -59,29 +79,31 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
             />
           </TabsContent>
           
-          <TabsContent value="tests" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ClientGmbTest 
-                clientId={client.id} 
-                clientWebsite={client.website}
-                onProfileUpdate={onBusinessProfileUpdate}
-              />
-              <ClientPageSpeedTest 
-                websiteUrl={client.website}
-                onScoreUpdate={onPageSpeedUpdate}
-              />
-            </div>
-            
-            {/* ValueSerp-based business search component */}
-            <ClientBusinessSearch 
+          <TabsContent value="gmb">
+            <ClientGmbTab 
               clientId={client.id}
-              onProfileUpdate={onBusinessProfileUpdate}
+              clientName={client.name}
+              clientLocation={client.industry}
+              businessProfile={businessProfile}
+              isRefreshingBusinessProfile={isRefreshingBusinessProfile}
+              onRefreshBusinessProfile={onRefreshBusinessProfile}
+              onBusinessProfileUpdate={onBusinessProfileUpdate}
+            />
+          </TabsContent>
+          
+          <TabsContent value="pagespeed">
+            <ClientPageSpeedTab 
+              clientWebsite={clientWebsite}
+              pageSpeedScore={pageSpeedScore}
+              isRefreshingPageSpeed={isRefreshingPageSpeed}
+              onRefreshPageSpeed={onRefreshPageSpeed}
+              onPageSpeedUpdate={onPageSpeedUpdate}
             />
           </TabsContent>
           
           <TabsContent value="keywords">
             <ClientKeywords
-              clientId={client.id}
+              clientId={clientId}
               reports={reports}
             />
           </TabsContent>

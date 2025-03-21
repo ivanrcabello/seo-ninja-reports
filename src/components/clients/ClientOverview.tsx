@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Client } from '@/types/client.types';
 import { Report, BusinessProfile } from '@/types/report.types';
@@ -140,6 +141,16 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
         onCreateReport={onCreateReport}
         onBusinessProfileUpdate={handleBusinessProfileUpdate}
         onPageSpeedUpdate={handlePageSpeedUpdate}
+        businessProfile={displayBusinessProfile}
+        pageSpeedScore={displayPageSpeedScore}
+        clientWebsite={client.website}
+        clientName={client.name}
+        clientLocation={client.industry}
+        clientId={client.id}
+        isRefreshingBusinessProfile={isRefreshingBusinessProfile}
+        isRefreshingPageSpeed={isRefreshingPageSpeed}
+        onRefreshBusinessProfile={handleRefreshBusinessProfile}
+        onRefreshPageSpeed={handleRefreshPageSpeed}
       />
     </>
   );
