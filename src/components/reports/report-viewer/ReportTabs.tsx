@@ -34,7 +34,12 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('content');
   const reportContent = report.content || {};
-  const keywordsContent = typeof reportContent.keywords === 'string' ? reportContent.keywords : '';
+  
+  // Safely handle keywords content - ensure it exists before accessing
+  const keywordsContent = reportContent.keywords ? 
+    (typeof reportContent.keywords === 'string' ? reportContent.keywords : '') : '';
+  
+  // Check if keywords array exists
   const hasKeywords = reportContent.keywords && 
     (Array.isArray(reportContent.keywords) && reportContent.keywords.length > 0);
   

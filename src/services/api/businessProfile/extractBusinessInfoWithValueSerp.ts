@@ -44,6 +44,8 @@ export const extractBusinessInfoWithValueSerp = async (
         // Format business hours for storage
         const formattedHours = data.data.businessHours ? JSON.stringify(data.data.businessHours) : '{}';
         
+        // Note: We're just storing the business profile information for reference
+        // We'll create the actual association with the report later when saving
         const { error: dbError } = await supabase
           .from('business_profiles')
           .insert({
@@ -56,6 +58,9 @@ export const extractBusinessInfoWithValueSerp = async (
             business_phone: data.data.businessPhone || '',
             business_website: data.data.businessWebsite || '',
             business_hours: formattedHours,
+            // We're creating a temporary profile without report_id
+            // The actual profile with report_id will be created when saving the report
+            report_id: '00000000-0000-0000-0000-000000000000'
           });
           
         if (dbError) {

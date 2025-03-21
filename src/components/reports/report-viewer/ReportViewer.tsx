@@ -48,14 +48,6 @@ const ReportViewer = () => {
     return <NotFoundPage />;
   }
   
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-  
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-  };
-  
   const handleSaveEdit = async (section: string, content: string) => {
     if (!report.content) return;
     
@@ -122,15 +114,6 @@ const ReportViewer = () => {
     }
   };
   
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('es', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }).format(date);
-  };
-  
   if (report.status === 'processing') {
     return (
       <div className="w-full max-w-5xl mx-auto">
@@ -161,8 +144,6 @@ const ReportViewer = () => {
               isEditing={isEditing}
               reportId={id}
               setIsEditing={setIsEditing}
-              onCancelEdit={handleCancelEdit}
-              onSaveEdit={handleSaveEdit}
             />
             
             <ReportTabs 
