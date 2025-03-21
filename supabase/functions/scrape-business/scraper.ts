@@ -119,6 +119,19 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
       throw new Error("Could not extract essential business information");
     }
     
+    // Process the address to separate it from the name if necessary
+    // This is important when Google Maps returns a combined name and address
+    if (businessData.businessName && businessData.businessName.includes('·')) {
+      const parts = businessData.businessName.split('·');
+      if (parts.length >= 2) {
+        businessData.businessName = parts[0].trim();
+        // Only set address if it's not already set from other methods
+        if (!businessData.businessAddress) {
+          businessData.businessAddress = parts[1].trim();
+        }
+      }
+    }
+    
     console.log("Profile data extraction complete:", businessData);
     return businessData;
     

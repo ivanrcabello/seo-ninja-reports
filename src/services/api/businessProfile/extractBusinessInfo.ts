@@ -21,15 +21,34 @@ export const extractBusinessInfo = async (
     
     console.log('Attempting to extract business info from URL:', businessUrl);
     
+    // Mostrar toast de progreso
+    toast.info('Analizando perfil de negocio', {
+      description: 'Extrayendo información del perfil de Google Business',
+    });
+    
     // Intentar obtener datos reales a través de la función de extracción
     const profileData = await extractGmbData(businessUrl, true);
     
     // Verificar si se obtuvieron datos significativos y si son reales (no simulados)
-    // Los datos simulados siempre incluyen "Negocio de ejemplo" como nombre
     if (profileData && 
         (profileData.businessName || profileData.businessAddress) && 
         profileData.businessName !== 'Negocio de ejemplo') {
+      
       console.log('Successfully extracted business profile data:', profileData);
+      
+      // Verificar si el perfil tiene datos completos o parciales
+      const isPartialData = !profileData.businessRating || !profileData.businessPhone || !profileData.businessWebsite;
+      
+      if (isPartialData) {
+        toast.warning('Datos incompletos', {
+          description: 'Se obtuvieron algunos datos del perfil, pero no está completo'
+        });
+      } else {
+        toast.success('Información extraída correctamente', {
+          description: 'Se ha obtenido información completa del perfil de negocio',
+        });
+      }
+      
       return profileData;
     }
     
@@ -52,9 +71,6 @@ export const extractBusinessInfo = async (
     
     // En caso de error, devolver null en lugar de datos simulados
     // para que los componentes puedan gestionarlo adecuadamente
-    toast.warning('Error en la extracción', {
-      description: 'No se pudieron obtener datos del perfil de GMB'
-    });
     return null;
   }
 };

@@ -1,10 +1,8 @@
 
 import * as cheerio from 'https://esm.sh/cheerio@1.0.0-rc.12'
-import { BusinessHours } from './types.ts';
+import { BusinessProfileData } from './types.ts';
 
-/**
- * Follows redirects for shortened URLs like g.co
- */
+// Follows redirects to get the final URL
 export async function getRedirectedUrl(url: string): Promise<string> {
   try {
     const response = await fetch(url, {
@@ -17,14 +15,12 @@ export async function getRedirectedUrl(url: string): Promise<string> {
     return response.url;
   } catch (error) {
     console.error('Error following redirect:', error);
-    return url; // Return original if redirect fails
+    return url; // Return original URL if unable to follow redirects
   }
 }
 
-/**
- * Generate simulated business data for testing purposes
- */
-export function simulateBusinessProfileData(url: string) {
+// Simulates business profile data for development and fallback
+export function simulateBusinessProfileData(url: string): BusinessProfileData {
   return {
     businessUrl: url,
     businessName: 'Negocio de ejemplo',
@@ -46,387 +42,525 @@ export function simulateBusinessProfileData(url: string) {
   };
 }
 
-/**
- * Extract business name from multiple possible HTML patterns
- */
+// Extract business name with multiple selector strategies
 export function extractBusinessName($: cheerio.CheerioAPI): string | undefined {
-  // Try multiple selectors for business name
-  const selectors = [
-    'h1.DUwDvf', // Common Google Maps business name
-    'h1[data-attrid="title"]',
-    'div[data-attrid="title"]',
-    'div.fontHeadlineLarge',
+  // Strategy 1: Look for heading elements
+  const headingSelectors = [
     'h1',
-    'div.x3AX1-LfntMc-header-title-title',
-    'div[role="main"] div[role="heading"]',
-    // Additional selectors below
-    'div.lMbq3e h1',
-    'span[jsslot] h1',
-    'div.SPZz6b h1'
+    'h1.fontHeadlineLarge',
+    'div[role="main"] h1', 
+    'div.bJzME.tTVLSc h1',
+    'div.fontHeadlineLarge',
+    'div[data-attrid="title"]',
+    'span.fontHeadlineLarge',
+    'div.kp-header div.SPZz6b',
+    'div.Mot0gd',
+    'div.fontHeadlineLarge.xzVNx',
+    'div[data-attrid="title"] span',
+    'div.kp-header div.SPZz6b',
+    'div.DUwDvf',
+    'div.tAd8D',
+    'div.Io6YTe.fontHeadlineLarge'
   ];
   
-  for (const selector of selectors) {
-    const name = $(selector).first().text().trim();
-    if (name) return name;
+  for (const selector of headingSelectors) {
+    const element = $(selector).first();
+    if (element.length && element.text().trim()) {
+      return element.text().trim();
+    }
   }
   
-  // Fallback - look for markup containing role="heading" and the largest text
-  const headings = $('[role="heading"]').toArray();
-  const largestHeading = headings.sort((a, b) => 
-    $(b).text().trim().length - $(a).text().trim().length
-  )[0];
-  
-  if (largestHeading) {
-    return $(largestHeading).text().trim();
+  // Strategy 2: Look for structured data in script tags
+  const scripts = $('script[type="application/ld+json"]');
+  for (let i = 0; i < scripts.length; i++) {
+    try {
+      const script = scripts.eq(i);
+      const json = JSON.parse(script.html() || '{}');
+      if (json.name) {
+        return json.name;
+      }
+    } catch (e) {
+      // Continue to next script tag if parsing fails
+    }
   }
   
-  // Further fallback - look for meta title
-  const metaTitle = $('meta[property="og:title"]').attr('content');
+  // Strategy 3: Look for elements with high probability of containing business name
+  const nameSelectors = [
+    'div.lfPIob',
+    'div.SPZz6b',
+    'div.qBF1Pd',
+    'div.fxKbKc h2',
+    'div.YjL1W'
+  ];
+  
+  for (const selector of nameSelectors) {
+    const element = $(selector).first();
+    if (element.length && element.text().trim()) {
+      return element.text().trim();
+    }
+  }
+  
+  // Strategy 4: Look in meta tags
+  const metaTitle = $('meta[property="og:title"]').attr('content') ||
+                    $('meta[name="twitter:title"]').attr('content') ||
+                    $('title').text();
+                    
   if (metaTitle) {
-    // Clean up meta title by removing " - Google Maps" suffix if present
+    // Clean up the title - often contains " - Google Maps" or similar
     return metaTitle.replace(/ - Google Maps$/, '').trim();
   }
   
   return undefined;
 }
 
-/**
- * Extract business address from HTML
- */
+// Extract business address with multiple selector strategies
 export function extractBusinessAddress($: cheerio.CheerioAPI): string | undefined {
-  // Try multiple selectors for address
-  const selectors = [
-    'div[data-attrid="kc:/location/location:address"]',
+  // Strategy 1: Common address containers
+  const addressSelectors = [
+    'button[data-item-id="address"] div.LTs0Rc span',
+    'button[data-item-id="address"] div.Io6YTe',
+    'div[data-tooltip="Copiar dirección"] > div > span.LRkQ3e',
+    'div.rogA2c div.Io6YTe',
+    'div[jsaction="pane.attributes.expand"] button span.LrzXr',
     'button[data-item-id="address"]',
-    'button[aria-label*="dirección" i]',
-    'button[aria-label*="address" i]',
-    'button[aria-label*="directions" i]',
-    'button[data-tooltip*="dirección" i]',
-    'button[data-tooltip*="address" i]',
-    'div.rogA2c',
-    'div.fontBodyMedium div.Io6YTe',
-    // Additional selectors
-    'span[aria-label*="dirección:" i]',
-    'div[jsaction*="address"]',
-    '[jsan*="address"]'
+    'div[data-attrid="kc:/location/location:address"] span',
+    'div.Z1hOCe span.LrzXr',
+    'div.LCiwEc span.LrzXr',
+    'div.T6pBCe',
+    'div.iZV6Fc',
+    'span.LrzXr.zdqRlf',
+    'span[jsan*="7.LrzXr"]'
   ];
   
-  for (const selector of selectors) {
-    const address = $(selector).first().text().trim();
-    if (address) return address;
-  }
-  
-  // Try finding structured data
-  const structuredData = $('script[type="application/ld+json"]').toArray();
-  for (const script of structuredData) {
-    try {
-      const data = JSON.parse($(script).html() || '{}');
-      if (data.address) {
-        return typeof data.address === 'string' 
-          ? data.address 
-          : `${data.address.streetAddress || ''}, ${data.address.addressLocality || ''}, ${data.address.addressRegion || ''}`.trim();
-      }
-    } catch (e) {
-      // Ignore parsing errors
+  for (const selector of addressSelectors) {
+    const element = $(selector).first();
+    if (element.length && element.text().trim()) {
+      return element.text().trim();
     }
   }
   
-  // Look for anything that might be an address
-  const addressRegexes = [
-    /\d+\s+[A-Za-z\s]+,\s+[A-Za-z\s]+/,  // Street number and name, City
-    /Calle\s+[A-Za-z0-9\s]+,\s+[A-Za-z\s]+/i, // Spanish street format
-    /Av\.\s+[A-Za-z0-9\s]+,\s+[A-Za-z\s]+/i, // Avenue format
-  ];
+  // Strategy 2: Look for structured data in script tags
+  const scripts = $('script[type="application/ld+json"]');
+  for (let i = 0; i < scripts.length; i++) {
+    try {
+      const script = scripts.eq(i);
+      const json = JSON.parse(script.html() || '{}');
+      
+      if (json.address) {
+        if (typeof json.address === 'string') {
+          return json.address;
+        } else if (json.address.streetAddress) {
+          const parts = [
+            json.address.streetAddress,
+            json.address.addressLocality,
+            json.address.addressRegion,
+            json.address.postalCode,
+            json.address.addressCountry
+          ].filter(Boolean);
+          return parts.join(', ');
+        }
+      }
+    } catch (e) {
+      // Continue to next script tag if parsing fails
+    }
+  }
   
-  const bodyText = $('body').text();
-  for (const regex of addressRegexes) {
-    const match = bodyText.match(regex);
-    if (match) return match[0].trim();
+  // Strategy 3: Look for "address" attribute or similar text
+  const textsToFind = ['Dirección:', 'Address:', 'Location:'];
+  for (const text of textsToFind) {
+    const element = $(`div:contains("${text}")`)
+      .filter(function() {
+        return $(this).text().trim() === text;
+      })
+      .parent();
+      
+    if (element.length) {
+      const addressElement = element.find('span').last();
+      if (addressElement.length && addressElement.text().trim()) {
+        return addressElement.text().trim();
+      }
+    }
+  }
+  
+  // Strategy 4: Look in meta description which sometimes contains the address
+  const metaDescription = $('meta[name="description"]').attr('content');
+  if (metaDescription && metaDescription.includes(',') && !metaDescription.includes('Google Maps')) {
+    return metaDescription.trim();
   }
   
   return undefined;
 }
 
-/**
- * Extract business category from HTML
- */
+// Extract business category with multiple selector strategies
 export function extractBusinessCategory($: cheerio.CheerioAPI): string | undefined {
-  // Try multiple selectors for business category
-  const selectors = [
-    'div[data-attrid="kc:/local:one line summary"]',
-    'button[data-item-id="category"]',
+  // Strategy 1: Common category containers
+  const categorySelectors = [
+    'button[data-item-id="category"] div.LTs0Rc span',
+    'button[data-item-id="category"] div.Io6YTe',
+    'div.LCiwEc span.YhemCb',
     'span.YhemCb',
-    'div.fontBodyMedium span.YhemCb',
-    'span[jsslot] span.YhemCb',
-    // Additional selectors
-    'button[aria-label*="categoría" i]',
-    'button[aria-label*="category" i]',
-    'span.R8V97'
+    'div[jsaction="pane.rating.category"]',
+    'div.qBF1Pd',
+    'div.LlbBCb.zHkOIc',
+    'div.bGRnRa',
+    'span[jsan*="7.YhemCb"]'
   ];
   
-  for (const selector of selectors) {
-    const category = $(selector).first().text().trim();
-    if (category) return category;
+  for (const selector of categorySelectors) {
+    const element = $(selector).first();
+    if (element.length && element.text().trim()) {
+      return element.text().trim();
+    }
   }
   
-  // Try structured data
-  const structuredData = $('script[type="application/ld+json"]').toArray();
-  for (const script of structuredData) {
+  // Strategy 2: Look for structured data in script tags
+  const scripts = $('script[type="application/ld+json"]');
+  for (let i = 0; i < scripts.length; i++) {
     try {
-      const data = JSON.parse($(script).html() || '{}');
-      if (data.category || data['@type']) {
-        return data.category || data['@type'];
+      const script = scripts.eq(i);
+      const json = JSON.parse(script.html() || '{}');
+      
+      if (json.category || json['@type']) {
+        return json.category || json['@type'];
       }
     } catch (e) {
-      // Ignore parsing errors
+      // Continue to next script tag if parsing fails
+    }
+  }
+  
+  // Strategy 3: Attempt to find category near the business name
+  const businessNameEl = $('h1').first();
+  if (businessNameEl.length) {
+    const parent = businessNameEl.parent();
+    const categoryElement = parent.find('span').eq(1);
+    if (categoryElement.length && categoryElement.text().trim()) {
+      return categoryElement.text().trim();
     }
   }
   
   return undefined;
 }
 
-/**
- * Extract business phone from HTML
- */
+// Extract business phone number with multiple selector strategies
 export function extractBusinessPhone($: cheerio.CheerioAPI): string | undefined {
-  // Try multiple selectors for phone
-  const selectors = [
-    'div[data-attrid="kc:/collection/knowledge_panels/has_phone:phone"]',
-    'button[data-item-id="phone"]',
-    'button[aria-label*="teléfono" i]',
-    'button[aria-label*="phone" i]',
-    'button[aria-label*="call" i]',
-    'div[data-tooltip*="phone" i]',
-    '[href^="tel:"]',
-    // Additional selectors
+  // Strategy 1: Common phone containers
+  const phoneSelectors = [
+    'button[data-item-id="phone"] div.LTs0Rc span',
+    'button[data-item-id="phone"] div.Io6YTe',
+    'span[data-dtype="d3ph"]',
+    'div[data-attrid="kc:/collection/knowledge_panels/has_phone:phone"] span',
     'a[data-dtype="d3ph"]',
-    'span[aria-label*="teléfono:" i]'
+    'div.Io6YTe[jsan*="phone"]',
+    'span[jsan*="7.xlb"]',
+    'div.Z1hOCe',
+    'a[data-tooltip="Copiar número de teléfono"]',
+    'button[aria-label*="phone"]',
+    'button[aria-label*="teléfono"]'
   ];
   
-  for (const selector of selectors) {
-    const phone = $(selector).first().text().trim();
-    if (phone) return phone;
-    
-    // Check for href attribute in case of tel: links
-    const hrefPhone = $(selector).first().attr('href');
-    if (hrefPhone && hrefPhone.startsWith('tel:')) {
-      return hrefPhone.replace('tel:', '');
+  for (const selector of phoneSelectors) {
+    const element = $(selector).first();
+    if (element.length && element.text().trim()) {
+      // Clean up phone number - remove "Phone:" prefix if present
+      return element.text().replace(/^(Phone|Teléfono):\s*/i, '').trim();
     }
   }
   
-  // Look for phone patterns in the text
-  const phoneRegexes = [
-    /\+\d{1,3}\s\d{2,3}\s\d{3}\s\d{3}/,  // International format with spaces
-    /\+\d{1,3}\s\d{2,3}\s\d{6,7}/,       // International condensed
-    /\d{3}[\s.-]\d{3}[\s.-]\d{4}/,       // US format
-    /\d{9,10}/                          // Just digits
-  ];
+  // Strategy 2: Look for structured data in script tags
+  const scripts = $('script[type="application/ld+json"]');
+  for (let i = 0; i < scripts.length; i++) {
+    try {
+      const script = scripts.eq(i);
+      const json = JSON.parse(script.html() || '{}');
+      
+      if (json.telephone) {
+        return json.telephone;
+      }
+    } catch (e) {
+      // Continue to next script tag if parsing fails
+    }
+  }
   
-  const bodyText = $('body').text();
-  for (const regex of phoneRegexes) {
-    const match = bodyText.match(regex);
-    if (match) return match[0].trim();
+  // Strategy 3: Look for elements with phone-like patterns
+  const phonePattern = /(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}/;
+  const allElements = $('span, div, a, button').filter(function() {
+    const text = $(this).text().trim();
+    return phonePattern.test(text) && text.length < 30; // Avoid matching long texts with numbers
+  });
+  
+  if (allElements.length > 0) {
+    return allElements.first().text().trim();
   }
   
   return undefined;
 }
 
-/**
- * Extract business website from HTML
- */
+// Extract business website with multiple selector strategies
 export function extractBusinessWebsite($: cheerio.CheerioAPI): string | undefined {
-  // Try multiple selectors for website
-  const selectors = [
-    'div[data-attrid="kc:/local:website"] a',
+  // Strategy 1: Common website containers
+  const websiteSelectors = [
     'a[data-item-id="authority"]',
-    'a[aria-label*="sitio web" i]',
-    'a[aria-label*="website" i]',
-    'a[data-item-id*="website" i]',
-    'div.QqG1Sd a',
-    'a.CL9Uqc',
-    'div[jsaction*="mouseup:website"]',
-    // Additional selectors
+    'a[data-dtype="authority"]',
+    'a[data-item-id="website"]',
+    'div[data-attrid="kc:/local:authority"] a',
+    'a[ping="/url?"]',
     'a[jsaction*="website"]',
-    'div[role="main"] a[target="_blank"]'
+    'div.zYuQLb a',
+    'a[href*="://"]:not([href*="google"])[data-jsarwt="1"]',
+    'a[jsaction="r.Njz0Ic"][data-ved]',
+    'div.weaSyd a[data-jsarwt]',
+    'div.QZHBPe a'
   ];
   
-  for (const selector of selectors) {
-    const $element = $(selector).first();
-    const href = $element.attr('href');
-    if (href && !href.includes('google.com')) {
-      return href;
-    }
-    
-    const text = $element.text().trim();
-    if (text && text.match(/^https?:\/\//)) {
-      return text;
+  for (const selector of websiteSelectors) {
+    const element = $(selector).first();
+    if (element.length && element.attr('href')) {
+      const href = element.attr('href') || '';
+      
+      // If the URL starts with /url?, extract the actual URL from the 'q' parameter
+      if (href.startsWith('/url?')) {
+        const urlParams = new URLSearchParams(href.substring(5));
+        const actualUrl = urlParams.get('q') || urlParams.get('url');
+        if (actualUrl) {
+          return actualUrl;
+        }
+      }
+      
+      // Only return if it's a valid URL and not a Google URL
+      if (href.match(/^https?:\/\//) && !href.includes('google.com')) {
+        return href;
+      }
     }
   }
   
-  // Try structured data
-  const structuredData = $('script[type="application/ld+json"]').toArray();
-  for (const script of structuredData) {
+  // Strategy 2: Look for structured data in script tags
+  const scripts = $('script[type="application/ld+json"]');
+  for (let i = 0; i < scripts.length; i++) {
     try {
-      const data = JSON.parse($(script).html() || '{}');
-      if (data.website || data.url) {
-        return data.website || data.url;
+      const script = scripts.eq(i);
+      const json = JSON.parse(script.html() || '{}');
+      
+      if (json.url || json.website) {
+        return json.url || json.website;
       }
     } catch (e) {
-      // Ignore parsing errors
+      // Continue to next script tag if parsing fails
+    }
+  }
+  
+  // Strategy 3: Look for plain text URLs in website-related elements
+  const urlRegex = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+  const websiteElements = $('div:contains("Website"), div:contains("Sitio web")').parent();
+  
+  if (websiteElements.length) {
+    const text = websiteElements.text();
+    const matches = text.match(urlRegex);
+    if (matches && matches[0]) {
+      return matches[0];
     }
   }
   
   return undefined;
 }
 
-/**
- * Extract business rating and reviews count from HTML
- */
+// Extract business rating and reviews count with multiple selector strategies
 export function extractBusinessRating($: cheerio.CheerioAPI): { rating?: number, reviewsCount?: number } {
-  let rating: number | undefined;
-  let reviewsCount: number | undefined;
+  const result: { rating?: number, reviewsCount?: number } = {};
   
-  // Try multiple selectors for rating
+  // Strategy 1: Common rating containers
   const ratingSelectors = [
-    'div[data-attrid="kc:/collection/knowledge_panels/local_reviewable:star_score"] span',
-    'span.F7nice',
-    'span[aria-hidden="true"][role="img"]',
-    'span.yi40Hd',
     'div.fontDisplayLarge',
-    // Additional selectors
-    'div[aria-label*="estrellas" i]',
-    'div[aria-label*="stars" i]',
-    'div.review-score-container'
+    'span.ODSEW-ShBeI-H1e3jb',
+    'span[aria-hidden="true"]',
+    'div.fonttitlemedium.eHISWd',
+    'div.fontHeadlineSmall',
+    'div.rv7ydz',
+    'span[data-dtype="d3rating"]',
+    'span.rDTa4b',
+    'span.yi40Hd.YrbPuc',
+    'span.Aq14fc',
+    'div.Aq14fc',
+    'span.tP9Zud',
+    'div.pJm8Ib span',
+    'span.T4LgNb.Vd3TTe'
   ];
   
+  // Try to find the rating
   for (const selector of ratingSelectors) {
-    const ratingText = $(selector).first().text().trim();
-    if (ratingText) {
-      // Extract numeric part, accounting for comma as decimal separator
-      const match = ratingText.match(/(\d+[.,]?\d*)/);
-      if (match) {
-        rating = parseFloat(match[0].replace(',', '.'));
-        break;
+    const element = $(selector).first();
+    if (element.length) {
+      const text = element.text().trim();
+      // Extract numeric value from text (e.g. "4.5" from "4.5 stars")
+      const ratingMatch = text.match(/^(\d+(\.\d+)?)/);
+      if (ratingMatch && ratingMatch[1]) {
+        const rating = parseFloat(ratingMatch[1]);
+        if (!isNaN(rating) && rating <= 5.0) {
+          result.rating = rating;
+          break;
+        }
       }
     }
   }
   
-  // Try multiple selectors for reviews count
+  // Strategy 2: Common reviews count containers
   const reviewsSelectors = [
-    'div[data-attrid="kc:/collection/knowledge_panels/local_reviewable:star_score"] span.hqzQac',
+    'div.fontBodyMedium a',
+    'span.ODSEW-ShBeI-RRjMXb',
+    'div[jsaction*="pane.reviewChart.moreReviews"]',
+    'span.HHrUdb',
+    'div[jsaction*="pane.rating.moreReviews"]',
     'span.z5jxId',
-    'button[data-tooltip="Google reviews"]',
-    'button[jsaction*="reviews"]',
-    // Additional selectors
-    'span[aria-label*="reseñas" i]',
-    'span[aria-label*="reviews" i]',
-    'div.F7nice span:nth-child(2)'
+    'div.pJm8Ib',
+    'a.yi40Hd',
+    'span.aULzUe',
+    'span.T4LgNb.ZkP5wc'
   ];
   
+  // Try to find the reviews count
   for (const selector of reviewsSelectors) {
-    const reviewsText = $(selector).first().text().trim();
-    if (reviewsText) {
-      // Extract numeric part
-      const match = reviewsText.match(/(\d+[.,]?\d*)/);
-      if (match) {
-        // Handle thousands separators
-        reviewsCount = parseInt(match[0].replace(/[.,]/g, ''));
-        break;
+    const element = $(selector).first();
+    if (element.length) {
+      const text = element.text().trim();
+      // Extract numeric value from text (e.g. "123" from "123 reviews")
+      const reviewsMatch = text.match(/(\d[\d,.]*)/);
+      if (reviewsMatch && reviewsMatch[1]) {
+        // Handle thousands separators in different formats
+        const count = parseInt(reviewsMatch[1].replace(/[,.\s]/g, ''));
+        if (!isNaN(count)) {
+          result.reviewsCount = count;
+          break;
+        }
       }
     }
   }
   
-  // Try structured data
-  const structuredData = $('script[type="application/ld+json"]').toArray();
-  for (const script of structuredData) {
-    try {
-      const data = JSON.parse($(script).html() || '{}');
-      if (data.aggregateRating) {
-        rating = rating || data.aggregateRating.ratingValue;
-        reviewsCount = reviewsCount || data.aggregateRating.reviewCount;
+  // Strategy 3: Look for structured data in script tags
+  if (!result.rating || !result.reviewsCount) {
+    const scripts = $('script[type="application/ld+json"]');
+    for (let i = 0; i < scripts.length; i++) {
+      try {
+        const script = scripts.eq(i);
+        const json = JSON.parse(script.html() || '{}');
+        
+        if (json.aggregateRating) {
+          if (!result.rating && json.aggregateRating.ratingValue) {
+            const rating = parseFloat(json.aggregateRating.ratingValue);
+            if (!isNaN(rating) && rating <= 5.0) {
+              result.rating = rating;
+            }
+          }
+          
+          if (!result.reviewsCount && json.aggregateRating.reviewCount) {
+            const count = parseInt(json.aggregateRating.reviewCount);
+            if (!isNaN(count)) {
+              result.reviewsCount = count;
+            }
+          }
+        }
+        
+        if (result.rating && result.reviewsCount) {
+          break;
+        }
+      } catch (e) {
+        // Continue to next script tag if parsing fails
       }
-    } catch (e) {
-      // Ignore parsing errors
     }
   }
   
-  return { rating, reviewsCount };
+  return result;
 }
 
-/**
- * Extract business hours from HTML
- */
-export function extractBusinessHours($: cheerio.CheerioAPI): BusinessHours | undefined {
-  const hours: BusinessHours = {};
+// Extract business hours with multiple selector strategies
+export function extractBusinessHours($: cheerio.CheerioAPI): Record<string, string> | undefined {
+  const result: Record<string, string> = {};
   
-  // Try multiple selectors for hours
-  const hoursSelectors = [
-    'div[data-attrid="kc:/location/location:hours"] div.MkV9e',
-    'div[aria-label*="horas" i] div.OMl5r',
-    'div[aria-label*="hours" i] table',
-    'table.eK4R0e',
-    'div.t39EBf table',
-    // Additional selectors
-    'div.OMl5r',
-    'div[data-memento]',
-    'div[jscontroller*="hours"]'
-  ];
-  
-  let hoursFound = false;
-  for (const selector of hoursSelectors) {
-    const $hours = $(selector);
-    if ($hours.length > 0) {
-      // Try to find day-by-day hours
-      $hours.find('tr, div.mWTrf').each((i, elem) => {
-        const dayTimeText = $(elem).text().trim();
-        // Look for patterns like "Monday: 9:00 AM - 5:00 PM"
-        const match = dayTimeText.match(/(\w+)(?:day)?:?\s*(.*?)$/i);
-        
-        if (match) {
-          const day = match[1];
-          const times = match[2].trim();
-          
-          if (day && times) {
-            const dayKey = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
-            hours[dayKey] = times;
-            hoursFound = true;
+  // Strategy 1: Common hours containers
+  const hoursElements = $('div[data-dtype="d3iw"]');
+  if (hoursElements.length) {
+    // Hours are typically in a table or list format
+    hoursElements.find('tr').each((i, tr) => {
+      const day = $(tr).find('td').eq(0).text().trim();
+      const hours = $(tr).find('td').eq(1).text().trim();
+      if (day && hours) {
+        result[day] = hours;
+      }
+    });
+    
+    // If no table found, try list items
+    if (Object.keys(result).length === 0) {
+      hoursElements.find('li').each((i, li) => {
+        const text = $(li).text().trim();
+        const parts = text.split(':');
+        if (parts.length >= 2) {
+          const day = parts[0].trim();
+          const hours = parts.slice(1).join(':').trim();
+          if (day && hours) {
+            result[day] = hours;
           }
         }
       });
-      
-      if (hoursFound) break;
     }
   }
   
-  // Try structured data if no hours found
-  if (!hoursFound) {
-    const structuredData = $('script[type="application/ld+json"]').toArray();
-    for (const script of structuredData) {
+  // Strategy 2: Look for hours in table format elsewhere
+  if (Object.keys(result).length === 0) {
+    const hourTables = $('table').filter(function() {
+      return $(this).find('td:contains("Monday"), td:contains("Lunes")').length > 0;
+    });
+    
+    if (hourTables.length) {
+      hourTables.find('tr').each((i, tr) => {
+        const day = $(tr).find('td').eq(0).text().trim();
+        const hours = $(tr).find('td').eq(1).text().trim();
+        if (day && hours) {
+          result[day] = hours;
+        }
+      });
+    }
+  }
+  
+  // Strategy 3: Look for structured data in script tags
+  if (Object.keys(result).length === 0) {
+    const scripts = $('script[type="application/ld+json"]');
+    for (let i = 0; i < scripts.length; i++) {
       try {
-        const data = JSON.parse($(script).html() || '{}');
-        if (data.openingHours || data.openingHoursSpecification) {
-          const hoursData = data.openingHours || data.openingHoursSpecification;
+        const script = scripts.eq(i);
+        const json = JSON.parse(script.html() || '{}');
+        
+        if (json.openingHours || json.openingHoursSpecification) {
+          const hoursData = json.openingHours || json.openingHoursSpecification;
           
           if (Array.isArray(hoursData)) {
-            hoursData.forEach(hourSpec => {
-              if (hourSpec.dayOfWeek && hourSpec.opens && hourSpec.closes) {
-                const day = typeof hourSpec.dayOfWeek === 'string' ? 
-                  hourSpec.dayOfWeek : 
-                  hourSpec.dayOfWeek[0];
-                
-                // Clean up day name
-                const dayKey = day.replace('http://schema.org/', '');
-                hours[dayKey] = `${hourSpec.opens} - ${hourSpec.closes}`;
-                hoursFound = true;
+            hoursData.forEach(item => {
+              if (item.dayOfWeek && item.opens && item.closes) {
+                const day = Array.isArray(item.dayOfWeek) ? item.dayOfWeek[0] : item.dayOfWeek;
+                result[day] = `${item.opens} - ${item.closes}`;
+              }
+            });
+          } else if (typeof hoursData === 'string') {
+            // Sometimes hours are provided as a single string
+            const parts = hoursData.split(',');
+            parts.forEach(part => {
+              const hoursParts = part.trim().split(' ');
+              if (hoursParts.length >= 2) {
+                const day = hoursParts[0];
+                const hours = hoursParts.slice(1).join(' ');
+                if (day && hours) {
+                  result[day] = hours;
+                }
               }
             });
           }
+          
+          if (Object.keys(result).length > 0) {
+            break;
+          }
         }
       } catch (e) {
-        // Ignore parsing errors
+        // Continue to next script tag if parsing fails
       }
     }
   }
   
-  return hoursFound ? hours : undefined;
+  return Object.keys(result).length > 0 ? result : undefined;
 }

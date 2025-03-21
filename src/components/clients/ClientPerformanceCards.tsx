@@ -103,10 +103,10 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Nombre</span>
-                <span className="text-sm">{businessProfile?.businessName}</span>
+                <span className="text-sm truncate max-w-[200px]">{businessProfile?.businessName}</span>
               </div>
               
-              {businessProfile?.businessRating && (
+              {businessProfile?.businessRating !== undefined && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Valoración</span>
@@ -128,7 +128,7 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
               {businessProfile?.businessCategory && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Categoría</span>
-                  <span className="text-sm">{businessProfile.businessCategory}</span>
+                  <span className="text-sm truncate max-w-[200px]">{businessProfile.businessCategory}</span>
                 </div>
               )}
               
@@ -172,7 +172,7 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
               {isSimulatedData && (
                 <div className="mt-2 py-2 px-3 bg-amber-50 border border-amber-200 rounded-md">
                   <p className="text-xs text-amber-700">
-                    Se muestran datos simulados. Realiza un análisis en Tests Rápidos para obtener datos reales.
+                    Se muestran datos simulados. Usa el botón de actualizar para obtener datos reales.
                   </p>
                 </div>
               )}
