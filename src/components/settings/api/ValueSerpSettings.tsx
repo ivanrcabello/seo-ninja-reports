@@ -20,6 +20,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   hasConfiguredValueSerpKey
 }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
   const handleValueSerpKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValueSerpApiKey(e.target.value);
@@ -27,38 +28,50 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
 
   // Set API key to local storage and update settings table
   useEffect(() => {
-    if (valueSerpApiKey) {
-      setIsSaving(true);
-      
-      // Guardar en localStorage para uso inmediato
-      localStorage.setItem('value_serp_api_key', valueSerpApiKey);
-      console.log('ValueSerp API key stored in localStorage (length): ' + valueSerpApiKey.length);
-      
-      // También actualizar en Supabase para persistencia
-      const updateApiKeyInSettings = async () => {
+    const saveApiKey = async () => {
+      if (valueSerpApiKey && valueSerpApiKey.length > 5) {
+        setIsSaving(true);
+        setUpdateStatus('saving');
+        
         try {
+          // Save in localStorage for immediate use
+          localStorage.setItem('value_serp_api_key', valueSerpApiKey);
+          console.log('ValueSerp API key stored in localStorage (length): ' + valueSerpApiKey.length);
+          
+          // Also update in Supabase for persistence
           const { error } = await supabase
             .from('settings')
-            .update({ value_serp_key: valueSerpApiKey })
+            .update({ 
+              value_serp_key: valueSerpApiKey,
+              updated_at: new Date().toISOString()
+            })
             .eq('id', 1);
             
           if (error) {
             console.error('Error saving ValueSerp API key to settings:', error);
             toast.error('Error al guardar la API key en la base de datos');
+            setUpdateStatus('error');
           } else {
             console.log('ValueSerp API key saved successfully to settings table');
             toast.success('API key de ValueSerp guardada correctamente');
+            setUpdateStatus('success');
           }
         } catch (err) {
           console.error('Exception saving ValueSerp API key:', err);
           toast.error('Error al guardar la API key');
+          setUpdateStatus('error');
         } finally {
           setIsSaving(false);
+          
+          // Reset status after a delay
+          setTimeout(() => {
+            setUpdateStatus('idle');
+          }, 3000);
         }
-      };
-      
-      updateApiKeyInSettings();
-    }
+      }
+    };
+    
+    saveApiKey();
   }, [valueSerpApiKey]);
 
   // Fetch API key on component mount if not already available
@@ -69,7 +82,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           // First check localStorage
           const localKey = localStorage.getItem('value_serp_api_key');
           if (localKey && localKey.length > 0) {
-            console.log('Found ValueSerp API key in localStorage');
+            console.log('Found ValueSerp API key in localStorage (length): ' + localKey.length);
             setValueSerpApiKey(localKey);
             return;
           }
@@ -84,7 +97,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           if (error) {
             console.error('Error fetching ValueSerp API key:', error);
           } else if (data?.value_serp_key) {
-            console.log('Loaded ValueSerp API key from database');
+            console.log('Loaded ValueSerp API key from database (length): ' + data.value_serp_key.length);
             setValueSerpApiKey(data.value_serp_key);
             // Also update localStorage
             localStorage.setItem('value_serp_api_key', data.value_serp_key);
@@ -124,7 +137,9 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               value={valueSerpApiKey}
               onChange={handleValueSerpKeyChange}
               placeholder="Introduce tu clave API de ValueSerp"
-              className="flex-1"
+              className={`flex-1 ${updateStatus === 'saving' ? 'bg-amber-50' : 
+                              updateStatus === 'success' ? 'bg-green-50' : 
+                              updateStatus === 'error' ? 'bg-red-50' : ''}`}
             />
           </div>
           <p className="text-xs text-muted-foreground">
@@ -142,8 +157,14 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           </Alert>
         )}
         
-        {isSaving && (
+        {updateStatus === 'saving' && (
           <p className="text-xs text-primary">Guardando API key...</p>
+        )}
+        {updateStatus === 'success' && (
+          <p className="text-xs text-green-600">API key guardada correctamente</p>
+        )}
+        {updateStatus === 'error' && (
+          <p className="text-xs text-red-600">Error al guardar la API key</p>
         )}
       </CardContent>
     </Card>

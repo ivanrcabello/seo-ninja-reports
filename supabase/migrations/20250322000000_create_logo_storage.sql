@@ -48,13 +48,14 @@ BEGIN
       logo_url TEXT,
       openai_key TEXT,
       google_key TEXT,
+      value_serp_key TEXT,
       default_prompt TEXT,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
     );
 
     -- Insert default record
-    INSERT INTO public.settings (id, logo_url) VALUES (1, NULL);
+    INSERT INTO public.settings (id, logo_url, value_serp_key) VALUES (1, NULL, NULL);
     
     -- Add RLS policies
     ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
@@ -63,6 +64,16 @@ BEGIN
     CREATE POLICY "Allow full access to authenticated users" ON public.settings
       USING (auth.role() = 'authenticated')
       WITH CHECK (auth.role() = 'authenticated');
+  ELSE
+    -- Check if value_serp_key column exists and add it if it doesn't
+    IF NOT EXISTS (
+      SELECT FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'settings'
+      AND column_name = 'value_serp_key'
+    ) THEN
+      ALTER TABLE public.settings ADD COLUMN value_serp_key TEXT;
+    END IF;
   END IF;
 END;
 $$;

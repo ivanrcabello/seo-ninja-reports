@@ -29,13 +29,28 @@ export const extractBusinessInfoWithValueSerp = async (
       console.log('API key available from localStorage (length): ' + localApiKey.length);
     } else {
       console.log('No API key found in localStorage');
+      
+      // Intentar obtener la API key desde la base de datos
+      const { data: settingsData } = await supabase
+        .from('settings')
+        .select('value_serp_key')
+        .eq('id', 1)
+        .single();
+        
+      if (settingsData?.value_serp_key) {
+        console.log('API key retrieved from database');
+        localStorage.setItem('value_serp_api_key', settingsData.value_serp_key);
+      }
     }
     
-    // Llamar a la función edge con la query y la API key (si está disponible)
+    // Obtener nuevamente la API key (podría haberse actualizado)
+    const apiKeyToUse = localStorage.getItem('value_serp_api_key');
+    
+    // Llamar a la función edge con la query y la API key
     const { data, error } = await supabase.functions.invoke('valueserp-business', {
       body: { 
         query,
-        apiKey: localApiKey || null
+        apiKey: apiKeyToUse || null
       }
     });
     
@@ -53,7 +68,10 @@ export const extractBusinessInfoWithValueSerp = async (
     
     if (!data.success) {
       console.error('ValueSerp function reported failure:', data.error);
-      throw new Error(data.error || 'Error al extraer información de negocio');
+      toast.warning(data.error || 'Error al extraer información de negocio', {
+        description: 'Se utilizarán datos simulados para la demostración'
+      });
+      return data.data; // Return the fallback data provided by the edge function
     }
     
     // Check if we received valid data (not from fallback)
