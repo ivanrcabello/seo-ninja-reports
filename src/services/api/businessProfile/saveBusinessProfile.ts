@@ -2,85 +2,115 @@
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessProfile } from '@/types/report.types';
 
-/**
- * Guarda el perfil de negocio en la base de datos
- */
-export const saveBusinessProfile = async (
+export async function saveBusinessProfile(
   reportId: string,
-  profile: Partial<BusinessProfile>
-): Promise<boolean> => {
+  profileData: Partial<BusinessProfile>
+): Promise<BusinessProfile | null> {
   try {
-    if (!reportId) {
-      console.error('No report ID provided for saving business profile');
-      return false;
-    }
-
-    // Format hours if necessary
-    let formattedHours = profile.businessHours;
-    if (typeof formattedHours !== 'string' && formattedHours !== null) {
-      formattedHours = JSON.stringify(formattedHours);
-    }
-
-    // First check if the profile already exists for this report
-    const { data: existingProfile, error: checkError } = await supabase
+    // First check if a business profile already exists for this report
+    const { data: existingProfile, error: fetchError } = await supabase
       .from('business_profiles')
-      .select('*')
+      .select('id')
       .eq('report_id', reportId)
       .maybeSingle();
-
-    if (checkError) {
-      console.error('Error checking existing profile:', checkError);
-      return false;
+      
+    if (fetchError) {
+      console.error('Error checking for existing business profile:', fetchError);
+      throw fetchError;
     }
-
-    // Either update or insert depending on whether the profile exists
-    if (existingProfile) {
-      const { error: updateError } = await supabase
+    
+    // Prepare business hours to ensure it's a valid JSON object
+    let businessHours = {};
+    if (profileData.businessHours) {
+      if (typeof profileData.businessHours === 'string') {
+        try {
+          businessHours = JSON.parse(profileData.businessHours as unknown as string);
+        } catch (e) {
+          console.error('Error parsing business hours:', e);
+          // If we can't parse it, use an empty object
+          businessHours = {};
+        }
+      } else {
+        businessHours = profileData.businessHours;
+      }
+    }
+    
+    let result;
+    
+    if (existingProfile?.id) {
+      // Update existing profile
+      const { data, error } = await supabase
         .from('business_profiles')
         .update({
-          business_name: profile.businessName,
-          business_address: profile.businessAddress,
-          business_category: profile.businessCategory,
-          business_rating: profile.businessRating,
-          business_reviews_count: profile.businessReviewsCount,
-          business_phone: profile.businessPhone,
-          business_website: profile.businessWebsite,
-          business_hours: formattedHours,
-          business_url: profile.businessUrl,
+          business_name: profileData.businessName || '',
+          business_address: profileData.businessAddress || '',
+          business_phone: profileData.businessPhone || '',
+          business_category: profileData.businessCategory || '',
+          business_rating: profileData.businessRating || null,
+          business_reviews_count: profileData.businessReviewsCount || 0,
+          business_website: profileData.businessWebsite || '',
+          business_url: profileData.businessUrl || '',
+          business_hours: businessHours,
           updated_at: new Date().toISOString()
         })
-        .eq('report_id', reportId);
-
-      if (updateError) {
-        console.error('Error updating business profile:', updateError);
-        return false;
+        .eq('id', existingProfile.id)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error updating business profile:', error);
+        throw error;
       }
+      
+      result = data;
     } else {
-      const { error: insertError } = await supabase
+      // Create new profile
+      const { data, error } = await supabase
         .from('business_profiles')
         .insert({
           report_id: reportId,
-          business_name: profile.businessName,
-          business_address: profile.businessAddress,
-          business_category: profile.businessCategory,
-          business_rating: profile.businessRating,
-          business_reviews_count: profile.businessReviewsCount,
-          business_phone: profile.businessPhone,
-          business_website: profile.businessWebsite,
-          business_hours: formattedHours,
-          business_url: profile.businessUrl
-        });
-
-      if (insertError) {
-        console.error('Error inserting business profile:', insertError);
-        return false;
+          business_name: profileData.businessName || '',
+          business_address: profileData.businessAddress || '',
+          business_phone: profileData.businessPhone || '',
+          business_category: profileData.businessCategory || '',
+          business_rating: profileData.businessRating || null,
+          business_reviews_count: profileData.businessReviewsCount || 0,
+          business_website: profileData.businessWebsite || '',
+          business_url: profileData.businessUrl || '',
+          business_hours: businessHours,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error creating business profile:', error);
+        throw error;
       }
+      
+      result = data;
     }
-
-    console.log('Business profile saved successfully for report', reportId);
-    return true;
+    
+    // Format the result to match the BusinessProfile interface
+    return result ? {
+      id: result.id,
+      reportId: result.report_id,
+      businessName: result.business_name,
+      businessAddress: result.business_address,
+      businessPhone: result.business_phone,
+      businessCategory: result.business_category,
+      businessRating: result.business_rating,
+      businessReviewsCount: result.business_reviews_count,
+      businessWebsite: result.business_website,
+      businessUrl: result.business_url,
+      businessHours: result.business_hours,
+      createdAt: result.created_at,
+      updatedAt: result.updated_at
+    } : null;
+    
   } catch (error) {
     console.error('Error saving business profile:', error);
-    return false;
+    throw error;
   }
-};
+}

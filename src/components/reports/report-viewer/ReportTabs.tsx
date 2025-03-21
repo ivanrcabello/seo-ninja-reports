@@ -10,32 +10,46 @@ import LocalSEOTab from './LocalSEOTab';
 import ContentTab from './ContentTab';
 import CustomTabs from './CustomTabs';
 import PageSpeedTab from './pagespeed/PageSpeedTab';
-import { Report } from '@/types/report.types';
+import { Report, PageSpeedData, BusinessProfile } from '@/types/report.types';
 
 interface ReportTabsProps {
   report: Report;
   isEditing: boolean;
   onSaveEdit: (section: string, content: string) => Promise<void>;
+  pageSpeedData?: PageSpeedData;
+  businessProfile?: BusinessProfile;
+  isLoadingPageSpeed?: boolean;
+  isLoadingBusinessProfile?: boolean;
+  isSavingBusinessProfile?: boolean;
+  onSaveBusinessProfile?: (profileData: Partial<BusinessProfile>) => Promise<void>;
 }
 
-const ReportTabs: React.FC<ReportTabsProps> = ({ report, isEditing, onSaveEdit }) => {
+const ReportTabs: React.FC<ReportTabsProps> = ({ 
+  report, 
+  isEditing, 
+  onSaveEdit,
+  pageSpeedData,
+  businessProfile,
+  isLoadingPageSpeed = false,
+  isLoadingBusinessProfile = false,
+  isSavingBusinessProfile = false,
+  onSaveBusinessProfile
+}) => {
   const [activeTab, setActiveTab] = useState('resumen');
 
+  // Use pageSpeed data from props or fall back to data in the report
+  const pageSpeedDataToUse = pageSpeedData || report.content?.pageSpeedData;
+  
   // Verificar si el informe contiene datos de PageSpeed
-  const hasPageSpeedData = report.content?.pageSpeedData && 
-    ((report.content.pageSpeedData.desktop && Object.keys(report.content.pageSpeedData.desktop).length > 0) || 
-     (report.content.pageSpeedData.mobile && Object.keys(report.content.pageSpeedData.mobile).length > 0));
+  const hasPageSpeedData = pageSpeedDataToUse && 
+    ((pageSpeedDataToUse.desktop && Object.keys(pageSpeedDataToUse.desktop).length > 0) || 
+     (pageSpeedDataToUse.mobile && Object.keys(pageSpeedDataToUse.mobile).length > 0));
   
   // Verificar que keywords existe y tiene datos
   const hasKeywordsData = report.content?.keywords && 
-    Array.isArray(report.content.keywords) && 
-    report.content.keywords.length > 0;
+    typeof report.content.keywords === 'string' && 
+    report.content.keywords.trim().length > 0;
   
-  // Contar keywords
-  const keywordsCount = report.content?.keywords && 
-    Array.isArray(report.content.keywords) ? 
-    report.content.keywords.length : 0;
-
   // Custom content from the report (additional tabs)
   const customSections = report.customSections || [];
 
@@ -63,7 +77,6 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, isEditing, onSaveEdit }
           <TabsTrigger value="keywords" className="flex items-center gap-1">
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">Keywords</span>
-            {keywordsCount > 0 && <span className="ml-1 text-xs bg-secondary rounded-full px-1.5 py-0.5">{keywordsCount}</span>}
           </TabsTrigger>
         )}
         
@@ -109,14 +122,14 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, isEditing, onSaveEdit }
       
       {hasPageSpeedData && (
         <TabsContent value="pagespeed">
-          <PageSpeedTab data={report.content?.pageSpeedData} />
+          <PageSpeedTab data={pageSpeedDataToUse} isLoading={isLoadingPageSpeed} />
         </TabsContent>
       )}
       
       {hasKeywordsData && (
         <TabsContent value="keywords">
           <KeywordsTab 
-            keywords={report.content?.keywords || []} 
+            keywords={[]} 
             isEditing={isEditing}
             onSave={(content) => onSaveEdit('keywordsAnalysis', content)}
             keywordsAnalysis={report.content?.keywordsAnalysis || ''}
@@ -145,7 +158,7 @@ const ReportTabs: React.FC<ReportTabsProps> = ({ report, isEditing, onSaveEdit }
           content={report.content?.localSEO || ''} 
           isEditing={isEditing} 
           onSave={(content) => onSaveEdit('localSEO', content)}
-          businessProfile={report.content?.businessProfile}
+          businessProfile={businessProfile || report.content?.businessProfile}
         />
       </TabsContent>
       

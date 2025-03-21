@@ -148,14 +148,14 @@ const ReportViewer = () => {
             
             <ReportTabs 
               report={report}
+              isEditing={isEditing}
+              onSaveEdit={handleSaveEdit}
               pageSpeedData={pageSpeedData}
               businessProfile={businessProfile}
               isLoadingPageSpeed={isLoadingPageSpeed}
               isLoadingBusinessProfile={isLoadingBusinessProfile}
-              isEditing={isEditing}
-              onEdit={(sectionKey, content) => handleSaveEdit(sectionKey, content)}
-              onSaveBusinessProfile={handleSaveBusinessProfile}
               isSavingBusinessProfile={isSavingBusinessProfile}
+              onSaveBusinessProfile={handleSaveBusinessProfile}
             />
           </>
         ) : report.status === 'failed' ? (

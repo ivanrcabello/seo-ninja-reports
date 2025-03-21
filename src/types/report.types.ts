@@ -18,35 +18,27 @@ export interface Report {
     recommendations: string;
     serviceProposal?: string;
     keywords?: string;
-    pageSpeedData?: {
-      desktop: {
-        performance?: number;
-        accessibility?: number;
-        bestPractices?: number;
-        seo?: number;
-        firstContentfulPaint?: number;
-        speedIndex?: number;
-        largestContentfulPaint?: number;
-        timeToInteractive?: number;
-        totalBlockingTime?: number;
-        cumulativeLayoutShift?: number;
-      };
-      mobile: {
-        performance?: number;
-        accessibility?: number;
-        bestPractices?: number;
-        seo?: number;
-        firstContentfulPaint?: number;
-        speedIndex?: number;
-        largestContentfulPaint?: number;
-        timeToInteractive?: number;
-        totalBlockingTime?: number;
-        cumulativeLayoutShift?: number;
-      };
-    };
+    keywordsAnalysis?: string;
+    onPageSEO?: string;
+    technicalSEO?: string;
+    localSEO?: string;
+    contentStrategy?: string;
+    pageSpeedData?: PageSpeedData;
     businessProfile?: BusinessProfile;
   };
   customPrompt?: string;
+  customSections?: CustomSection[];
+}
+
+export interface CustomSection {
+  id: string;
+  title: string;
+  content: string;
+}
+
+export interface PageSpeedData {
+  desktop: PageSpeedResult;
+  mobile: PageSpeedResult;
 }
 
 export interface PageSpeedResult {
