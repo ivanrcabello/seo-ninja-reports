@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
@@ -52,8 +51,13 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
         const query = extractDomainFromUrl(clientWebsite);
         console.log(`Using clientId: ${clientId} for ValueSerp query: ${query}`);
         
-        // Pass only the one required argument, with the clientId included
         profileData = await extractValueserpData(query, '', clientId);
+        
+        console.log('ValueSerp data extraction successful:', profileData);
+        
+        if (!profileData) {
+          console.error('No profile data returned from extractValueserpData');
+        }
       } catch (valueSerpError) {
         console.error('Error extracting with ValueSerp:', valueSerpError);
         extractionMethod = 'scraper';
@@ -83,6 +87,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
         
         if (onProfileUpdate && !isMockData) {
           onProfileUpdate(profileData);
+          console.log('Calling onProfileUpdate with data:', profileData);
         }
         
         if (isMockData) {
@@ -93,6 +98,35 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
           toast.success('Perfil analizado correctamente', {
             description: `Datos extraídos usando ${extractionMethod === 'valueserp' ? 'ValueSerp API' : 'scraper'}`
           });
+          
+          console.log('Successfully extracted real data for client ID:', clientId);
+          
+          try {
+            const { data: listingData, error: listingError } = await supabase
+              .from('google_business_listings')
+              .upsert({
+                client_id: clientId,
+                title: profileData.businessName || '',
+                address: profileData.businessAddress || '',
+                phone: profileData.businessPhone || '',
+                rating: profileData.businessRating || null,
+                reviews: profileData.businessReviewsCount || 0,
+                website: profileData.businessWebsite || '',
+                hours: typeof profileData.businessHours === 'object' ? 
+                  JSON.stringify(profileData.businessHours) : (profileData.businessHours || ''),
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'client_id' })
+              .select();
+            
+            if (listingError) {
+              console.error('Error saving to google_business_listings:', listingError);
+            } else {
+              console.log('Successfully saved to google_business_listings:', listingData);
+              toast.success('Datos guardados en la base de datos');
+            }
+          } catch (saveError) {
+            console.error('Exception saving to database:', saveError);
+          }
         }
       } else {
         const mockData = {
@@ -153,8 +187,9 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
       let profileData = null;
       
       try {
-        // Pass the clientId as a parameter to ensure data can be saved to DB
         profileData = await extractBusinessInfo(businessUrl, clientId);
+        
+        console.log('Business info extraction successful with URL:', businessUrl);
       } catch (extractError) {
         console.error('Error extracting business info:', extractError);
         throw new Error('No se pudo extraer información del perfil');
@@ -181,6 +216,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
         
         if (onProfileUpdate && !isMockData) {
           onProfileUpdate(profileData);
+          console.log('Calling onProfileUpdate with GMB URL data:', profileData);
         }
         
         if (isMockData) {
@@ -189,6 +225,35 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
           });
         } else {
           toast.success('Perfil analizado correctamente');
+          
+          console.log('Successfully extracted real data from GMB URL for client ID:', clientId);
+          
+          try {
+            const { data: listingData, error: listingError } = await supabase
+              .from('google_business_listings')
+              .upsert({
+                client_id: clientId,
+                title: profileData.businessName || '',
+                address: profileData.businessAddress || '',
+                phone: profileData.businessPhone || '',
+                rating: profileData.businessRating || null,
+                reviews: profileData.businessReviewsCount || 0,
+                website: profileData.businessWebsite || '',
+                hours: typeof profileData.businessHours === 'object' ? 
+                  JSON.stringify(profileData.businessHours) : (profileData.businessHours || ''),
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'client_id' })
+              .select();
+            
+            if (listingError) {
+              console.error('Error saving to google_business_listings:', listingError);
+            } else {
+              console.log('Successfully saved to google_business_listings:', listingData);
+              toast.success('Datos guardados en la base de datos');
+            }
+          } catch (saveError) {
+            console.error('Exception saving to database:', saveError);
+          }
         }
       } else {
         const mockData = {
