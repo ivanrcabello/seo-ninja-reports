@@ -21,7 +21,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query, place_id, use_configured_key = false } = await req.json();
+    // Parse request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error('Error parsing request body:', e);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid JSON in request body' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+    
+    const { query, place_id, use_configured_key = false } = body;
     
     if (!query && !place_id) {
       return new Response(
@@ -240,9 +252,9 @@ function extractBusinessDataFromValueSerp(data: any, searchQuery: string): Busin
       }
       
       // URL might be in the place_id or directions link
-      businessData.businessUrl = businessData.businessUrl || result.place_id 
+      businessData.businessUrl = businessData.businessUrl || (result.place_id 
         ? `https://www.google.com/maps/place/?q=place_id:${result.place_id}` 
-        : (result.directions || '');
+        : (result.directions || ''));
     }
   }
   

@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Store, AlertTriangle, Check, Info, MapPin, Phone, Link2, Clock } from 'lucide-react';
+import { Search, Store, AlertTriangle, Check, Info, MapPin, Phone, Link2, Clock, LoaderCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { extractValueserpData } from '@/services/api/businessProfile';
+import { extractValueserpData } from '@/services/api/businessProfile/extractValueserpData';
 import { BusinessProfile } from '@/types/report.types';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 interface ClientBusinessSearchProps {
   clientId: string;
@@ -23,6 +25,7 @@ const ClientBusinessSearch: React.FC<ClientBusinessSearchProps> = ({
   const [businessProfile, setBusinessProfile] = useState<Partial<BusinessProfile> | null>(null);
   const [hasError, setHasError] = useState(false);
   const [isSimulated, setIsSimulated] = useState(false);
+  const [dataQualityScore, setDataQualityScore] = useState(0);
   
   const handleBusinessNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusinessName(e.target.value);
@@ -43,6 +46,13 @@ const ClientBusinessSearch: React.FC<ClientBusinessSearchProps> = ({
     setIsSimulated(false);
     
     try {
+      // Indicar claramente que estamos usando ValueSerp
+      toast.info('Consultando API de ValueSerp', {
+        description: 'Extrayendo información detallada del negocio...',
+      });
+      
+      console.log('Calling ValueSerp with query:', businessName, businessLocation || '');
+      
       // Use ValueSerp API to get profile information
       const profileData = await extractValueserpData(businessName, businessLocation);
       
@@ -55,6 +65,33 @@ const ClientBusinessSearch: React.FC<ClientBusinessSearchProps> = ({
                            profileData.businessName === 'Negocio de ejemplo';
                            
         setIsSimulated(isMockData);
+        
+        // Calculate data quality score based on available fields
+        let qualityPoints = 0;
+        let totalPoints = 0;
+        
+        // Check each field for data quality
+        const fields = [
+          'businessName', 'businessAddress', 'businessPhone', 
+          'businessCategory', 'businessRating', 'businessReviewsCount', 
+          'businessWebsite', 'businessHours'
+        ];
+        
+        fields.forEach(field => {
+          totalPoints++;
+          if (profileData[field as keyof typeof profileData]) {
+            if (field === 'businessHours' && 
+                typeof profileData.businessHours === 'object' && 
+                Object.keys(profileData.businessHours).length > 0) {
+              qualityPoints++;
+            } else if (field !== 'businessHours') {
+              qualityPoints++;
+            }
+          }
+        });
+        
+        const scorePercentage = Math.round((qualityPoints / totalPoints) * 100);
+        setDataQualityScore(scorePercentage);
         
         if (isMockData) {
           toast.warning('Datos simulados obtenidos', {
@@ -91,15 +128,29 @@ const ClientBusinessSearch: React.FC<ClientBusinessSearchProps> = ({
     return rating.toFixed(1);
   };
   
+  const getDataQualityLabel = (score: number) => {
+    if (score >= 80) return "Excelente";
+    if (score >= 60) return "Buena";
+    if (score >= 40) return "Aceptable";
+    return "Limitada";
+  };
+  
+  const getDataQualityColor = (score: number) => {
+    if (score >= 80) return "bg-green-500";
+    if (score >= 60) return "bg-emerald-500";
+    if (score >= 40) return "bg-amber-500";
+    return "bg-red-500";
+  };
+  
   return (
     <Card className="p-6 space-y-4">
       <div className="flex items-center space-x-2">
-        <Store className="h-5 w-5 text-muted-foreground" />
-        <h3 className="text-lg font-medium">Búsqueda de Negocio</h3>
+        <Store className="h-5 w-5 text-primary" />
+        <h3 className="text-lg font-medium">Búsqueda de Negocio con ValueSerp</h3>
       </div>
       
       <p className="text-muted-foreground text-sm">
-        Busca información detallada de un negocio por su nombre y ubicación
+        Busca información detallada de un negocio por su nombre y ubicación utilizando la API de ValueSerp
       </p>
       
       <div className="space-y-3">
@@ -135,11 +186,14 @@ const ClientBusinessSearch: React.FC<ClientBusinessSearchProps> = ({
           className="w-full"
         >
           {isAnalyzing ? (
-            <>Buscando<span className="loading ml-2">...</span></>
+            <>
+              <LoaderCircle className="h-4 w-4 mr-2 animate-spin" />
+              Consultando ValueSerp...
+            </>
           ) : (
             <>
               <Search className="h-4 w-4 mr-2" />
-              Buscar Negocio
+              Buscar con ValueSerp
             </>
           )}
         </Button>
@@ -157,14 +211,33 @@ const ClientBusinessSearch: React.FC<ClientBusinessSearchProps> = ({
               }
             </div>
             <div className="flex-1">
-              <h4 className="font-medium text-md">
-                {hasError 
-                  ? 'Datos limitados' 
-                  : isSimulated 
-                    ? 'Datos simulados' 
-                    : 'Información detectada'
-                }
-              </h4>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-medium text-md">
+                  {hasError 
+                    ? 'Datos limitados' 
+                    : isSimulated 
+                      ? 'Datos simulados' 
+                      : 'Información detectada'
+                  }
+                </h4>
+                
+                {!hasError && !isSimulated && (
+                  <Badge className={`${getDataQualityColor(dataQualityScore)} text-white`}>
+                    Calidad: {getDataQualityLabel(dataQualityScore)}
+                  </Badge>
+                )}
+              </div>
+              
+              {!hasError && !isSimulated && (
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span>Completitud de datos</span>
+                    <span>{dataQualityScore}%</span>
+                  </div>
+                  <Progress value={dataQualityScore} className={`h-1.5 ${getDataQualityColor(dataQualityScore)}`} />
+                </div>
+              )}
+              
               <div className="mt-2 space-y-2 text-sm text-muted-foreground divide-y divide-gray-100">
                 {businessProfile.businessName && (
                   <div className="pb-2">

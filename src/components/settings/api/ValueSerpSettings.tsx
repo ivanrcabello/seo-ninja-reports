@@ -56,7 +56,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         </div>
         
         {!hasConfiguredValueSerpKey && (
-          <Alert variant="warning" className="bg-amber-50 text-amber-800 border-amber-200">
+          <Alert variant="default" className="bg-amber-50 text-amber-800 border-amber-200">
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertDescription>
               La extracción de datos de perfiles de negocios funcionará mejor con una API Key de ValueSerp. 
