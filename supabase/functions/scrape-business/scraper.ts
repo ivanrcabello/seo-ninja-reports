@@ -45,31 +45,57 @@ export async function scrapeBusinessProfile(url: string): Promise<BusinessProfil
       }
     }
     
-    // Get the HTML content of the page
+    // Get the HTML content of the page with multiple user agents to avoid blocking
     console.log(`Fetching HTML content from: ${finalUrl}`);
-    const response = await fetch(finalUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      },
-      redirect: 'follow'
-    });
     
-    if (!response.ok) {
-      console.error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-      throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+    // Define multiple user agents to try
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+    ];
+    
+    // Try each user agent until we get a successful response
+    let html = '';
+    let success = false;
+    
+    for (const userAgent of userAgents) {
+      try {
+        const response = await fetch(finalUrl, {
+          headers: {
+            'User-Agent': userAgent,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          },
+          redirect: 'follow'
+        });
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch URL with user agent ${userAgent}: ${response.status} ${response.statusText}`);
+          continue;
+        }
+        
+        html = await response.text();
+        console.log(`Fetched HTML content with user agent ${userAgent}, length: ${html.length} characters`);
+        
+        // Check if the HTML content is valid and contains business data
+        if (html.length > 500 && (html.includes('reviewsMeta') || html.includes('address') || html.includes('BusinessName'))) {
+          success = true;
+          break;
+        } else {
+          console.log(`HTML content from user agent ${userAgent} doesn't contain expected business data, trying next user agent`);
+        }
+      } catch (error) {
+        console.error(`Error fetching with user agent ${userAgent}:`, error);
+      }
     }
     
-    const html = await response.text();
-    console.log(`Fetched HTML content length: ${html.length} characters`);
-    
-    // Check if the HTML content is valid
-    if (!html || html.length < 500) {
-      console.error('Invalid HTML content received, possibly blocked by Google');
-      throw new Error('Invalid HTML content received, possibly blocked by Google');
+    if (!success || !html || html.length < 500) {
+      console.error('Failed to fetch valid HTML content from any user agent');
+      throw new Error('Failed to fetch valid HTML content from Google Maps');
     }
     
     // For debugging: save a sample of the HTML

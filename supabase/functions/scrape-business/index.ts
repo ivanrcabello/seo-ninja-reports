@@ -49,25 +49,53 @@ Deno.serve(async (req) => {
       // Store the scraped data in database for future reference
       if (businessData.businessName || businessData.businessAddress) {
         try {
-          const { error: insertError } = await supabase
+          // Check if we already have this URL in the database
+          const { data: existingProfile, error: fetchError } = await supabase
             .from('business_profiles')
-            .upsert({
-              business_url: url,
-              business_name: businessData.businessName,
-              business_address: businessData.businessAddress,
-              business_category: businessData.businessCategory,
-              business_rating: businessData.businessRating,
-              business_reviews_count: businessData.businessReviewsCount,
-              business_phone: businessData.businessPhone,
-              business_website: businessData.businessWebsite,
-              business_hours: businessData.businessHours,
-              last_scraped_at: new Date().toISOString()
-            }, {
-              onConflict: 'business_url'
-            });
+            .select('id')
+            .eq('business_url', url)
+            .maybeSingle();
             
-          if (insertError) {
-            console.error('Error storing business data:', insertError);
+          if (fetchError) {
+            console.error('Error checking for existing profile:', fetchError);
+          }
+          
+          const dbOperation = existingProfile?.id ? 
+            // Update existing record
+            supabase
+              .from('business_profiles')
+              .update({
+                business_name: businessData.businessName,
+                business_address: businessData.businessAddress,
+                business_category: businessData.businessCategory,
+                business_rating: businessData.businessRating,
+                business_reviews_count: businessData.businessReviewsCount,
+                business_phone: businessData.businessPhone,
+                business_website: businessData.businessWebsite,
+                business_hours: businessData.businessHours,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingProfile.id) :
+            // Insert new record
+            supabase
+              .from('business_profiles')
+              .insert({
+                business_url: url,
+                business_name: businessData.businessName,
+                business_address: businessData.businessAddress,
+                business_category: businessData.businessCategory,
+                business_rating: businessData.businessRating,
+                business_reviews_count: businessData.businessReviewsCount,
+                business_phone: businessData.businessPhone,
+                business_website: businessData.businessWebsite,
+                business_hours: businessData.businessHours,
+                last_scraped_at: new Date().toISOString()
+              });
+            
+          const { error: dbError } = await dbOperation;
+            
+          if (dbError) {
+            console.error('Error storing business data:', dbError);
           } else {
             console.log('Business data stored successfully');
           }

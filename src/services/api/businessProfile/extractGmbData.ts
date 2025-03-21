@@ -20,6 +20,43 @@ export const extractGmbData = async (
         description: 'Intentando localizar datos para este negocio',
       });
       
+      // Check if we have a recent cached profile for this domain in the database
+      const domain = urlOrWebsite.replace(/^https?:\/\//, '').split('/')[0];
+      
+      try {
+        // Try to find a business profile that matches the domain
+        const { data: cachedProfile, error: fetchError } = await supabase
+          .from('business_profiles')
+          .select('*')
+          .ilike('business_website', `%${domain}%`)
+          .order('updated_at', { ascending: false })
+          .maybeSingle();
+          
+        if (fetchError) {
+          console.error('Error checking cached profiles:', fetchError);
+        }
+        
+        if (cachedProfile) {
+          console.log('Found cached business profile matching domain:', domain);
+          
+          // Transform database record to frontend format
+          return {
+            businessUrl: cachedProfile.business_url,
+            businessName: cachedProfile.business_name,
+            businessAddress: cachedProfile.business_address,
+            businessCategory: cachedProfile.business_category,
+            businessRating: cachedProfile.business_rating,
+            businessReviewsCount: cachedProfile.business_reviews_count,
+            businessPhone: cachedProfile.business_phone,
+            businessWebsite: cachedProfile.business_website,
+            businessHours: cachedProfile.business_hours
+          };
+        }
+      } catch (dbError) {
+        console.error('Error querying database for domain match:', dbError);
+      }
+      
+      // If we reach here, we couldn't find a cached profile
       // Aquí en un futuro podríamos implementar una función que busque
       // perfiles GMB basados en el dominio del sitio web
       // Por ahora, usamos datos simulados
@@ -38,6 +75,52 @@ export const extractGmbData = async (
         description: 'Debes proporcionar una URL válida de Google Maps o Google Business',
       });
       return null;
+    }
+    
+    // First check if we have a recent extraction for this URL in the database
+    try {
+      const { data: cachedProfile, error: fetchError } = await supabase
+        .from('business_profiles')
+        .select('*')
+        .eq('business_url', urlOrWebsite)
+        .maybeSingle();
+        
+      if (fetchError) {
+        console.error('Error checking cached profile:', fetchError);
+      }
+      
+      // If we have a recent extraction (less than 24 hours old), use it
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      
+      if (cachedProfile && cachedProfile.updated_at) {
+        const lastUpdated = new Date(cachedProfile.updated_at);
+        
+        if (lastUpdated > oneDayAgo) {
+          console.log('Using cached business profile, last updated:', lastUpdated);
+          
+          toast.success('Información recuperada de la base de datos', {
+            description: 'Usando datos recientes del perfil de GMB',
+          });
+          
+          // Transform database record to frontend format
+          return {
+            businessUrl: cachedProfile.business_url,
+            businessName: cachedProfile.business_name,
+            businessAddress: cachedProfile.business_address,
+            businessCategory: cachedProfile.business_category,
+            businessRating: cachedProfile.business_rating,
+            businessReviewsCount: cachedProfile.business_reviews_count,
+            businessPhone: cachedProfile.business_phone,
+            businessWebsite: cachedProfile.business_website,
+            businessHours: cachedProfile.business_hours
+          };
+        } else {
+          console.log('Cached profile is older than 24 hours, refreshing data');
+        }
+      }
+    } catch (dbError) {
+      console.error('Error checking database for cached profile:', dbError);
     }
     
     toast.info('Analizando perfil de negocio', {
