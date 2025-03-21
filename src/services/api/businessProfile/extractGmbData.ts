@@ -43,9 +43,11 @@ export const extractGmbData = async (
           let businessHours: Record<string, string> = {};
           if (cachedProfile.business_hours) {
             try {
-              businessHours = typeof cachedProfile.business_hours === 'string'
-                ? JSON.parse(cachedProfile.business_hours)
-                : cachedProfile.business_hours as Record<string, string>;
+              if (typeof cachedProfile.business_hours === 'string') {
+                businessHours = JSON.parse(cachedProfile.business_hours);
+              } else if (typeof cachedProfile.business_hours === 'object') {
+                businessHours = cachedProfile.business_hours as Record<string, string>;
+              }
             } catch (parseError) {
               console.error('Error parsing business hours:', parseError);
               // Continue with empty business hours
@@ -58,7 +60,7 @@ export const extractGmbData = async (
             businessName: cachedProfile.business_name,
             businessAddress: cachedProfile.business_address,
             businessCategory: cachedProfile.business_category,
-            businessRating: cachedProfile.business_rating,
+            businessRating: cachedProfile.business_rating || null,
             businessReviewsCount: cachedProfile.business_reviews_count,
             businessPhone: cachedProfile.business_phone,
             businessWebsite: cachedProfile.business_website,
@@ -118,9 +120,11 @@ export const extractGmbData = async (
           let businessHours: Record<string, string> = {};
           if (cachedProfile.business_hours) {
             try {
-              businessHours = typeof cachedProfile.business_hours === 'string'
-                ? JSON.parse(cachedProfile.business_hours)
-                : cachedProfile.business_hours as Record<string, string>;
+              if (typeof cachedProfile.business_hours === 'string') {
+                businessHours = JSON.parse(cachedProfile.business_hours);
+              } else if (typeof cachedProfile.business_hours === 'object') {
+                businessHours = cachedProfile.business_hours as Record<string, string>;
+              }
             } catch (parseError) {
               console.error('Error parsing business hours:', parseError);
               // Continue with empty business hours
@@ -133,7 +137,7 @@ export const extractGmbData = async (
             businessName: cachedProfile.business_name,
             businessAddress: cachedProfile.business_address,
             businessCategory: cachedProfile.business_category,
-            businessRating: cachedProfile.business_rating,
+            businessRating: cachedProfile.business_rating || null,
             businessReviewsCount: cachedProfile.business_reviews_count,
             businessPhone: cachedProfile.business_phone,
             businessWebsite: cachedProfile.business_website,
@@ -196,6 +200,23 @@ export const extractGmbData = async (
             data.data.businessName === 'Google' || 
             data.data.businessName?.includes('Google')) {
           throw new Error('Se detectó información genérica de Google Maps, no de un negocio');
+        }
+        
+        // Ensure businessHours is a proper object
+        if (!data.data.businessHours) {
+          data.data.businessHours = {};
+        } else if (typeof data.data.businessHours === 'string') {
+          try {
+            data.data.businessHours = JSON.parse(data.data.businessHours) as Record<string, string>;
+          } catch (e) {
+            console.error('Error parsing business hours from edge function:', e);
+            data.data.businessHours = {};
+          }
+        }
+        
+        // Ensure businessRating is a number or null
+        if (data.data.businessRating === undefined) {
+          data.data.businessRating = null;
         }
         
         toast.success('Información extraída correctamente', {

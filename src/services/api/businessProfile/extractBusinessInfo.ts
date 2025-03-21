@@ -75,7 +75,7 @@ export const extractBusinessInfo = async (
             businessName: cachedProfile.business_name,
             businessAddress: cachedProfile.business_address,
             businessCategory: cachedProfile.business_category,
-            businessRating: cachedProfile.business_rating,
+            businessRating: cachedProfile.business_rating || null,
             businessReviewsCount: cachedProfile.business_reviews_count,
             businessPhone: cachedProfile.business_phone,
             businessWebsite: cachedProfile.business_website,
@@ -99,6 +99,18 @@ export const extractBusinessInfo = async (
           profileData.businessName !== 'Negocio de ejemplo') {
         
         console.log('Successfully extracted business profile data:', profileData);
+        
+        // Ensure businessHours is an object
+        if (!profileData.businessHours) {
+          profileData.businessHours = {};
+        } else if (typeof profileData.businessHours === 'string') {
+          try {
+            profileData.businessHours = JSON.parse(profileData.businessHours) as Record<string, string>;
+          } catch (e) {
+            console.error('Error parsing business hours string:', e);
+            profileData.businessHours = {};
+          }
+        }
         
         // Verificar si el perfil tiene datos completos o parciales
         const isPartialData = !profileData.businessRating || !profileData.businessPhone || !profileData.businessWebsite;

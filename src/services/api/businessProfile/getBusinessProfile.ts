@@ -47,7 +47,7 @@ export const getBusinessProfile = async (reportId: string): Promise<BusinessProf
       businessAddress: data.business_address,
       businessPhone: data.business_phone,
       businessCategory: data.business_category,
-      businessRating: data.business_rating,
+      businessRating: data.business_rating || null,
       businessReviewsCount: data.business_reviews_count,
       businessWebsite: data.business_website,
       businessHours,

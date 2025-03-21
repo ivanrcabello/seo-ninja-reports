@@ -60,8 +60,10 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
       }
       
       if (profileData && (profileData.businessName || profileData.businessAddress)) {
-        // Ensure businessHours is a proper object
-        if (profileData.businessHours && typeof profileData.businessHours === 'string') {
+        // Ensure businessHours is a proper object or empty object if null/undefined
+        if (!profileData.businessHours) {
+          profileData.businessHours = {};
+        } else if (typeof profileData.businessHours === 'string') {
           try {
             profileData.businessHours = JSON.parse(profileData.businessHours);
           } catch (parseError) {
@@ -158,8 +160,10 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
       }
       
       if (profileData && (profileData.businessName || profileData.businessAddress)) {
-        // Ensure businessHours is a proper object
-        if (profileData.businessHours && typeof profileData.businessHours === 'string') {
+        // Ensure businessHours is a proper object or empty object if null/undefined
+        if (!profileData.businessHours) {
+          profileData.businessHours = {};
+        } else if (typeof profileData.businessHours === 'string') {
           try {
             profileData.businessHours = JSON.parse(profileData.businessHours);
           } catch (parseError) {
@@ -232,6 +236,14 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
     } finally {
       setIsAnalyzing(false);
     }
+  };
+  
+  // Render the business rating with a safe check to prevent toFixed() errors
+  const renderBusinessRating = (rating: number | undefined) => {
+    if (rating === undefined || rating === null) {
+      return "N/A";
+    }
+    return rating.toFixed(1);
   };
   
   return (
@@ -354,7 +366,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
                       <div className="font-medium">Valoración</div>
                       <div className="flex items-center">
                         <div className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium mr-2">
-                          {businessProfile.businessRating.toFixed(1)}
+                          {renderBusinessRating(businessProfile.businessRating)}
                         </div>
                         {businessProfile.businessReviewsCount !== undefined && (
                           <span className="text-muted-foreground">

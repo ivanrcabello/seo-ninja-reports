@@ -55,6 +55,18 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
       const profileData = await extractBusinessInfo(businessUrl);
       
       if (profileData) {
+        // Ensure businessHours is a proper object or empty object
+        if (!profileData.businessHours) {
+          profileData.businessHours = {};
+        } else if (typeof profileData.businessHours === 'string') {
+          try {
+            profileData.businessHours = JSON.parse(profileData.businessHours);
+          } catch (parseError) {
+            console.error('Error parsing business hours:', parseError);
+            profileData.businessHours = {}; // Fallback to empty object
+          }
+        }
+        
         setBusinessProfile(profileData);
         console.log('Perfil de negocio extraído:', profileData);
         
@@ -87,6 +99,14 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
     } finally {
       setIsAnalyzing(false);
     }
+  };
+  
+  // Helper function to safely render rating
+  const renderBusinessRating = (rating: number | undefined) => {
+    if (rating === undefined || rating === null) {
+      return "N/A";
+    }
+    return rating.toFixed(1);
   };
   
   return (
@@ -164,7 +184,7 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
                     <div className="font-medium text-foreground">Valoración</div>
                     <div className="flex items-center">
                       <div className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium mr-2">
-                        {businessProfile.businessRating.toFixed(1)}
+                        {renderBusinessRating(businessProfile.businessRating)}
                       </div>
                       {businessProfile.businessReviewsCount !== undefined && (
                         <span>
@@ -210,7 +230,9 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
                     </div>
                   </div>
                 )}
-                {businessProfile.businessHours && Object.keys(businessProfile.businessHours).length > 0 && (
+                {businessProfile.businessHours && 
+                 typeof businessProfile.businessHours === 'object' && 
+                 Object.keys(businessProfile.businessHours).length > 0 && (
                   <div className="py-2">
                     <div className="font-medium text-foreground flex items-center">
                       <Clock className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 

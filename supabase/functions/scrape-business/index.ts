@@ -44,6 +44,13 @@ Deno.serve(async (req) => {
       
       if (businessData.businessRating === undefined) {
         console.warn('Business rating could not be extracted');
+        // Provide a fallback
+        businessData.businessRating = null;
+      }
+      
+      // Ensure businessHours is always an object, never null or undefined
+      if (!businessData.businessHours) {
+        businessData.businessHours = {};
       }
       
       // Store the scraped data in database for future reference
@@ -60,6 +67,10 @@ Deno.serve(async (req) => {
             console.error('Error checking for existing profile:', fetchError);
           }
           
+          // Format business hours to ensure it's a serializable object
+          const formattedHours = businessData.businessHours ? 
+            JSON.stringify(businessData.businessHours) : '{}';
+          
           const dbOperation = existingProfile?.id ? 
             // Update existing record
             supabase
@@ -72,7 +83,7 @@ Deno.serve(async (req) => {
                 business_reviews_count: businessData.businessReviewsCount,
                 business_phone: businessData.businessPhone,
                 business_website: businessData.businessWebsite,
-                business_hours: businessData.businessHours,
+                business_hours: formattedHours,
                 updated_at: new Date().toISOString()
               })
               .eq('id', existingProfile.id) :
@@ -88,7 +99,7 @@ Deno.serve(async (req) => {
                 business_reviews_count: businessData.businessReviewsCount,
                 business_phone: businessData.businessPhone,
                 business_website: businessData.businessWebsite,
-                business_hours: businessData.businessHours,
+                business_hours: formattedHours,
                 last_scraped_at: new Date().toISOString()
               });
             
