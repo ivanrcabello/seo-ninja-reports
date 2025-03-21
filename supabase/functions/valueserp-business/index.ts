@@ -1,8 +1,11 @@
 
 import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Environment variables
 const ENV_API_KEY = Deno.env.get('VALUE_SERP_KEY') || '';
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight request
@@ -11,7 +14,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query, apiKey } = await req.json();
+    const { query, apiKey, clientId } = await req.json();
     
     if (!query) {
       console.error('Query not provided in request');
@@ -21,7 +24,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Processing ValueSerp request for query: "${query}"`);
+    console.log(`Processing ValueSerp request for query: "${query}", clientId: ${clientId || 'not provided'}`);
     
     // Use API key from request if provided, otherwise use env var
     const valueSerp_API_KEY = apiKey || ENV_API_KEY;
@@ -77,7 +80,67 @@ Deno.serve(async (req) => {
         const localResults = data.local_results.results;
         console.log(`Found ${localResults.length} local results`);
         
-        // Return the full local_results array as requested
+        // Save local results to database if clientId is provided
+        if (clientId && SUPABASE_URL && SUPABASE_ANON_KEY) {
+          const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          
+          for (const result of localResults) {
+            // Skip saving if the result doesn't have a title
+            if (!result.title) continue;
+            
+            try {
+              const { data: existingData, error: checkError } = await supabase
+                .from('google_business_listings')
+                .select('id')
+                .eq('client_id', clientId)
+                .eq('title', result.title)
+                .maybeSingle();
+              
+              if (checkError) {
+                console.error('Error checking existing data:', checkError);
+              }
+              
+              const listingData = {
+                client_id: clientId,
+                title: result.title,
+                address: result.address || '',
+                phone: result.phone || '',
+                rating: result.rating ? parseFloat(result.rating) : null,
+                reviews: result.reviews ? parseInt(result.reviews.toString().replace(/[^0-9]/g, ''), 10) : null,
+                hours: result.hours || '',
+                website: result.website || '',
+                place_id: result.data_cid || result.place_id || '',
+                updated_at: new Date().toISOString()
+              };
+              
+              let dbResult;
+              if (existingData?.id) {
+                // Update existing record
+                dbResult = await supabase
+                  .from('google_business_listings')
+                  .update(listingData)
+                  .eq('id', existingData.id);
+              } else {
+                // Insert new record
+                dbResult = await supabase
+                  .from('google_business_listings')
+                  .insert(listingData);
+              }
+              
+              if (dbResult.error) {
+                console.error('Error saving to database:', dbResult.error);
+              } else {
+                console.log('Saved to database:', result.title);
+              }
+            } catch (dbError) {
+              console.error('Error saving to database:', dbError);
+            }
+          }
+        } else {
+          console.log('Not saving to database: clientId, SUPABASE_URL, or SUPABASE_ANON_KEY missing');
+        }
+        
+        // Return the full local_results array and the first result in the businessProfile format for backward compatibility
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -155,7 +218,7 @@ function mapToBusinessProfile(localResult: any) {
     businessUrl: localResult.link || '',
     businessHours: typeof localResult.hours === 'string' ? { 'Hours': localResult.hours } : {}, 
     businessAddress: localResult.address || '',
-    businessCategory: localResult.type || '',
+    businessCategory: localResult.business_type || '',
     businessPhone: localResult.phone || '',
     businessWebsite: localResult.website || '',
     businessRating: localResult.rating !== undefined ? parseFloat(localResult.rating) : null,

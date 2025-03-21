@@ -9,7 +9,8 @@ import { simulateBusinessProfileData } from './mocks';
  */
 export const extractValueserpData = async (
   query: string, 
-  location: string = ''
+  location: string = '',
+  clientId?: string
 ): Promise<Partial<BusinessProfile> | null> => {
   if (!query) {
     toast.error('Debe proporcionar un término de búsqueda');
@@ -17,7 +18,7 @@ export const extractValueserpData = async (
   }
   
   try {
-    console.log(`Intento de extraer información con ValueSerp: ${query} ${location ? `(${location})` : ''}`);
+    console.log(`Intento de extraer información con ValueSerp: ${query} ${location ? `(${location})` : ''}, clientId: ${clientId || 'not provided'}`);
     toast.info('Extrayendo información de negocio', {
       description: 'Buscando datos con ValueSerp...'
     });
@@ -39,12 +40,13 @@ export const extractValueserpData = async (
       : query;
     
     // Llamar a la función de Edge de ValueSerp
-    console.log(`Llamando a ValueSerp con búsqueda: "${searchQuery}"`);
+    console.log(`Llamando a ValueSerp con búsqueda: "${searchQuery}" y clientId: ${clientId || 'no especificado'}`);
     
     const { data, error } = await supabase.functions.invoke('valueserp-business', {
       body: {
         query: searchQuery,
-        apiKey: valueSerpApiKey
+        apiKey: valueSerpApiKey,
+        clientId: clientId
       }
     });
     
@@ -67,6 +69,31 @@ export const extractValueserpData = async (
         console.log('Raw ValueSerp data stored in localStorage for debugging');
       } catch (e) {
         console.warn('Could not store raw data in localStorage:', e);
+      }
+    }
+    
+    // Process local results if available
+    if (data.local_results && data.local_results.length > 0) {
+      console.log('Using local_results data from ValueSerp:', data.local_results[0]);
+      
+      // Use the first local result
+      const firstResult = data.local_results[0];
+      
+      const profileData: Partial<BusinessProfile> = {
+        businessName: firstResult.title || '',
+        businessAddress: firstResult.address || '',
+        businessPhone: firstResult.phone || '',
+        businessRating: firstResult.rating ? parseFloat(firstResult.rating) : null,
+        businessReviewsCount: firstResult.reviews ? parseInt(firstResult.reviews.toString(), 10) : 0,
+        businessWebsite: firstResult.website || '',
+        businessHours: firstResult.hours ? { 'Hours': firstResult.hours } : {},
+        businessUrl: firstResult.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+      };
+      
+      if (profileData.businessName && profileData.businessName !== 'Negocio de ejemplo') {
+        toast.success('Datos de negocio extraídos correctamente');
+        console.log('Extracted business profile:', profileData);
+        return profileData;
       }
     }
     

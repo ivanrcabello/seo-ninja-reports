@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { BusinessProfile } from '@/types/report.types';
 import { saveBusinessProfile } from '@/services/api/businessProfile/saveBusinessProfile';
@@ -96,7 +97,7 @@ export const useBusinessProfileSave = (clientId?: string) => {
       
       // Update if exists, insert if not
       if (existingData && existingData.length > 0) {
-        console.log('Updating existing business listing record');
+        console.log('Updating existing business listing record:', existingData[0].id);
         result = await supabase
           .from('google_business_listings')
           .update(listingData)

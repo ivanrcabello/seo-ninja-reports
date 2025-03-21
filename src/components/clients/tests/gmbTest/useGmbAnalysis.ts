@@ -35,42 +35,6 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
     }
   };
   
-  const saveToDatabase = async (profileData: any, isSimulatedData: boolean = false) => {
-    if (!clientId || isSimulatedData) return;
-    
-    try {
-      // Extract data in the format needed for the database
-      const listingData = {
-        client_id: clientId,
-        title: profileData.businessName,
-        address: profileData.businessAddress,
-        phone: profileData.businessPhone,
-        rating: profileData.businessRating,
-        reviews: profileData.businessReviewsCount,
-        hours: typeof profileData.businessHours === 'object' ? 
-          JSON.stringify(profileData.businessHours) : profileData.businessHours,
-        website: profileData.businessWebsite,
-        place_id: profileData.businessUrl ? 
-          profileData.businessUrl.split('place_id:').pop() : null
-      };
-      
-      // Save to the google_business_listings table
-      const { data, error } = await supabase
-        .from('google_business_listings')
-        .insert(listingData)
-        .select();
-      
-      if (error) {
-        console.error('Error saving business listing to database:', error);
-        return;
-      }
-      
-      console.log('Business listing saved to database:', data);
-    } catch (error) {
-      console.error('Error in saveToDatabase:', error);
-    }
-  };
-  
   const analyzeWithWebsite = async () => {
     if (!clientWebsite) {
       toast.error('No hay URL de sitio web disponible para este cliente');
@@ -89,7 +53,8 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
       try {
         // Use ValueSerp with the client name or domain as the query
         const query = extractDomainFromUrl(clientWebsite);
-        profileData = await extractBusinessInfoWithValueSerp(query);
+        console.log(`Using clientId: ${clientId} for ValueSerp query`);
+        profileData = await extractBusinessInfoWithValueSerp(query, clientId);
       } catch (valueSerpError) {
         console.error('Error extracting with ValueSerp:', valueSerpError);
         extractionMethod = 'scraper';
@@ -119,11 +84,6 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
                           profileData.businessName === 'Negocio de ejemplo';
                           
         setIsSimulated(isMockData);
-        
-        // Save to database if not simulated data
-        if (!isMockData) {
-          await saveToDatabase(profileData);
-        }
         
         if (onProfileUpdate && !isMockData) {
           onProfileUpdate(profileData);
@@ -200,7 +160,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
       let profileData = null;
       
       try {
-        profileData = await extractBusinessInfo(businessUrl);
+        profileData = await extractBusinessInfo(businessUrl, clientId);
       } catch (extractError) {
         console.error('Error extracting business info:', extractError);
         throw new Error('No se pudo extraer información del perfil');
@@ -226,11 +186,6 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
                           profileData.businessName === 'Negocio de ejemplo';
                           
         setIsSimulated(isMockData);
-        
-        // Save to database if not simulated data
-        if (!isMockData) {
-          await saveToDatabase(profileData);
-        }
         
         // Only update the parent component with real data
         if (onProfileUpdate && !isMockData) {

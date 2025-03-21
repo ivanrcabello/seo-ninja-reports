@@ -1,48 +1,57 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, Save } from 'lucide-react';
 
 interface BusinessProfileActionsProps {
   onRefreshBusinessProfile: () => void;
   isRefreshingBusinessProfile: boolean;
   saveBusinessProfileData: () => void;
+  isSaving?: boolean;
 }
 
 const BusinessProfileActions: React.FC<BusinessProfileActionsProps> = ({
   onRefreshBusinessProfile,
   isRefreshingBusinessProfile,
-  saveBusinessProfileData
+  saveBusinessProfileData,
+  isSaving = false
 }) => {
   return (
-    <div className="flex gap-2 mt-2">
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="w-full" 
+    <div className="flex gap-2 justify-end mt-2">
+      <Button
+        variant="outline"
+        size="sm"
         onClick={onRefreshBusinessProfile}
         disabled={isRefreshingBusinessProfile}
       >
         {isRefreshingBusinessProfile ? (
           <>
-            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-            Analizando...
+            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            Actualizando...
           </>
         ) : (
           <>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Actualizar
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            Actualizar datos
           </>
         )}
       </Button>
       <Button 
-        variant="default" 
         size="sm" 
-        className="w-full"
         onClick={saveBusinessProfileData}
-        disabled={isRefreshingBusinessProfile}
+        disabled={isSaving}
       >
-        Guardar para informe
+        {isSaving ? (
+          <>
+            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            Guardando...
+          </>
+        ) : (
+          <>
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            Guardar perfil
+          </>
+        )}
       </Button>
     </div>
   );

@@ -27,7 +27,7 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   clientId
 }) => {
   const [displayProfile, setDisplayProfile] = useState<Partial<BusinessProfile> | null>(null);
-  const { saveBusinessProfileData } = useBusinessProfileSave(clientId);
+  const { saveBusinessProfileData, isSaving } = useBusinessProfileSave(clientId);
   
   // Fetch the latest google business listing from the database
   useEffect(() => {
@@ -153,6 +153,7 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
         onRefreshBusinessProfile={handleRefresh}
         isRefreshingBusinessProfile={isRefreshingBusinessProfile}
         saveBusinessProfileData={handleSaveBusinessProfile}
+        isSaving={isSaving}
       />
     </div>
   );

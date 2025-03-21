@@ -10,7 +10,8 @@ import { extractValueserpData } from './extractValueserpData';
  * Extrae información de una URL de Google Business
  */
 export const extractBusinessInfo = async (
-  businessUrl: string
+  businessUrl: string,
+  clientId?: string
 ): Promise<Partial<BusinessProfile> | null> => {
   try {
     if (!businessUrl) {
@@ -20,7 +21,7 @@ export const extractBusinessInfo = async (
       return null;
     }
     
-    console.log('Attempting to extract business info from URL:', businessUrl);
+    console.log('Attempting to extract business info from URL:', businessUrl, 'clientId:', clientId);
     
     // Mostrar toast de progreso
     toast.info('Analizando perfil de negocio', {
@@ -104,7 +105,7 @@ export const extractBusinessInfo = async (
           description: 'Intentando obtener datos mediante ValueSerp...'
         });
         
-        profileData = await extractValueserpData(businessName);
+        profileData = await extractValueserpData(businessName, undefined, clientId);
         
         // Verify if we got real data
         if (profileData && 
