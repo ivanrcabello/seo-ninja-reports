@@ -57,8 +57,7 @@ export const extractGmbData = async (
       console.log(`Intento ${attempts} de extraer información de GMB`);
       
       try {
-        // Llamar a nuestra función edge usando supabase.functions.invoke en lugar de fetch directo
-        // Esto manejará automáticamente la autenticación con el anon key
+        // Llamar a nuestra función edge usando supabase.functions.invoke
         const { data, error: fnError } = await supabase.functions.invoke('scrape-business', {
           body: { url: urlOrWebsite }
         });
@@ -73,9 +72,16 @@ export const extractGmbData = async (
         
         console.log('Business profile data extracted:', data.data);
         
-        // Validate received data
+        // Validate received data to ensure it's not just a placeholder
         if (!data.data.businessName && !data.data.businessAddress) {
           throw new Error('No se pudo extraer información esencial del negocio');
+        }
+        
+        // Check if the data looks like it's from Google Maps itself rather than a business
+        if (data.data.businessName === 'Google Maps' || 
+            data.data.businessName === 'Google' || 
+            data.data.businessName?.includes('Google')) {
+          throw new Error('Se detectó información genérica de Google Maps, no de un negocio');
         }
         
         toast.success('Información extraída correctamente', {
@@ -101,8 +107,8 @@ export const extractGmbData = async (
       description: error?.message || 'No se pudo extraer información del perfil',
     });
     
-    // Devolver datos simulados como último recurso
-    return simulateBusinessProfileData(urlOrWebsite);
+    // Devolver null en lugar de datos simulados para que el componente pueda manejar mejor el error
+    return null;
     
   } catch (error: any) {
     console.error('Error extracting business information:', error);
@@ -110,7 +116,7 @@ export const extractGmbData = async (
       description: error.message || 'No se pudo procesar la solicitud',
     });
     
-    // En caso de error, devolver datos simulados
-    return simulateBusinessProfileData(urlOrWebsite);
+    // Devolver null en lugar de datos simulados
+    return null;
   }
 };

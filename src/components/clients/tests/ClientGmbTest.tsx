@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Search, AlertCircle, CheckCircle, Globe, Info } from 'lucide-react';
+import { MapPin, Search, AlertCircle, CheckCircle, Globe, Info, Clock, Phone, Link2 } from 'lucide-react';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData'; 
 import { toast } from 'sonner';
@@ -98,6 +98,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
     setIsSimulated(false);
     
     try {
+      // Use the extractBusinessInfo function to get profile information
       const profileData = await extractBusinessInfo(businessUrl);
       
       if (profileData) {
@@ -233,24 +234,91 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
               ) : (
                 <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
               )}
-              <div>
+              <div className="w-full">
                 <h4 className="font-medium">{isSimulated ? "Datos simulados" : "Información detectada"}</h4>
-                <ul className="mt-2 space-y-1 text-sm">
+                <ul className="mt-2 space-y-2 text-sm divide-y divide-gray-100">
                   {businessProfile.businessName && (
-                    <li>Nombre: <span className="font-medium">{businessProfile.businessName}</span></li>
+                    <li className="pt-2 pb-1">
+                      <div className="font-medium">Nombre</div>
+                      <div>{businessProfile.businessName}</div>
+                    </li>
                   )}
                   {businessProfile.businessCategory && (
-                    <li>Categoría: <span className="font-medium">{businessProfile.businessCategory}</span></li>
+                    <li className="pt-2 pb-1">
+                      <div className="font-medium">Categoría</div>
+                      <div>{businessProfile.businessCategory}</div>
+                    </li>
                   )}
                   {businessProfile.businessRating !== undefined && (
-                    <li>Valoración: <span className="font-medium">{businessProfile.businessRating}/5 ({businessProfile.businessReviewsCount} reseñas)</span></li>
+                    <li className="pt-2 pb-1">
+                      <div className="font-medium">Valoración</div>
+                      <div className="flex items-center">
+                        <div className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium mr-2">
+                          {businessProfile.businessRating.toFixed(1)}
+                        </div>
+                        {businessProfile.businessReviewsCount !== undefined && (
+                          <span className="text-muted-foreground">
+                            {businessProfile.businessReviewsCount} reseñas
+                          </span>
+                        )}
+                      </div>
+                    </li>
                   )}
                   {businessProfile.businessAddress && (
-                    <li>Dirección: <span className="font-medium">{businessProfile.businessAddress}</span></li>
+                    <li className="pt-2 pb-1">
+                      <div className="font-medium flex items-center">
+                        <MapPin className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 
+                        Dirección
+                      </div>
+                      <div>{businessProfile.businessAddress}</div>
+                    </li>
+                  )}
+                  {businessProfile.businessPhone && (
+                    <li className="pt-2 pb-1">
+                      <div className="font-medium flex items-center">
+                        <Phone className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 
+                        Teléfono
+                      </div>
+                      <div>{businessProfile.businessPhone}</div>
+                    </li>
+                  )}
+                  {businessProfile.businessWebsite && (
+                    <li className="pt-2 pb-1">
+                      <div className="font-medium flex items-center">
+                        <Link2 className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 
+                        Sitio web
+                      </div>
+                      <div className="truncate">
+                        <a 
+                          href={businessProfile.businessWebsite} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-primary hover:underline"
+                        >
+                          {businessProfile.businessWebsite.replace(/^https?:\/\//, '')}
+                        </a>
+                      </div>
+                    </li>
+                  )}
+                  {businessProfile.businessHours && Object.keys(businessProfile.businessHours).length > 0 && (
+                    <li className="pt-2 pb-1">
+                      <div className="font-medium flex items-center">
+                        <Clock className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 
+                        Horario
+                      </div>
+                      <div className="text-xs space-y-1 mt-1">
+                        {Object.entries(businessProfile.businessHours).map(([day, hours]) => (
+                          <div key={day} className="flex justify-between">
+                            <span className="font-medium">{day}</span>
+                            <span>{hours}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </li>
                   )}
                 </ul>
                 {isSimulated && (
-                  <p className="mt-2 text-xs text-amber-600">
+                  <p className="mt-3 text-xs text-amber-600">
                     Estos son datos simulados. Para obtener datos reales, proporciona una URL directa al perfil de GMB.
                   </p>
                 )}

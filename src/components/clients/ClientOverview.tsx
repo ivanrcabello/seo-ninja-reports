@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,8 @@ import ClientPageSpeedTest from './tests/ClientPageSpeedTest';
 import { AnimatePresence, motion } from 'framer-motion';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
 import { fetchPageSpeedData } from '@/services/api/pagespeed';
+import { toast } from 'sonner';
+import { extractBusinessInfo } from '@/services/api/businessProfile';
 
 interface ClientOverviewProps {
   client: Client;
@@ -37,21 +38,19 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
   const [isRefreshingPageSpeed, setIsRefreshingPageSpeed] = useState(false);
   const [isRefreshingBusinessProfile, setIsRefreshingBusinessProfile] = useState(false);
   
-  // Get latest GMB data and PageSpeed score from most recent report if available
   const latestReport = reports.length > 0 ? reports[0] : null;
   
-  // Extract business profile and pagespeed data from the report content
   const reportBusinessProfile = latestReport?.content?.businessProfile || null;
   const reportPageSpeedScore = latestReport?.content?.pageSpeedData?.desktop?.performance 
     ? Math.round(latestReport.content.pageSpeedData.desktop.performance * 100) 
     : null;
   
-  // Use the latest data we have, either from a manual refresh or from the latest report
   const displayBusinessProfile = businessProfile || reportBusinessProfile;
   const displayPageSpeedScore = pageSpeedScore !== null ? pageSpeedScore : reportPageSpeedScore;
   
   const handleRefreshPageSpeed = async () => {
     if (!client.website) {
+      toast.error('No hay sitio web configurado para este cliente');
       return;
     }
     
@@ -63,9 +62,13 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
       if (result && result.desktop && typeof result.desktop.performance !== 'undefined') {
         const desktopScore = Math.round(result.desktop.performance * 100);
         setPageSpeedScore(desktopScore);
+        toast.success('Datos de rendimiento actualizados');
+      } else {
+        toast.error('No se pudieron obtener datos de rendimiento');
       }
     } catch (error) {
       console.error('Error refreshing PageSpeed data:', error);
+      toast.error('Error al obtener datos de rendimiento');
     } finally {
       setIsRefreshingPageSpeed(false);
     }
@@ -75,26 +78,55 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
     setIsRefreshingBusinessProfile(true);
     
     try {
-      // Primero intentamos con el sitio web del cliente
-      const result = await extractGmbData(client.website, false);
+      const gmbUrl = reportBusinessProfile?.businessUrl;
+      let result = null;
+      
+      if (gmbUrl && gmbUrl.includes('google.com/maps') || gmbUrl?.includes('maps.app.goo.gl')) {
+        toast.info('Usando URL de GMB existente', {
+          description: 'Actualizando datos desde el perfil previamente analizado'
+        });
+        
+        result = await extractBusinessInfo(gmbUrl);
+      } else {
+        toast.info('Buscando perfil desde sitio web', {
+          description: 'Intentando encontrar perfil de GMB basado en el sitio web'
+        });
+        
+        result = await extractGmbData(client.website, false);
+      }
       
       if (result) {
         setBusinessProfile(result);
+        
+        const isSimulated = result.businessName === 'Negocio de ejemplo' || 
+                          result.businessName?.includes('ejemplo');
+                          
+        if (isSimulated) {
+          toast.warning('Datos simulados obtenidos', {
+            description: 'Intenta usar Tests Rápidos para proporcionar una URL directa de GMB'
+          });
+        } else {
+          toast.success('Datos de GMB actualizados correctamente');
+        }
+      } else {
+        toast.error('No se pudieron obtener datos de GMB');
       }
     } catch (error) {
       console.error('Error refreshing business profile:', error);
+      toast.error('Error al actualizar datos de GMB');
     } finally {
       setIsRefreshingBusinessProfile(false);
     }
   };
   
-  // Handlers for tests
   const handleBusinessProfileUpdate = (profile: Partial<BusinessProfile>) => {
     setBusinessProfile(profile);
+    toast.success('Perfil de negocio actualizado en la tarjeta de rendimiento');
   };
   
   const handlePageSpeedUpdate = (score: number) => {
     setPageSpeedScore(score);
+    toast.success('Puntuación de rendimiento actualizada en la tarjeta de rendimiento');
   };
 
   return (
@@ -169,7 +201,6 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
         </BlurredCard>
       </div>
       
-      {/* Visual indicators for GMB and PageSpeed */}
       <ClientPerformanceCards 
         businessProfile={displayBusinessProfile}
         pageSpeedScore={displayPageSpeedScore}
@@ -196,7 +227,6 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
             transition={{ duration: 0.15 }}
           >
             <TabsContent value="summary" className="space-y-6">
-              {/* Client summary and notes */}
               <BlurredCard>
                 <CardHeader>
                   <CardTitle className="text-xl">Client Summary</CardTitle>
@@ -240,7 +270,6 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
                 </CardContent>
               </BlurredCard>
               
-              {/* Client notes section */}
               <ClientNotes clientId={client.id} />
             </TabsContent>
             
@@ -248,6 +277,7 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ClientGmbTest 
                   clientId={client.id} 
+                  clientWebsite={client.website}
                   onProfileUpdate={handleBusinessProfileUpdate}
                 />
                 <ClientPageSpeedTest 

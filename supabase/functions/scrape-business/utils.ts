@@ -1,22 +1,32 @@
 
 import * as cheerio from 'https://esm.sh/cheerio@1.0.0-rc.12'
-import { BusinessProfileData } from './types.ts';
+import { BusinessHours } from './types.ts';
 
-// Function to follow redirections and get final URL
+/**
+ * Follows redirects for shortened URLs like g.co
+ */
 export async function getRedirectedUrl(url: string): Promise<string> {
   try {
-    const response = await fetch(url, { redirect: 'follow', method: 'HEAD' });
+    const response = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
     return response.url;
   } catch (error) {
-    console.error('Error siguiendo redirección:', error);
-    return url; // En caso de error, devolver la URL original
+    console.error('Error following redirect:', error);
+    return url; // Return original if redirect fails
   }
 }
 
-// Function to simulate business profile data (fallback)
-export function simulateBusinessProfileData(businessUrl: string): BusinessProfileData {
+/**
+ * Generate simulated business data for testing purposes
+ */
+export function simulateBusinessProfileData(url: string) {
   return {
-    businessUrl,
+    businessUrl: url,
     businessName: 'Negocio de ejemplo',
     businessAddress: 'Calle Ejemplo 123, Ciudad',
     businessPhone: '+34 123 456 789',
@@ -36,293 +46,387 @@ export function simulateBusinessProfileData(businessUrl: string): BusinessProfil
   };
 }
 
-// Extract business name from HTML
+/**
+ * Extract business name from multiple possible HTML patterns
+ */
 export function extractBusinessName($: cheerio.CheerioAPI): string | undefined {
-  // Estrategia 1: Buscar el elemento h1 que suele contener el nombre
-  const nameElement = $('h1').first();
-  if (nameElement.length) {
-    return nameElement.text().trim();
+  // Try multiple selectors for business name
+  const selectors = [
+    'h1.DUwDvf', // Common Google Maps business name
+    'h1[data-attrid="title"]',
+    'div[data-attrid="title"]',
+    'div.fontHeadlineLarge',
+    'h1',
+    'div.x3AX1-LfntMc-header-title-title',
+    'div[role="main"] div[role="heading"]',
+    // Additional selectors below
+    'div.lMbq3e h1',
+    'span[jsslot] h1',
+    'div.SPZz6b h1'
+  ];
+  
+  for (const selector of selectors) {
+    const name = $(selector).first().text().trim();
+    if (name) return name;
   }
   
-  // Estrategia 2: Buscar por atributos de datos específicos que Google usa
-  const dataElement = $('[data-attrid="title"]');
-  if (dataElement.length) {
-    return dataElement.text().trim();
+  // Fallback - look for markup containing role="heading" and the largest text
+  const headings = $('[role="heading"]').toArray();
+  const largestHeading = headings.sort((a, b) => 
+    $(b).text().trim().length - $(a).text().trim().length
+  )[0];
+  
+  if (largestHeading) {
+    return $(largestHeading).text().trim();
   }
   
-  // Estrategia 3: Extraer del título de la página
-  const titleText = $('title').text();
-  if (titleText) {
-    // El título suele tener el formato "Nombre del Negocio - Google Maps"
-    const namePart = titleText.split('-')[0];
-    if (namePart) {
-      return namePart.trim();
-    }
-  }
-  
-  // Estrategia 4: Buscar elementos que contengan información del negocio
-  const businessInfoElement = $('.section-hero-header-title');
-  if (businessInfoElement.length) {
-    return businessInfoElement.first().text().trim();
+  // Further fallback - look for meta title
+  const metaTitle = $('meta[property="og:title"]').attr('content');
+  if (metaTitle) {
+    // Clean up meta title by removing " - Google Maps" suffix if present
+    return metaTitle.replace(/ - Google Maps$/, '').trim();
   }
   
   return undefined;
 }
 
-// Extract business address
+/**
+ * Extract business address from HTML
+ */
 export function extractBusinessAddress($: cheerio.CheerioAPI): string | undefined {
-  // Estrategia 1: Buscar botones con dirección
-  let address: string | undefined;
+  // Try multiple selectors for address
+  const selectors = [
+    'div[data-attrid="kc:/location/location:address"]',
+    'button[data-item-id="address"]',
+    'button[aria-label*="dirección" i]',
+    'button[aria-label*="address" i]',
+    'button[aria-label*="directions" i]',
+    'button[data-tooltip*="dirección" i]',
+    'button[data-tooltip*="address" i]',
+    'div.rogA2c',
+    'div.fontBodyMedium div.Io6YTe',
+    // Additional selectors
+    'span[aria-label*="dirección:" i]',
+    'div[jsaction*="address"]',
+    '[jsan*="address"]'
+  ];
   
-  // Buscar por atributo data-item-id
-  $('button[data-item-id="address"]').each(function() {
-    const addressText = $(this).text();
-    if (addressText) {
-      address = addressText.trim();
-      return false; // Romper el bucle
+  for (const selector of selectors) {
+    const address = $(selector).first().text().trim();
+    if (address) return address;
+  }
+  
+  // Try finding structured data
+  const structuredData = $('script[type="application/ld+json"]').toArray();
+  for (const script of structuredData) {
+    try {
+      const data = JSON.parse($(script).html() || '{}');
+      if (data.address) {
+        return typeof data.address === 'string' 
+          ? data.address 
+          : `${data.address.streetAddress || ''}, ${data.address.addressLocality || ''}, ${data.address.addressRegion || ''}`.trim();
+      }
+    } catch (e) {
+      // Ignore parsing errors
     }
-  });
+  }
   
-  if (address) return address;
+  // Look for anything that might be an address
+  const addressRegexes = [
+    /\d+\s+[A-Za-z\s]+,\s+[A-Za-z\s]+/,  // Street number and name, City
+    /Calle\s+[A-Za-z0-9\s]+,\s+[A-Za-z\s]+/i, // Spanish street format
+    /Av\.\s+[A-Za-z0-9\s]+,\s+[A-Za-z\s]+/i, // Avenue format
+  ];
   
-  // Estrategia 2: Buscar cualquier elemento que contenga dirección
-  $('[data-tooltip="Copiar dirección"]').each(function() {
-    const parent = $(this).parent();
-    if (parent.length) {
-      address = parent.text().trim();
-      return false;
-    }
-  });
+  const bodyText = $('body').text();
+  for (const regex of addressRegexes) {
+    const match = bodyText.match(regex);
+    if (match) return match[0].trim();
+  }
   
-  if (address) return address;
-  
-  // Estrategia 3: Buscar por clase específica o contenido
-  $('a[href^="https://maps.google.com/maps/dir/"]').each(function() {
-    const addressElement = $(this).find('.widget-pane-link');
-    if (addressElement.length) {
-      address = addressElement.text().trim();
-      return false;
-    }
-  });
-  
-  if (address) return address;
-  
-  // Estrategia 4: Buscar en los metadatos
-  $('meta[property="og:description"]').each(function() {
-    const content = $(this).attr('content');
-    if (content) {
-      // La descripción a veces contiene la dirección
-      address = content.trim();
-      return false;
-    }
-  });
-  
-  return address;
+  return undefined;
 }
 
-// Extract business category
+/**
+ * Extract business category from HTML
+ */
 export function extractBusinessCategory($: cheerio.CheerioAPI): string | undefined {
-  let category: string | undefined;
+  // Try multiple selectors for business category
+  const selectors = [
+    'div[data-attrid="kc:/local:one line summary"]',
+    'button[data-item-id="category"]',
+    'span.YhemCb',
+    'div.fontBodyMedium span.YhemCb',
+    'span[jsslot] span.YhemCb',
+    // Additional selectors
+    'button[aria-label*="categoría" i]',
+    'button[aria-label*="category" i]',
+    'span.R8V97'
+  ];
   
-  // Estrategia 1: Buscar por data-item-id
-  $('button[data-item-id^="category"]').each(function() {
-    const categoryText = $(this).text();
-    if (categoryText) {
-      category = categoryText.trim();
-      return false;
+  for (const selector of selectors) {
+    const category = $(selector).first().text().trim();
+    if (category) return category;
+  }
+  
+  // Try structured data
+  const structuredData = $('script[type="application/ld+json"]').toArray();
+  for (const script of structuredData) {
+    try {
+      const data = JSON.parse($(script).html() || '{}');
+      if (data.category || data['@type']) {
+        return data.category || data['@type'];
+      }
+    } catch (e) {
+      // Ignore parsing errors
     }
-  });
+  }
   
-  if (category) return category;
-  
-  // Estrategia 2: Buscar por clases de categoría
-  $('.section-facts-carousel-item-label, .cswXje').each(function() {
-    const text = $(this).text().trim();
-    if (text && !category) {
-      category = text;
-      return false;
-    }
-  });
-  
-  if (category) return category;
-  
-  // Estrategia 3: Buscar en los elementos de información
-  $('[jsaction="pane.rating.category"]').each(function() {
-    category = $(this).text().trim();
-    return false;
-  });
-  
-  return category;
+  return undefined;
 }
 
-// Extract business phone
+/**
+ * Extract business phone from HTML
+ */
 export function extractBusinessPhone($: cheerio.CheerioAPI): string | undefined {
-  let phone: string | undefined;
+  // Try multiple selectors for phone
+  const selectors = [
+    'div[data-attrid="kc:/collection/knowledge_panels/has_phone:phone"]',
+    'button[data-item-id="phone"]',
+    'button[aria-label*="teléfono" i]',
+    'button[aria-label*="phone" i]',
+    'button[aria-label*="call" i]',
+    'div[data-tooltip*="phone" i]',
+    '[href^="tel:"]',
+    // Additional selectors
+    'a[data-dtype="d3ph"]',
+    'span[aria-label*="teléfono:" i]'
+  ];
   
-  // Estrategia 1: Buscar por data-item-id
-  $('button[data-item-id="phone:tel"]').each(function() {
-    const phoneText = $(this).text();
-    if (phoneText) {
-      phone = phoneText.trim();
-      return false;
+  for (const selector of selectors) {
+    const phone = $(selector).first().text().trim();
+    if (phone) return phone;
+    
+    // Check for href attribute in case of tel: links
+    const hrefPhone = $(selector).first().attr('href');
+    if (hrefPhone && hrefPhone.startsWith('tel:')) {
+      return hrefPhone.replace('tel:', '');
     }
-  });
+  }
   
-  if (phone) return phone;
+  // Look for phone patterns in the text
+  const phoneRegexes = [
+    /\+\d{1,3}\s\d{2,3}\s\d{3}\s\d{3}/,  // International format with spaces
+    /\+\d{1,3}\s\d{2,3}\s\d{6,7}/,       // International condensed
+    /\d{3}[\s.-]\d{3}[\s.-]\d{4}/,       // US format
+    /\d{9,10}/                          // Just digits
+  ];
   
-  // Estrategia 2: Buscar enlaces de teléfono
-  $('a[href^="tel:"]').each(function() {
-    phone = $(this).text().trim() || $(this).attr('href')?.replace('tel:', '');
-    return false;
-  });
+  const bodyText = $('body').text();
+  for (const regex of phoneRegexes) {
+    const match = bodyText.match(regex);
+    if (match) return match[0].trim();
+  }
   
-  if (phone) return phone;
-  
-  // Estrategia 3: Buscar por contenido
-  $('[data-tooltip="Copiar número de teléfono"]').each(function() {
-    const parent = $(this).parent();
-    if (parent.length) {
-      phone = parent.text().trim();
-      return false;
-    }
-  });
-  
-  return phone;
+  return undefined;
 }
 
-// Extract business website
+/**
+ * Extract business website from HTML
+ */
 export function extractBusinessWebsite($: cheerio.CheerioAPI): string | undefined {
-  let website: string | undefined;
+  // Try multiple selectors for website
+  const selectors = [
+    'div[data-attrid="kc:/local:website"] a',
+    'a[data-item-id="authority"]',
+    'a[aria-label*="sitio web" i]',
+    'a[aria-label*="website" i]',
+    'a[data-item-id*="website" i]',
+    'div.QqG1Sd a',
+    'a.CL9Uqc',
+    'div[jsaction*="mouseup:website"]',
+    // Additional selectors
+    'a[jsaction*="website"]',
+    'div[role="main"] a[target="_blank"]'
+  ];
   
-  // Estrategia 1: Buscar por data-item-id
-  $('a[data-item-id^="authority"]').each(function() {
-    const href = $(this).attr('href');
-    if (href) {
-      website = href;
-      return false;
+  for (const selector of selectors) {
+    const $element = $(selector).first();
+    const href = $element.attr('href');
+    if (href && !href.includes('google.com')) {
+      return href;
     }
-  });
-  
-  if (website) return website;
-  
-  // Estrategia 2: Buscar enlaces de sitio web
-  $('a[data-tooltip="Abrir sitio web"]').each(function() {
-    website = $(this).attr('href');
-    return false;
-  });
-  
-  if (website) return website;
-  
-  // Estrategia 3: Buscar cualquier enlace que parezca un sitio web
-  $('a').each(function() {
-    const href = $(this).attr('href');
-    if (href && (href.startsWith('http') || href.startsWith('www')) && 
-        !href.includes('google.com') && 
-        !href.includes('maps.app') && 
-        !href.includes('goo.gl')) {
-      website = href;
-      return false;
+    
+    const text = $element.text().trim();
+    if (text && text.match(/^https?:\/\//)) {
+      return text;
     }
-  });
+  }
   
-  return website;
+  // Try structured data
+  const structuredData = $('script[type="application/ld+json"]').toArray();
+  for (const script of structuredData) {
+    try {
+      const data = JSON.parse($(script).html() || '{}');
+      if (data.website || data.url) {
+        return data.website || data.url;
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  }
+  
+  return undefined;
 }
 
-// Extract business rating and reviews count
+/**
+ * Extract business rating and reviews count from HTML
+ */
 export function extractBusinessRating($: cheerio.CheerioAPI): { rating?: number, reviewsCount?: number } {
-  const result: { rating?: number, reviewsCount?: number } = {};
+  let rating: number | undefined;
+  let reviewsCount: number | undefined;
   
-  // Estrategia 1: Buscar elementos de calificación
-  $('span[aria-hidden="true"]').filter(function() {
-    return /^\d+(\.\d+)?$/.test($(this).text().trim());
-  }).first().each(function() {
-    const ratingText = $(this).text().trim();
+  // Try multiple selectors for rating
+  const ratingSelectors = [
+    'div[data-attrid="kc:/collection/knowledge_panels/local_reviewable:star_score"] span',
+    'span.F7nice',
+    'span[aria-hidden="true"][role="img"]',
+    'span.yi40Hd',
+    'div.fontDisplayLarge',
+    // Additional selectors
+    'div[aria-label*="estrellas" i]',
+    'div[aria-label*="stars" i]',
+    'div.review-score-container'
+  ];
+  
+  for (const selector of ratingSelectors) {
+    const ratingText = $(selector).first().text().trim();
     if (ratingText) {
-      result.rating = parseFloat(ratingText);
-    }
-  });
-  
-  if (!result.rating) {
-    // Estrategia 2: Buscar por clases de calificación
-    $('.section-star-display, .F7nice').each(function() {
-      const text = $(this).text().trim();
-      if (/^\d+(\.\d+)?$/.test(text)) {
-        result.rating = parseFloat(text);
-        return false;
+      // Extract numeric part, accounting for comma as decimal separator
+      const match = ratingText.match(/(\d+[.,]?\d*)/);
+      if (match) {
+        rating = parseFloat(match[0].replace(',', '.'));
+        break;
       }
-    });
+    }
   }
   
-  // Buscar el recuento de reseñas
-  if (result.rating) {
-    // Buscar cerca de la calificación
-    const reviewsText = $('span').filter(function() {
-      const text = $(this).text().trim();
-      return /\d+\s+(reviews|reseñas|opiniones)/i.test(text);
-    }).first().text();
-    
+  // Try multiple selectors for reviews count
+  const reviewsSelectors = [
+    'div[data-attrid="kc:/collection/knowledge_panels/local_reviewable:star_score"] span.hqzQac',
+    'span.z5jxId',
+    'button[data-tooltip="Google reviews"]',
+    'button[jsaction*="reviews"]',
+    // Additional selectors
+    'span[aria-label*="reseñas" i]',
+    'span[aria-label*="reviews" i]',
+    'div.F7nice span:nth-child(2)'
+  ];
+  
+  for (const selector of reviewsSelectors) {
+    const reviewsText = $(selector).first().text().trim();
     if (reviewsText) {
-      const reviewsMatch = reviewsText.match(/(\d+)/);
-      if (reviewsMatch && reviewsMatch[1]) {
-        result.reviewsCount = parseInt(reviewsMatch[1], 10);
+      // Extract numeric part
+      const match = reviewsText.match(/(\d+[.,]?\d*)/);
+      if (match) {
+        // Handle thousands separators
+        reviewsCount = parseInt(match[0].replace(/[.,]/g, ''));
+        break;
       }
     }
   }
   
-  if (!result.reviewsCount) {
-    // Estrategia alternativa para recuento de reseñas
-    $('button').each(function() {
-      const text = $(this).text().trim();
-      const match = text.match(/(\d+)\s+(reviews|reseñas|opiniones)/i);
-      if (match && match[1]) {
-        result.reviewsCount = parseInt(match[1], 10);
-        return false;
+  // Try structured data
+  const structuredData = $('script[type="application/ld+json"]').toArray();
+  for (const script of structuredData) {
+    try {
+      const data = JSON.parse($(script).html() || '{}');
+      if (data.aggregateRating) {
+        rating = rating || data.aggregateRating.ratingValue;
+        reviewsCount = reviewsCount || data.aggregateRating.reviewCount;
       }
-    });
+    } catch (e) {
+      // Ignore parsing errors
+    }
   }
   
-  return result;
+  return { rating, reviewsCount };
 }
 
-// Extract business hours
-export function extractBusinessHours($: cheerio.CheerioAPI): Record<string, string> | undefined {
-  const hoursData: Record<string, string> = {};
+/**
+ * Extract business hours from HTML
+ */
+export function extractBusinessHours($: cheerio.CheerioAPI): BusinessHours | undefined {
+  const hours: BusinessHours = {};
   
-  // Estrategia 1: Buscar tabla de horarios
-  $('tr').each(function() {
-    const dayElement = $(this).find('th');
-    const hoursElement = $(this).find('td');
-    
-    if (dayElement.length && hoursElement.length) {
-      const day = dayElement.text().trim();
-      const hours = hoursElement.text().trim();
+  // Try multiple selectors for hours
+  const hoursSelectors = [
+    'div[data-attrid="kc:/location/location:hours"] div.MkV9e',
+    'div[aria-label*="horas" i] div.OMl5r',
+    'div[aria-label*="hours" i] table',
+    'table.eK4R0e',
+    'div.t39EBf table',
+    // Additional selectors
+    'div.OMl5r',
+    'div[data-memento]',
+    'div[jscontroller*="hours"]'
+  ];
+  
+  let hoursFound = false;
+  for (const selector of hoursSelectors) {
+    const $hours = $(selector);
+    if ($hours.length > 0) {
+      // Try to find day-by-day hours
+      $hours.find('tr, div.mWTrf').each((i, elem) => {
+        const dayTimeText = $(elem).text().trim();
+        // Look for patterns like "Monday: 9:00 AM - 5:00 PM"
+        const match = dayTimeText.match(/(\w+)(?:day)?:?\s*(.*?)$/i);
+        
+        if (match) {
+          const day = match[1];
+          const times = match[2].trim();
+          
+          if (day && times) {
+            const dayKey = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+            hours[dayKey] = times;
+            hoursFound = true;
+          }
+        }
+      });
       
-      if (day && hours) {
-        hoursData[day] = hours;
-      }
+      if (hoursFound) break;
     }
-  });
-  
-  if (Object.keys(hoursData).length > 0) {
-    return hoursData;
   }
   
-  // Estrategia 2: Buscar elementos de horario por clases
-  $('.section-open-hours-container, .t39EKf').each(function() {
-    $(this).find('.section-open-hours-row, .kc0J9').each(function() {
-      const dayElement = $(this).find('.section-open-hours-day, .G8aQO');
-      const hoursElement = $(this).find('.section-open-hours-hour, .DkEaL');
-      
-      if (dayElement.length && hoursElement.length) {
-        const day = dayElement.text().trim();
-        const hours = hoursElement.text().trim();
-        
-        if (day && hours) {
-          hoursData[day] = hours;
+  // Try structured data if no hours found
+  if (!hoursFound) {
+    const structuredData = $('script[type="application/ld+json"]').toArray();
+    for (const script of structuredData) {
+      try {
+        const data = JSON.parse($(script).html() || '{}');
+        if (data.openingHours || data.openingHoursSpecification) {
+          const hoursData = data.openingHours || data.openingHoursSpecification;
+          
+          if (Array.isArray(hoursData)) {
+            hoursData.forEach(hourSpec => {
+              if (hourSpec.dayOfWeek && hourSpec.opens && hourSpec.closes) {
+                const day = typeof hourSpec.dayOfWeek === 'string' ? 
+                  hourSpec.dayOfWeek : 
+                  hourSpec.dayOfWeek[0];
+                
+                // Clean up day name
+                const dayKey = day.replace('http://schema.org/', '');
+                hours[dayKey] = `${hourSpec.opens} - ${hourSpec.closes}`;
+                hoursFound = true;
+              }
+            });
+          }
         }
+      } catch (e) {
+        // Ignore parsing errors
       }
-    });
-  });
+    }
+  }
   
-  return Object.keys(hoursData).length > 0 ? hoursData : undefined;
+  return hoursFound ? hours : undefined;
 }

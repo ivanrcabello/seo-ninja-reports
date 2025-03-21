@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Store, Check, Search, AlertTriangle, Info } from 'lucide-react';
+import { Store, Check, Search, AlertTriangle, Info, MapPin, Phone, Link2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { BusinessProfile } from '@/types/report.types';
@@ -146,22 +146,89 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
                     : 'Información detectada'
                 }
               </h4>
-              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <div className="mt-2 space-y-2 text-sm text-muted-foreground divide-y divide-gray-100">
                 {businessProfile.businessName && (
-                  <li>Nombre: <span className="text-foreground">{businessProfile.businessName}</span></li>
+                  <div className="pb-2">
+                    <div className="font-medium text-foreground">Nombre</div>
+                    <div>{businessProfile.businessName}</div>
+                  </div>
                 )}
                 {businessProfile.businessCategory && (
-                  <li>Categoría: <span className="text-foreground">{businessProfile.businessCategory}</span></li>
+                  <div className="py-2">
+                    <div className="font-medium text-foreground">Categoría</div>
+                    <div>{businessProfile.businessCategory}</div>
+                  </div>
                 )}
                 {businessProfile.businessRating !== undefined && (
-                  <li>Valoración: <span className="text-foreground">{businessProfile.businessRating}/5 ({businessProfile.businessReviewsCount} reseñas)</span></li>
+                  <div className="py-2">
+                    <div className="font-medium text-foreground">Valoración</div>
+                    <div className="flex items-center">
+                      <div className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium mr-2">
+                        {businessProfile.businessRating.toFixed(1)}
+                      </div>
+                      {businessProfile.businessReviewsCount !== undefined && (
+                        <span>
+                          {businessProfile.businessReviewsCount} reseñas
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {businessProfile.businessAddress && (
-                  <li>Dirección: <span className="text-foreground">{businessProfile.businessAddress}</span></li>
+                  <div className="py-2">
+                    <div className="font-medium text-foreground flex items-center">
+                      <MapPin className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 
+                      Dirección
+                    </div>
+                    <div>{businessProfile.businessAddress}</div>
+                  </div>
                 )}
-              </ul>
+                {businessProfile.businessPhone && (
+                  <div className="py-2">
+                    <div className="font-medium text-foreground flex items-center">
+                      <Phone className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 
+                      Teléfono
+                    </div>
+                    <div>{businessProfile.businessPhone}</div>
+                  </div>
+                )}
+                {businessProfile.businessWebsite && (
+                  <div className="py-2">
+                    <div className="font-medium text-foreground flex items-center">
+                      <Link2 className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 
+                      Sitio web
+                    </div>
+                    <div>
+                      <a 
+                        href={businessProfile.businessWebsite} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-primary hover:underline"
+                      >
+                        {businessProfile.businessWebsite.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {businessProfile.businessHours && Object.keys(businessProfile.businessHours).length > 0 && (
+                  <div className="py-2">
+                    <div className="font-medium text-foreground flex items-center">
+                      <Clock className="h-3.5 w-3.5 mr-1 text-muted-foreground" /> 
+                      Horario
+                    </div>
+                    <div className="text-xs space-y-1 mt-1">
+                      {Object.entries(businessProfile.businessHours).map(([day, hours]) => (
+                        <div key={day} className="flex justify-between">
+                          <span className="font-medium">{day}</span>
+                          <span>{hours}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               {(hasError || isSimulated) && (
-                <p className="mt-2 text-xs text-amber-600">
+                <p className="mt-3 text-xs text-amber-600">
                   Nota: Se están utilizando datos simulados. Para obtener datos reales, asegúrate de proporcionar una URL válida de Google Business.
                 </p>
               )}

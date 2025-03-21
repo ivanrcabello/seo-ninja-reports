@@ -50,10 +50,11 @@ export const extractBusinessInfo = async (
       description: error.message || 'No se pudo procesar la URL proporcionada',
     });
     
-    // En caso de error, devolver datos simulados
-    toast.warning('Se muestran datos simulados', {
-      description: 'Debido al error, se están mostrando datos de ejemplo'
+    // En caso de error, devolver null en lugar de datos simulados
+    // para que los componentes puedan gestionarlo adecuadamente
+    toast.warning('Error en la extracción', {
+      description: 'No se pudieron obtener datos del perfil de GMB'
     });
-    return simulateBusinessProfileData(businessUrl);
+    return null;
   }
 };
