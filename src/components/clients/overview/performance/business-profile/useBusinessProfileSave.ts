@@ -18,6 +18,77 @@ export const useBusinessProfileSave = (clientId?: string) => {
     setIsSaving(true);
 
     try {
+      // Save to Google Business Listings table
+      await saveToBusinessListings(clientId, displayProfile);
+      
+      // Save to report
+      await saveToReport(clientId, displayProfile);
+      
+      toast.success('Perfil de negocio guardado correctamente');
+      
+      // Store last saved profile in localStorage for backup
+      try {
+        localStorage.setItem('last_saved_business_profile', JSON.stringify({
+          profile: displayProfile,
+          clientId: clientId,
+          timestamp: new Date().toISOString()
+        }));
+      } catch (e) {
+        console.warn('Could not store profile backup in localStorage:', e);
+      }
+    } catch (error) {
+      console.error('Error saving business profile:', error);
+      toast.error('Error al guardar el perfil de negocio');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  const saveToBusinessListings = async (clientId: string, profile: Partial<BusinessProfile>) => {
+    try {
+      // Extract place_id from businessUrl if available
+      let placeId = null;
+      if (profile.businessUrl) {
+        const match = profile.businessUrl.match(/place_id:([^&]+)/);
+        if (match && match[1]) {
+          placeId = match[1];
+        }
+      }
+      
+      // Format data for google_business_listings table
+      const listingData = {
+        client_id: clientId,
+        title: profile.businessName || 'Sin nombre',
+        address: profile.businessAddress || '',
+        phone: profile.businessPhone || '',
+        rating: profile.businessRating || null,
+        reviews: profile.businessReviewsCount || 0,
+        hours: typeof profile.businessHours === 'object' ? 
+          JSON.stringify(profile.businessHours) : (profile.businessHours || ''),
+        website: profile.businessWebsite || '',
+        place_id: placeId
+      };
+      
+      // Save to the database
+      const { data, error } = await supabase
+        .from('google_business_listings')
+        .insert(listingData)
+        .select();
+        
+      if (error) {
+        throw new Error(`Error saving to business listings: ${error.message}`);
+      }
+      
+      console.log('Saved to google_business_listings:', data);
+      return data;
+    } catch (error) {
+      console.error('Error in saveToBusinessListings:', error);
+      throw error;
+    }
+  };
+  
+  const saveToReport = async (clientId: string, profile: Partial<BusinessProfile>) => {
+    try {
       const { data: reports, error: reportsError } = await supabase
         .from('reports')
         .select('id')
@@ -27,31 +98,29 @@ export const useBusinessProfileSave = (clientId?: string) => {
 
       if (reportsError) {
         console.error('Error fetching latest report:', reportsError);
-        toast.error('Error al obtener el informe más reciente');
-        return;
+        throw new Error(`Error fetching latest report: ${reportsError.message}`);
       }
 
       if (!reports || reports.length === 0) {
-        toast.error('No hay informes disponibles para guardar el perfil');
-        return;
+        throw new Error('No hay informes disponibles para guardar el perfil');
       }
 
       const latestReportId = reports[0].id;
       
       // Ensure all required fields have fallback values
       const profileToSave = {
-        businessUrl: displayProfile.businessUrl || '',
-        businessName: displayProfile.businessName || 'Sin nombre',
-        businessAddress: displayProfile.businessAddress || '',
-        businessPhone: displayProfile.businessPhone || '',
-        businessCategory: displayProfile.businessCategory || '',
-        businessRating: displayProfile.businessRating !== undefined ? displayProfile.businessRating : null,
-        businessReviewsCount: displayProfile.businessReviewsCount || 0,
-        businessWebsite: displayProfile.businessWebsite || '',
-        businessHours: displayProfile.businessHours || {}
+        businessUrl: profile.businessUrl || '',
+        businessName: profile.businessName || 'Sin nombre',
+        businessAddress: profile.businessAddress || '',
+        businessPhone: profile.businessPhone || '',
+        businessCategory: profile.businessCategory || '',
+        businessRating: profile.businessRating !== undefined ? profile.businessRating : null,
+        businessReviewsCount: profile.businessReviewsCount || 0,
+        businessWebsite: profile.businessWebsite || '',
+        businessHours: profile.businessHours || {}
       };
       
-      console.log('Saving business profile data:', profileToSave);
+      console.log('Saving business profile data to report:', profileToSave);
       
       const savedProfile = await saveBusinessProfile(latestReportId, profileToSave);
       
@@ -68,26 +137,13 @@ export const useBusinessProfileSave = (clientId?: string) => {
           console.error('Error updating has_business_profile flag:', updateError);
         }
         
-        toast.success('Perfil de negocio guardado correctamente');
-        
-        // Store last saved profile in localStorage for backup
-        try {
-          localStorage.setItem('last_saved_business_profile', JSON.stringify({
-            profile: profileToSave,
-            reportId: latestReportId,
-            timestamp: new Date().toISOString()
-          }));
-        } catch (e) {
-          console.warn('Could not store profile backup in localStorage:', e);
-        }
+        return savedProfile;
       } else {
-        toast.error('Error al guardar el perfil de negocio');
+        throw new Error('Error al guardar el perfil de negocio en el informe');
       }
     } catch (error) {
-      console.error('Error saving business profile:', error);
-      toast.error('Error al guardar el perfil de negocio');
-    } finally {
-      setIsSaving(false);
+      console.error('Error in saveToReport:', error);
+      throw error;
     }
   };
 

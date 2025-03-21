@@ -191,6 +191,59 @@ export type Database = {
         }
         Relationships: []
       }
+      google_business_listings: {
+        Row: {
+          address: string | null
+          client_id: string | null
+          created_at: string | null
+          hours: string | null
+          id: string
+          phone: string | null
+          place_id: string | null
+          rating: number | null
+          reviews: number | null
+          title: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          hours?: string | null
+          id?: string
+          phone?: string | null
+          place_id?: string | null
+          rating?: number | null
+          reviews?: number | null
+          title: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          hours?: string | null
+          id?: string
+          phone?: string | null
+          place_id?: string | null
+          rating?: number | null
+          reviews?: number | null
+          title?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_business_listings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keywords: {
         Row: {
           created_at: string | null

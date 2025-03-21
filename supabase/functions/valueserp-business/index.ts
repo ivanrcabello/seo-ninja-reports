@@ -72,115 +72,50 @@ Deno.serve(async (req) => {
       const data = await response.json();
       console.log('ValueSerp API response received');
       
-      // Log full response for debugging
-      console.log('Full ValueSerp response:', JSON.stringify(data));
+      // Check if local_results is available and has entries
+      if (data.local_results && data.local_results.results && data.local_results.results.length > 0) {
+        const localResults = data.local_results.results;
+        console.log(`Found ${localResults.length} local results`);
+        
+        // Return the full local_results array as requested
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            local_results: localResults,
+            // Also include the first result in the businessProfile format for backward compatibility
+            data: mapToBusinessProfile(localResults[0])
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
-      // First try to extract from knowledge_graph if available
+      // If knowledge_graph is available, use that
       if (data.knowledge_graph) {
-        console.log('Knowledge graph found in response');
+        console.log('Knowledge graph found, but no local results');
         const kg = data.knowledge_graph;
         
-        const businessData = {
-          businessName: kg.title || '',
-          businessUrl: kg.website || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
-          businessHours: extractHoursFromKnowledgeGraph(kg),
-          businessAddress: kg.address || '',
-          businessCategory: kg.type || '',
-          businessPhone: kg.phone || '',
-          businessWebsite: kg.website || '',
-          businessRating: kg.rating ? parseFloat(kg.rating) : null,
-          businessReviewsCount: kg.reviews !== undefined 
-            ? parseInt(kg.reviews.replace(/[^0-9]/g, ''), 10) 
-            : 0
-        };
+        const businessData = mapKnowledgeGraphToBusinessProfile(kg);
         
-        console.log(`Business profile data extracted from knowledge graph:`, businessData);
         return new Response(
           JSON.stringify({ 
             success: true, 
             data: businessData,
-            source: 'knowledge_graph',
-            raw_data: kg // Include raw data for debugging and additional fields
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Then try local_results if available
-      if (data.local_results && data.local_results.results && data.local_results.results.length > 0) {
-        console.log('Local results found:', data.local_results.results.length);
-        const business = data.local_results.results[0];
-        
-        const businessData = {
-          businessName: business.title || '',
-          businessUrl: business.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
-          businessHours: business.hours || {}, 
-          businessAddress: business.address || '',
-          businessCategory: business.type || '',
-          businessPhone: business.phone || '',
-          businessWebsite: business.website || '',
-          businessRating: business.rating !== undefined ? parseFloat(business.rating) : null,
-          businessReviewsCount: business.reviews !== undefined 
-            ? parseInt(business.reviews.replace(/[^0-9]/g, ''), 10) 
-            : 0
-        };
-        
-        console.log(`Business profile data extracted from local results:`, businessData);
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            data: businessData,
-            source: 'local_results',
-            raw_data: business // Include raw data for debugging and additional fields
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Finally try organic_results if available
-      if (data.organic_results && data.organic_results.length > 0) {
-        console.log('Organic results found:', data.organic_results.length);
-        
-        // Find a result that seems business-like (has a rich snippet or sitelinks)
-        const potentialBusiness = data.organic_results.find(
-          r => r.rich_snippet || r.sitelinks || (r.title && r.title.includes(query))
-        ) || data.organic_results[0];
-        
-        const businessData = {
-          businessName: potentialBusiness.title || query,
-          businessUrl: potentialBusiness.link || `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-          businessHours: {}, 
-          businessAddress: potentialBusiness.rich_snippet?.top?.detected_extensions?.address || '',
-          businessCategory: potentialBusiness.rich_snippet?.top?.extensions?.find((ext: string) => !ext.includes('://')) || '',
-          businessPhone: potentialBusiness.rich_snippet?.top?.detected_extensions?.phone || '',
-          businessWebsite: potentialBusiness.link || '',
-          businessRating: potentialBusiness.rich_snippet?.top?.detected_extensions?.rating || null,
-          businessReviewsCount: potentialBusiness.rich_snippet?.top?.detected_extensions?.reviews_count || 0
-        };
-        
-        console.log(`Basic business data extracted from organic results:`, businessData);
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            data: businessData,
-            source: 'organic_results',
-            raw_data: potentialBusiness // Include raw data
+            knowledge_graph: kg
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       // No usable business data found
-      console.error('No business data found in ValueSerp response');
-      console.log('Response structure:', JSON.stringify(Object.keys(data)));
+      console.log('No business data found in ValueSerp response');
       
-      // Return raw data with the fallback for future analysis
+      // Return fallback data
       return new Response(
         JSON.stringify({ 
           success: false,
           error: 'No business data found in ValueSerp response',
           data: getFallbackData(query),
-          raw_response: data // Include the raw response for debugging
+          raw_response: data
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -210,6 +145,42 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Map local result to BusinessProfile format
+function mapToBusinessProfile(localResult: any) {
+  if (!localResult) return getFallbackData('');
+  
+  return {
+    businessName: localResult.title || '',
+    businessUrl: localResult.link || '',
+    businessHours: typeof localResult.hours === 'string' ? { 'Hours': localResult.hours } : {}, 
+    businessAddress: localResult.address || '',
+    businessCategory: localResult.type || '',
+    businessPhone: localResult.phone || '',
+    businessWebsite: localResult.website || '',
+    businessRating: localResult.rating !== undefined ? parseFloat(localResult.rating) : null,
+    businessReviewsCount: localResult.reviews !== undefined 
+      ? parseInt(localResult.reviews.toString().replace(/[^0-9]/g, ''), 10) 
+      : 0
+  };
+}
+
+// Map knowledge graph to BusinessProfile format
+function mapKnowledgeGraphToBusinessProfile(kg: any) {
+  return {
+    businessName: kg.title || '',
+    businessUrl: kg.website || '',
+    businessHours: extractHoursFromKnowledgeGraph(kg),
+    businessAddress: kg.address || '',
+    businessCategory: kg.type || '',
+    businessPhone: kg.phone || '',
+    businessWebsite: kg.website || '',
+    businessRating: kg.rating ? parseFloat(kg.rating) : null,
+    businessReviewsCount: kg.reviews !== undefined 
+      ? parseInt(kg.reviews.toString().replace(/[^0-9]/g, ''), 10) 
+      : 0
+  };
+}
 
 // Helper function to extract hours from knowledge graph
 function extractHoursFromKnowledgeGraph(kg: any): Record<string, string> {
