@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
@@ -54,6 +53,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
         // Use ValueSerp with the client name or domain as the query
         const query = extractDomainFromUrl(clientWebsite);
         console.log(`Using clientId: ${clientId} for ValueSerp query`);
+        // Fix: Remove the second parameter that's causing the error
         profileData = await extractBusinessInfoWithValueSerp(query, clientId);
       } catch (valueSerpError) {
         console.error('Error extracting with ValueSerp:', valueSerpError);

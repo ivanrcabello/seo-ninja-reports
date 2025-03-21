@@ -40,8 +40,8 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   useEffect(() => {
     if (businessProfile && !isSimulatedData(businessProfile)) {
       // Only update from props if it's not simulated data
-      setDisplayProfile(businessProfile);
       console.log("Received non-simulated business profile from props:", businessProfile);
+      setDisplayProfile(businessProfile);
     }
   }, [businessProfile]);
   
@@ -78,6 +78,7 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
           return;
         }
         
+        // Create a proper business profile from the listing data
         const profile: Partial<BusinessProfile> = {
           businessName: listing.title,
           businessAddress: listing.address,
@@ -89,8 +90,16 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
           businessUrl: listing.place_id ? `https://www.google.com/maps/place/?q=place_id:${listing.place_id}` : undefined
         };
         
-        setDisplayProfile(profile);
-        console.log("Loaded real business profile from database:", profile);
+        // Set the display profile only if we have real data
+        if (profile.businessName && !isSimulatedData(profile)) {
+          setDisplayProfile(profile);
+          console.log("Loaded real business profile from database:", profile);
+          
+          // Show a toast to let the user know we loaded real data
+          toast.success('Datos de perfil de negocio cargados', {
+            description: 'Se han cargado datos reales desde la base de datos'
+          });
+        }
       } else {
         console.log("No business listings found in database");
       }
@@ -117,7 +126,13 @@ const BusinessProfileCardContent: React.FC<BusinessProfileCardContentProps> = ({
   };
 
   const handleSaveBusinessProfile = () => {
-    saveBusinessProfileData(displayProfile);
+    if (displayProfile && !isSimulated) {
+      saveBusinessProfileData(displayProfile);
+    } else {
+      toast.error('No se pueden guardar datos simulados', {
+        description: 'Actualice los datos primero mediante el botón "Actualizar datos"'
+      });
+    }
   };
 
   // Handle refresh explicitly

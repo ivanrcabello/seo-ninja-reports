@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
@@ -105,6 +106,53 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     }
   };
 
+  const testConnection = async () => {
+    if (!inputKey || inputKey.length < 5) {
+      toast.error('Primero debe guardar una API key válida');
+      return;
+    }
+    
+    setIsSaving(true);
+    toast.info('Probando conexión con ValueSerp...', {
+      description: 'Esto puede tardar unos segundos'
+    });
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('valueserp-business', {
+        body: {
+          query: 'Google',
+          apiKey: inputKey,
+          test: true
+        }
+      });
+      
+      if (error) {
+        console.error('Error testing ValueSerp connection:', error);
+        toast.error('Error de conexión con ValueSerp', {
+          description: error.message
+        });
+        return;
+      }
+      
+      if (data && data.success) {
+        toast.success('Conexión con ValueSerp establecida correctamente', {
+          description: 'La API key es válida y funciona correctamente'
+        });
+      } else {
+        toast.error('Error de conexión con ValueSerp', {
+          description: data?.error || 'La API no devolvió una respuesta válida'
+        });
+      }
+    } catch (err: any) {
+      console.error('Exception testing ValueSerp connection:', err);
+      toast.error('Error al probar la API key', {
+        description: err.message || 'Error inesperado'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -142,6 +190,13 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               disabled={isSaving || inputKey === valueSerpApiKey}
             >
               Guardar
+            </Button>
+            <Button 
+              onClick={testConnection}
+              variant="outline"
+              disabled={isSaving}
+            >
+              Probar
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">

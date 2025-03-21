@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query, apiKey, clientId } = await req.json();
+    const { query, apiKey, clientId, test = false } = await req.json();
     
     if (!query) {
       console.error('Query not provided in request');
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Processing ValueSerp request for query: "${query}", clientId: ${clientId || 'not provided'}`);
+    console.log(`Processing ValueSerp request for query: "${query}", clientId: ${clientId || 'not provided'}, test: ${test}`);
     
     // Use API key from request if provided, otherwise use env var
     const valueSerp_API_KEY = apiKey || ENV_API_KEY;
@@ -39,6 +39,14 @@ Deno.serve(async (req) => {
           data: getFallbackData(query)
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    // For test connections, just return success
+    if (test) {
+      return new Response(
+        JSON.stringify({ success: true, message: 'API key is valid' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -84,44 +92,49 @@ Deno.serve(async (req) => {
         if (clientId && SUPABASE_URL && SUPABASE_ANON_KEY) {
           const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
           
-          for (const result of localResults) {
-            // Skip saving if the result doesn't have a title
-            if (!result.title) continue;
+          try {
+            // First, find existing listing for this client
+            const { data: existingData, error: checkError } = await supabase
+              .from('google_business_listings')
+              .select('id')
+              .eq('client_id', clientId)
+              .maybeSingle();
+              
+            if (checkError) {
+              console.error('Error checking existing listings:', checkError);
+            }
             
-            try {
-              const { data: existingData, error: checkError } = await supabase
-                .from('google_business_listings')
-                .select('id')
-                .eq('client_id', clientId)
-                .eq('title', result.title)
-                .maybeSingle();
-              
-              if (checkError) {
-                console.error('Error checking existing data:', checkError);
-              }
-              
+            // Get the first result which is typically the most relevant
+            const firstResult = localResults[0];
+            
+            if (!firstResult || !firstResult.title) {
+              console.error('No valid local results found');
+            } else {
               const listingData = {
                 client_id: clientId,
-                title: result.title,
-                address: result.address || '',
-                phone: result.phone || '',
-                rating: result.rating ? parseFloat(result.rating) : null,
-                reviews: result.reviews ? parseInt(result.reviews.toString().replace(/[^0-9]/g, ''), 10) : null,
-                hours: result.hours || '',
-                website: result.website || '',
-                place_id: result.data_cid || result.place_id || '',
+                title: firstResult.title,
+                address: firstResult.address || '',
+                phone: firstResult.phone || '',
+                rating: firstResult.rating ? parseFloat(firstResult.rating) : null,
+                reviews: firstResult.reviews ? parseInt(firstResult.reviews.toString().replace(/[^0-9]/g, ''), 10) : null,
+                hours: firstResult.hours || '',
+                website: firstResult.website || '',
+                place_id: firstResult.data_cid || firstResult.place_id || '',
                 updated_at: new Date().toISOString()
               };
               
               let dbResult;
+              
               if (existingData?.id) {
                 // Update existing record
+                console.log(`Updating existing listing with id ${existingData.id}`);
                 dbResult = await supabase
                   .from('google_business_listings')
                   .update(listingData)
                   .eq('id', existingData.id);
               } else {
                 // Insert new record
+                console.log('Inserting new listing record');
                 dbResult = await supabase
                   .from('google_business_listings')
                   .insert(listingData);
@@ -130,17 +143,17 @@ Deno.serve(async (req) => {
               if (dbResult.error) {
                 console.error('Error saving to database:', dbResult.error);
               } else {
-                console.log('Saved to database:', result.title);
+                console.log('Successfully saved business listing to database');
               }
-            } catch (dbError) {
-              console.error('Error saving to database:', dbError);
             }
+          } catch (dbError) {
+            console.error('Database operation error:', dbError);
           }
         } else {
-          console.log('Not saving to database: clientId, SUPABASE_URL, or SUPABASE_ANON_KEY missing');
+          console.log('Not saving to database: clientId or Supabase credentials missing');
         }
         
-        // Return the full local_results array and the first result in the businessProfile format for backward compatibility
+        // Return the local_results array and the first result in the businessProfile format
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -158,6 +171,62 @@ Deno.serve(async (req) => {
         const kg = data.knowledge_graph;
         
         const businessData = mapKnowledgeGraphToBusinessProfile(kg);
+        
+        // Save to database if clientId is provided
+        if (clientId && SUPABASE_URL && SUPABASE_ANON_KEY && businessData.businessName) {
+          const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          
+          try {
+            // Find existing listing for this client
+            const { data: existingData, error: checkError } = await supabase
+              .from('google_business_listings')
+              .select('id')
+              .eq('client_id', clientId)
+              .maybeSingle();
+              
+            if (checkError) {
+              console.error('Error checking existing listings:', checkError);
+            }
+            
+            const listingData = {
+              client_id: clientId,
+              title: businessData.businessName,
+              address: businessData.businessAddress || '',
+              phone: businessData.businessPhone || '',
+              rating: businessData.businessRating,
+              reviews: businessData.businessReviewsCount,
+              hours: typeof businessData.businessHours === 'object' ? JSON.stringify(businessData.businessHours) : '',
+              website: businessData.businessWebsite || '',
+              place_id: '',
+              updated_at: new Date().toISOString()
+            };
+              
+            let dbResult;
+              
+            if (existingData?.id) {
+              // Update existing record
+              console.log(`Updating existing listing with id ${existingData.id}`);
+              dbResult = await supabase
+                .from('google_business_listings')
+                .update(listingData)
+                .eq('id', existingData.id);
+            } else {
+              // Insert new record
+              console.log('Inserting new listing record');
+              dbResult = await supabase
+                .from('google_business_listings')
+                .insert(listingData);
+            }
+              
+            if (dbResult.error) {
+              console.error('Error saving to database:', dbResult.error);
+            } else {
+              console.log('Successfully saved knowledge graph data to database');
+            }
+          } catch (dbError) {
+            console.error('Database operation error:', dbError);
+          }
+        }
         
         return new Response(
           JSON.stringify({ 
