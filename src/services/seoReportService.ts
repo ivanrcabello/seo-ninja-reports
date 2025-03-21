@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SeoReport, SeoKeyword, SeoCompetitor } from '@/types/seo-reporting.types';
 import { toast } from 'sonner';
@@ -222,10 +223,10 @@ export const parseSemrushPdf = async (file: File): Promise<{
     console.log('Procesando PDF con pdf-parse...');
     let extractedText = '';
     try {
-      // Fix: Convert Uint8Array to a format that pdf-parse can handle in the browser
-      // pdf-parse expects a Buffer in Node.js but can work with TypedArray in browser
-      const pdfResult = await pdfjs(pdfData.buffer, {
-        // Pass any needed options here
+      // Fix: Use the pdf-parse library in browser-compatible way
+      // We need to handle the ArrayBuffer differently in browser context
+      const pdfResult = await pdfjs(new Uint8Array(arrayBuffer), {
+        // Browser-compatible options
         pagerender: null, // Don't render pages to avoid browser compatibility issues
       });
       
