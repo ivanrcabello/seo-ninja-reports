@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Client } from '@/types/client.types';
 import { Report, BusinessProfile } from '@/types/report.types';
@@ -6,7 +5,6 @@ import { fetchPageSpeedData } from '@/services/api/pagespeed';
 import { toast } from 'sonner';
 import { extractValueserpData } from '@/services/api/businessProfile/extractValueserpData';
 
-// Importing refactored components
 import ClientInfoCards from './overview/ClientInfoCards';
 import ClientPerformanceSection from './overview/ClientPerformanceSection';
 import ClientTabsSection from './overview/ClientTabsSection';
@@ -32,7 +30,6 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
   
   const latestReport = reports.length > 0 ? reports[0] : null;
   
-  // Use the latest report's business profile as initial data if available
   useEffect(() => {
     if (latestReport?.content?.businessProfile && !businessProfile) {
       setBusinessProfile(latestReport.content.businessProfile);
@@ -77,12 +74,10 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
     setIsRefreshingBusinessProfile(true);
     
     try {
-      // Cambio para usar exclusivamente ValueSerp
       toast.info('Consultando API de ValueSerp', {
         description: 'Extrayendo información detallada del negocio...',
       });
       
-      // Usamos el nombre del cliente para buscar con ValueSerp
       const result = await extractValueserpData(client.name, client.industry || '');
       
       if (result) {
@@ -121,23 +116,21 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({
 
   return (
     <>
-      {/* Client Info Cards Section */}
       <ClientInfoCards client={client} reports={reports} />
       
-      {/* Client Performance Cards Section */}
       <ClientPerformanceSection 
         businessProfile={displayBusinessProfile}
         pageSpeedScore={displayPageSpeedScore}
         clientWebsite={client.website}
         clientName={client.name}
         clientLocation={client.industry}
+        clientId={client.id}
         onRefreshPageSpeed={handleRefreshPageSpeed}
         onRefreshBusinessProfile={handleRefreshBusinessProfile}
         isRefreshingPageSpeed={isRefreshingPageSpeed}
         isRefreshingBusinessProfile={isRefreshingBusinessProfile}
       />
       
-      {/* Client Tabs Section */}
       <ClientTabsSection 
         activeTab={activeTab}
         setActiveTab={setActiveTab}

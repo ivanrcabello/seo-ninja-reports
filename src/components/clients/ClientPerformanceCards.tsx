@@ -11,8 +11,9 @@ interface ClientPerformanceCardsProps {
   businessProfile: Partial<BusinessProfile> | null;
   pageSpeedScore?: number | null;
   clientWebsite: string;
-  clientName?: string; // Nuevo prop para el nombre del cliente
-  clientLocation?: string; // Nuevo prop para la ubicación del cliente
+  clientName?: string;
+  clientLocation?: string;
+  clientId?: string; // Add clientId prop
   onRefreshPageSpeed?: () => void;
   onRefreshBusinessProfile?: () => void;
   isRefreshingPageSpeed?: boolean;
@@ -25,6 +26,7 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
   clientWebsite,
   clientName,
   clientLocation,
+  clientId, // Add clientId
   onRefreshPageSpeed = () => {},
   onRefreshBusinessProfile = () => {},
   isRefreshingPageSpeed = false,
@@ -62,6 +64,7 @@ export const ClientPerformanceCards: React.FC<ClientPerformanceCardsProps> = ({
           onRefreshBusinessProfile={onRefreshBusinessProfile}
           clientName={clientName}
           clientLocation={clientLocation}
+          clientId={clientId} // Pass clientId
         />
       </PerformanceCard>
       

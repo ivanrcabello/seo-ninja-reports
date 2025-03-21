@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessProfile } from '@/types/report.types';
@@ -8,17 +7,22 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { RefreshCw } from 'lucide-react';
+import { saveBusinessProfile } from '@/services/api/businessProfile/saveBusinessProfile';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClientBusinessCardProps {
   businessProfile: Partial<BusinessProfile> | null;
   isRefreshingBusinessProfile: boolean;
   onRefreshBusinessProfile: () => void;
+  clientId?: string;
 }
 
 const ClientBusinessCard: React.FC<ClientBusinessCardProps> = ({
   businessProfile,
   isRefreshingBusinessProfile,
-  onRefreshBusinessProfile
+  onRefreshBusinessProfile,
+  clientId
 }) => {
   const hasBusinessData = Boolean(businessProfile?.businessName);
   const isSimulatedData = businessProfile?.businessName === 'Negocio de ejemplo' || 
@@ -28,6 +32,36 @@ const ClientBusinessCard: React.FC<ClientBusinessCardProps> = ({
     if (rating >= 4.5) return "text-green-500";
     if (rating >= 3.5) return "text-amber-500";
     return "text-red-500";
+  };
+
+  const saveBusinessProfileData = async () => {
+    if (!clientId || !businessProfile) {
+      console.error("Cannot save business profile: missing clientId or profile data");
+      return;
+    }
+
+    try {
+      const { data: reports, error: reportsError } = await supabase
+        .from('reports')
+        .select('id')
+        .eq('client_id', clientId)
+        .order('date', { ascending: false })
+        .limit(1);
+
+      if (reportsError) {
+        console.error('Error fetching latest report:', reportsError);
+        return;
+      }
+
+      if (reports && reports.length > 0) {
+        const latestReportId = reports[0].id;
+        
+        await saveBusinessProfile(latestReportId, businessProfile);
+        toast.success('Perfil de negocio guardado correctamente');
+      }
+    } catch (error) {
+      console.error('Error saving business profile:', error);
+    }
   };
   
   return (
@@ -153,6 +187,16 @@ const ClientBusinessCard: React.FC<ClientBusinessCardProps> = ({
                 </p>
               </div>
             )}
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-3" 
+              onClick={saveBusinessProfileData}
+              disabled={isRefreshingBusinessProfile || !hasBusinessData}
+            >
+              Guardar perfil para informe
+            </Button>
           </div>
         ) : (
           <div className="py-4 text-center">

@@ -4,14 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Report, Keyword } from '@/types/report.types';
-import { useKeywords } from '@/hooks/useKeywords';
 import { toast } from 'sonner';
 import { Loader2, Plus, Upload, Download } from 'lucide-react';
 import KeywordForm from '@/components/reports/keywords/KeywordForm';
 import KeywordsList from './KeywordsList';
 import KeywordImport from './KeywordImport';
 import KeywordExport from './KeywordExport';
-import { getClientKeywords } from '@/services/clientKeywordsService';
+import { getClientKeywords, importKeywords } from '@/services/clientKeywordsService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClientKeywordsProps {
   clientId: string;
@@ -19,22 +19,12 @@ interface ClientKeywordsProps {
 }
 
 const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) => {
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [keywordTab, setKeywordTab] = useState<'list' | 'import' | 'export'>('list');
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // If there are reports, use the most recent one
-  useEffect(() => {
-    if (reports && reports.length > 0) {
-      const mostRecentReport = reports.sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      )[0];
-      setSelectedReportId(mostRecentReport.id);
-    }
-  }, [reports]);
-  
-  // Fetch keywords when the selected report changes
+  // Fetch keywords when the client changes
   useEffect(() => {
     const fetchKeywords = async () => {
       if (clientId) {
@@ -54,48 +44,94 @@ const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) =>
     fetchKeywords();
   }, [clientId]);
   
-  // Use the hooks only when selectedReportId is available
-  const { 
-    isSaving, 
-    addKeyword, 
-    removeKeyword 
-  } = useKeywords(selectedReportId || '');
-  
-  const handleReportChange = (reportId: string) => {
-    setSelectedReportId(reportId);
-  };
-  
   const handleAddKeyword = async (keyword: string, searchVolume: string, difficulty: string) => {
-    if (!selectedReportId) {
-      toast.error('Debe seleccionar un informe primero');
+    if (!clientId) {
+      toast.error('No se puede identificar el cliente');
       return false;
     }
     
     try {
-      const newKeyword = await addKeyword(keyword, searchVolume, difficulty);
-      if (newKeyword) {
-        // Add new keyword to the local state
-        setKeywords(prevKeywords => [newKeyword, ...prevKeywords]);
-        toast.success('Palabra clave añadida con éxito');
-        return true;
+      setIsSaving(true);
+      
+      // Get latest report ID for this client
+      const { data: latestReports, error: reportError } = await supabase
+        .from('reports')
+        .select('id')
+        .eq('client_id', clientId)
+        .order('date', { ascending: false })
+        .limit(1);
+        
+      if (reportError) {
+        throw reportError;
       }
-      return false;
+      
+      if (!latestReports || latestReports.length === 0) {
+        toast.error('Este cliente no tiene informes. Crea un informe primero.');
+        return false;
+      }
+      
+      const reportId = latestReports[0].id;
+      
+      // Insert the keyword
+      const { data, error } = await supabase
+        .from('keywords')
+        .insert({
+          report_id: reportId,
+          keyword: keyword.trim(),
+          search_volume: searchVolume ? parseInt(searchVolume) : null,
+          difficulty: difficulty ? parseInt(difficulty) : null
+        })
+        .select()
+        .single();
+        
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Esta palabra clave ya existe para este cliente');
+        } else {
+          throw error;
+        }
+        return false;
+      }
+      
+      // Create the new keyword object
+      const newKeyword: Keyword = {
+        id: data.id,
+        reportId: data.report_id,
+        keyword: data.keyword,
+        searchVolume: data.search_volume,
+        difficulty: data.difficulty,
+        createdAt: data.created_at
+      };
+      
+      // Update local state
+      setKeywords(prevKeywords => [newKeyword, ...prevKeywords]);
+      
+      toast.success('Palabra clave añadida con éxito');
+      return true;
     } catch (error) {
       console.error('Error adding keyword:', error);
       toast.error('Error al añadir palabra clave');
       return false;
+    } finally {
+      setIsSaving(false);
     }
   };
   
   const handleRemoveKeyword = async (keywordId: string) => {
     try {
-      const success = await removeKeyword(keywordId);
-      if (success) {
-        // Remove keyword from local state
-        setKeywords(prevKeywords => prevKeywords.filter(k => k.id !== keywordId));
-        toast.success('Palabra clave eliminada');
+      const { error } = await supabase
+        .from('keywords')
+        .delete()
+        .eq('id', keywordId);
+        
+      if (error) {
+        throw error;
       }
-      return success;
+      
+      // Remove keyword from local state
+      setKeywords(prevKeywords => prevKeywords.filter(k => k.id !== keywordId));
+      toast.success('Palabra clave eliminada');
+      return true;
     } catch (error) {
       console.error('Error removing keyword:', error);
       toast.error('Error al eliminar palabra clave');
@@ -103,38 +139,50 @@ const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) =>
     }
   };
   
-  const handleImportKeywords = async (keywords: Omit<Keyword, 'id' | 'reportId' | 'createdAt'>[]) => {
-    if (!selectedReportId) {
-      toast.error('Debe seleccionar un informe primero');
+  const handleImportKeywords = async (keywordsToImport: Omit<Keyword, 'id' | 'reportId' | 'createdAt'>[]) => {
+    if (!clientId) {
+      toast.error('No se puede identificar el cliente');
       return false;
     }
     
-    let successful = 0;
-    const newKeywords: Keyword[] = [];
-    
-    for (const kw of keywords) {
-      try {
-        const newKeyword = await addKeyword(
-          kw.keyword, 
-          kw.searchVolume ? kw.searchVolume.toString() : '', 
-          kw.difficulty ? kw.difficulty.toString() : ''
-        );
-        if (newKeyword) {
-          successful++;
-          newKeywords.push(newKeyword);
-        }
-      } catch (error) {
-        console.error(`Error importing keyword ${kw.keyword}:`, error);
+    try {
+      setIsSaving(true);
+      
+      // Get latest report ID for this client
+      const { data: latestReports, error: reportError } = await supabase
+        .from('reports')
+        .select('id')
+        .eq('client_id', clientId)
+        .order('date', { ascending: false })
+        .limit(1);
+        
+      if (reportError) {
+        throw reportError;
       }
+      
+      if (!latestReports || latestReports.length === 0) {
+        toast.error('Este cliente no tiene informes. Crea un informe primero.');
+        return false;
+      }
+      
+      const reportId = latestReports[0].id;
+      
+      // Import keywords using the service
+      const successCount = await importKeywords(reportId, keywordsToImport);
+      
+      // Refresh keywords list
+      const updatedKeywords = await getClientKeywords(clientId);
+      setKeywords(updatedKeywords);
+      
+      toast.success(`Importadas ${successCount} de ${keywordsToImport.length} palabras clave`);
+      return true;
+    } catch (error) {
+      console.error('Error importing keywords:', error);
+      toast.error('Error al importar palabras clave');
+      return false;
+    } finally {
+      setIsSaving(false);
     }
-    
-    // Update the local state with all new keywords
-    if (newKeywords.length > 0) {
-      setKeywords(prevKeywords => [...newKeywords, ...prevKeywords]);
-    }
-    
-    toast.success(`Importadas ${successful} de ${keywords.length} palabras clave`);
-    return true;
   };
   
   return (
@@ -159,24 +207,7 @@ const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) =>
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Seleccionar informe
-                  </label>
-                  <select 
-                    className="w-full p-2 border rounded-md bg-background"
-                    value={selectedReportId || ''}
-                    onChange={(e) => handleReportChange(e.target.value)}
-                  >
-                    {reports.map(report => (
-                      <option key={report.id} value={report.id}>
-                        {report.title} ({new Date(report.date).toLocaleDateString()})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
+              <div className="flex flex-col sm:flex-row sm:justify-end sm:items-center gap-4">
                 <div className="flex gap-2">
                   <Button 
                     variant={keywordTab === 'list' ? "default" : "outline"}

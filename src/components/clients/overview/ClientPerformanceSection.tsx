@@ -1,14 +1,15 @@
 
 import React from 'react';
 import { BusinessProfile } from '@/types/report.types';
-import { ClientPerformanceCards } from '../ClientPerformanceCards';
+import ClientPerformanceCards from '../ClientPerformanceCards';
 
 interface ClientPerformanceSectionProps {
   businessProfile: Partial<BusinessProfile> | null;
-  pageSpeedScore: number | null;
+  pageSpeedScore: number | null | undefined;
   clientWebsite: string;
-  clientName?: string; // Nuevo prop para el nombre del cliente
-  clientLocation?: string; // Nuevo prop para la ubicación del cliente
+  clientName?: string;
+  clientLocation?: string;
+  clientId?: string; // Add clientId prop
   onRefreshPageSpeed: () => void;
   onRefreshBusinessProfile: () => void;
   isRefreshingPageSpeed: boolean;
@@ -21,23 +22,27 @@ const ClientPerformanceSection: React.FC<ClientPerformanceSectionProps> = ({
   clientWebsite,
   clientName,
   clientLocation,
+  clientId, // Add clientId
   onRefreshPageSpeed,
   onRefreshBusinessProfile,
   isRefreshingPageSpeed,
   isRefreshingBusinessProfile
 }) => {
   return (
-    <ClientPerformanceCards
-      businessProfile={businessProfile}
-      pageSpeedScore={pageSpeedScore}
-      clientWebsite={clientWebsite}
-      clientName={clientName}
-      clientLocation={clientLocation}
-      onRefreshPageSpeed={onRefreshPageSpeed}
-      onRefreshBusinessProfile={onRefreshBusinessProfile}
-      isRefreshingPageSpeed={isRefreshingPageSpeed}
-      isRefreshingBusinessProfile={isRefreshingBusinessProfile}
-    />
+    <section>
+      <ClientPerformanceCards
+        businessProfile={businessProfile}
+        pageSpeedScore={pageSpeedScore}
+        clientWebsite={clientWebsite}
+        clientName={clientName}
+        clientLocation={clientLocation}
+        clientId={clientId} // Pass clientId
+        onRefreshPageSpeed={onRefreshPageSpeed}
+        onRefreshBusinessProfile={onRefreshBusinessProfile}
+        isRefreshingPageSpeed={isRefreshingPageSpeed}
+        isRefreshingBusinessProfile={isRefreshingBusinessProfile}
+      />
+    </section>
   );
 };
 
