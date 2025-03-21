@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
@@ -33,6 +32,20 @@ export const saveBusinessProfile = async (
     
     let result;
     
+    // Ensure business_hours is properly formatted for the database
+    let formattedBusinessHours;
+    if (businessProfile.businessHours) {
+      // If businessHours is already a string, use it directly
+      if (typeof businessProfile.businessHours === 'string') {
+        formattedBusinessHours = businessProfile.businessHours;
+      } else {
+        // Otherwise, stringify the object
+        formattedBusinessHours = JSON.stringify(businessProfile.businessHours);
+      }
+    } else {
+      formattedBusinessHours = null;
+    }
+    
     // Transformar el objeto a formato de base de datos
     const dbData = {
       report_id: reportId,
@@ -44,7 +57,7 @@ export const saveBusinessProfile = async (
       business_rating: businessProfile.businessRating,
       business_reviews_count: businessProfile.businessReviewsCount,
       business_website: businessProfile.businessWebsite,
-      business_hours: businessProfile.businessHours ? JSON.stringify(businessProfile.businessHours) : null,
+      business_hours: formattedBusinessHours,
       updated_at: new Date().toISOString()
     };
     

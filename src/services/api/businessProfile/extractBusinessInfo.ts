@@ -86,29 +86,33 @@ export const extractBusinessInfo = async (
     }
     
     // Intentar obtener datos reales a través de la función de extracción
-    const profileData = await extractGmbData(businessUrl, true);
-    
-    // Verificar si se obtuvieron datos significativos y si son reales (no simulados)
-    if (profileData && 
-        (profileData.businessName || profileData.businessAddress) && 
-        profileData.businessName !== 'Negocio de ejemplo') {
+    try {
+      const profileData = await extractGmbData(businessUrl, true);
       
-      console.log('Successfully extracted business profile data:', profileData);
-      
-      // Verificar si el perfil tiene datos completos o parciales
-      const isPartialData = !profileData.businessRating || !profileData.businessPhone || !profileData.businessWebsite;
-      
-      if (isPartialData) {
-        toast.warning('Datos incompletos', {
-          description: 'Se obtuvieron algunos datos del perfil, pero no está completo'
-        });
-      } else {
-        toast.success('Información extraída correctamente', {
-          description: 'Se ha obtenido información completa del perfil de negocio',
-        });
+      // Verificar si se obtuvieron datos significativos y si son reales (no simulados)
+      if (profileData && 
+          (profileData.businessName || profileData.businessAddress) && 
+          profileData.businessName !== 'Negocio de ejemplo') {
+        
+        console.log('Successfully extracted business profile data:', profileData);
+        
+        // Verificar si el perfil tiene datos completos o parciales
+        const isPartialData = !profileData.businessRating || !profileData.businessPhone || !profileData.businessWebsite;
+        
+        if (isPartialData) {
+          toast.warning('Datos incompletos', {
+            description: 'Se obtuvieron algunos datos del perfil, pero no está completo'
+          });
+        } else {
+          toast.success('Información extraída correctamente', {
+            description: 'Se ha obtenido información completa del perfil de negocio',
+          });
+        }
+        
+        return profileData;
       }
-      
-      return profileData;
+    } catch (extractError) {
+      console.error('Error during GMB data extraction:', extractError);
     }
     
     // Si llegamos aquí, no se obtuvieron datos significativos o son simulados

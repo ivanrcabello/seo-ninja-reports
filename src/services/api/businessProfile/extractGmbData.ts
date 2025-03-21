@@ -48,6 +48,7 @@ export const extractGmbData = async (
                 : cachedProfile.business_hours as Record<string, string>;
             } catch (parseError) {
               console.error('Error parsing business hours:', parseError);
+              // Continue with empty business hours
             }
           }
           
@@ -69,8 +70,6 @@ export const extractGmbData = async (
       }
       
       // If we reach here, we couldn't find a cached profile
-      // Aquí en un futuro podríamos implementar una función que busque
-      // perfiles GMB basados en el dominio del sitio web
       // Por ahora, usamos datos simulados
       const mockData = simulateBusinessProfileData(urlOrWebsite);
       
@@ -124,6 +123,7 @@ export const extractGmbData = async (
                 : cachedProfile.business_hours as Record<string, string>;
             } catch (parseError) {
               console.error('Error parsing business hours:', parseError);
+              // Continue with empty business hours
             }
           }
           
@@ -170,10 +170,17 @@ export const extractGmbData = async (
         });
         
         if (fnError) {
+          console.error(`Error invoking edge function: ${fnError.message}`);
           throw new Error(`Error en la función edge: ${fnError.message}`);
         }
         
+        if (!data) {
+          console.error('Edge function returned no data');
+          throw new Error('La función edge no devolvió datos');
+        }
+        
         if (!data.success) {
+          console.error('Edge function reported failure:', data.error);
           throw new Error(data.error || 'Error desconocido en la extracción de datos');
         }
         
@@ -214,8 +221,14 @@ export const extractGmbData = async (
       description: error?.message || 'No se pudo extraer información del perfil',
     });
     
-    // Devolver null en lugar de datos simulados para que el componente pueda manejar mejor el error
-    return null;
+    // Devolver datos simulados para que la interfaz tenga algo que mostrar
+    const mockData = simulateBusinessProfileData(urlOrWebsite);
+    
+    toast.warning('Se están usando datos simulados', {
+      description: 'No se pudieron extraer datos reales del perfil',
+    });
+    
+    return mockData;
     
   } catch (error: any) {
     console.error('Error extracting business information:', error);
@@ -223,7 +236,13 @@ export const extractGmbData = async (
       description: error.message || 'No se pudo procesar la solicitud',
     });
     
-    // Devolver null en lugar de datos simulados
-    return null;
+    // Devolver datos simulados para evitar una pantalla en blanco
+    const mockData = simulateBusinessProfileData(urlOrWebsite);
+    
+    toast.warning('Se están usando datos simulados', {
+      description: 'Ha ocurrido un error durante la extracción',
+    });
+    
+    return mockData;
   }
 };

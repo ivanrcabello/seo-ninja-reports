@@ -60,7 +60,7 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
                           
         setIsSimulated(isMockData);
         
-        if (onProfileUpdate) {
+        if (onProfileUpdate && !isMockData) {
           onProfileUpdate(profileData);
         }
         
@@ -72,10 +72,39 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
           toast.success('Perfil analizado correctamente');
         }
       } else {
-        setError('No se pudo extraer información');
-        toast.error('Error al analizar perfil');
+        // Si es null, seguir usando un perfil simulado para evitar la pantalla en blanco
+        const mockData = {
+          businessName: 'Negocio de ejemplo',
+          businessAddress: 'Dirección de ejemplo',
+          businessCategory: 'Categoría de ejemplo',
+          businessRating: 4.5,
+          businessReviewsCount: 123,
+          businessPhone: '+34 123 456 789',
+          businessWebsite: clientWebsite
+        };
+        
+        setBusinessProfile(mockData);
+        setIsSimulated(true);
+        setError('No se pudo extraer información real');
+        toast.warning('Usando datos simulados', {
+          description: 'No se pudo obtener datos reales del perfil'
+        });
       }
     } catch (error: any) {
+      console.error('Error al analizar con sitio web:', error);
+      
+      // Usar datos simulados en caso de error para evitar pantalla en blanco
+      const mockData = {
+        businessName: 'Negocio de ejemplo',
+        businessAddress: 'Dirección de ejemplo',
+        businessCategory: 'Categoría de ejemplo',
+        businessRating: 4.5,
+        businessReviewsCount: 123,
+        businessPhone: '+34 123 456 789',
+        businessWebsite: clientWebsite
+      };
+      
+      setBusinessProfile(mockData);
       setError(error.message || 'Error al analizar perfil');
       toast.error('Error al analizar perfil');
       setIsSimulated(true);
@@ -110,7 +139,8 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
                           
         setIsSimulated(isMockData);
         
-        if (onProfileUpdate) {
+        // Only update the parent component with real data
+        if (onProfileUpdate && !isMockData) {
           onProfileUpdate(profileData);
         }
         
@@ -122,10 +152,41 @@ const ClientGmbTest: React.FC<ClientGmbTestProps> = ({ clientId, clientWebsite, 
           toast.success('Perfil analizado correctamente');
         }
       } else {
-        setError('No se pudo extraer información');
-        toast.error('Error al analizar perfil');
+        // Si es null, usar un perfil simulado para evitar la pantalla en blanco
+        const mockData = {
+          businessUrl: businessUrl,
+          businessName: 'Negocio de ejemplo',
+          businessAddress: 'Dirección de ejemplo',
+          businessCategory: 'Categoría de ejemplo',
+          businessRating: 4.5,
+          businessReviewsCount: 123,
+          businessPhone: '+34 123 456 789',
+          businessWebsite: 'https://example.com'
+        };
+        
+        setBusinessProfile(mockData);
+        setIsSimulated(true);
+        setError('No se pudo extraer información real');
+        toast.warning('Usando datos simulados', {
+          description: 'No se pudo obtener datos reales del perfil'
+        });
       }
     } catch (error: any) {
+      console.error('Error al analizar URL de GMB:', error);
+      
+      // Usar datos simulados en caso de error para evitar pantalla en blanco
+      const mockData = {
+        businessUrl: businessUrl,
+        businessName: 'Negocio de ejemplo',
+        businessAddress: 'Dirección de ejemplo',
+        businessCategory: 'Categoría de ejemplo',
+        businessRating: 4.5,
+        businessReviewsCount: 123,
+        businessPhone: '+34 123 456 789',
+        businessWebsite: 'https://example.com'
+      };
+      
+      setBusinessProfile(mockData);
       setError(error.message || 'Error al analizar perfil');
       toast.error('Error al analizar perfil');
       setIsSimulated(true);
