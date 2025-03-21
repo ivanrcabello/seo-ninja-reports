@@ -7,7 +7,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Value Serp API Key
+// Value Serp API Key from environment or request
 const VS_API_KEY = Deno.env.get('VALUE_SERP_KEY') || '';
 
 Deno.serve(async (req) => {
@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { query, apiKey } = await req.json();
     
     if (!query) {
       return new Response(
@@ -28,81 +28,78 @@ Deno.serve(async (req) => {
 
     console.log(`Calling ValueSerp edge function with query: ${query}`);
     
+    // Use API key from request if provided, otherwise use env var
+    const valueSerp_API_KEY = apiKey || VS_API_KEY;
+    
     // If no API key is available, return error
-    if (!VS_API_KEY) {
+    if (!valueSerp_API_KEY) {
+      console.error('ValueSerp API key not configured');
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'ValueSerp API key not configured' 
+          error: 'ValueSerp API key not configured',
+          data: null
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    // Function to extract business data using ValueSerp
-    const extractBusinessInfo = async (query: string) => {
-      console.log(`Extracting information with ValueSerp for query: ${query}`);
-      
-      try {
-        // Create ValueSerp API URL for local business information
-        const url = new URL('https://api.valueserp.com/search');
-        url.searchParams.append('api_key', VS_API_KEY);
-        url.searchParams.append('q', query);
-        url.searchParams.append('location', 'Spain');
-        url.searchParams.append('gl', 'es');
-        url.searchParams.append('hl', 'es');
-        url.searchParams.append('google_domain', 'google.es');
-        url.searchParams.append('output', 'json');
-        url.searchParams.append('include_fields', 'local_results');
-        
-        const response = await fetch(url.toString());
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`ValueSerp API error: ${response.status} ${errorText}`);
-        }
-        
-        const data = await response.json();
-        
-        // Extract business data from ValueSerp response
-        if (data.local_results && data.local_results.results && data.local_results.results.length > 0) {
-          const business = data.local_results.results[0];
-          
-          const businessData = {
-            businessName: business.title || '',
-            businessUrl: business.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
-            businessHours: {}, // ValueSerp doesn't provide hours directly
-            businessAddress: business.address || '',
-            businessCategory: business.type || '',
-            businessPhone: business.phone || '',
-            businessWebsite: business.website || '',
-            businessRating: business.rating !== undefined ? parseFloat(business.rating) : null,
-            businessReviewsCount: business.reviews !== undefined ? parseInt(business.reviews.replace(/[^0-9]/g, ''), 10) : 0
-          };
-          
-          console.log(`Business profile data extracted via ValueSerp:`, businessData);
-          return businessData;
-        } else {
-          throw new Error('No business data found in ValueSerp response');
-        }
-      } catch (error) {
-        console.error('Error extracting business info with ValueSerp:', error);
-        throw error;
-      }
-    };
-    
+    console.log('API Key available, proceeding with request');
+
     try {
-      const businessData = await extractBusinessInfo(query);
+      // Create ValueSerp API URL for local business information
+      const url = new URL('https://api.valueserp.com/search');
+      url.searchParams.append('api_key', valueSerp_API_KEY);
+      url.searchParams.append('q', query);
+      url.searchParams.append('location', 'Spain');
+      url.searchParams.append('gl', 'es');
+      url.searchParams.append('hl', 'es');
+      url.searchParams.append('google_domain', 'google.es');
+      url.searchParams.append('output', 'json');
+      url.searchParams.append('include_fields', 'local_results');
       
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          data: businessData 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log(`Making request to ValueSerp API for query: ${query}`);
+      const response = await fetch(url.toString());
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`ValueSerp API error: ${response.status} ${errorText}`);
+        throw new Error(`ValueSerp API error: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('ValueSerp API response received');
+      
+      // Extract business data from ValueSerp response
+      if (data.local_results && data.local_results.results && data.local_results.results.length > 0) {
+        const business = data.local_results.results[0];
+        
+        const businessData = {
+          businessName: business.title || '',
+          businessUrl: business.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+          businessHours: {}, // ValueSerp doesn't provide hours directly
+          businessAddress: business.address || '',
+          businessCategory: business.type || '',
+          businessPhone: business.phone || '',
+          businessWebsite: business.website || '',
+          businessRating: business.rating !== undefined ? parseFloat(business.rating) : null,
+          businessReviewsCount: business.reviews !== undefined ? parseInt(business.reviews.replace(/[^0-9]/g, ''), 10) : 0
+        };
+        
+        console.log(`Business profile data extracted:`, JSON.stringify(businessData));
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            data: businessData 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        console.error('No business data found in ValueSerp response');
+        throw new Error('No business data found in ValueSerp response');
+      }
     } catch (extractError) {
-      console.error('Error extracting business data:', extractError);
+      console.error('Error extracting business data:', extractError.message);
       
       // Return fallback data to prevent UI issues
       const fallbackData = {
@@ -127,14 +124,15 @@ Deno.serve(async (req) => {
       );
     }
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error('Error processing request:', error.message);
     
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Unknown error'
+        error: error.message || 'Unknown error',
+        data: null
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   }
 });

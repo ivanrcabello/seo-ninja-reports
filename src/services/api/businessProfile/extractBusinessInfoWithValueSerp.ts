@@ -21,8 +21,15 @@ export const extractBusinessInfoWithValueSerp = async (
       description: 'Buscando datos con ValueSerp...'
     });
     
+    // Obtener la API key desde localStorage (si está disponible)
+    const localApiKey = localStorage.getItem('value_serp_api_key');
+    
+    // Llamar a la función edge con la query y la API key (si está disponible)
     const { data, error } = await supabase.functions.invoke('valueserp-business', {
-      body: { query }
+      body: { 
+        query,
+        apiKey: localApiKey || null
+      }
     });
     
     if (error) {

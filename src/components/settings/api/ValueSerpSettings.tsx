@@ -22,11 +22,30 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     setValueSerpApiKey(e.target.value);
   };
 
-  // Set API key to local storage for edge function to use
+  // Set API key to local storage and update settings table
   useEffect(() => {
     if (valueSerpApiKey) {
+      // Guardar en localStorage para uso inmediato
       localStorage.setItem('value_serp_api_key', valueSerpApiKey);
       console.log('ValueSerp API key stored in localStorage');
+      
+      // También actualizar en Supabase para persistencia
+      const updateApiKeyInSettings = async () => {
+        try {
+          const { error } = await supabase
+            .from('settings')
+            .update({ value_serp_key: valueSerpApiKey })
+            .eq('id', 1);
+            
+          if (error) {
+            console.error('Error saving ValueSerp API key to settings:', error);
+          }
+        } catch (err) {
+          console.error('Exception saving ValueSerp API key:', err);
+        }
+      };
+      
+      updateApiKeyInSettings();
     }
   }, [valueSerpApiKey]);
 

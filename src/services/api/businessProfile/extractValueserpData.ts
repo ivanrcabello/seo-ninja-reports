@@ -29,18 +29,30 @@ export const extractValueserpData = async (
     
     console.log('Calling ValueSerp edge function with query:', searchQuery);
     
-    // Obtener la API key desde la configuración
-    const { data: settingsData, error: settingsError } = await supabase
-      .from('settings')
-      .select('value_serp_key')
-      .eq('id', 1)
-      .maybeSingle();
+    // Obtener la API key desde la configuración o localStorage
+    let valueSerp_API_KEY = localStorage.getItem('value_serp_api_key');
     
-    if (settingsError) {
-      console.error('Error obteniendo la clave API de ValueSerp:', settingsError);
+    if (!valueSerp_API_KEY) {
+      try {
+        const { data: settingsData, error: settingsError } = await supabase
+          .from('settings')
+          .select('value_serp_key')
+          .eq('id', 1)
+          .maybeSingle();
+        
+        if (settingsError) {
+          console.error('Error obteniendo la clave API de ValueSerp:', settingsError);
+        } else if (settingsData?.value_serp_key) {
+          valueSerp_API_KEY = settingsData.value_serp_key;
+          // Guardar en localStorage para uso futuro
+          localStorage.setItem('value_serp_api_key', valueSerp_API_KEY);
+        }
+      } catch (err) {
+        console.error('Exception retrieving ValueSerp API key:', err);
+      }
     }
     
-    const hasValueSerpKey = settingsData?.value_serp_key && settingsData.value_serp_key.length > 5;
+    const hasValueSerpKey = valueSerp_API_KEY && valueSerp_API_KEY.length > 5;
     
     if (!hasValueSerpKey) {
       console.warn('No se ha configurado una clave API válida de ValueSerp');
@@ -62,7 +74,10 @@ export const extractValueserpData = async (
       try {
         // Llamar a nuestra función edge usando supabase.functions.invoke
         const { data, error: fnError } = await supabase.functions.invoke('valueserp-business', {
-          body: { query: searchQuery }
+          body: { 
+            query: searchQuery,
+            apiKey: valueSerp_API_KEY || null
+          }
         });
         
         if (fnError) {
@@ -104,9 +119,19 @@ export const extractValueserpData = async (
         
         console.log('Business profile data extracted via ValueSerp:', data.data);
         
-        toast.success('Información extraída correctamente', {
-          description: 'Datos obtenidos mediante ValueSerp',
-        });
+        // Verificar si los datos son reales o ficticios
+        const isRealData = data.data.businessName !== 'Negocio de ejemplo' && 
+                          !data.data.businessName.includes('ejemplo');
+        
+        if (isRealData) {
+          toast.success('Información extraída correctamente', {
+            description: 'Datos obtenidos mediante ValueSerp',
+          });
+        } else {
+          toast.warning('Se han obtenido datos de ejemplo', {
+            description: 'No se encontraron datos reales para esta búsqueda'
+          });
+        }
         
         return data.data as Partial<BusinessProfile>;
         
