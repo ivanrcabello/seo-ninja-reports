@@ -10,6 +10,7 @@ import ClientGmbTab from '../tabs/ClientGmbTab';
 import ClientPageSpeedTab from '../tabs/ClientPageSpeedTab';
 import ClientCredentials from '../ClientCredentials';
 import ClientKeywords from '../keywords/ClientKeywords';
+import SeoReportingDashboard from '../seo-reporting/SeoReportingDashboard';
 
 interface ClientTabsSectionProps {
   activeTab: string;
@@ -54,11 +55,12 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-      <TabsList className="grid grid-cols-4 mb-4">
+      <TabsList className="grid grid-cols-6 mb-4">
         <TabsTrigger value="summary">Resumen</TabsTrigger>
         <TabsTrigger value="gmb">Google My Business</TabsTrigger>
         <TabsTrigger value="pagespeed">PageSpeed</TabsTrigger>
         <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
+        <TabsTrigger value="seo-reporting">Informes SEO</TabsTrigger>
         <TabsTrigger value="credentials">Credenciales</TabsTrigger>
       </TabsList>
       
@@ -106,6 +108,10 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
               clientId={clientId}
               reports={reports}
             />
+          </TabsContent>
+          
+          <TabsContent value="seo-reporting">
+            <SeoReportingDashboard clientId={clientId} />
           </TabsContent>
           
           <TabsContent value="credentials">

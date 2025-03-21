@@ -465,6 +465,120 @@ export type Database = {
           },
         ]
       }
+      seo_competitors: {
+        Row: {
+          competition_level: number | null
+          created_at: string | null
+          domain: string
+          id: string
+          keywords_overlap: number | null
+          report_id: string
+        }
+        Insert: {
+          competition_level?: number | null
+          created_at?: string | null
+          domain: string
+          id?: string
+          keywords_overlap?: number | null
+          report_id: string
+        }
+        Update: {
+          competition_level?: number | null
+          created_at?: string | null
+          domain?: string
+          id?: string
+          keywords_overlap?: number | null
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_competitors_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "seo_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_keywords: {
+        Row: {
+          created_at: string | null
+          id: string
+          keyword: string
+          position: number | null
+          report_id: string
+          traffic_percent: number | null
+          volume: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          keyword: string
+          position?: number | null
+          report_id: string
+          traffic_percent?: number | null
+          volume?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          keyword?: string
+          position?: number | null
+          report_id?: string
+          traffic_percent?: number | null
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_keywords_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "seo_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_reports: {
+        Row: {
+          backlinks: number | null
+          client_id: string
+          created_at: string | null
+          domain: string
+          id: string
+          keywords: number | null
+          traffic: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          backlinks?: number | null
+          client_id: string
+          created_at?: string | null
+          domain: string
+          id?: string
+          keywords?: number | null
+          traffic?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          backlinks?: number | null
+          client_id?: string
+          created_at?: string | null
+          domain?: string
+          id?: string
+          keywords?: number | null
+          traffic?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           created_at: string
