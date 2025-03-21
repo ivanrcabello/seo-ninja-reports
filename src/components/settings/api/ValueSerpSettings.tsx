@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
@@ -24,11 +23,9 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [inputKey, setInputKey] = useState(valueSerpApiKey);
   
-  // Initialize from localStorage and database on mount
   useEffect(() => {
     const fetchApiKey = async () => {
       try {
-        // First check localStorage
         const localKey = localStorage.getItem('value_serp_api_key');
         if (localKey && localKey.length > 0) {
           console.log('Found ValueSerp API key in localStorage (length): ' + localKey.length);
@@ -37,7 +34,6 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           return;
         }
         
-        // If not in localStorage, check database
         const { data, error } = await supabase
           .from('settings')
           .select('value_serp_key')
@@ -50,7 +46,6 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           console.log('Loaded ValueSerp API key from database (length): ' + data.value_serp_key.length);
           setInputKey(data.value_serp_key);
           setValueSerpApiKey(data.value_serp_key);
-          // Also update localStorage
           localStorage.setItem('value_serp_api_key', data.value_serp_key);
         }
       } catch (err) {
@@ -65,7 +60,6 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     setInputKey(e.target.value);
   };
   
-  // Save the API key to both localStorage and database
   const handleSave = async () => {
     if (!inputKey || inputKey.length < 5) {
       toast.error('La clave API no es válida');
@@ -76,14 +70,11 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     setUpdateStatus('saving');
     
     try {
-      // Save immediately to localStorage
       localStorage.setItem('value_serp_api_key', inputKey);
       console.log('ValueSerp API key stored in localStorage (length): ' + inputKey.length);
       
-      // Update component state
       setValueSerpApiKey(inputKey);
       
-      // Save to Supabase
       const { error } = await supabase
         .from('settings')
         .update({ 
@@ -108,7 +99,6 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     } finally {
       setIsSaving(false);
       
-      // Reset status after a delay
       setTimeout(() => {
         setUpdateStatus('idle');
       }, 3000);

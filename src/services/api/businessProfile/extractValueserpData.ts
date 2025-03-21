@@ -1,177 +1,113 @@
 
+import { supabase } from '@/integrations/supabase/client';
 import { BusinessProfile } from '@/types/report.types';
 import { toast } from 'sonner';
 import { simulateBusinessProfileData } from './mocks';
-import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Extrae información de negocio usando la API de ValueSerp
+ * Extrae información de negocio utilizando ValueSerp API
  */
 export const extractValueserpData = async (
-  businessName: string,
-  businessLocation?: string
+  query: string, 
+  location: string = ''
 ): Promise<Partial<BusinessProfile> | null> => {
+  if (!query) {
+    toast.error('Debe proporcionar un término de búsqueda');
+    return null;
+  }
+  
   try {
-    if (!businessName) {
-      toast.error('Debes proporcionar un nombre de negocio para buscar');
-      return null;
-    }
-    
-    // Mostrar toast de progreso
-    toast.info('Consultando API de ValueSerp', {
-      description: 'Extrayendo información detallada del negocio...',
+    console.log(`Intento de extraer información con ValueSerp: ${query} ${location ? `(${location})` : ''}`);
+    toast.info('Extrayendo información de negocio', {
+      description: 'Buscando datos con ValueSerp...'
     });
     
-    let searchQuery = businessName;
-    if (businessLocation) {
-      searchQuery += ` ${businessLocation}`;
-    }
+    // Obtener la API key desde localStorage
+    const valueSerpApiKey = localStorage.getItem('value_serp_api_key');
     
-    console.log('Calling ValueSerp edge function with query:', searchQuery);
-    
-    // Obtener la API key desde la configuración o localStorage
-    let valueSerp_API_KEY = localStorage.getItem('value_serp_api_key');
-    
-    if (!valueSerp_API_KEY) {
-      try {
-        const { data: settingsData, error: settingsError } = await supabase
-          .from('settings')
-          .select('value_serp_key')
-          .eq('id', 1)
-          .maybeSingle();
-        
-        if (settingsError) {
-          console.error('Error obteniendo la clave API de ValueSerp:', settingsError);
-        } else if (settingsData?.value_serp_key) {
-          valueSerp_API_KEY = settingsData.value_serp_key;
-          // Guardar en localStorage para uso futuro
-          localStorage.setItem('value_serp_api_key', valueSerp_API_KEY);
-        }
-      } catch (err) {
-        console.error('Exception retrieving ValueSerp API key:', err);
-      }
-    }
-    
-    const hasValueSerpKey = valueSerp_API_KEY && valueSerp_API_KEY.length > 5;
-    
-    if (!hasValueSerpKey) {
-      console.warn('No se ha configurado una clave API válida de ValueSerp');
-      toast.warning('API ValueSerp no configurada', {
-        description: 'Configure la API en la sección de configuración para obtener mejores resultados',
+    if (!valueSerpApiKey) {
+      console.log('No se encontró una API key de ValueSerp en localStorage');
+      toast.error('API key de ValueSerp no configurada', {
+        description: 'Configura la API key en Ajustes > Integraciones'
       });
+      return simulateBusinessProfileData(query);
     }
     
-    // Intentos máximos para obtener datos
-    const maxRetries = 2;
-    let attempts = 0;
-    let error = null;
+    // Crear query con ubicación si está disponible
+    const searchQuery = location && location.trim() !== '' 
+      ? `${query} ${location}` 
+      : query;
     
-    // Intentar hasta tener éxito o agotar intentos
-    while (attempts < maxRetries) {
-      attempts++;
-      console.log(`Intento ${attempts} de extraer información con ValueSerp`);
-      
-      try {
-        // Llamar a nuestra función edge usando supabase.functions.invoke
-        const { data, error: fnError } = await supabase.functions.invoke('valueserp-business', {
-          body: { 
-            query: searchQuery,
-            apiKey: valueSerp_API_KEY || null
-          }
-        });
-        
-        if (fnError) {
-          console.error(`Error invoking ValueSerp edge function: ${fnError.message}`);
-          throw new Error(`Error en la función ValueSerp: ${fnError.message}`);
-        }
-        
-        if (!data) {
-          console.error('ValueSerp edge function returned no data');
-          throw new Error('La función ValueSerp no devolvió datos');
-        }
-        
-        if (!data.success) {
-          console.error('ValueSerp edge function reported failure:', data.error);
-          throw new Error(data.error || 'Error desconocido en la extracción de datos');
-        }
-        
-        // Validar los datos recibidos
-        if (!data.data.businessName && !data.data.businessAddress) {
-          throw new Error('No se pudo extraer información esencial del negocio');
-        }
-        
-        // Asegurar que businessHours es un objeto adecuado
-        if (!data.data.businessHours) {
-          data.data.businessHours = {};
-        } else if (typeof data.data.businessHours === 'string') {
-          try {
-            data.data.businessHours = JSON.parse(data.data.businessHours) as Record<string, string>;
-          } catch (e) {
-            console.error('Error parsing business hours:', e);
-            data.data.businessHours = {};
-          }
-        }
-        
-        // Asegurar que businessRating es un número o null
-        if (data.data.businessRating === undefined) {
-          data.data.businessRating = null;
-        }
-        
-        console.log('Business profile data extracted via ValueSerp:', data.data);
-        
-        // Verificar si los datos son reales o ficticios
-        const isRealData = data.data.businessName !== 'Negocio de ejemplo' && 
-                          !data.data.businessName.includes('ejemplo');
-        
-        if (isRealData) {
-          toast.success('Información extraída correctamente', {
-            description: 'Datos obtenidos mediante ValueSerp',
-          });
-        } else {
-          toast.warning('Se han obtenido datos de ejemplo', {
-            description: 'No se encontraron datos reales para esta búsqueda'
-          });
-        }
-        
-        return data.data as Partial<BusinessProfile>;
-        
-      } catch (requestError: any) {
-        console.error(`Error en intento ${attempts}:`, requestError);
-        error = requestError;
-        
-        if (attempts < maxRetries) {
-          console.log('Esperando antes de reintentar...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+    // Llamar a la función de Edge de ValueSerp
+    console.log(`Llamando a ValueSerp con búsqueda: "${searchQuery}"`);
+    
+    const { data, error } = await supabase.functions.invoke('valueserp-business', {
+      body: {
+        query: searchQuery,
+        apiKey: valueSerpApiKey
       }
+    });
+    
+    if (error) {
+      console.error('Error al invocar la función de ValueSerp:', error);
+      throw new Error(`Error en la función ValueSerp: ${error.message}`);
     }
     
-    // Si llegamos aquí, todos los intentos fallaron
-    console.error('Error final al extraer datos con ValueSerp:', error);
-    toast.error('Error en extracción de datos', {
-      description: error?.message || 'No se pudo extraer información del perfil',
-    });
+    if (!data) {
+      console.error('No se recibieron datos de la función ValueSerp');
+      throw new Error('No se recibieron datos de la función ValueSerp');
+    }
     
-    // Devolver datos simulados para que la interfaz tenga algo que mostrar
-    const mockData = simulateBusinessProfileData(`${businessName} ${businessLocation || ''}`);
+    console.log('Respuesta de valueserp-business:', data);
     
-    toast.warning('Se están usando datos simulados', {
-      description: 'No se pudieron extraer datos reales del perfil',
-    });
+    // Si hay datos pero no es exitoso, mostrar advertencia y devolver los datos fallback
+    if (!data.success) {
+      console.warn('La función ValueSerp reportó un fallo:', data.error);
+      toast.warning(data.error || 'Error al extraer información de negocio', {
+        description: 'Se utilizarán datos simulados para la demostración'
+      });
+      return data.data; // Devolver los datos fallback proporcionados por la edge function
+    }
     
-    return mockData;
+    // Verificar si los datos parecen reales
+    const isRealData = data.data && 
+                     data.data.businessName && 
+                     data.data.businessName !== 'Negocio de ejemplo';
     
+    if (isRealData) {
+      console.log('Business profile data extracted via ValueSerp:', data.data);
+      
+      const sourceText = data.source === 'knowledge_graph' 
+        ? 'Knowledge Graph' 
+        : data.source === 'local_results' 
+          ? 'Local Results' 
+          : 'Organic Results';
+          
+      toast.success('Información de negocio extraída correctamente', {
+        description: `Datos obtenidos desde ${sourceText}`
+      });
+      
+      return data.data;
+    } else {
+      console.warn('Se recibieron datos de fallback de la edge function');
+      toast.warning('No se encontraron datos reales', {
+        description: 'Se utilizarán datos simulados para la demostración'
+      });
+      
+      // Devolver los datos de fallback
+      return data.data;
+    }
   } catch (error: any) {
-    console.error('Error extracting business information with ValueSerp:', error);
+    console.error('Error extracting business info with ValueSerp:', error);
     toast.error('Error al extraer información', {
-      description: error.message || 'No se pudo procesar la solicitud',
+      description: error.message || 'No se pudo procesar la solicitud'
     });
     
-    // Devolver datos simulados para evitar una pantalla en blanco
-    const mockData = simulateBusinessProfileData(`${businessName}`);
+    // Fallback to simulated data
+    const mockData = simulateBusinessProfileData(query);
     
     toast.warning('Se están usando datos simulados', {
-      description: 'Ha ocurrido un error durante la extracción',
+      description: 'Ha ocurrido un error durante la extracción'
     });
     
     return mockData;

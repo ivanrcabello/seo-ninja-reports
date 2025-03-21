@@ -1,11 +1,14 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessProfile } from '@/types/report.types';
+import { toast } from 'sonner';
 
 export async function saveBusinessProfile(
   reportId: string,
   profileData: Partial<BusinessProfile>
 ): Promise<BusinessProfile | null> {
+  console.log('Saving business profile for report:', reportId, profileData);
+  
   try {
     // First check if a business profile already exists for this report
     const { data: existingProfile, error: fetchError } = await supabase
@@ -38,6 +41,7 @@ export async function saveBusinessProfile(
     let result;
     
     if (existingProfile?.id) {
+      console.log('Updating existing business profile with ID:', existingProfile.id);
       // Update existing profile
       const { data, error } = await supabase
         .from('business_profiles')
@@ -63,7 +67,9 @@ export async function saveBusinessProfile(
       }
       
       result = data;
+      console.log('Business profile updated successfully:', result);
     } else {
+      console.log('Creating new business profile for report:', reportId);
       // Create new profile
       const { data, error } = await supabase
         .from('business_profiles')
@@ -90,6 +96,26 @@ export async function saveBusinessProfile(
       }
       
       result = data;
+      console.log('New business profile created successfully:', result);
+    }
+
+    // Update the report to indicate it has a business profile
+    try {
+      const { error: updateError } = await supabase
+        .from('reports')
+        .update({ 
+          has_business_profile: true,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', reportId);
+        
+      if (updateError) {
+        console.error('Error updating has_business_profile flag:', updateError);
+      } else {
+        console.log('Report has_business_profile flag updated successfully');
+      }
+    } catch (err) {
+      console.error('Exception updating has_business_profile flag:', err);
     }
     
     // Format the result to match the BusinessProfile interface
@@ -111,6 +137,9 @@ export async function saveBusinessProfile(
     
   } catch (error) {
     console.error('Error saving business profile:', error);
+    toast.error('Error al guardar el perfil de negocio', {
+      description: 'No se pudo guardar en la base de datos'
+    });
     throw error;
   }
 }
