@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ReportContent, Report, BusinessProfile } from '@/types/report.types';
+import { Report, BusinessProfile } from '@/types/report.types';
 import ReportHeader from './ReportHeader';
 import ReportTabs from './ReportTabs';
 import BlurredCard from '@/components/ui/BlurredCard';
@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchPageSpeedDataForReport } from '@/services/api/pagespeed';
+import { fetchPageSpeedData } from '@/services/api/pagespeed';
 import { fetchBusinessProfile } from '@/services/api/businessProfile/fetchBusinessProfile';
 
 const ReportViewer: React.FC = () => {
@@ -35,7 +35,7 @@ const ReportViewer: React.FC = () => {
     isLoading: isLoadingPageSpeed 
   } = useQuery({
     queryKey: ['pageSpeed', id],
-    queryFn: () => fetchPageSpeedDataForReport(id),
+    queryFn: () => fetchPageSpeedData(id),
     enabled: !!id && report?.status === 'completed' && report?.url !== undefined,
   });
 
@@ -68,7 +68,7 @@ const ReportViewer: React.FC = () => {
     
     try {
       // Create updated content
-      const updatedContent: ReportContent = {
+      const updatedContent = {
         ...report.content,
         [section]: content
       };
@@ -125,10 +125,13 @@ const ReportViewer: React.FC = () => {
         {report.status === 'completed' ? (
           <>
             <ReportHeader 
-              report={report}
-              formattedDate={formatDate(report.date)}
-              isEditing={isEditing} 
+              title={report.title}
+              date={report.date}
+              url={report.url}
+              isEditing={isEditing}
               editingSection={editingSection}
+              reportId={report.id}
+              setIsEditing={(value) => setIsEditing(value)}
               onEdit={handleEdit}
               onCancelEdit={handleCancelEdit}
               onSaveEdit={handleSaveEdit}
