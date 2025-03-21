@@ -72,13 +72,13 @@ export const extractBusinessInfo = async (
           // Transform database record to frontend format
           return {
             businessUrl: cachedProfile.business_url,
-            businessName: cachedProfile.business_name,
-            businessAddress: cachedProfile.business_address,
-            businessCategory: cachedProfile.business_category,
-            businessRating: cachedProfile.business_rating || null,
-            businessReviewsCount: cachedProfile.business_reviews_count,
-            businessPhone: cachedProfile.business_phone,
-            businessWebsite: cachedProfile.business_website,
+            businessName: cachedProfile.business_name || '',
+            businessAddress: cachedProfile.business_address || '',
+            businessCategory: cachedProfile.business_category || '',
+            businessRating: cachedProfile.business_rating !== undefined ? cachedProfile.business_rating : null,
+            businessReviewsCount: cachedProfile.business_reviews_count || 0,
+            businessPhone: cachedProfile.business_phone || '',
+            businessWebsite: cachedProfile.business_website || '',
             businessHours
           };
         } else {
@@ -111,6 +111,23 @@ export const extractBusinessInfo = async (
             profileData.businessHours = {};
           }
         }
+        
+        // Ensure businessRating is a number or explicitly null
+        if (profileData.businessRating === undefined) {
+          profileData.businessRating = null;
+        }
+        
+        // Ensure businessReviewsCount is a number
+        if (profileData.businessReviewsCount === undefined) {
+          profileData.businessReviewsCount = 0;
+        }
+        
+        // Provide default empty strings for text fields if they're missing
+        profileData.businessName = profileData.businessName || '';
+        profileData.businessAddress = profileData.businessAddress || '';
+        profileData.businessCategory = profileData.businessCategory || '';
+        profileData.businessPhone = profileData.businessPhone || '';
+        profileData.businessWebsite = profileData.businessWebsite || '';
         
         // Verificar si el perfil tiene datos completos o parciales
         const isPartialData = !profileData.businessRating || !profileData.businessPhone || !profileData.businessWebsite;

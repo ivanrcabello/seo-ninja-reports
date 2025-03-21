@@ -102,7 +102,7 @@ const BusinessUrlInput: React.FC<BusinessUrlInputProps> = ({
   };
   
   // Helper function to safely render rating
-  const renderBusinessRating = (rating: number | undefined) => {
+  const renderBusinessRating = (rating: number | null | undefined) => {
     if (rating === undefined || rating === null) {
       return "N/A";
     }
