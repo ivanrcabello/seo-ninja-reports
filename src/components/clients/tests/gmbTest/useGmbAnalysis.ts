@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { extractBusinessInfo } from '@/services/api/businessProfile';
 import { extractGmbData } from '@/services/api/businessProfile/extractGmbData';
@@ -24,10 +23,8 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
   
   const handleAnalyze = async () => {
     if (useWebsite && clientWebsite) {
-      // Usar la URL del sitio web para intentar encontrar el perfil GMB
       await analyzeWithWebsite();
     } else if (businessUrl.trim()) {
-      // Usar la URL de GMB proporcionada
       await analyzeWithGmbUrl();
     } else {
       toast.error('Introduce una URL válida o usa el sitio web del cliente');
@@ -46,26 +43,21 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
     setIsSimulated(false);
     
     try {
-      // First try with ValueSerp for better data
       let profileData = null;
       let extractionMethod = 'valueserp';
       
       try {
-        // Use ValueSerp with the client name or domain as the query
         const query = extractDomainFromUrl(clientWebsite);
         console.log(`Using clientId: ${clientId} for ValueSerp query`);
-        // Fix: Pass only one argument (query) and pass clientId as property in the query string
         profileData = await extractBusinessInfoWithValueSerp(query);
       } catch (valueSerpError) {
         console.error('Error extracting with ValueSerp:', valueSerpError);
         extractionMethod = 'scraper';
         
-        // Fallback to original method
         profileData = await extractGmbData(clientWebsite, false);
       }
       
       if (profileData && (profileData.businessName || profileData.businessAddress)) {
-        // Ensure businessHours is a proper object
         if (!profileData.businessHours) {
           profileData.businessHours = {};
         } else if (typeof profileData.businessHours === 'string') {
@@ -73,14 +65,13 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
             profileData.businessHours = JSON.parse(profileData.businessHours);
           } catch (parseError) {
             console.error('Error parsing business hours:', parseError);
-            profileData.businessHours = {}; // Fallback to empty object
+            profileData.businessHours = {};
           }
         }
         
         setBusinessProfile(profileData);
         console.log('Updated GMB Tab with business profile:', profileData);
         
-        // Check if the data is from simulation
         const isMockData = profileData.businessName?.includes('ejemplo') || 
                           profileData.businessName === 'Negocio de ejemplo';
                           
@@ -100,7 +91,6 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
           });
         }
       } else {
-        // Si es null o datos insuficientes, usar un perfil simulado
         const mockData = {
           businessName: 'Negocio de ejemplo',
           businessAddress: 'Dirección de ejemplo',
@@ -109,7 +99,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
           businessReviewsCount: 123,
           businessPhone: '+34 123 456 789',
           businessWebsite: clientWebsite,
-          businessHours: {} // Empty object by default
+          businessHours: {}
         };
         
         setBusinessProfile(mockData);
@@ -122,7 +112,6 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
     } catch (error: any) {
       console.error('Error al analizar con sitio web:', error);
       
-      // Usar datos simulados en caso de error para evitar pantalla en blanco
       const mockData = {
         businessName: 'Negocio de ejemplo',
         businessAddress: 'Dirección de ejemplo',
@@ -131,7 +120,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
         businessReviewsCount: 123,
         businessPhone: '+34 123 456 789',
         businessWebsite: clientWebsite,
-        businessHours: {} // Empty object by default
+        businessHours: {}
       };
       
       setBusinessProfile(mockData);
@@ -157,19 +146,16 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
     setIsSimulated(false);
     
     try {
-      // Safety wrapper to ensure we always get data back
       let profileData = null;
       
       try {
-        // Pass the clientId parameter correctly
-        profileData = await extractBusinessInfo(businessUrl, clientId);
+        profileData = await extractBusinessInfo(businessUrl);
       } catch (extractError) {
         console.error('Error extracting business info:', extractError);
         throw new Error('No se pudo extraer información del perfil');
       }
       
       if (profileData && (profileData.businessName || profileData.businessAddress)) {
-        // Ensure businessHours is a proper object or empty object if null/undefined
         if (!profileData.businessHours) {
           profileData.businessHours = {};
         } else if (typeof profileData.businessHours === 'string') {
@@ -177,19 +163,17 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
             profileData.businessHours = JSON.parse(profileData.businessHours);
           } catch (parseError) {
             console.error('Error parsing business hours:', parseError);
-            profileData.businessHours = {}; // Fallback to empty object
+            profileData.businessHours = {};
           }
         }
         
         setBusinessProfile(profileData);
         
-        // Check if the data is from simulation
         const isMockData = profileData.businessName?.includes('ejemplo') || 
                           profileData.businessName === 'Negocio de ejemplo';
                           
         setIsSimulated(isMockData);
         
-        // Only update the parent component with real data
         if (onProfileUpdate && !isMockData) {
           onProfileUpdate(profileData);
         }
@@ -202,7 +186,6 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
           toast.success('Perfil analizado correctamente');
         }
       } else {
-        // Si es null o datos insuficientes, usar un perfil simulado para evitar la pantalla en blanco
         const mockData = {
           businessUrl: businessUrl,
           businessName: 'Negocio de ejemplo',
@@ -212,7 +195,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
           businessReviewsCount: 123,
           businessPhone: '+34 123 456 789',
           businessWebsite: 'https://example.com',
-          businessHours: {} // Empty object by default
+          businessHours: {}
         };
         
         setBusinessProfile(mockData);
@@ -225,7 +208,6 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
     } catch (error: any) {
       console.error('Error al analizar URL de GMB:', error);
       
-      // Usar datos simulados en caso de error para evitar pantalla en blanco
       const mockData = {
         businessUrl: businessUrl,
         businessName: 'Negocio de ejemplo',
@@ -235,7 +217,7 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
         businessReviewsCount: 123,
         businessPhone: '+34 123 456 789',
         businessWebsite: 'https://example.com',
-        businessHours: {} // Empty object by default
+        businessHours: {}
       };
       
       setBusinessProfile(mockData);
@@ -247,7 +229,6 @@ export const useGmbAnalysis = ({ clientId, clientWebsite, onProfileUpdate }: Use
     }
   };
   
-  // Helper function to extract domain from URL
   const extractDomainFromUrl = (url: string): string => {
     try {
       const domain = url.replace(/^https?:\/\//, '').split('/')[0];
