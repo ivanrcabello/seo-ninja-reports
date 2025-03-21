@@ -1,11 +1,5 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
-
-// Create Supabase client
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Value Serp API Key from environment or request
 const VS_API_KEY = Deno.env.get('VALUE_SERP_KEY') || '';
@@ -26,7 +20,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Calling ValueSerp edge function with query: ${query}`);
+    console.log(`Processing ValueSerp request for query: ${query}`);
     
     // Use API key from request if provided, otherwise use env var
     const valueSerp_API_KEY = apiKey || VS_API_KEY;
@@ -38,13 +32,13 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'ValueSerp API key not configured',
-          data: null
+          data: getFallbackData(query)
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    console.log('API Key available, proceeding with request');
+    console.log('API Key available, proceeding with ValueSerp request');
 
     try {
       // Create ValueSerp API URL for local business information
@@ -86,7 +80,7 @@ Deno.serve(async (req) => {
           businessReviewsCount: business.reviews !== undefined ? parseInt(business.reviews.replace(/[^0-9]/g, ''), 10) : 0
         };
         
-        console.log(`Business profile data extracted:`, JSON.stringify(businessData));
+        console.log(`Business profile data extracted: ${JSON.stringify(businessData)}`);
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -95,30 +89,18 @@ Deno.serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } else {
-        console.error('No business data found in ValueSerp response');
+        console.log('No business data found in ValueSerp response');
         throw new Error('No business data found in ValueSerp response');
       }
     } catch (extractError) {
       console.error('Error extracting business data:', extractError.message);
       
-      // Return fallback data to prevent UI issues
-      const fallbackData = {
-        businessName: 'Negocio de ejemplo',
-        businessAddress: '',
-        businessCategory: '',
-        businessRating: null,
-        businessReviewsCount: 0,
-        businessPhone: '',
-        businessWebsite: '',
-        businessHours: {},
-        businessUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
-      };
-      
+      // Return fallback data for UI
       return new Response(
         JSON.stringify({ 
           success: false,
           error: extractError.message,
-          data: fallbackData
+          data: getFallbackData(query)
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -130,9 +112,32 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: false, 
         error: error.message || 'Unknown error',
-        data: null
+        data: getFallbackData('fallback')
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   }
 });
+
+// Helper function to get fallback data
+function getFallbackData(query: string) {
+  return {
+    businessName: 'Negocio de ejemplo',
+    businessAddress: 'Calle Ejemplo 123, Ciudad',
+    businessCategory: 'Servicios Profesionales',
+    businessRating: 4.7,
+    businessReviewsCount: 42,
+    businessPhone: '+34 123 456 789',
+    businessWebsite: 'https://www.ejemplo.com',
+    businessHours: {
+      'Monday': '9:00 - 18:00',
+      'Tuesday': '9:00 - 18:00',
+      'Wednesday': '9:00 - 18:00',
+      'Thursday': '9:00 - 18:00',
+      'Friday': '9:00 - 17:00',
+      'Saturday': 'Cerrado',
+      'Sunday': 'Cerrado'
+    },
+    businessUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+  };
+}

@@ -24,6 +24,13 @@ export const extractBusinessInfoWithValueSerp = async (
     // Obtener la API key desde localStorage (si está disponible)
     const localApiKey = localStorage.getItem('value_serp_api_key');
     
+    // Mostrar información sobre la clave API
+    if (localApiKey) {
+      console.log('API key available from localStorage (length): ' + localApiKey.length);
+    } else {
+      console.log('No API key found in localStorage');
+    }
+    
     // Llamar a la función edge con la query y la API key (si está disponible)
     const { data, error } = await supabase.functions.invoke('valueserp-business', {
       body: { 
@@ -38,10 +45,14 @@ export const extractBusinessInfoWithValueSerp = async (
     }
     
     if (!data) {
+      console.error('No data received from ValueSerp edge function');
       throw new Error('No se recibieron datos de la función ValueSerp');
     }
     
+    console.log('Raw response from valueserp-business:', data);
+    
     if (!data.success) {
+      console.error('ValueSerp function reported failure:', data.error);
       throw new Error(data.error || 'Error al extraer información de negocio');
     }
     
@@ -53,14 +64,16 @@ export const extractBusinessInfoWithValueSerp = async (
     if (isRealData) {
       console.log('Business profile data extracted successfully:', data.data);
       toast.success('Información de negocio extraída correctamente');
+      return data.data;
     } else {
       console.warn('Using fallback data for business profile');
       toast.warning('No se encontraron datos reales', {
         description: 'Se utilizarán datos simulados para la demostración'
       });
+      
+      // Return the fallback data that was already created by the edge function
+      return data.data;
     }
-    
-    return data.data;
   } catch (error) {
     console.error('Error extracting business info with ValueSerp:', error);
     toast.error('Error al extraer información', {

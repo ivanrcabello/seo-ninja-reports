@@ -1,11 +1,12 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ValueSerpSettingsProps {
   valueSerpApiKey: string;
@@ -18,6 +19,8 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   setValueSerpApiKey,
   hasConfiguredValueSerpKey
 }) => {
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleValueSerpKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValueSerpApiKey(e.target.value);
   };
@@ -25,9 +28,11 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   // Set API key to local storage and update settings table
   useEffect(() => {
     if (valueSerpApiKey) {
+      setIsSaving(true);
+      
       // Guardar en localStorage para uso inmediato
       localStorage.setItem('value_serp_api_key', valueSerpApiKey);
-      console.log('ValueSerp API key stored in localStorage');
+      console.log('ValueSerp API key stored in localStorage (length): ' + valueSerpApiKey.length);
       
       // También actualizar en Supabase para persistencia
       const updateApiKeyInSettings = async () => {
@@ -39,15 +44,59 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
             
           if (error) {
             console.error('Error saving ValueSerp API key to settings:', error);
+            toast.error('Error al guardar la API key en la base de datos');
+          } else {
+            console.log('ValueSerp API key saved successfully to settings table');
+            toast.success('API key de ValueSerp guardada correctamente');
           }
         } catch (err) {
           console.error('Exception saving ValueSerp API key:', err);
+          toast.error('Error al guardar la API key');
+        } finally {
+          setIsSaving(false);
         }
       };
       
       updateApiKeyInSettings();
     }
   }, [valueSerpApiKey]);
+
+  // Fetch API key on component mount if not already available
+  useEffect(() => {
+    const fetchApiKey = async () => {
+      if (!valueSerpApiKey) {
+        try {
+          // First check localStorage
+          const localKey = localStorage.getItem('value_serp_api_key');
+          if (localKey && localKey.length > 0) {
+            console.log('Found ValueSerp API key in localStorage');
+            setValueSerpApiKey(localKey);
+            return;
+          }
+          
+          // If not in localStorage, check database
+          const { data, error } = await supabase
+            .from('settings')
+            .select('value_serp_key')
+            .eq('id', 1)
+            .single();
+            
+          if (error) {
+            console.error('Error fetching ValueSerp API key:', error);
+          } else if (data?.value_serp_key) {
+            console.log('Loaded ValueSerp API key from database');
+            setValueSerpApiKey(data.value_serp_key);
+            // Also update localStorage
+            localStorage.setItem('value_serp_api_key', data.value_serp_key);
+          }
+        } catch (err) {
+          console.error('Exception fetching ValueSerp API key:', err);
+        }
+      }
+    };
+    
+    fetchApiKey();
+  }, []);
 
   return (
     <Card>
@@ -91,6 +140,10 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               Puedes obtener una en <a href="https://www.valueserp.com/" target="_blank" rel="noopener noreferrer" className="text-primary font-medium underline">ValueSerp.com</a>
             </AlertDescription>
           </Alert>
+        )}
+        
+        {isSaving && (
+          <p className="text-xs text-primary">Guardando API key...</p>
         )}
       </CardContent>
     </Card>
