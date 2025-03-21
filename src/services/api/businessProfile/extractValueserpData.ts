@@ -62,10 +62,7 @@ export const extractValueserpData = async (
       try {
         // Llamar a nuestra función edge usando supabase.functions.invoke
         const { data, error: fnError } = await supabase.functions.invoke('valueserp-business', {
-          body: { 
-            query: searchQuery, 
-            use_configured_key: true 
-          }
+          body: { query: searchQuery }
         });
         
         if (fnError) {

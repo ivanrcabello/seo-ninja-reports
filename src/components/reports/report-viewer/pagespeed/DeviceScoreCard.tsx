@@ -1,168 +1,130 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Activity, 
-  Accessibility, 
-  Cpu, 
-  AlertCircle,
-  Smartphone,
-  Laptop
-} from 'lucide-react';
-import { formatNumber } from './utils';
+import { PageSpeedResult } from '@/types/report.types';
+import { getScoreColorClass, getScoreBackgroundClass } from './utils';
+import { Grid } from 'lucide-react';
 import MetricItem from './MetricItem';
+import { ScoreCard } from './ScoreCard';
 
 interface DeviceScoreCardProps {
-  data: {
-    performance?: number | null;
-    accessibility?: number | null;
-    bestPractices?: number | null;
-    seo?: number | null;
-    firstContentfulPaint?: number | null;
-    speedIndex?: number | null;
-    largestContentfulPaint?: number | null;
-    timeToInteractive?: number | null;
-    totalBlockingTime?: number | null;
-    cumulativeLayoutShift?: number | null;
-  };
-  device: 'mobile' | 'desktop';
-  title?: string;
-  icon?: React.ReactNode;
+  data?: PageSpeedResult;
+  title: string;
+  subtitle?: string;
+  isLoading?: boolean;
 }
 
-const DeviceScoreCard: React.FC<DeviceScoreCardProps> = ({ data, device, title, icon }) => {
-  console.log(`DeviceScoreCard ${device === 'desktop' ? 'Escritorio' : 'Móvil'} data:`, data);
-  
-  // Make sure data exists and has properties
-  if (!data) {
+export const DeviceScoreCard: React.FC<DeviceScoreCardProps> = ({
+  data,
+  title,
+  subtitle,
+  isLoading
+}) => {
+  if (!data && !isLoading) {
     return (
-      <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            {device === 'desktop' ? (
-              <>
-                <Laptop className="h-4 w-4 text-blue-500" />
-                <span>Escritorio</span>
-              </>
-            ) : (
-              <>
-                <Smartphone className="h-4 w-4 text-purple-500" />
-                <span>Móvil</span>
-              </>
-            )}
-          </CardTitle>
+      <Card className="col-span-1">
+        <CardHeader>
+          <CardTitle className="text-lg">{title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">No hay datos disponibles</p>
+          <p className="text-muted-foreground text-sm">
+            No hay datos de rendimiento disponibles para {title.toLowerCase()}.
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  // Safely calculate scores, defaulting to 0 if undefined/null
-  const performanceScore = data.performance !== undefined && data.performance !== null 
-    ? Math.round(data.performance * 100) 
-    : 0;
-  
-  const accessibilityScore = data.accessibility !== undefined && data.accessibility !== null 
-    ? Math.round(data.accessibility * 100) 
-    : 0;
-  
-  const bestPracticesScore = data.bestPractices !== undefined && data.bestPractices !== null 
-    ? Math.round(data.bestPractices * 100) 
-    : 0;
-  
-  const seoScore = data.seo !== undefined && data.seo !== null 
-    ? Math.round(data.seo * 100) 
-    : 0;
+  // Calculate scores
+  const performanceScore = data?.performance ? Math.round(data.performance * 100) : 0;
+  const accessibilityScore = data?.accessibility ? Math.round(data.accessibility * 100) : 0;
+  const bestPracticesScore = data?.bestPractices ? Math.round(data.bestPractices * 100) : 0;
+  const seoScore = data?.seo ? Math.round(data.seo * 100) : 0;
 
-  // Determine performance color based on score
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-500';
-    if (score >= 50) return 'text-amber-500';
-    return 'text-red-500';
-  };
-
-  const displayTitle = title || (device === 'desktop' ? 'Escritorio' : 'Móvil');
-  const displayIcon = icon || (device === 'desktop' ? 
-    <Laptop className="h-4 w-4 text-blue-500" /> : 
-    <Smartphone className="h-4 w-4 text-purple-500" />
-  );
+  // Format metrics for display
+  const metrics = [
+    {
+      title: 'First Contentful Paint',
+      value: data?.firstContentfulPaint ? data.firstContentfulPaint / 1000 : undefined,
+      unit: 's',
+      description: 'Tiempo hasta que el navegador representa el primer contenido DOM.'
+    },
+    {
+      title: 'Speed Index',
+      value: data?.speedIndex ? data.speedIndex / 1000 : undefined,
+      unit: 's',
+      description: 'Qué tan rápido se llena visualmente el contenido de la página.'
+    },
+    {
+      title: 'Largest Contentful Paint',
+      value: data?.largestContentfulPaint ? data.largestContentfulPaint / 1000 : undefined,
+      unit: 's',
+      description: 'Tiempo para mostrar la imagen o bloque de texto más grande.'
+    },
+    {
+      title: 'Time to Interactive',
+      value: data?.timeToInteractive ? data.timeToInteractive / 1000 : undefined,
+      unit: 's',
+      description: 'Tiempo hasta que la página se vuelve totalmente interactiva.'
+    },
+    {
+      title: 'Total Blocking Time',
+      value: data?.totalBlockingTime,
+      unit: 'ms',
+      description: 'Tiempo total que la página está bloqueada para responder a la entrada.'
+    },
+    {
+      title: 'Cumulative Layout Shift',
+      value: data?.cumulativeLayoutShift,
+      unit: '',
+      description: 'Medida de cuánto cambia inesperadamente el contenido de la página.'
+    }
+  ];
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium flex items-center gap-2">
-          {displayIcon}
-          <span>{displayTitle}</span>
+    <Card className="col-span-1">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Grid className="h-5 w-5 text-primary" />
+          {title}
         </CardTitle>
+        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          {/* Performance Score */}
-          <div className="flex flex-col items-center justify-center">
-            <Activity className={`h-5 w-5 mb-1 ${getScoreColor(performanceScore)}`} />
-            <span className={`text-xl font-bold ${getScoreColor(performanceScore)}`}>
-              {performanceScore}
-            </span>
-            <span className="text-xs text-muted-foreground">Rendimiento</span>
-          </div>
-          
-          {/* Accessibility Score */}
-          <div className="flex flex-col items-center justify-center">
-            <Accessibility className={`h-5 w-5 mb-1 ${getScoreColor(accessibilityScore)}`} />
-            <span className={`text-xl font-bold ${getScoreColor(accessibilityScore)}`}>
-              {accessibilityScore}
-            </span>
-            <span className="text-xs text-muted-foreground">Accesibilidad</span>
-          </div>
-          
-          {/* Best Practices Score */}
-          <div className="flex flex-col items-center justify-center">
-            <Cpu className={`h-5 w-5 mb-1 ${getScoreColor(bestPracticesScore)}`} />
-            <span className={`text-xl font-bold ${getScoreColor(bestPracticesScore)}`}>
-              {bestPracticesScore}
-            </span>
-            <span className="text-xs text-muted-foreground">Buenas Prácticas</span>
-          </div>
-          
-          {/* SEO Score */}
-          <div className="flex flex-col items-center justify-center">
-            <AlertCircle className={`h-5 w-5 mb-1 ${getScoreColor(seoScore)}`} />
-            <span className={`text-xl font-bold ${getScoreColor(seoScore)}`}>
-              {seoScore}
-            </span>
-            <span className="text-xs text-muted-foreground">SEO</span>
-          </div>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-2 gap-3">
+          <ScoreCard 
+            title="Rendimiento" 
+            score={data?.performance || 0} 
+            description="Métricas de velocidad de carga" 
+          />
+          <ScoreCard 
+            title="Accesibilidad" 
+            score={data?.accessibility || 0} 
+            description="Facilidad de uso para todos" 
+          />
+          <ScoreCard 
+            title="Buenas Prácticas" 
+            score={data?.bestPractices || 0} 
+            description="Seguimiento de estándares web" 
+          />
+          <ScoreCard 
+            title="SEO" 
+            score={data?.seo || 0} 
+            description="Optimización para buscadores" 
+          />
         </div>
-        
-        <div className="space-y-1">
-          <h3 className="text-sm font-medium mb-2">Métricas Principales</h3>
-          <MetricItem 
-            label="First Contentful Paint" 
-            value={data.firstContentfulPaint} 
-          />
-          <MetricItem 
-            label="Speed Index" 
-            value={data.speedIndex} 
-          />
-          <MetricItem 
-            label="Largest Contentful Paint" 
-            value={data.largestContentfulPaint} 
-          />
-          <MetricItem 
-            label="Time to Interactive" 
-            value={data.timeToInteractive} 
-          />
-          <MetricItem 
-            label="Total Blocking Time" 
-            value={data.totalBlockingTime} 
-          />
-          <MetricItem 
-            label="Cumulative Layout Shift" 
-            value={data.cumulativeLayoutShift} 
-            unit="" 
-          />
+
+        <h3 className="text-base font-medium mt-6 mb-3">Métricas clave de rendimiento</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {metrics.map((metric, index) => (
+            <MetricItem
+              key={index}
+              title={metric.title}
+              value={metric.value}
+              unit={metric.unit}
+              description={metric.description}
+            />
+          ))}
         </div>
       </CardContent>
     </Card>

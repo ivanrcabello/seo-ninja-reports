@@ -44,28 +44,9 @@ export const extractBusinessInfoWithValueSerp = async (
         // Format business hours for storage
         const formattedHours = data.data.businessHours ? JSON.stringify(data.data.businessHours) : '{}';
         
-        // Note: We're just storing the business profile information for reference
-        // We'll create the actual association with the report later when saving
-        const { error: dbError } = await supabase
-          .from('business_profiles')
-          .insert({
-            report_id: '00000000-0000-0000-0000-000000000000', // Temporary ID
-            business_url: data.data.businessUrl,
-            business_name: data.data.businessName,
-            business_address: data.data.businessAddress || '',
-            business_category: data.data.businessCategory || '',
-            business_rating: data.data.businessRating,
-            business_reviews_count: data.data.businessReviewsCount || 0,
-            business_phone: data.data.businessPhone || '',
-            business_website: data.data.businessWebsite || '',
-            business_hours: formattedHours
-          });
-          
-        if (dbError) {
-          console.error('Error storing business data in database:', dbError);
-        } else {
-          console.log('Business profile data stored in database');
-        }
+        // Note: We're not storing the data directly in the business_profiles table
+        // as it requires a report_id which might not be available at this point
+        console.log('Business profile data extracted successfully:', data.data);
       } catch (dbError) {
         console.error('Error accessing database:', dbError);
       }

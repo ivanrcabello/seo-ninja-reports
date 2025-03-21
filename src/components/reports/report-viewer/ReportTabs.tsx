@@ -1,167 +1,167 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Report, BusinessProfile } from '@/types/report.types';
-import ReportSection from '../report-section';
+import { Gauge, Search, FileText, MessageSquare, BarChart } from 'lucide-react';
+import ExecutiveSummaryTab from './ExecutiveSummaryTab';
+import KeywordsTab from './KeywordsTab';
+import OnPageTab from './OnPageTab';
+import TechnicalTab from './TechnicalTab';
+import LocalSEOTab from './LocalSEOTab';
+import ContentTab from './ContentTab';
+import CustomTabs from './CustomTabs';
 import PageSpeedTab from './pagespeed/PageSpeedTab';
-import BusinessProfileTable from './business-profile/BusinessProfileTable';
-import KeywordsSection from './keywords/KeywordsSection';
-import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
+import { Report } from '@/types/report.types';
 
 interface ReportTabsProps {
   report: Report;
-  pageSpeedData?: any;
-  businessProfile?: BusinessProfile | null;
-  isLoadingPageSpeed: boolean;
-  isLoadingBusinessProfile: boolean;
   isEditing: boolean;
-  onEdit: (sectionKey: string, content: string) => void;
-  onSaveBusinessProfile?: (profile: Partial<BusinessProfile>) => Promise<void>;
-  isSavingBusinessProfile?: boolean;
+  onSaveEdit: (section: string, content: string) => Promise<void>;
 }
 
-const ReportTabs: React.FC<ReportTabsProps> = ({
-  report,
-  pageSpeedData,
-  businessProfile,
-  isLoadingPageSpeed,
-  isLoadingBusinessProfile,
-  isEditing,
-  onEdit,
-  onSaveBusinessProfile,
-  isSavingBusinessProfile = false
-}) => {
-  const [activeTab, setActiveTab] = useState('content');
-  const reportContent = report.content || {};
+const ReportTabs: React.FC<ReportTabsProps> = ({ report, isEditing, onSaveEdit }) => {
+  const [activeTab, setActiveTab] = useState('resumen');
+
+  // Verificar si el informe contiene datos de PageSpeed
+  const hasPageSpeedData = report.content?.pageSpeedData && 
+    ((report.content.pageSpeedData.desktop && Object.keys(report.content.pageSpeedData.desktop).length > 0) || 
+     (report.content.pageSpeedData.mobile && Object.keys(report.content.pageSpeedData.mobile).length > 0));
   
-  // Safely handle keywords content - ensure it exists before accessing
-  const keywordsContent = reportContent && 'keywords' in reportContent ? 
-    (typeof reportContent.keywords === 'string' ? reportContent.keywords : '') : '';
+  // Verificar que keywords existe y tiene datos
+  const hasKeywordsData = report.content?.keywords && 
+    Array.isArray(report.content.keywords) && 
+    report.content.keywords.length > 0;
   
-  // Check if keywords array exists
-  const hasKeywords = reportContent && 'keywords' in reportContent && 
-    (Array.isArray(reportContent.keywords) && reportContent.keywords.length > 0);
-  
-  const getTabCount = () => {
-    let count = 1; // "Content" tab is always present
-    
-    if (pageSpeedData || isLoadingPageSpeed) {
-      count++;
-    }
-    
-    if (businessProfile || isLoadingBusinessProfile || report.hasBusinessProfile) {
-      count++;
-    }
-    
-    if (hasKeywords || keywordsContent) {
-      count++;
-    }
-    
-    return count;
-  };
-  
-  const tabCount = getTabCount();
-  
+  // Contar keywords
+  const keywordsCount = report.content?.keywords && 
+    Array.isArray(report.content.keywords) ? 
+    report.content.keywords.length : 0;
+
+  // Custom content from the report (additional tabs)
+  const customSections = report.customSections || [];
+
   return (
     <Tabs 
+      defaultValue="resumen" 
       value={activeTab} 
       onValueChange={setActiveTab}
       className="w-full"
     >
-      <div className="border-b px-6">
-        <TabsList className="h-12 bg-transparent p-0">
-          <TabsTrigger 
-            value="content" 
-            className="data-[state=active]:border-primary rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-b-2 px-4"
-          >
-            Contenido
+      <TabsList className="grid grid-cols-4 md:grid-cols-7 lg:grid-cols-9 mb-8">
+        <TabsTrigger value="resumen" className="flex items-center gap-1">
+          <FileText className="h-4 w-4" />
+          <span className="hidden sm:inline">Resumen</span>
+        </TabsTrigger>
+        
+        {hasPageSpeedData && (
+          <TabsTrigger value="pagespeed" className="flex items-center gap-1">
+            <Gauge className="h-4 w-4" />
+            <span className="hidden sm:inline">PageSpeed</span>
           </TabsTrigger>
-          
-          {(pageSpeedData || isLoadingPageSpeed) && (
-            <TabsTrigger 
-              value="pagespeed" 
-              className="data-[state=active]:border-primary rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-b-2 px-4"
-            >
-              PageSpeed
-            </TabsTrigger>
-          )}
-          
-          {(businessProfile || isLoadingBusinessProfile || report.hasBusinessProfile) && (
-            <TabsTrigger 
-              value="business-profile" 
-              className="data-[state=active]:border-primary rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-b-2 px-4"
-            >
-              Perfil GMB
-            </TabsTrigger>
-          )}
-          
-          {(hasKeywords || keywordsContent) && (
-            <TabsTrigger 
-              value="keywords" 
-              className="data-[state=active]:border-primary rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-b-2 px-4"
-            >
-              Keywords
-            </TabsTrigger>
-          )}
-        </TabsList>
-      </div>
+        )}
+        
+        {hasKeywordsData && (
+          <TabsTrigger value="keywords" className="flex items-center gap-1">
+            <Search className="h-4 w-4" />
+            <span className="hidden sm:inline">Keywords</span>
+            {keywordsCount > 0 && <span className="ml-1 text-xs bg-secondary rounded-full px-1.5 py-0.5">{keywordsCount}</span>}
+          </TabsTrigger>
+        )}
+        
+        <TabsTrigger value="onpage" className="flex items-center gap-1">
+          <BarChart className="h-4 w-4" />
+          <span className="hidden sm:inline">On-Page</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="tecnico" className="flex items-center gap-1">
+          <Gauge className="h-4 w-4" />
+          <span className="hidden sm:inline">Técnico</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="localseo" className="flex items-center gap-1">
+          <MessageSquare className="h-4 w-4" />
+          <span className="hidden sm:inline">Local SEO</span>
+        </TabsTrigger>
+        
+        <TabsTrigger value="contenido" className="flex items-center gap-1">
+          <FileText className="h-4 w-4" />
+          <span className="hidden sm:inline">Contenido</span>
+        </TabsTrigger>
+        
+        {customSections.map((section) => (
+          <TabsTrigger 
+            key={section.id} 
+            value={section.id} 
+            className="flex items-center gap-1"
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">{section.title}</span>
+          </TabsTrigger>
+        ))}
+      </TabsList>
       
-      <TabsContent value="content" className="p-6">
-        <div className="space-y-8">
-          {Object.entries(reportContent).map(([key, value]) => {
-            // Skip non-section data
-            if (
-              key === 'rawHtml' || 
-              key === 'pageSpeedData' || 
-              key === 'keywords' || 
-              key === 'businessProfile'
-            ) {
-              return null;
-            }
-            
-            return (
-              <ReportSection 
-                key={key}
-                title={key}
-                content={value as string} 
-                onEdit={isEditing ? (content) => onEdit(key, content) : undefined}
-              />
-            );
-          })}
-        </div>
-      </TabsContent>
-      
-      <TabsContent value="pagespeed" className="pt-2">
-        <PageSpeedTab 
-          data={pageSpeedData} 
-          isLoading={isLoadingPageSpeed} 
+      <TabsContent value="resumen">
+        <ExecutiveSummaryTab 
+          content={report.content?.executiveSummary || ''} 
+          isEditing={isEditing} 
+          onSave={(content) => onSaveEdit('executiveSummary', content)}
         />
       </TabsContent>
       
-      <TabsContent value="business-profile" className="p-6">
-        <BusinessProfileTable 
-          businessProfile={businessProfile}
-          isLoading={isLoadingBusinessProfile}
-          onSaveBusinessProfile={onSaveBusinessProfile}
-          isSaving={isSavingBusinessProfile}
-          reportContent={reportContent}
+      {hasPageSpeedData && (
+        <TabsContent value="pagespeed">
+          <PageSpeedTab data={report.content?.pageSpeedData} />
+        </TabsContent>
+      )}
+      
+      {hasKeywordsData && (
+        <TabsContent value="keywords">
+          <KeywordsTab 
+            keywords={report.content?.keywords || []} 
+            isEditing={isEditing}
+            onSave={(content) => onSaveEdit('keywordsAnalysis', content)}
+            keywordsAnalysis={report.content?.keywordsAnalysis || ''}
+          />
+        </TabsContent>
+      )}
+      
+      <TabsContent value="onpage">
+        <OnPageTab 
+          content={report.content?.onPageSEO || ''} 
+          isEditing={isEditing} 
+          onSave={(content) => onSaveEdit('onPageSEO', content)}
         />
       </TabsContent>
       
-      <TabsContent value="keywords" className="p-6">
-        {hasKeywords && 'keywords' in reportContent ? (
-          <KeywordsSection 
-            keywords={Array.isArray(reportContent.keywords) ? reportContent.keywords : []} 
-            keywordsContent={keywordsContent}
-          />
-        ) : keywordsContent ? (
-          <KeywordsSection 
-            keywords={[]} 
-            keywordsContent={keywordsContent}
-          />
-        ) : null}
+      <TabsContent value="tecnico">
+        <TechnicalTab 
+          content={report.content?.technicalSEO || ''} 
+          isEditing={isEditing} 
+          onSave={(content) => onSaveEdit('technicalSEO', content)}
+        />
       </TabsContent>
+      
+      <TabsContent value="localseo">
+        <LocalSEOTab 
+          content={report.content?.localSEO || ''} 
+          isEditing={isEditing} 
+          onSave={(content) => onSaveEdit('localSEO', content)}
+          businessProfile={report.content?.businessProfile}
+        />
+      </TabsContent>
+      
+      <TabsContent value="contenido">
+        <ContentTab 
+          content={report.content?.contentStrategy || ''} 
+          isEditing={isEditing} 
+          onSave={(content) => onSaveEdit('contentStrategy', content)}
+        />
+      </TabsContent>
+      
+      <CustomTabs 
+        customSections={customSections} 
+        isEditing={isEditing} 
+        onSaveEdit={onSaveEdit}
+      />
     </Tabs>
   );
 };

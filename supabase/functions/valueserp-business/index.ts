@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
     // Function to extract business data using ValueSerp
     const extractBusinessInfo = async (query: string) => {
-      console.log(`Intento 1 de extraer información con ValueSerp`);
+      console.log(`Extracting information with ValueSerp for query: ${query}`);
       
       try {
         // Create ValueSerp API URL for local business information
