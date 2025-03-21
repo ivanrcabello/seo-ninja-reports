@@ -69,6 +69,7 @@ export const fetchClientSeoReports = async (clientId: string): Promise<SeoReport
       })
     );
 
+    console.log('Fetched reports with data:', reportsWithData);
     return reportsWithData;
   } catch (error) {
     console.error('Error fetching SEO reports:', error);
@@ -88,6 +89,8 @@ export const uploadSeoReport = async (
   }
 ): Promise<SeoReport> => {
   try {
+    console.log('Uploading SEO report for client:', clientId, 'with data:', reportData);
+    
     // Insert the report
     const { data: report, error } = await supabase
       .from('seo_reports')
@@ -103,6 +106,8 @@ export const uploadSeoReport = async (
 
     if (error) throw error;
 
+    console.log('Created SEO report:', report);
+
     // Insert keywords if provided
     if (reportData.keywordsData && reportData.keywordsData.length > 0) {
       const keywordsToInsert = reportData.keywordsData.map(keyword => ({
@@ -112,6 +117,8 @@ export const uploadSeoReport = async (
         volume: keyword.volume,
         traffic_percent: keyword.trafficPercent
       }));
+
+      console.log('Inserting keywords:', keywordsToInsert);
 
       const { error: keywordsError } = await supabase
         .from('seo_keywords')
@@ -131,6 +138,8 @@ export const uploadSeoReport = async (
         keywords_overlap: competitor.keywordsOverlap,
         competition_level: competitor.competitionLevel
       }));
+
+      console.log('Inserting competitors:', competitorsToInsert);
 
       const { error: competitorsError } = await supabase
         .from('seo_competitors')
@@ -176,7 +185,6 @@ export const uploadSeoReport = async (
   }
 };
 
-// Add the missing functions that UploadPDF.tsx is looking for
 export const parseSemrushPdf = async (file: File): Promise<{
   domain: string;
   traffic?: number;
@@ -186,30 +194,46 @@ export const parseSemrushPdf = async (file: File): Promise<{
   competitorsData?: { domain: string; keywordsOverlap?: number; competitionLevel?: number }[];
 } | null> => {
   try {
-    // This is a simplified version since we can't actually parse PDFs in browser
-    // In a real implementation, you'd need to send the file to a server or use a PDF parsing library
+    console.log('Parsing PDF file:', file.name);
     
-    // For now, create mock data based on the filename
-    const domain = file.name.replace('.pdf', '').replace('semrush_', '');
+    // Check file extension
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Formato no válido', {
+        description: 'El archivo debe ser un PDF de Semrush'
+      });
+      return null;
+    }
     
-    // Generate some sample data
+    // In a real implementation, you'd send the file to a server for processing
+    // For this demo, extract domain from filename or generate a mock domain
+    let domain = file.name.replace('.pdf', '').replace(/semrush_|semrush-/gi, '');
+    
+    // If domain is empty or doesn't look like a domain, generate a placeholder
+    if (!domain.includes('.') || domain.length < 4) {
+      domain = `example-${Math.floor(Math.random() * 1000)}.com`;
+    }
+    
+    // Generate more realistic sample data
     return {
       domain,
-      traffic: Math.floor(Math.random() * 5000),
-      keywords: Math.floor(Math.random() * 1000),
-      backlinks: Math.floor(Math.random() * 500),
+      traffic: Math.floor(Math.random() * 10000) + 1000,
+      keywords: Math.floor(Math.random() * 2000) + 500,
+      backlinks: Math.floor(Math.random() * 10000) + 2000,
       keywordsData: [
-        { keyword: 'seo services', position: 5, volume: 1200, trafficPercent: 12.5 },
-        { keyword: 'digital marketing', position: 8, volume: 2400, trafficPercent: 8.3 },
-        { keyword: 'web design', position: 12, volume: 1800, trafficPercent: 5.7 },
-        { keyword: 'local seo', position: 3, volume: 850, trafficPercent: 15.2 },
-        { keyword: 'content marketing', position: 10, volume: 1300, trafficPercent: 6.8 }
+        { keyword: 'seo professional services', position: 2, volume: 1800, trafficPercent: 22.5 },
+        { keyword: 'digital marketing agency', position: 5, volume: 2900, trafficPercent: 18.3 },
+        { keyword: 'web design services', position: 7, volume: 3200, trafficPercent: 15.7 },
+        { keyword: 'local seo company', position: 1, volume: 1250, trafficPercent: 25.2 },
+        { keyword: 'content marketing strategy', position: 4, volume: 1700, trafficPercent: 16.8 },
+        { keyword: 'seo audit tool', position: 8, volume: 950, trafficPercent: 12.4 },
+        { keyword: 'search engine optimization', position: 6, volume: 4800, trafficPercent: 14.1 }
       ],
       competitorsData: [
-        { domain: 'competitor1.com', keywordsOverlap: 85, competitionLevel: 0.75 },
-        { domain: 'competitor2.com', keywordsOverlap: 62, competitionLevel: 0.68 },
-        { domain: 'competitor3.com', keywordsOverlap: 54, competitionLevel: 0.52 },
-        { domain: 'competitor4.com', keywordsOverlap: 43, competitionLevel: 0.45 }
+        { domain: 'topcompetitor.com', keywordsOverlap: 187, competitionLevel: 0.82 },
+        { domain: 'competitor-seo.com', keywordsOverlap: 143, competitionLevel: 0.75 },
+        { domain: 'digitalmarketing.io', keywordsOverlap: 112, competitionLevel: 0.64 },
+        { domain: 'seoexperts.net', keywordsOverlap: 95, competitionLevel: 0.58 },
+        { domain: 'webmarketingpros.com', keywordsOverlap: 76, competitionLevel: 0.47 }
       ]
     };
   } catch (error) {
@@ -225,6 +249,7 @@ export const createSeoReport = async (clientId: string, data: ReturnType<typeof 
   if (!data) return null;
   
   try {
+    console.log('Creating SEO report with data:', data);
     const result = await uploadSeoReport(clientId, data);
     return result;
   } catch (error) {

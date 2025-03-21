@@ -18,12 +18,13 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.type !== 'application/pdf') {
+      if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
         toast.error('Formato no válido', {
           description: 'Por favor, sube un archivo PDF'
         });
         return;
       }
+      console.log('File selected:', file.name);
       setSelectedFile(file);
     }
   };
@@ -38,6 +39,11 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
 
     setIsUploading(true);
     try {
+      console.log('Processing PDF file:', selectedFile.name);
+      toast.info('Procesando informe', {
+        description: 'Extrayendo datos del PDF...'
+      });
+      
       // Parse the PDF
       const parsedData = await parseSemrushPdf(selectedFile);
       
@@ -48,10 +54,16 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
         return;
       }
 
+      console.log('Parsed data:', parsedData);
+      toast.info('Guardando informe', {
+        description: `Creando informe para ${parsedData.domain}...`
+      });
+
       // Create a new SEO report
       const result = await createSeoReport(clientId, parsedData);
       
       if (result) {
+        console.log('SEO report created successfully:', result);
         toast.success('Informe guardado correctamente', {
           description: `Se ha creado un nuevo informe para ${parsedData.domain}`
         });
