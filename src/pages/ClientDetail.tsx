@@ -46,6 +46,27 @@ const ClientDetail = () => {
     }
   };
 
+  // Handle anchor navigation to tabs (for direct links)
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#reports') {
+        setActiveTab('reports');
+      } else if (hash === '#new-report') {
+        setActiveTab('new-report');
+      } else {
+        setActiveTab('overview');
+      }
+    };
+    
+    // Check on mount
+    handleHashChange();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />

@@ -10,6 +10,7 @@ import ClientGmbTest from '../tests/ClientGmbTest';
 import ClientPageSpeedTest from '../tests/ClientPageSpeedTest';
 import ClientBusinessSearch from '../tests/ClientBusinessSearch';
 import ClientCredentials from '../ClientCredentials';
+import ClientKeywords from '../keywords/ClientKeywords';
 
 interface ClientTabsSectionProps {
   activeTab: string;
@@ -34,9 +35,10 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-      <TabsList className="grid grid-cols-3 mb-4">
+      <TabsList className="grid grid-cols-4 mb-4">
         <TabsTrigger value="summary">Resumen</TabsTrigger>
         <TabsTrigger value="tests">Tests Rápidos</TabsTrigger>
+        <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
         <TabsTrigger value="credentials">Credenciales</TabsTrigger>
       </TabsList>
       
@@ -74,6 +76,13 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
             <ClientBusinessSearch 
               clientId={client.id}
               onProfileUpdate={onBusinessProfileUpdate}
+            />
+          </TabsContent>
+          
+          <TabsContent value="keywords">
+            <ClientKeywords
+              clientId={client.id}
+              reports={reports}
             />
           </TabsContent>
           
