@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientProposal } from '@/types/client.types';
 
-export const useClientProposals = (clientId: string) => {
+export const useClientProposals = (clientId?: string) => {
   const [proposals, setProposals] = useState<ClientProposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -14,11 +14,17 @@ export const useClientProposals = (clientId: string) => {
   const fetchProposals = useCallback(async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('client_proposals')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+      
+      // If no clientId is provided, fetch all proposals
+      const query = supabase.from('client_proposals').select('*');
+      
+      if (clientId) {
+        query.eq('client_id', clientId);
+      }
+      
+      query.order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -41,10 +47,8 @@ export const useClientProposals = (clientId: string) => {
   }, [clientId, toast]);
 
   useEffect(() => {
-    if (clientId) {
-      fetchProposals();
-    }
-  }, [clientId, fetchProposals]);
+    fetchProposals();
+  }, [fetchProposals]);
 
   // Clear editing state when dialog closes
   const handleSetDialogOpen = useCallback((isOpen: boolean) => {
@@ -92,7 +96,7 @@ export const useClientProposals = (clientId: string) => {
           title: 'Propuesta actualizada',
           description: 'La propuesta se actualizó correctamente',
         });
-      } else {
+      } else if (clientId) {
         // Create new proposal
         const { data, error } = await supabase
           .from('client_proposals')
@@ -172,6 +176,7 @@ export const useClientProposals = (clientId: string) => {
     handleCreateProposal,
     handleEditProposal,
     handleSaveProposal,
-    handleDeleteProposal
+    handleDeleteProposal,
+    fetchProposals
   };
 };

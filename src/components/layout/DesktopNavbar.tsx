@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import NavDropdown from './NavDropdown';
+import { NavDropdown } from './NavDropdown';
 import { LogOut, User, Settings, BarChart3, Archive, Users } from 'lucide-react';
 
 const DesktopNavbar: React.FC = () => {

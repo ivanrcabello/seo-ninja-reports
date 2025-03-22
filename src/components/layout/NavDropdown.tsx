@@ -16,51 +16,50 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 
-interface NavDropdownProps {
-  title: string;
-  items: {
-    href: string;
-    label: string;
-    description?: string;
-    icon?: React.ReactNode;
-  }[];
-  open: boolean;
-  setOpen: (open: boolean) => void;
+interface NavDropdownItemProps {
+  href: string;
+  label: string;
+  description?: string;
+  icon?: React.ReactNode;
+  onClick?: () => void;
 }
 
-const NavDropdown: React.FC<NavDropdownProps> = ({ title, items, open, setOpen }) => {
+interface NavDropdownProps {
+  trigger: React.ReactNode;
+  items: NavDropdownItemProps[];
+}
+
+export const NavDropdown: React.FC<NavDropdownProps> = ({ trigger, items }) => {
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-1.5 font-medium text-base">
-          {title}
-          {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
+        {trigger}
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64 md:w-96" align="end">
-        <div className="grid md:grid-cols-2 p-2">
-          {items.map((item, index) => (
-            <DropdownMenuItem key={index} asChild className="p-3 cursor-pointer rounded-md">
-              <Link to={item.href} className="flex flex-col" onClick={() => setOpen(false)}>
-                <div className="flex items-center gap-2">
-                  {item.icon}
-                  <span className="font-medium">{item.label}</span>
-                </div>
-                {item.description && (
-                  <span className="text-xs text-muted-foreground pt-1">
-                    {item.description}
-                  </span>
-                )}
+      <DropdownMenuContent align="end" className="w-56">
+        {items.map((item, index) => (
+          <DropdownMenuItem key={index} asChild>
+            {item.onClick ? (
+              <button 
+                onClick={item.onClick} 
+                className="w-full flex items-center cursor-pointer px-2 py-2"
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ) : (
+              <Link to={item.href} className="flex items-center w-full">
+                {item.icon}
+                <span>{item.label}</span>
               </Link>
-            </DropdownMenuItem>
-          ))}
-        </div>
+            )}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
 
-const renderServiceItems = () => [
+export const renderServiceItems = () => [
   {
     href: "/servicios/seo-local",
     label: "SEO Local",
@@ -87,7 +86,7 @@ const renderServiceItems = () => [
   },
 ];
 
-const renderProductItems = () => [
+export const renderProductItems = () => [
   {
     href: "/plataforma-seo",
     label: "Plataforma SEO IA",
@@ -114,7 +113,7 @@ const renderProductItems = () => [
   },
 ];
 
-const renderResourceItems = () => [
+export const renderResourceItems = () => [
   {
     href: "/blog",
     label: "Blog",
@@ -134,5 +133,3 @@ const renderResourceItems = () => [
     icon: <FileText className="h-4 w-4 text-primary" />,
   },
 ];
-
-export { NavDropdown, renderServiceItems, renderProductItems, renderResourceItems };

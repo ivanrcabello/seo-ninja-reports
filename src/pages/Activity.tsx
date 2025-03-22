@@ -10,12 +10,11 @@ import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { useAuth } from '@/context/AuthContext';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
-import useClientProposals from '@/hooks/useClientProposals';
-import useClientContracts from '@/hooks/useClientContracts';
+import { useClientProposals } from '@/hooks/useClientProposals';
+import { useClientContracts } from '@/hooks/useClientContracts';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
-import { Link } from 'react-router-dom';
-import { FileText, Calendar, User, Loader2, FileContract, FileSpreadsheet } from 'lucide-react';
+import { FileText, Calendar, User, Loader2, FileSpreadsheet } from 'lucide-react';
 
 const Activity = () => {
   const { user, loading: authLoading } = useAuth();
@@ -196,7 +195,7 @@ const Activity = () => {
                             ) : activity.type === 'proposal' ? (
                               <FileSpreadsheet className="h-5 w-5 text-blue-500" />
                             ) : (
-                              <FileContract className="h-5 w-5 text-purple-500" />
+                              <FileSpreadsheet className="h-5 w-5 text-purple-500" />
                             )}
                           </div>
                           <div className="flex-1">

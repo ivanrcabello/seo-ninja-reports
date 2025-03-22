@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface User {
   id: string;
   email: string;
+  name?: string;
+  avatar_url?: string;
 }
 
 interface AuthContextType {
@@ -28,7 +30,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
-      setUser(data.user ? { id: data.user.id, email: data.user.email || '' } : null);
+      setUser(data.user ? { 
+        id: data.user.id, 
+        email: data.user.email || '',
+        name: data.user.user_metadata?.name,
+        avatar_url: data.user.user_metadata?.avatar_url
+      } : null);
       setLoading(false);
     };
 
@@ -36,7 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        setUser({ id: session.user.id, email: session.user.email || '' });
+        setUser({ 
+          id: session.user.id, 
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name,
+          avatar_url: session.user.user_metadata?.avatar_url
+        });
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }

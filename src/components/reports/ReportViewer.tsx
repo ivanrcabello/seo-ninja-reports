@@ -1,5 +1,7 @@
 
 import React from 'react';
-import ReportViewer from './report-viewer/ReportViewer';
+import ReportViewerComponent from './report-viewer/ReportViewer';
+
+const ReportViewer = ReportViewerComponent;
 
 export default ReportViewer;
