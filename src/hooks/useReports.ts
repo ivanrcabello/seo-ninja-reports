@@ -20,13 +20,8 @@ interface Keyword {
   difficulty?: number;
 }
 
-// Create a standalone ReportsProvider function that doesn't use JSX
-export const ReportsProvider = function(props: { children: any }) {
-  return props.children;
-};
-
-// Hook for managing reports
-export default function useReports() {
+// Create a standalone hook for direct use (not through context)
+export default function useReportsHook() {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
