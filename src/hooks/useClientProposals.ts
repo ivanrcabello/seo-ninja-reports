@@ -41,7 +41,9 @@ export const useClientProposals = (clientId: string) => {
   };
 
   useEffect(() => {
-    fetchProposals();
+    if (clientId) {
+      fetchProposals();
+    }
   }, [clientId]);
 
   const handleCreateProposal = () => {

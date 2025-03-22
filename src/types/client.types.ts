@@ -1,4 +1,3 @@
-
 export interface Client {
   id: string;
   name: string;
@@ -27,13 +26,13 @@ export interface ClientProposal {
   id: string;
   client_id: string;
   title: string;
-  description?: string; // This can now contain HTML
+  description?: string;
   services?: string[];
   price?: number;
   status: 'draft' | 'sent' | 'accepted' | 'rejected';
   created_at: string;
   updated_at: string;
-  shared_url?: string; // Adding field for shared URL
+  shared_url?: string;
 }
 
 export interface ClientNote {
