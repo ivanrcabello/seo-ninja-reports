@@ -32,6 +32,9 @@ export const generateOpenAIReport = async (
       throw new Error('No se ha configurado una API key de OpenAI válida');
     }
     
+    // Enhance prompt to include metrics for visualizations
+    const enhancedPrompt = `${prompt}\n\nIMPORTANTE: Incluye métricas numéricas específicas en cada sección (puntuaciones de 0-100) para los aspectos clave. Por ejemplo, "Velocidad de carga: 75/100", "Calidad de backlinks: 85/100". Estas métricas serán cruciales para la visualización gráfica del informe.`;
+    
     const startTime = Date.now();
     console.log(`[${new Date().toISOString()}] Enviando solicitud a OpenAI API...`);
     
@@ -46,11 +49,11 @@ export const generateOpenAIReport = async (
         messages: [
           {
             role: "system",
-            content: prompt
+            content: enhancedPrompt
           },
           {
             role: "user",
-            content: `Analiza el sitio web ${url}. Genera un informe SEO completo y detallado basado en el prompt proporcionado.`
+            content: `Analiza el sitio web ${url}. Genera un informe SEO completo y detallado basado en el prompt proporcionado. Incluye métricas cuantitativas (puntuaciones de 0-100) para cada aspecto que analices.`
           }
         ],
         temperature: 0.7

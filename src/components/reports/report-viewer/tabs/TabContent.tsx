@@ -7,9 +7,11 @@ import RecommendationsList from '../../report-section/RecommendationsList';
 import BusinessProfileSection from '../../report-section/BusinessProfileSection';
 import { PageSpeedTab } from '../pagespeed';
 import KeywordsSection from '../keywords/KeywordsSection';
-import { getKeywords } from '@/services/api/keywordsService';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { getKeywords } from '@/services/api/keywordsService';
+import { Loader2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { HeatMapSection } from '../visualizations/HeatMapSection';
+import { MetricsVisualizer } from '../visualizations/MetricsVisualizer';
 
 interface TabContentProps {
   report: Report;
@@ -57,6 +59,13 @@ const TabContent: React.FC<TabContentProps> = ({
   // Use business profile data from the passed props or from the report content
   const businessProfileToUse = businessProfile || content?.businessProfile;
   
+  // Function to determine if content has visual metrics data
+  const hasMetricsData = (text: string) => {
+    if (!text) return false;
+    return text.includes('score:') || text.includes('rating:') || text.includes('puntuación:') || 
+           text.includes('valor:') || text.includes('evaluación:');
+  };
+  
   return (
     <div className="p-4 mt-4">
       {/* Executive Summary Tab */}
@@ -68,6 +77,28 @@ const TabContent: React.FC<TabContentProps> = ({
           isEditing={isEditing}
           onEdit={onEdit}
         />
+        
+        {/* Visual summary metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          <MetricsVisualizer 
+            title="Salud SEO General" 
+            text={content.executiveSummary} 
+            icon={<CheckCircle2 className="h-5 w-5 text-green-500" />} 
+            defaultValue={75} 
+          />
+          <MetricsVisualizer 
+            title="Oportunidades de Mejora" 
+            text={content.technicalAnalysis} 
+            icon={<TrendingUp className="h-5 w-5 text-blue-500" />} 
+            defaultValue={65} 
+          />
+          <MetricsVisualizer 
+            title="Competencia" 
+            text={content.backlinksAnalysis} 
+            icon={<AlertTriangle className="h-5 w-5 text-amber-500" />} 
+            defaultValue={55} 
+          />
+        </div>
       </TabsContent>
       
       {/* Technical Analysis Tab */}
@@ -79,6 +110,15 @@ const TabContent: React.FC<TabContentProps> = ({
           isEditing={isEditing}
           onEdit={onEdit}
         />
+        
+        {/* Technical health visualization */}
+        {hasMetricsData(content.technicalAnalysis) && (
+          <HeatMapSection 
+            title="Mapa de Salud Técnica" 
+            data={content.technicalAnalysis}
+            categories={["Velocidad", "Indexación", "Mobile", "Estructura", "URLs"]}
+          />
+        )}
       </TabsContent>
       
       {/* Keywords Tab */}
@@ -96,6 +136,21 @@ const TabContent: React.FC<TabContentProps> = ({
             onEdit={(newContent) => onEdit('keywords', newContent)}
           />
         )}
+        
+        {/* Keywords visualization */}
+        {keywords && keywords.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Distribución de Palabras Clave</h3>
+            <div className="border rounded-lg p-4 bg-card/50">
+              <HeatMapSection 
+                title="Oportunidad de Palabras Clave" 
+                data={content.keywords || ''}
+                categories={["Volumen", "Competencia", "Ranking", "Potencial", "Intención"]}
+                variant="horizontal"
+              />
+            </div>
+          </div>
+        )}
       </TabsContent>
       
       {/* Content Analysis Tab */}
@@ -107,6 +162,19 @@ const TabContent: React.FC<TabContentProps> = ({
           isEditing={isEditing}
           onEdit={onEdit}
         />
+        
+        {/* Content quality visualization */}
+        {hasMetricsData(content.contentAnalysis) && (
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Calidad de Contenido</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <MetricsVisualizer title="Originalidad" text={content.contentAnalysis} searchTerm="originalidad" maxValue={100} defaultValue={80} />
+              <MetricsVisualizer title="Relevancia" text={content.contentAnalysis} searchTerm="relevancia" maxValue={100} defaultValue={75} />
+              <MetricsVisualizer title="Estructura" text={content.contentAnalysis} searchTerm="estructura" maxValue={100} defaultValue={65} />
+              <MetricsVisualizer title="Legibilidad" text={content.contentAnalysis} searchTerm="legibilidad" maxValue={100} defaultValue={70} />
+            </div>
+          </div>
+        )}
       </TabsContent>
       
       {/* Backlinks Analysis Tab */}
@@ -118,6 +186,18 @@ const TabContent: React.FC<TabContentProps> = ({
           isEditing={isEditing}
           onEdit={onEdit}
         />
+        
+        {/* Backlinks visualization */}
+        {hasMetricsData(content.backlinksAnalysis) && (
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Perfil de Backlinks</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <MetricsVisualizer title="Calidad" text={content.backlinksAnalysis} searchTerm="calidad" icon={<CheckCircle2 className="h-5 w-5 text-green-500" />} defaultValue={70} />
+              <MetricsVisualizer title="Diversidad" text={content.backlinksAnalysis} searchTerm="diversidad" icon={<TrendingUp className="h-5 w-5 text-blue-500" />} defaultValue={60} />
+              <MetricsVisualizer title="Autoridad" text={content.backlinksAnalysis} searchTerm="autoridad" icon={<AlertTriangle className="h-5 w-5 text-amber-500" />} defaultValue={65} />
+            </div>
+          </div>
+        )}
       </TabsContent>
       
       {/* Local SEO Tab */}

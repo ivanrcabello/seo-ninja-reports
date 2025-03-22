@@ -1,15 +1,8 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Gauge, Search, FileText, MessageSquare, BarChart } from 'lucide-react';
-import ExecutiveSummaryTab from './ExecutiveSummaryTab';
-import KeywordsTab from './KeywordsTab';
-import OnPageTab from './OnPageTab';
-import TechnicalTab from './TechnicalTab';
-import LocalSEOTab from './LocalSEOTab';
-import ContentTab from './ContentTab';
-import CustomTabs from './CustomTabs';
-import PageSpeedTab from './pagespeed/PageSpeedTab';
+import { Gauge, Search, FileText, MessageSquare, BarChart, TrendingUp, Map } from 'lucide-react';
+import TabContent from './tabs/TabContent';
 import { Report, PageSpeedData, BusinessProfile } from '@/types/report.types';
 
 interface ReportTabsProps {
@@ -35,39 +28,42 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
   isSavingBusinessProfile = false,
   onSaveBusinessProfile
 }) => {
-  const [activeTab, setActiveTab] = useState('resumen');
+  const [activeTab, setActiveTab] = useState('executiveSummary');
 
   // Use pageSpeed data from props or fall back to data in the report
   const pageSpeedDataToUse = pageSpeedData || report.content?.pageSpeedData;
   
-  // Verificar si el informe contiene datos de PageSpeed
+  // Check if the report contains PageSpeed data
   const hasPageSpeedData = pageSpeedDataToUse && 
     ((pageSpeedDataToUse.desktop && Object.keys(pageSpeedDataToUse.desktop).length > 0) || 
      (pageSpeedDataToUse.mobile && Object.keys(pageSpeedDataToUse.mobile).length > 0));
   
-  // Verificar que keywords existe y tiene datos
+  // Check that keywords exists and has data
   const hasKeywordsData = report.content?.keywords && 
     typeof report.content.keywords === 'string' && 
     report.content.keywords.trim().length > 0;
+  
+  // Check if report has business profile data
+  const hasBusinessProfile = businessProfile || report.content?.businessProfile;
   
   // Custom content from the report (additional tabs)
   const customSections = report.customSections || [];
 
   return (
     <Tabs 
-      defaultValue="resumen" 
+      defaultValue="executiveSummary" 
       value={activeTab} 
       onValueChange={setActiveTab}
       className="w-full"
     >
       <TabsList className="grid grid-cols-4 md:grid-cols-7 lg:grid-cols-9 mb-8">
-        <TabsTrigger value="resumen" className="flex items-center gap-1">
+        <TabsTrigger value="executiveSummary" className="flex items-center gap-1">
           <FileText className="h-4 w-4" />
           <span className="hidden sm:inline">Resumen</span>
         </TabsTrigger>
         
         {hasPageSpeedData && (
-          <TabsTrigger value="pagespeed" className="flex items-center gap-1">
+          <TabsTrigger value="pageSpeedData" className="flex items-center gap-1">
             <Gauge className="h-4 w-4" />
             <span className="hidden sm:inline">PageSpeed</span>
           </TabsTrigger>
@@ -80,24 +76,31 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
           </TabsTrigger>
         )}
         
-        <TabsTrigger value="onpage" className="flex items-center gap-1">
-          <BarChart className="h-4 w-4" />
-          <span className="hidden sm:inline">On-Page</span>
+        <TabsTrigger value="contentAnalysis" className="flex items-center gap-1">
+          <FileText className="h-4 w-4" />
+          <span className="hidden sm:inline">Contenido</span>
         </TabsTrigger>
         
-        <TabsTrigger value="tecnico" className="flex items-center gap-1">
+        <TabsTrigger value="technicalAnalysis" className="flex items-center gap-1">
           <Gauge className="h-4 w-4" />
           <span className="hidden sm:inline">Técnico</span>
         </TabsTrigger>
         
-        <TabsTrigger value="localseo" className="flex items-center gap-1">
-          <MessageSquare className="h-4 w-4" />
-          <span className="hidden sm:inline">Local SEO</span>
+        <TabsTrigger value="backlinksAnalysis" className="flex items-center gap-1">
+          <TrendingUp className="h-4 w-4" />
+          <span className="hidden sm:inline">Backlinks</span>
         </TabsTrigger>
         
-        <TabsTrigger value="contenido" className="flex items-center gap-1">
-          <FileText className="h-4 w-4" />
-          <span className="hidden sm:inline">Contenido</span>
+        {hasBusinessProfile && (
+          <TabsTrigger value="localSeo" className="flex items-center gap-1">
+            <Map className="h-4 w-4" />
+            <span className="hidden sm:inline">Local SEO</span>
+          </TabsTrigger>
+        )}
+        
+        <TabsTrigger value="recommendations" className="flex items-center gap-1">
+          <MessageSquare className="h-4 w-4" />
+          <span className="hidden sm:inline">Recomend.</span>
         </TabsTrigger>
         
         {customSections.map((section) => (
@@ -112,69 +115,16 @@ const ReportTabs: React.FC<ReportTabsProps> = ({
         ))}
       </TabsList>
       
-      <TabsContent value="resumen">
-        <ExecutiveSummaryTab 
-          content={report.content?.executiveSummary || ''} 
-          isEditing={isEditing} 
-          onSave={(content) => onSaveEdit('executiveSummary', content)}
-        />
-      </TabsContent>
-      
-      {hasPageSpeedData && (
-        <TabsContent value="pagespeed">
-          <PageSpeedTab data={pageSpeedDataToUse} isLoading={isLoadingPageSpeed} />
-        </TabsContent>
-      )}
-      
-      {hasKeywordsData && (
-        <TabsContent value="keywords">
-          <KeywordsTab 
-            keywords={[]} 
-            isEditing={isEditing}
-            onSave={(content) => onSaveEdit('keywordsAnalysis', content)}
-            keywordsAnalysis={report.content?.keywordsAnalysis || ''}
-          />
-        </TabsContent>
-      )}
-      
-      <TabsContent value="onpage">
-        <OnPageTab 
-          content={report.content?.onPageSEO || ''} 
-          isEditing={isEditing} 
-          onSave={(content) => onSaveEdit('onPageSEO', content)}
-        />
-      </TabsContent>
-      
-      <TabsContent value="tecnico">
-        <TechnicalTab 
-          content={report.content?.technicalSEO || ''} 
-          isEditing={isEditing} 
-          onSave={(content) => onSaveEdit('technicalSEO', content)}
-        />
-      </TabsContent>
-      
-      <TabsContent value="localseo">
-        <LocalSEOTab 
-          content={report.content?.localSEO || ''} 
-          isEditing={isEditing} 
-          onSave={(content) => onSaveEdit('localSEO', content)}
-          businessProfile={businessProfile || report.content?.businessProfile}
-        />
-      </TabsContent>
-      
-      <TabsContent value="contenido">
-        <ContentTab 
-          content={report.content?.contentStrategy || ''} 
-          isEditing={isEditing} 
-          onSave={(content) => onSaveEdit('contentStrategy', content)}
-        />
-      </TabsContent>
-      
-      <CustomTabs 
-        customSections={customSections} 
-        isEditing={isEditing} 
-        onSaveEdit={onSaveEdit}
+      <TabContent 
+        report={report} 
+        pageSpeedData={pageSpeedDataToUse}
+        businessProfile={businessProfile}
+        isLoadingPageSpeed={isLoadingPageSpeed}
+        isLoadingBusinessProfile={isLoadingBusinessProfile}
+        isEditing={isEditing}
+        onEdit={onSaveEdit}
       />
+      
     </Tabs>
   );
 };
