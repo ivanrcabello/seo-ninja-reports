@@ -22,7 +22,7 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [hasSignature, setHasSignature] = useState(false);
   
-  // Inicializar el canvas cuando se abre el diálogo
+  // Initialize canvas when dialog opens
   useEffect(() => {
     if (open && canvasRef.current) {
       const canvas = canvasRef.current;
@@ -34,17 +34,17 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
         ctx.strokeStyle = '#000000';
         setContext(ctx);
         
-        // Ajustar el tamaño del canvas para que coincida con su contenedor
+        // Adjust canvas size to match its container
         canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
         
-        // Limpiar el canvas
+        // Clear the canvas
         clearCanvas();
       }
     }
   }, [open]);
   
-  // Asegurar que el canvas se ajuste correctamente al cambiar el tamaño de la ventana
+  // Ensure canvas adjusts correctly when window is resized
   useEffect(() => {
     const handleResize = () => {
       if (canvasRef.current && context) {
@@ -66,26 +66,35 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
     };
   }, [context]);
   
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    setIsDrawing(true);
-    setHasSignature(true);
-    
-    if (!context || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
-    
     let x, y;
+    
     if ('touches' in e) {
-      // Es un evento táctil
-      e.preventDefault(); // Prevenir scroll en dispositivos táctiles
+      // Touch event
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
     } else {
-      // Es un evento de ratón
+      // Mouse event
       x = e.clientX - rect.left;
       y = e.clientY - rect.top;
     }
+    
+    return { x, y };
+  };
+  
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!context || !canvasRef.current) return;
+    
+    // Prevent default behavior for touch events to avoid scrolling
+    if ('touches' in e) {
+      e.preventDefault();
+    }
+    
+    setIsDrawing(true);
+    setHasSignature(true);
+    
+    const { x, y } = getCoordinates(e, canvasRef.current);
     
     context.beginPath();
     context.moveTo(x, y);
@@ -94,22 +103,12 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !context || !canvasRef.current) return;
     
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    
-    let x, y;
+    // Prevent default behavior for touch events to avoid scrolling
     if ('touches' in e) {
-      // Prevenir desplazamiento de la página en dispositivos táctiles
       e.preventDefault();
-      
-      // Es un evento táctil
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      // Es un evento de ratón
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
     }
+    
+    const { x, y } = getCoordinates(e, canvasRef.current);
     
     context.lineTo(x, y);
     context.stroke();
@@ -159,6 +158,7 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
               onTouchStart={startDrawing}
               onTouchMove={draw}
               onTouchEnd={endDrawing}
+              onTouchCancel={endDrawing}
             />
           </div>
           

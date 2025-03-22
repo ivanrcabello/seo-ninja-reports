@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { format, subDays } from 'date-fns';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -10,22 +10,26 @@ import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { useAuth } from '@/context/AuthContext';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
+import useClientProposals from '@/hooks/useClientProposals';
+import useClientContracts from '@/hooks/useClientContracts';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
 import { Link } from 'react-router-dom';
-import { FileText, Calendar, User, Loader2 } from 'lucide-react';
+import { FileText, Calendar, User, Loader2, FileContract, FileSpreadsheet } from 'lucide-react';
 
 const Activity = () => {
   const { user, loading: authLoading } = useAuth();
   const { reports, isLoading: reportsLoading } = useReports();
   const { clients, isLoading: clientsLoading } = useClients();
+  const { proposals, isLoading: proposalsLoading } = useClientProposals();
+  const { contracts, isLoading: contractsLoading } = useClientContracts();
 
   // Redirect if not logged in
   if (!user && !authLoading) {
     return <Navigate to="/auth" replace />;
   }
 
-  const isLoading = authLoading || reportsLoading || clientsLoading;
+  const isLoading = authLoading || reportsLoading || clientsLoading || proposalsLoading || contractsLoading;
 
   // Get recent activities (last 7 days)
   const sevenDaysAgo = subDays(new Date(), 7);
@@ -54,6 +58,44 @@ const Activity = () => {
       }
     });
   
+  // Filter recent proposals
+  const recentProposals = proposals
+    .filter(proposal => {
+      try {
+        return new Date(proposal.created_at) >= sevenDaysAgo;
+      } catch (error) {
+        console.error("Invalid date in proposal:", proposal.id, proposal.created_at);
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      try {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } catch (error) {
+        console.error("Error sorting proposals by date:", error);
+        return 0;
+      }
+    });
+
+  // Filter recent contracts
+  const recentContracts = contracts
+    .filter(contract => {
+      try {
+        return new Date(contract.created_at) >= sevenDaysAgo;
+      } catch (error) {
+        console.error("Invalid date in contract:", contract.id, contract.created_at);
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      try {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } catch (error) {
+        console.error("Error sorting contracts by date:", error);
+        return 0;
+      }
+    });
+  
   // Combine and sort all activities
   const activities = [
     ...recentReports.map(report => ({
@@ -70,6 +112,30 @@ const Activity = () => {
         };
       } catch (error) {
         console.error("Error creating activity for client:", client.id, error);
+        return null;
+      }
+    }).filter(Boolean),
+    ...recentProposals.map(proposal => {
+      try {
+        return {
+          type: 'proposal',
+          date: new Date(proposal.created_at),
+          data: proposal
+        };
+      } catch (error) {
+        console.error("Error creating activity for proposal:", proposal.id, error);
+        return null;
+      }
+    }).filter(Boolean),
+    ...recentContracts.map(contract => {
+      try {
+        return {
+          type: 'contract',
+          date: new Date(contract.created_at),
+          data: contract
+        };
+      } catch (error) {
+        console.error("Error creating activity for contract:", contract.id, error);
         return null;
       }
     }).filter(Boolean)
@@ -118,12 +184,19 @@ const Activity = () => {
                       {activities.map((activity, index) => (
                         <div key={index} className="flex items-start gap-4">
                           <div className={`p-2 rounded-full ${
-                            activity.type === 'report' ? 'bg-primary/10' : 'bg-green-500/10'
+                            activity.type === 'report' ? 'bg-primary/10' : 
+                            activity.type === 'client' ? 'bg-green-500/10' :
+                            activity.type === 'proposal' ? 'bg-blue-500/10' :
+                            'bg-purple-500/10'
                           }`}>
                             {activity.type === 'report' ? (
                               <FileText className="h-5 w-5 text-primary" />
-                            ) : (
+                            ) : activity.type === 'client' ? (
                               <User className="h-5 w-5 text-green-500" />
+                            ) : activity.type === 'proposal' ? (
+                              <FileSpreadsheet className="h-5 w-5 text-blue-500" />
+                            ) : (
+                              <FileContract className="h-5 w-5 text-purple-500" />
                             )}
                           </div>
                           <div className="flex-1">
@@ -136,14 +209,26 @@ const Activity = () => {
                               <Link to={`/reports/${(activity.data as Report).id}`} className="block mt-1 font-medium hover:text-primary transition-colors">
                                 Nuevo informe: {(activity.data as Report).title}
                               </Link>
-                            ) : (
+                            ) : activity.type === 'client' ? (
                               <Link to={`/clients/${(activity.data as Client).id}`} className="block mt-1 font-medium hover:text-primary transition-colors">
                                 Nuevo cliente: {(activity.data as Client).name}
                               </Link>
+                            ) : activity.type === 'proposal' ? (
+                              <Link to={`/clients/${(activity.data as any).client_id}`} className="block mt-1 font-medium hover:text-primary transition-colors">
+                                Nueva propuesta: {(activity.data as any).title || 'Sin título'}
+                              </Link>
+                            ) : (
+                              <Link to={`/clients/${(activity.data as any).client_id}`} className="block mt-1 font-medium hover:text-primary transition-colors">
+                                Nuevo contrato: {(activity.data as any).title || 'Sin título'}
+                              </Link>
                             )}
-                            {activity.type === 'report' && (
+                            {(activity.type === 'report' || activity.type === 'proposal' || activity.type === 'contract') && (
                               <p className="text-sm text-muted-foreground mt-1">
-                                Cliente: {getClientName((activity.data as Report).clientId)}
+                                Cliente: {getClientName(
+                                  activity.type === 'report' 
+                                    ? (activity.data as Report).clientId 
+                                    : (activity.data as any).client_id
+                                )}
                               </p>
                             )}
                           </div>

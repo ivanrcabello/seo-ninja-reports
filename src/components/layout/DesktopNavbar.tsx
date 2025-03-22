@@ -1,79 +1,150 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { NavDropdown, renderServiceItems, renderProductItems, renderResourceItems } from './NavDropdown';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import NavDropdown from './NavDropdown';
+import { LogOut, User, Settings, BarChart3, Archive, Users } from 'lucide-react';
 
-const DesktopNavbar = () => {
+const DesktopNavbar: React.FC = () => {
   const { user, signOut } = useAuth();
+  const location = useLocation();
   
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  
-  const handleDropdownToggle = (name: string) => {
-    setOpenDropdown(openDropdown === name ? null : name);
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
-
-  // Verificar si el usuario tiene correo de administrador
-  const isAdmin = user?.email?.includes('@soyseolocal.com');
-
+  
   return (
-    <div className="hidden md:flex items-center gap-x-1">
-      <NavDropdown
-        title="Servicios"
-        items={renderServiceItems()}
-        open={openDropdown === 'services'}
-        setOpen={(isOpen) => {
-          if (isOpen) handleDropdownToggle('services');
-          else setOpenDropdown(null);
-        }}
-      />
-      
-      <NavDropdown
-        title="Productos"
-        items={renderProductItems()}
-        open={openDropdown === 'products'}
-        setOpen={(isOpen) => {
-          if (isOpen) handleDropdownToggle('products');
-          else setOpenDropdown(null);
-        }}
-      />
-      
-      <NavDropdown
-        title="Recursos"
-        items={renderResourceItems()}
-        open={openDropdown === 'resources'}
-        setOpen={(isOpen) => {
-          if (isOpen) handleDropdownToggle('resources');
-          else setOpenDropdown(null);
-        }}
-      />
-      
-      <Link to="/contacto">
-        <Button variant="ghost" className="font-medium text-base">Contacto</Button>
-      </Link>
-
-      <div className="pl-4 flex items-center">
+    <div className="hidden lg:flex w-full items-center justify-between px-6 py-4">
+      <div className="flex items-center space-x-8">
+        <Link to="/" className="text-2xl font-bold text-primary">SeoLocal</Link>
+        
         {user ? (
-          <div className="flex items-center gap-2">
-            <Link to="/dashboard">
-              <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700">Dashboard</Button>
-            </Link>
-            {isAdmin && (
-              <>
-                <Link to="/blog-admin">
-                  <Button variant="outline" size="sm" className="border-emerald-600/30 text-emerald-700 hover:text-emerald-800">Blog Admin</Button>
-                </Link>
-                <Link to="/settings">
-                  <Button variant="outline" size="sm" className="border-emerald-600/30 text-emerald-700 hover:text-emerald-800">Configuración</Button>
-                </Link>
-              </>
-            )}
-          </div>
+          <nav className="flex items-center space-x-1">
+            <Button
+              variant={isActive('/dashboard') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/dashboard">Dashboard</Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/clients') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/clients">Clientes</Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/all-reports') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/all-reports">Informes</Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/activity') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/activity">Actividad</Link>
+            </Button>
+          </nav>
         ) : (
-          <Link to="/auth">
-            <Button className="bg-emerald-600 hover:bg-emerald-700">Iniciar sesión</Button>
-          </Link>
+          <nav className="flex items-center space-x-1">
+            <Button
+              variant={isActive('/caracteristicas') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/caracteristicas">Características</Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/precios') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/precios">Precios</Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/blog') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/blog">Blog</Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/contacto') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/contacto">Contacto</Link>
+            </Button>
+          </nav>
+        )}
+      </div>
+      
+      <div className="flex items-center space-x-4">
+        {user ? (
+          <NavDropdown
+            trigger={
+              <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-primary/10 hover:ring-primary/30 transition-all">
+                <AvatarImage src={user.avatar_url || undefined} alt={user.name || 'User'} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </AvatarFallback>
+              </Avatar>
+            }
+            items={[
+              {
+                icon: <User className="mr-2 h-4 w-4" />,
+                label: 'Perfil',
+                href: '/settings',
+              },
+              {
+                icon: <Settings className="mr-2 h-4 w-4" />,
+                label: 'Ajustes',
+                href: '/settings',
+              },
+              {
+                icon: <BarChart3 className="mr-2 h-4 w-4" />,
+                label: 'Dashboard',
+                href: '/dashboard',
+              },
+              {
+                icon: <Users className="mr-2 h-4 w-4" />,
+                label: 'Clientes',
+                href: '/clients',
+              },
+              {
+                icon: <Archive className="mr-2 h-4 w-4" />,
+                label: 'Informes',
+                href: '/all-reports',
+              },
+              {
+                icon: <LogOut className="mr-2 h-4 w-4" />,
+                label: 'Cerrar sesión',
+                onClick: signOut,
+              },
+            ]}
+          />
+        ) : (
+          <>
+            <Button variant="ghost" asChild>
+              <Link to="/auth">Iniciar sesión</Link>
+            </Button>
+            
+            <Button asChild>
+              <Link to="/auth?register=true">Registrarse</Link>
+            </Button>
+          </>
         )}
       </div>
     </div>

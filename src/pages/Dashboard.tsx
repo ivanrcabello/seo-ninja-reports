@@ -88,14 +88,14 @@ const Dashboard = () => {
                     value={reports.length}
                     description="Informes SEO generados"
                     linkText="Ver todos los informes"
-                    linkUrl="/reports"
+                    linkUrl="/all-reports"
                   />
                   <DashboardCard
                     title="Actividad Reciente"
                     value={recentReportsCount}
                     description="Informes creados en los últimos 7 días"
-                    linkText="Ver actividad reciente"
                     linkUrl="/activity"
+                    linkText="Ver actividad reciente"
                   />
                 </div>
               </AnimatedContainer>

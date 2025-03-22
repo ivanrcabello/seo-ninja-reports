@@ -1,99 +1,218 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  HomeIcon, 
+  UsersRound, 
+  FileText, 
+  Activity, 
+  Settings, 
+  LogOut,
+  LayoutDashboard,
+  Store, 
+  FileQuestion, 
+  MessageSquare,
+  Newspaper
+} from 'lucide-react';
 
-const MobileNavbar = ({ closeMenu }: { closeMenu: () => void }) => {
-  const { user } = useAuth();
+interface MobileNavbarProps {
+  closeMenu: () => void;
+}
+
+const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
+  const { user, signOut } = useAuth();
+  const location = useLocation();
   
-  // Verificar si el usuario tiene correo de administrador
-  const isAdmin = user?.email?.includes('@soyseolocal.com');
-
+  const handleSignOut = () => {
+    signOut();
+    closeMenu();
+  };
+  
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
+  
   return (
-    <div className="py-4 flex flex-col space-y-3">
-      <Link to="/" onClick={closeMenu}>
-        <Button variant="ghost" className="w-full justify-start">
-          Inicio
-        </Button>
-      </Link>
-      
-      <div className="border-t border-gray-200 dark:border-gray-800 pt-2">
-        <span className="text-xs font-bold px-4 text-muted-foreground">Servicios</span>
-        <Link to="/servicios" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start mt-1">Todos los servicios</Button>
-        </Link>
-        <Link to="/servicios/seo-local" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">SEO Local</Button>
-        </Link>
-        <Link to="/servicios/seo-tecnico" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">SEO Técnico</Button>
-        </Link>
-        <Link to="/servicios/seo-ia" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">SEO + IA</Button>
-        </Link>
-        <Link to="/servicios/contenido-seo" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">Contenido SEO</Button>
+    <div className="min-h-screen flex flex-col p-6 bg-background">
+      <div className="flex items-center justify-between mb-8">
+        <Link to="/" className="text-2xl font-bold text-primary" onClick={closeMenu}>
+          SeoLocal
         </Link>
       </div>
       
-      <div className="border-t border-gray-200 dark:border-gray-800 pt-2">
-        <span className="text-xs font-bold px-4 text-muted-foreground">Productos</span>
-        <Link to="/paquetes" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start mt-1">Todos los paquetes</Button>
-        </Link>
-        <Link to="/paquetes/starter" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">Pack Starter</Button>
-        </Link>
-        <Link to="/paquetes/ascenso" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">Pack Ascenso</Button>
-        </Link>
-        <Link to="/paquetes/master" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">Pack Master</Button>
-        </Link>
-      </div>
-      
-      <div className="border-t border-gray-200 dark:border-gray-800 pt-2">
-        <span className="text-xs font-bold px-4 text-muted-foreground">Recursos</span>
-        <Link to="/blog" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start mt-1">Blog</Button>
-        </Link>
-        <Link to="/documentacion" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">Documentación</Button>
-        </Link>
-        <Link to="/caracteristicas" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">Características</Button>
-        </Link>
-        <Link to="/precios" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">Precios</Button>
-        </Link>
-        <Link to="/guias" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start">Guías</Button>
-        </Link>
-      </div>
-      
-      <div className="border-t border-gray-200 dark:border-gray-800 pt-2">
-        <Link to="/contacto" onClick={closeMenu}>
-          <Button variant="ghost" className="w-full justify-start mt-1">Contacto</Button>
-        </Link>
-      </div>
-      
-      {user && (
-        <div className="border-t border-gray-200 dark:border-gray-800 pt-2">
-          <span className="text-xs font-bold px-4 text-muted-foreground">Área de usuario</span>
-          <Link to="/dashboard" onClick={closeMenu}>
-            <Button variant="ghost" className="w-full justify-start mt-1">Dashboard</Button>
-          </Link>
-          {isAdmin && (
-            <>
-              <Link to="/blog-admin" onClick={closeMenu}>
-                <Button variant="ghost" className="w-full justify-start">Blog Admin</Button>
+      {user ? (
+        <div className="flex flex-col space-y-6">
+          <div className="flex items-center space-x-3 pb-6 border-b">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={user.avatar_url || undefined} alt={user.name || 'User'} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="font-medium">{user.name || 'Usuario'}</span>
+              <span className="text-sm text-muted-foreground">{user.email}</span>
+            </div>
+          </div>
+          
+          <nav className="flex flex-col space-y-1">
+            <Button
+              variant={isActive('/dashboard') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/dashboard">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
               </Link>
-              <Link to="/settings" onClick={closeMenu}>
-                <Button variant="ghost" className="w-full justify-start">Configuración</Button>
+            </Button>
+            
+            <Button
+              variant={isActive('/clients') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/clients">
+                <UsersRound className="mr-2 h-4 w-4" />
+                Clientes
               </Link>
-            </>
-          )}
+            </Button>
+            
+            <Button
+              variant={isActive('/all-reports') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/all-reports">
+                <FileText className="mr-2 h-4 w-4" />
+                Informes
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/activity') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/activity">
+                <Activity className="mr-2 h-4 w-4" />
+                Actividad
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/settings') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                Ajustes
+              </Link>
+            </Button>
+            
+            <div className="border-t my-4"></div>
+            
+            <Button
+              variant="ghost"
+              className="justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+              onClick={handleSignOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Cerrar sesión
+            </Button>
+          </nav>
+        </div>
+      ) : (
+        <div className="flex flex-col space-y-6">
+          <nav className="flex flex-col space-y-1">
+            <Button
+              variant={isActive('/') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/">
+                <HomeIcon className="mr-2 h-4 w-4" />
+                Inicio
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/caracteristicas') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/caracteristicas">
+                <Store className="mr-2 h-4 w-4" />
+                Características
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/precios') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/precios">
+                <FileQuestion className="mr-2 h-4 w-4" />
+                Precios
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/blog') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/blog">
+                <Newspaper className="mr-2 h-4 w-4" />
+                Blog
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/contacto') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/contacto">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Contacto
+              </Link>
+            </Button>
+          </nav>
+          
+          <div className="mt-auto space-y-2">
+            <Button
+              className="w-full"
+              variant="outline"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/auth">Iniciar sesión</Link>
+            </Button>
+            
+            <Button
+              className="w-full"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/auth?register=true">Registrarse</Link>
+            </Button>
+          </div>
         </div>
       )}
     </div>
