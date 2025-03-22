@@ -6,7 +6,7 @@ import Footer from '@/components/layout/Footer';
 import ApiSettings from '@/components/settings/ApiSettings';
 import LogoUpload from '@/components/settings/LogoUpload';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { Loader2, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
