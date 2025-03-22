@@ -4,11 +4,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface BacklinkChartProps {
-  types: { type: string; count: number }[];
-  followData: { type: string; count: number; percentage: number }[];
+  types?: { type: string; count: number }[];
+  followData?: { type: string; count: number; percentage: number }[];
 }
 
-const BacklinkChart: React.FC<BacklinkChartProps> = ({ types, followData }) => {
+const BacklinkChart: React.FC<BacklinkChartProps> = ({ 
+  types = [], 
+  followData = [] 
+}) => {
   // Colors for the pie charts
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
@@ -23,6 +26,29 @@ const BacklinkChart: React.FC<BacklinkChartProps> = ({ types, followData }) => {
     value: item.count,
     percentage: item.percentage
   }));
+  
+  if (types.length === 0 && followData.length === 0) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardContent className="pt-6">
+            <h4 className="font-medium mb-4 text-center">Tipos de Backlinks</h4>
+            <div className="flex items-center justify-center h-[300px]">
+              <p className="text-muted-foreground">No hay datos disponibles</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <h4 className="font-medium mb-4 text-center">Follow vs Nofollow</h4>
+            <div className="flex items-center justify-center h-[300px]">
+              <p className="text-muted-foreground">No hay datos disponibles</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -69,7 +95,7 @@ const BacklinkChart: React.FC<BacklinkChartProps> = ({ types, followData }) => {
                   fill="#8884d8"
                   dataKey="value"
                   nameKey="name"
-                  label={({ name, percentage }) => `${name}: ${percentage.toFixed(0)}%`}
+                  label={({ name, percentage }) => `${name}: ${percentage?.toFixed(0) || 0}%`}
                 >
                   {followNofollow.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -77,7 +103,7 @@ const BacklinkChart: React.FC<BacklinkChartProps> = ({ types, followData }) => {
                 </Pie>
                 <Tooltip 
                   formatter={(value, name, props) => [
-                    `${value} enlaces (${props.payload.percentage.toFixed(1)}%)`, 
+                    `${value} enlaces (${props.payload.percentage?.toFixed(1) || 0}%)`, 
                     'Cantidad'
                   ]} 
                 />

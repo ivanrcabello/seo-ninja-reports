@@ -48,7 +48,7 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
       // First parse the PDF to extract data
       const parsedData = await parsePdf(file);
       
-      if (!parsedData) {
+      if (!parsedData || !parsedData.domain) {
         throw new Error('No se pudieron extraer datos del PDF');
       }
       

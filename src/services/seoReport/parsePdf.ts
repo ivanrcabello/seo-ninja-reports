@@ -1,11 +1,10 @@
-
 import * as pdfjsLib from 'pdfjs-dist';
 import { SeoReport, SeoKeyword, SeoCompetitor } from '@/types/seo-reporting.types';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface ExtractedData {
-  domain?: string;
+  domain: string;
   traffic?: number;
   keywords?: number;
   backlinks?: number;
@@ -25,7 +24,9 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
     const loadingTask = pdfjsLib.getDocument({ data: pdfData });
     const pdf = await loadingTask.promise;
     
-    const extractedData: ExtractedData = {};
+    const extractedData: ExtractedData = {
+      domain: 'unknown.com'
+    };
     const totalPages = pdf.numPages;
     
     // Process all pages to extract data
@@ -36,11 +37,9 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
       const pageText = textItems.join(' ');
       
       // Extract domain
-      if (!extractedData.domain) {
-        const domainMatch = pageText.match(/Informe de dominio:\s*([\w.-]+)/);
-        if (domainMatch && domainMatch[1]) {
-          extractedData.domain = domainMatch[1].trim();
-        }
+      const domainMatch = pageText.match(/Informe de dominio:\s*([\w.-]+)/);
+      if (domainMatch && domainMatch[1]) {
+        extractedData.domain = domainMatch[1].trim();
       }
       
       // Extract traffic, keywords, and backlinks
@@ -67,21 +66,16 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
       
       // Extract keywords data
       if (!extractedData.keywordsData) {
-        // Use regex to find blocks of keyword data
-        // Look for patterns like "keyword [position] [volume] [traffic %]"
         const keywordDataRegex = /(\w+(?:\s+\w+)*)\s+(\d+)\s+(\d[\d.,]*)\s+([\d.]+)%/g;
         const keywordsData: SeoKeyword[] = [];
         let keywordMatch;
         
-        // Use regex to find keyword sections in the text
         let keywordSection = pageText.match(/Palabras clave orgánicas principales([\s\S]*?)(?:Competidores|$)/i);
         if (keywordSection && keywordSection[1]) {
           const keywordText = keywordSection[1];
           
-          // Reset regex index
           keywordDataRegex.lastIndex = 0;
           
-          // Extract individual keywords
           while ((keywordMatch = keywordDataRegex.exec(keywordText)) !== null && keywordsData.length < 20) {
             keywordsData.push({
               id: `temp-${keywordsData.length}`,
@@ -95,19 +89,16 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
           }
         }
         
-        // If no keywords found yet, try alternative format often found in SEMrush reports
         if (keywordsData.length < 5) {
           const alternativeKeywordRegex = /([\w\s-]+)\s+(\d+)\s+(\d[\d.,]*K?)\s+([\d.]+)%/g;
           let altKeywordMatch;
           
           while ((altKeywordMatch = alternativeKeywordRegex.exec(pageText)) !== null && keywordsData.length < 20) {
             let volume = altKeywordMatch[3];
-            // Handle 'K' notation for thousands
             if (volume.includes('K')) {
               volume = (parseFloat(volume.replace('K', '')) * 1000).toString();
             }
             
-            // Only add if it doesn't duplicate an existing keyword
             if (!keywordsData.some(k => k.keyword === altKeywordMatch[1].trim())) {
               keywordsData.push({
                 id: `temp-${keywordsData.length}`,
@@ -122,7 +113,6 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
           }
         }
         
-        // If we have at least 5 keywords, save them
         if (keywordsData.length >= 5) {
           extractedData.keywordsData = keywordsData;
         }
@@ -153,9 +143,20 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
       // Process other data extraction as needed...
     }
     
+    // If we still have the default domain, try to extract it from the filename
+    if (extractedData.domain === 'unknown.com') {
+      const fileName = file.name.toLowerCase();
+      const fileNameDomainMatch = fileName.match(/([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)/);
+      if (fileNameDomainMatch && fileNameDomainMatch[1]) {
+        extractedData.domain = fileNameDomainMatch[1];
+      }
+    }
+    
     return extractedData;
   } catch (error) {
     console.error('Error parsing PDF:', error);
-    throw error;
+    return {
+      domain: 'error-parsing.com'
+    };
   }
 };

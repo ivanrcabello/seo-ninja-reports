@@ -3,6 +3,6 @@ export {
   fetchClientSeoReports, 
   uploadSeoReport, 
   createSeoReport, 
-  parseSemrushPdf,
+  parsePdf,
   deleteSeoReport 
 } from './seoReport';
