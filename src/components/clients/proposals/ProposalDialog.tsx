@@ -26,20 +26,22 @@ const ProposalDialog: React.FC<ProposalDialogProps> = ({
   
   // Initialize form with proposal data if editing
   useEffect(() => {
-    if (proposal) {
-      setTitle(proposal.title || '');
-      setDescription(proposal.description || '');
-      setServices(proposal.services || []);
-      setPrice(proposal.price ? proposal.price.toString() : '');
-      setStatus(proposal.status || 'draft');
-    } else {
-      // Reset form if creating new proposal
-      setTitle('');
-      setDescription('');
-      setServices([]);
-      setNewService('');
-      setPrice('');
-      setStatus('draft');
+    if (open) {
+      if (proposal) {
+        setTitle(proposal.title || '');
+        setDescription(proposal.description || '');
+        setServices(proposal.services || []);
+        setPrice(proposal.price ? proposal.price.toString() : '');
+        setStatus(proposal.status || 'draft');
+      } else {
+        // Reset form if creating new proposal
+        setTitle('');
+        setDescription('');
+        setServices([]);
+        setNewService('');
+        setPrice('');
+        setStatus('draft');
+      }
     }
   }, [proposal, open]);
   
@@ -61,7 +63,7 @@ const ProposalDialog: React.FC<ProposalDialogProps> = ({
     
     // Validate required fields
     if (!title.trim()) {
-      alert('El título es obligatorio');
+      toast.error('El título es obligatorio');
       return;
     }
     
@@ -74,8 +76,20 @@ const ProposalDialog: React.FC<ProposalDialogProps> = ({
     });
   };
   
+  // Handle explicit dialog close
+  const handleDialogClose = (isOpen: boolean) => {
+    if (!isOpen) {
+      // Allow a small delay before executing onOpenChange
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 100);
+    } else {
+      onOpenChange(true);
+    }
+  };
+  
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{proposal ? 'Editar propuesta' : 'Nueva propuesta'}</DialogTitle>
@@ -100,7 +114,7 @@ const ProposalDialog: React.FC<ProposalDialogProps> = ({
           onRemoveService={handleRemoveService}
           onPriceChange={setPrice}
           onStatusChange={setStatus}
-          onCancel={() => onOpenChange(false)}
+          onCancel={() => handleDialogClose(false)}
           onSubmit={handleSubmit}
         />
       </DialogContent>

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientProposal } from '@/types/client.types';
@@ -11,7 +11,7 @@ export const useClientProposals = (clientId: string) => {
   const [editingProposal, setEditingProposal] = useState<ClientProposal | null>(null);
   const { toast } = useToast();
 
-  const fetchProposals = async () => {
+  const fetchProposals = useCallback(async () => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
@@ -38,25 +38,34 @@ export const useClientProposals = (clientId: string) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [clientId, toast]);
 
   useEffect(() => {
     if (clientId) {
       fetchProposals();
     }
-  }, [clientId]);
+  }, [clientId, fetchProposals]);
 
-  const handleCreateProposal = () => {
+  // Clear editing state when dialog closes
+  const handleSetDialogOpen = useCallback((isOpen: boolean) => {
+    setDialogOpen(isOpen);
+    if (!isOpen) {
+      // Clear editing proposal when dialog closes
+      setEditingProposal(null);
+    }
+  }, []);
+
+  const handleCreateProposal = useCallback(() => {
     setEditingProposal(null);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleEditProposal = (proposal: ClientProposal) => {
+  const handleEditProposal = useCallback((proposal: ClientProposal) => {
     setEditingProposal(proposal);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleSaveProposal = async (proposal: Partial<ClientProposal>) => {
+  const handleSaveProposal = useCallback(async (proposal: Partial<ClientProposal>) => {
     try {
       if (editingProposal) {
         // Update existing proposal
@@ -114,7 +123,10 @@ export const useClientProposals = (clientId: string) => {
         });
       }
       
-      setDialogOpen(false);
+      // Explicitly close dialog with a small delay to ensure proper state cleanup
+      setTimeout(() => {
+        setDialogOpen(false);
+      }, 100);
     } catch (error: any) {
       console.error('Error saving proposal:', error);
       toast({
@@ -123,9 +135,9 @@ export const useClientProposals = (clientId: string) => {
         variant: 'destructive',
       });
     }
-  };
+  }, [editingProposal, clientId, proposals, toast]);
 
-  const handleDeleteProposal = async (id: string) => {
+  const handleDeleteProposal = useCallback(async (id: string) => {
     try {
       const { error } = await supabase
         .from('client_proposals')
@@ -149,14 +161,14 @@ export const useClientProposals = (clientId: string) => {
         variant: 'destructive',
       });
     }
-  };
+  }, [proposals, toast]);
 
   return {
     proposals,
     isLoading,
     dialogOpen,
     editingProposal,
-    setDialogOpen,
+    setDialogOpen: handleSetDialogOpen,
     handleCreateProposal,
     handleEditProposal,
     handleSaveProposal,

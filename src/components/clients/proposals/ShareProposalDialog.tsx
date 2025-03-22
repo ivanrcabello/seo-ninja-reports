@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,9 +25,15 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   const [shareUrl, setShareUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Generate the share URL when the dialog opens
-  React.useEffect(() => {
-    if (open && !shareUrl) {
+  // Reset state when dialog opens or closes
+  useEffect(() => {
+    if (!open) {
+      // Reset state when dialog closes
+      setShareUrl('');
+      setCopied(false);
+      setIsLoading(false);
+    } else if (open && !shareUrl) {
+      // Generate URL when dialog opens
       setIsLoading(true);
       onGenerateShareUrl()
         .then(url => {
@@ -37,12 +43,14 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
         .catch(error => {
           toast.error('Error al generar enlace');
           console.error('Error generating share URL:', error);
+          // Close dialog on error
+          onOpenChange(false);
         })
         .finally(() => {
           setIsLoading(false);
         });
     }
-  }, [open, onGenerateShareUrl, shareUrl]);
+  }, [open, onGenerateShareUrl, shareUrl, onOpenChange]);
   
   const handleCopyLink = async () => {
     try {
@@ -66,8 +74,20 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
     window.open(`mailto:?subject=${subject}&body=${body}`);
   };
   
+  // Explicit handle for dialog close
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      // Allow a small delay before actually closing
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 100);
+    } else {
+      onOpenChange(true);
+    }
+  };
+  
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Compartir Propuesta</DialogTitle>
