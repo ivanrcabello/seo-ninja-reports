@@ -664,6 +664,22 @@ export type Database = {
       }
     }
     Views: {
+      public_proposals: {
+        Row: {
+          client_name: string | null
+          client_website: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          price: number | null
+          services: string[] | null
+          shared_url: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       public_reports: {
         Row: {
           client_name: string | null

@@ -10,9 +10,14 @@ import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
+interface PublicProposal extends Omit<ClientProposal, 'client_id'> {
+  client_name?: string;
+  client_website?: string;
+}
+
 const SharedProposal = () => {
   const { id } = useParams<{ id: string }>();
-  const [proposal, setProposal] = useState<ClientProposal | null>(null);
+  const [proposal, setProposal] = useState<PublicProposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -28,10 +33,9 @@ const SharedProposal = () => {
         
         console.log('Fetching proposal with shared_url:', id);
         
-        // Fetch the proposal directly without joining with clients table
-        // This avoids potential RLS recursion issues
+        // Use the public_proposals view instead of the client_proposals table
         const { data, error: fetchError } = await supabase
-          .from('client_proposals')
+          .from('public_proposals')
           .select('*')
           .eq('shared_url', id)
           .single();
@@ -46,8 +50,8 @@ const SharedProposal = () => {
           throw new Error(`Propuesta no encontrada`);
         }
         
-        // Type the data as ClientProposal
-        const typedProposal: ClientProposal = {
+        // Type the data as PublicProposal
+        const typedProposal: PublicProposal = {
           ...data,
           status: data.status as 'draft' | 'sent' | 'accepted' | 'rejected'
         };
@@ -123,6 +127,11 @@ const SharedProposal = () => {
           <div className="text-sm text-muted-foreground">
             Última actualización: {formatDate(proposal.updated_at)}
           </div>
+          {proposal.client_name && (
+            <div className="text-sm text-muted-foreground mt-1">
+              Propuesta para: {proposal.client_name}
+            </div>
+          )}
         </div>
 
         {/* Proposal Content */}
