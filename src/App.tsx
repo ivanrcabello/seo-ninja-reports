@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ClientsProvider } from "@/hooks/useClients";
-import { ReportsProvider } from "@/hooks/useReports";
+import useReports from "@/hooks/useReports"; // Fix import to use default export
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -45,7 +44,7 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ClientsProvider>
-          <ReportsProvider>
+          <useReports.ReportsProvider>
             <TooltipProvider>
               <Toaster />
               <Sonner />
@@ -83,7 +82,7 @@ const App = () => {
                 </Routes>
               </BrowserRouter>
             </TooltipProvider>
-          </ReportsProvider>
+          </useReports.ReportsProvider>
         </ClientsProvider>
       </AuthProvider>
     </QueryClientProvider>

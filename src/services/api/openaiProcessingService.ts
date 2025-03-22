@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
@@ -160,7 +159,7 @@ export const processOpenAIReport = async (
     console.log('Informe generado exitosamente, actualizando base de datos...');
     console.log('Secciones disponibles:', Object.keys(sections));
     
-    // Create properly typed content object
+    // Create properly typed content object ensuring it's JSON serializable
     const reportContent = {
       executiveSummary: sections.executiveSummary || '',
       technicalAnalysis: sections.technicalAnalysis || '',
@@ -174,8 +173,8 @@ export const processOpenAIReport = async (
       pageSpeedData: pageSpeedData || null,
       // Include business profile if available
       businessProfile: businessProfile || null,
-      // Include SEO report data if available
-      seoReportData: seoReport || null
+      // Include SEO report data if available, ensuring it's serializable
+      seoReportData: seoReport ? JSON.parse(JSON.stringify(seoReport)) : null
     };
     
     console.log('Actualización de content preparada con secciones:', Object.keys(reportContent));

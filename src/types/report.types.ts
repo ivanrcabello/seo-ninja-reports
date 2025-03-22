@@ -25,7 +25,7 @@ export interface Report {
     contentStrategy?: string;
     pageSpeedData?: PageSpeedData;
     businessProfile?: BusinessProfile;
-    seoReportData?: any;
+    seoReportData?: Record<string, any>; // Change to Record<string, any> to make it JSON-serializable
   };
   customPrompt?: string;
   customSections?: CustomSection[];

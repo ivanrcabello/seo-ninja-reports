@@ -45,6 +45,9 @@ export const generateSeoReport = async (
     // Check for stuck reports and fix them
     await checkAndFixStuckReports();
 
+    // Convert seoReport to a serializable format if present
+    const serializedSeoReport = seoReport ? JSON.parse(JSON.stringify(seoReport)) : null;
+
     // Prepare initial content object with properly typed structure
     const initialContent = {
       executiveSummary: '',
@@ -59,8 +62,8 @@ export const generateSeoReport = async (
       pageSpeedData: prefetchedPageSpeedData || null,
       // Include business profile if available
       businessProfile: businessProfile || null,
-      // Include SEO report data if available
-      seoReportData: seoReport || null
+      // Include SEO report data if available (serialized)
+      seoReportData: serializedSeoReport
     };
 
     // Create a new report with status "processing"

@@ -89,7 +89,7 @@ export default function useReports() {
   }, []);
 
   // Create a new report
-  const createReport = useCallback(async (data: Partial<Report>): Promise<Report> => {
+  const createReport = useCallback(async (data: Omit<Report, 'id' | 'date' | 'status'>): Promise<Report> => {
     try {
       const newReport = await createNewReport(data);
       setReports(prev => [newReport, ...prev]);
@@ -103,7 +103,15 @@ export default function useReports() {
   // Update an existing report
   const updateReport = useCallback(async (id: string, data: Partial<Report>): Promise<Report> => {
     try {
-      const updatedReport = await updateExistingReport(id, data);
+      // Ensure data has required fields for the Omit type constraint
+      if (data && typeof data === 'object') {
+        const reportToUpdate = reports.find(r => r.id === id);
+        if (reportToUpdate && !data.title) {
+          data.title = reportToUpdate.title;
+        }
+      }
+      
+      const updatedReport = await updateExistingReport(id, data as any);
       setReports(prev => prev.map(report => 
         report.id === id ? { ...report, ...updatedReport } : report
       ));
@@ -112,7 +120,7 @@ export default function useReports() {
       console.error('Error updating report:', error);
       throw error;
     }
-  }, []);
+  }, [reports]);
 
   // Delete a report
   const deleteReport = useCallback(async (id: string): Promise<void> => {
@@ -136,7 +144,7 @@ export default function useReports() {
         // Update report status in our local state
         setReports(prev => prev.map(report => 
           report.id === id 
-            ? { ...report, status: 'processing', summary: 'Reintentando generación de informe...' } 
+            ? { ...report, status: 'processing' as const, summary: 'Reintentando generación de informe...' } 
             : report
         ));
         
@@ -162,6 +170,7 @@ export default function useReports() {
     createReport,
     updateReport,
     deleteReport,
-    retryReport
+    retryReport,
+    ReportsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> // Add dummy ReportsProvider component for compatibility
   };
 }
