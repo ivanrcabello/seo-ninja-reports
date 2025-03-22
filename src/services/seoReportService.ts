@@ -1,10 +1,17 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SeoReport, SeoKeyword, SeoCompetitor } from '@/types/seo-reporting.types';
-import { parsePdf } from '@/utils/pdfParser';
 import { toast } from 'sonner';
 
-// Re-export parsePdf to make it available to components
-export { parsePdf };
+// Import from submodules
+import { 
+  fetchClientSeoReports,
+  createSeoReport,
+  deleteSeoReport
+} from './seoReport';
+
+// Import parsePdf from the utils directly
+import { parsePdf } from '@/utils/pdfParser';
 
 interface UploadReportData {
   domain: string;
@@ -20,7 +27,8 @@ interface UploadReportData {
   followNofollow?: { type: string; count: number; percentage: number }[];
 }
 
-export async function uploadSeoReport(clientId: string, data: UploadReportData): Promise<SeoReport> {
+// Remove the exported implementation and use the one from seoReport/uploadReport.ts
+async function uploadSeoReport(clientId: string, data: UploadReportData): Promise<SeoReport> {
   console.log('Uploading SEO report for client:', clientId, 'with data:', data);
   
   try {
@@ -121,10 +129,11 @@ export async function uploadSeoReport(clientId: string, data: UploadReportData):
   }
 }
 
+// Export everything in a single export statement to avoid duplicates
 export { 
-  fetchClientSeoReports, 
-  uploadSeoReport, 
-  createSeoReport, 
+  fetchClientSeoReports,
+  uploadSeoReport,
+  createSeoReport,
   parsePdf,
-  deleteSeoReport 
-} from './seoReport';
+  deleteSeoReport
+};

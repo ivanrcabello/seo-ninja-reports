@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FileUp, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadSeoReport, parsePdf } from '@/services/seoReportService';
+import { uploadSeoReport } from '@/services/seoReportService';
+import { parsePdf } from '@/utils/pdfParser';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface UploadPDFProps {
