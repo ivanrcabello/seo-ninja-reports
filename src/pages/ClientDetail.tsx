@@ -7,7 +7,7 @@ import ClientHeader from '@/components/clients/ClientHeader';
 import ClientDetailContent from '@/components/clients/ClientDetailContent';
 import ClientLoadingState from '@/components/clients/ClientLoadingState';
 import ClientNotFound from '@/components/clients/ClientNotFound';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
 

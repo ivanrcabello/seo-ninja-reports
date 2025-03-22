@@ -9,7 +9,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import BlurredCard from '@/components/ui/BlurredCard';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
 import { FileText, ExternalLink, Loader2 } from 'lucide-react';

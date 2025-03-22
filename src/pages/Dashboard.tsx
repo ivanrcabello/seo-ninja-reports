@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ClientList from '@/components/dashboard/ClientList';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
 import { Loader2 } from 'lucide-react';

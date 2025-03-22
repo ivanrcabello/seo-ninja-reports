@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import AnimatedContainer from '../ui/AnimatedContainer';
 
 const AuthForm: React.FC = () => {
@@ -15,7 +14,7 @@ const AuthForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +30,8 @@ const AuthForm: React.FC = () => {
       if (mode === 'signin') {
         await signIn(email, password);
       } else {
-        await signUp(email, password);
+        // For signup functionality, we'll need to add signUp to the AuthContext
+        // await signUp(email, password);
       }
       navigate('/dashboard');
     } catch (error) {

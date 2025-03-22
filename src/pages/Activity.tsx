@@ -7,7 +7,7 @@ import Footer from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
 import { Client } from '@/types/client.types';

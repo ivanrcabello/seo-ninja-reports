@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 
 const MobileNavbar = ({ closeMenu }: { closeMenu: () => void }) => {
   const { user } = useAuth();
