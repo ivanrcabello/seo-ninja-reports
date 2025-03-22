@@ -1,2 +1,8 @@
 
-export { fetchClientSeoReports, uploadSeoReport, createSeoReport, parseSemrushPdf } from './seoReport';
+export { 
+  fetchClientSeoReports, 
+  uploadSeoReport, 
+  createSeoReport, 
+  parseSemrushPdf,
+  deleteSeoReport 
+} from './seoReport';

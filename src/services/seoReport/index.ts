@@ -1,4 +1,13 @@
 
-export { fetchClientSeoReports } from './fetchReports';
-export { uploadSeoReport, createSeoReport } from './uploadReport';
-export { parsePdf as parseSemrushPdf } from '@/utils/pdfParser';
+import { fetchClientSeoReports } from './fetchReports';
+import { uploadSeoReport, createSeoReport } from './uploadReport';
+import { deleteSeoReport } from './deleteSeoReport';
+import { parseSemrushPdf } from './parsePdf';
+
+export {
+  fetchClientSeoReports,
+  uploadSeoReport,
+  createSeoReport,
+  deleteSeoReport,
+  parseSemrushPdf
+};

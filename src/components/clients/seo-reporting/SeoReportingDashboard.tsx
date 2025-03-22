@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SeoReport } from '@/types/seo-reporting.types';
-import { fetchClientSeoReports } from '@/services/seoReportService';
+import { fetchClientSeoReports, deleteSeoReport } from '@/services/seoReportService';
 import UploadPDF from './UploadPDF';
 import SeoReportsList from './SeoReportsList';
 import DashboardCards from './DashboardCards';
@@ -70,6 +70,32 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
   const handleBackToList = () => {
     setViewMode('list');
   };
+  
+  const handleDeleteReport = async (reportId: string) => {
+    try {
+      const success = await deleteSeoReport(reportId);
+      
+      if (success) {
+        toast.success('Informe SEO eliminado', {
+          description: 'El informe ha sido eliminado correctamente'
+        });
+        
+        // Remove the report from the state
+        setReports(prevReports => prevReports.filter(r => r.id !== reportId));
+        
+        // If the deleted report was selected, go back to list view
+        if (selectedReport && selectedReport.id === reportId) {
+          setSelectedReport(null);
+          setViewMode('list');
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting SEO report:', error);
+      toast.error('Error al eliminar informe SEO', {
+        description: 'Ocurrió un error al eliminar el informe'
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -87,6 +113,7 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
           reports={reports}
           onSelectReport={handleSelectReport}
           onCreateReport={handleCreateReport}
+          onDeleteReport={handleDeleteReport}
         />
       )}
 
@@ -104,11 +131,12 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
 
       {viewMode === 'detail' && selectedReport && (
         <>
-          <div className="mb-4">
+          <div className="mb-4 flex justify-between items-center">
             <Button variant="ghost" onClick={handleBackToList}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Volver a la lista
             </Button>
+            <DeleteSeoReportButton onDelete={() => handleDeleteReport(selectedReport.id)} />
           </div>
           
           <div className="space-y-6">

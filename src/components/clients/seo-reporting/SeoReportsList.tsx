@@ -3,16 +3,23 @@ import React from 'react';
 import { SeoReport } from '@/types/seo-reporting.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Download, Globe, TrendingUp } from 'lucide-react';
+import { ChevronRight, Download, Globe, TrendingUp, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import DeleteSeoReportButton from './DeleteSeoReportButton';
 
 interface SeoReportsListProps {
   reports: SeoReport[];
   onSelectReport: (report: SeoReport) => void;
   onCreateReport: () => void;
+  onDeleteReport: (reportId: string) => Promise<void>;
 }
 
-const SeoReportsList: React.FC<SeoReportsListProps> = ({ reports, onSelectReport, onCreateReport }) => {
+const SeoReportsList: React.FC<SeoReportsListProps> = ({ 
+  reports, 
+  onSelectReport, 
+  onCreateReport,
+  onDeleteReport
+}) => {
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -32,10 +39,12 @@ const SeoReportsList: React.FC<SeoReportsListProps> = ({ reports, onSelectReport
             {reports.map((report, index) => (
               <div
                 key={report.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-md border hover:bg-muted/50 transition-colors cursor-pointer"
-                onClick={() => onSelectReport(report)}
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-md border hover:bg-muted/50 transition-colors"
               >
-                <div className="flex-1 mb-3 sm:mb-0">
+                <div 
+                  className="flex-1 mb-3 sm:mb-0 cursor-pointer"
+                  onClick={() => onSelectReport(report)}
+                >
                   <div className="flex items-center gap-2 mb-1">
                     <Globe className="h-4 w-4 text-primary" />
                     <h3 className="font-medium">{report.domain}</h3>
@@ -55,7 +64,12 @@ const SeoReportsList: React.FC<SeoReportsListProps> = ({ reports, onSelectReport
                   <div className="text-sm text-muted-foreground">
                     {format(new Date(report.createdAt), 'dd MMM yyyy')}
                   </div>
-                  <Button variant="ghost" size="sm">
+                  <DeleteSeoReportButton onDelete={() => onDeleteReport(report.id)} />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => onSelectReport(report)}
+                  >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
