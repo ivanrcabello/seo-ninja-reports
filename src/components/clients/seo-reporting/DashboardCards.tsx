@@ -15,6 +15,9 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ report }) => {
   const keywords = report.keywords !== null && report.keywords !== undefined ? report.keywords : 0;
   const backlinks = report.backlinks !== null && report.backlinks !== undefined ? report.backlinks : 0;
   
+  // Format domain for display (remove http:// or https://)
+  const displayDomain = (report.domain || '').replace(/^https?:\/\//, '');
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
@@ -22,7 +25,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ report }) => {
           <CardDescription>Dominio</CardDescription>
           <CardTitle className="text-lg flex items-center">
             <Globe className="mr-2 h-4 w-4 text-primary" />
-            {report.domain}
+            {displayDomain}
           </CardTitle>
         </CardHeader>
         <CardContent>
