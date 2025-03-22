@@ -9,11 +9,13 @@ export interface Client {
     provider?: string;
     username?: string;
     password?: string;
+    url?: string;
   };
   wp_credentials?: {
     username?: string;
     password?: string;
     admin_url?: string;
+    url?: string;
   };
   created_at: string;
   updated_at: string;

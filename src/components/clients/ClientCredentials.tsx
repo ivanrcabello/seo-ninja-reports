@@ -60,16 +60,16 @@ const ClientCredentials: React.FC<ClientCredentialsProps> = ({ client }) => {
                   </Button>
                 </div>
               </div>
-              {client.wp_credentials.url && (
+              {(client.wp_credentials.admin_url || client.wp_credentials.url) && (
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">URL:</span>
                   <a 
-                    href={client.wp_credentials.url} 
+                    href={client.wp_credentials.admin_url || client.wp_credentials.url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-sm font-medium text-primary hover:underline"
                   >
-                    {client.wp_credentials.url}
+                    {client.wp_credentials.admin_url || client.wp_credentials.url}
                   </a>
                 </div>
               )}

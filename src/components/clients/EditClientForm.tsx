@@ -59,7 +59,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSuccess }) =>
       active: client.active,
       wpUsername: client.wp_credentials?.username || '',
       wpPassword: client.wp_credentials?.password || '',
-      wpUrl: client.wp_credentials?.url || '',
+      wpUrl: client.wp_credentials?.admin_url || client.wp_credentials?.url || '',
       hostingProvider: client.hosting_credentials?.provider || '',
       hostingUsername: client.hosting_credentials?.username || '',
       hostingPassword: client.hosting_credentials?.password || '',

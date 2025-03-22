@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Client } from '@/types/client.types';
 import { toast } from 'sonner';
@@ -61,6 +62,16 @@ export async function addClientToDb(
   try {
     const { name, website, industry, phone_number, active, wp_credentials, hosting_credentials } = data;
     
+    // Process wp_credentials to ensure URL field consistency
+    let processedWpCredentials = null;
+    if (wp_credentials) {
+      processedWpCredentials = {
+        ...wp_credentials,
+        // Ensure admin_url is set if it's coming in the url field
+        admin_url: wp_credentials.admin_url || wp_credentials.url
+      };
+    }
+    
     const { data: newClient, error } = await supabase
       .from('clients')
       .insert({
@@ -70,7 +81,7 @@ export async function addClientToDb(
         user_id: userId,
         phone_number,
         active,
-        wp_credentials: wp_credentials || null,
+        wp_credentials: processedWpCredentials,
         hosting_credentials: hosting_credentials || null
       })
       .select()
@@ -100,7 +111,19 @@ export async function updateClientInDb(
     if (data.industry !== undefined) transformedData.industry = data.industry;
     if (data.phone_number !== undefined) transformedData.phone_number = data.phone_number;
     if (data.active !== undefined) transformedData.active = data.active;
-    if (data.wp_credentials !== undefined) transformedData.wp_credentials = data.wp_credentials;
+    
+    // Process wp_credentials to ensure URL field consistency
+    if (data.wp_credentials !== undefined) {
+      if (data.wp_credentials && data.wp_credentials.url && !data.wp_credentials.admin_url) {
+        transformedData.wp_credentials = {
+          ...data.wp_credentials,
+          admin_url: data.wp_credentials.url
+        };
+      } else {
+        transformedData.wp_credentials = data.wp_credentials;
+      }
+    }
+    
     if (data.hosting_credentials !== undefined) transformedData.hosting_credentials = data.hosting_credentials;
     
     const { data: updatedClient, error } = await supabase
