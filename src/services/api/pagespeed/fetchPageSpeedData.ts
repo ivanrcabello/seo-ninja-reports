@@ -36,7 +36,6 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       
       const desktopData = await desktopResponse.json();
       console.log('Datos de PageSpeed desktop obtenidos correctamente');
-      console.log('Categorías recibidas desktop:', desktopData.lighthouseResult?.categories);
       
       // Extract desktop metrics
       if (desktopData.lighthouseResult && desktopData.lighthouseResult.categories) {
@@ -82,7 +81,6 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       
       const mobileData = await mobileResponse.json();
       console.log('Datos de PageSpeed mobile obtenidos correctamente');
-      console.log('Categorías recibidas mobile:', mobileData.lighthouseResult?.categories);
       
       // Extract mobile metrics
       if (mobileData.lighthouseResult && mobileData.lighthouseResult.categories) {
@@ -123,6 +121,11 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       return results;
     } catch (apiError: any) {
       console.error('Error específico de la API de PageSpeed:', apiError);
+      // Mostrar un mensaje de error más descriptivo
+      toast.error('Error al obtener datos de PageSpeed', {
+        description: apiError.message || 'Se continuará sin esta información'
+      });
+      
       // Si solo tenemos datos de desktop, seguimos adelante con eso
       if (Object.keys(results.desktop).length > 0) {
         console.log('Continuando con datos parciales (solo desktop)');
@@ -136,14 +139,13 @@ export const fetchPageSpeedData = async (url: string, reportId?: string) => {
       }
       
       // No lanzamos el error para que no interrumpa el proceso
-      toast.error('No se pudo obtener datos de PageSpeed. El informe se generará sin esta información.', {
-        description: apiError.message
-      });
       return null;
     }
   } catch (error: any) {
     console.error('Error fetching PageSpeed data:', error);
-    // No lanzamos el error para que no interrumpa el proceso
+    toast.error('No se pudo obtener datos de PageSpeed', {
+      description: 'El informe se generará sin esta información: ' + (error.message || '')
+    });
     return null;
   }
 };

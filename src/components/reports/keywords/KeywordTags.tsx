@@ -2,6 +2,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { Keyword } from '@/types/report.types';
+import { Badge } from '@/components/ui/badge';
 
 interface KeywordTagsProps {
   keywords: Keyword[];
@@ -16,16 +17,17 @@ const KeywordTags: React.FC<KeywordTagsProps> = ({ keywords, onRemove }) => {
   return (
     <div className="flex flex-wrap gap-2">
       {keywords.map((keyword) => (
-        <div 
+        <Badge 
           key={keyword.id} 
-          className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center gap-1"
+          variant="outline"
+          className="bg-primary/10 text-primary flex items-center gap-1 px-3 py-1"
         >
           <span>{keyword.keyword}</span>
           {keyword.searchVolume && (
-            <span className="text-xs">({keyword.searchVolume})</span>
+            <span className="text-xs ml-1">({keyword.searchVolume})</span>
           )}
           {keyword.difficulty && (
-            <span className="text-xs">{keyword.difficulty}/100</span>
+            <span className="text-xs ml-1">{keyword.difficulty}/100</span>
           )}
           <button 
             onClick={() => onRemove(keyword.id)}
@@ -33,7 +35,7 @@ const KeywordTags: React.FC<KeywordTagsProps> = ({ keywords, onRemove }) => {
           >
             <X className="h-3 w-3" />
           </button>
-        </div>
+        </Badge>
       ))}
     </div>
   );
