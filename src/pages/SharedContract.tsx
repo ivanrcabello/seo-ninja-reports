@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -189,90 +188,7 @@ const SharedContract = () => {
     // Imprimir después de que todo el contenido esté cargado
     setTimeout(() => {
       printWindow.print();
-      //printWindow.close();
     }, 500);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error || !contract) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle className="text-xl text-center">Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-muted-foreground">
-              {error || 'No se pudo cargar el contrato'}
-            </p>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button variant="outline" onClick={() => window.history.back()}>
-              Volver
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No disponible';
-    try {
-      return formatDistance(new Date(dateString), new Date(), { 
-        addSuffix: true,
-        locale: es
-      });
-    } catch (error) {
-      console.error('Error parsing date:', error);
-      return 'Fecha desconocida';
-    }
-  };
-
-  const getStatusIcon = () => {
-    switch (contract.status) {
-      case 'draft':
-        return <FileText className="h-5 w-5 text-muted-foreground" />;
-      case 'sent':
-        return <Send className="h-5 w-5 text-blue-500" />;
-      case 'signed':
-        return <BadgeCheck className="h-5 w-5 text-green-500" />;
-      case 'expired':
-        return <Clock className="h-5 w-5 text-yellow-500" />;
-      case 'cancelled':
-        return <Ban className="h-5 w-5 text-red-500" />;
-      default:
-        return <FileText className="h-5 w-5" />;
-    }
-  };
-  
-  const getStatusLabel = () => {
-    switch (contract.status) {
-      case 'draft': return 'Borrador';
-      case 'sent': return 'Enviado';
-      case 'signed': return 'Firmado';
-      case 'expired': return 'Vencido';
-      case 'cancelled': return 'Cancelado';
-      default: return 'Desconocido';
-    }
-  };
-  
-  const getStatusColor = () => {
-    switch (contract.status) {
-      case 'draft': return 'bg-muted text-muted-foreground';
-      case 'sent': return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
-      case 'signed': return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
-      case 'expired': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
-      default: return 'bg-muted text-muted-foreground';
-    }
   };
 
   return (
@@ -292,7 +208,7 @@ const SharedContract = () => {
           
           {/* Contract Header */}
           <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold mb-2">{contract.title}</h1>
+            <h1 className="text-3xl font-bold mb-2">{contract?.title}</h1>
             <div className="flex justify-center mb-4">
               <span className={`text-sm px-3 py-1.5 rounded-full flex items-center ${getStatusColor()}`}>
                 {getStatusIcon()}
@@ -311,98 +227,115 @@ const SharedContract = () => {
           </div>
 
           {/* Contract Content */}
-          <Card className="mb-8 overflow-hidden border-t-4 border-t-primary shadow-md">
-            <CardHeader className="bg-muted/30">
-              <CardTitle>Detalles del Contrato</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div 
-                className="prose prose-sm max-w-none dark:prose-invert"
-                dangerouslySetInnerHTML={{ __html: contract.content }}
-              />
-            </CardContent>
-            <CardFooter className="p-6 flex-col items-start bg-muted/10 border-t">
-              {/* Sección de firmas si hay alguna */}
-              {(contract.admin_signature || contract.client_signature) && (
-                <div className="w-full mb-6">
-                  <h4 className="text-sm font-medium mb-4">Firmas</h4>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {contract.admin_signature && (
-                      <div className="border rounded-md p-4 bg-white dark:bg-muted">
-                        <div className="text-xs text-muted-foreground mb-2">Firma del Administrador</div>
-                        <div className="flex justify-center border-t pt-2">
-                          <img 
-                            src={contract.admin_signature} 
-                            alt="Firma del Administrador" 
-                            className="max-h-16 object-contain" 
-                          />
-                        </div>
-                        <div className="text-xs text-center text-muted-foreground mt-2">
-                          {contract.admin_signed_at 
-                            ? new Date(contract.admin_signed_at).toLocaleDateString('es-ES', {
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }) 
-                            : 'Fecha no disponible'}
-                        </div>
-                      </div>
-                    )}
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : error || !contract ? (
+            <Card className="mb-8 overflow-hidden border-t-4 border-t-red-500 shadow-md">
+              <CardHeader className="bg-muted/30">
+                <CardTitle>Error</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-center text-muted-foreground">
+                  {error || 'No se pudo cargar el contrato'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="mb-8 overflow-hidden border-t-4 border-t-primary shadow-md">
+              <CardHeader className="bg-muted/30">
+                <CardTitle>Detalles del Contrato</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div 
+                  className="prose prose-sm max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: contract.content }}
+                />
+              </CardContent>
+              <CardFooter className="p-6 flex-col items-start bg-muted/10 border-t">
+                {/* Sección de firmas si hay alguna */}
+                {(contract.admin_signature || contract.client_signature) && (
+                  <div className="w-full mb-6">
+                    <h4 className="text-sm font-medium mb-4">Firmas</h4>
                     
-                    {contract.client_signature && (
-                      <div className="border rounded-md p-4 bg-white dark:bg-muted">
-                        <div className="text-xs text-muted-foreground mb-2">Firma del Cliente</div>
-                        <div className="flex justify-center border-t pt-2">
-                          <img 
-                            src={contract.client_signature} 
-                            alt="Firma del Cliente" 
-                            className="max-h-16 object-contain" 
-                          />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {contract.admin_signature && (
+                        <div className="border rounded-md p-4 bg-white dark:bg-muted">
+                          <div className="text-xs text-muted-foreground mb-2">Firma del Administrador</div>
+                          <div className="flex justify-center border-t pt-2">
+                            <img 
+                              src={contract.admin_signature} 
+                              alt="Firma del Administrador" 
+                              className="max-h-16 object-contain" 
+                            />
+                          </div>
+                          <div className="text-xs text-center text-muted-foreground mt-2">
+                            {contract.admin_signed_at 
+                              ? new Date(contract.admin_signed_at).toLocaleDateString('es-ES', {
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }) 
+                              : 'Fecha no disponible'}
+                          </div>
                         </div>
-                        <div className="text-xs text-center text-muted-foreground mt-2">
-                          {contract.client_signed_at 
-                            ? new Date(contract.client_signed_at).toLocaleDateString('es-ES', {
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }) 
-                            : 'Fecha no disponible'}
+                      )}
+                      
+                      {contract.client_signature && (
+                        <div className="border rounded-md p-4 bg-white dark:bg-muted">
+                          <div className="text-xs text-muted-foreground mb-2">Firma del Cliente</div>
+                          <div className="flex justify-center border-t pt-2">
+                            <img 
+                              src={contract.client_signature} 
+                              alt="Firma del Cliente" 
+                              className="max-h-16 object-contain" 
+                            />
+                          </div>
+                          <div className="text-xs text-center text-muted-foreground mt-2">
+                            {contract.client_signed_at 
+                              ? new Date(contract.client_signed_at).toLocaleDateString('es-ES', {
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }) 
+                              : 'Fecha no disponible'}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              <div className="w-full flex flex-col sm:flex-row sm:justify-between gap-4">
-                {/* Botón para firmar si el cliente aún no ha firmado */}
-                {!contract.client_signed && contract.status !== 'cancelled' && contract.status !== 'expired' && (
-                  <Button 
-                    onClick={() => setIsSignDialogOpen(true)}
-                    className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Firmar como Cliente
-                  </Button>
                 )}
                 
-                {/* Botón para descargar/imprimir siempre visible */}
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrint}
-                  className="w-full sm:w-auto"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Imprimir / Guardar PDF
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
+                <div className="w-full flex flex-col sm:flex-row sm:justify-between gap-4">
+                  {/* Botón para firmar si el cliente aún no ha firmado */}
+                  {!contract.client_signed && contract.status !== 'cancelled' && contract.status !== 'expired' && (
+                    <Button 
+                      onClick={() => setIsSignDialogOpen(true)}
+                      className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Firmar como Cliente
+                    </Button>
+                  )}
+                  
+                  {/* Botón para descargar/imprimir siempre visible */}
+                  <Button 
+                    variant="outline" 
+                    onClick={handlePrint}
+                    className="w-full sm:w-auto"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Imprimir / Guardar PDF
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          )}
           
           {/* Información de contacto */}
           <div className="text-center text-sm text-muted-foreground mt-8">
@@ -424,6 +357,64 @@ const SharedContract = () => {
       />
     </>
   );
+
+  function getStatusIcon() {
+    if (!contract) return <FileText className="h-5 w-5" />;
+    
+    switch (contract.status) {
+      case 'draft':
+        return <FileText className="h-5 w-5 text-muted-foreground" />;
+      case 'sent':
+        return <Send className="h-5 w-5 text-blue-500" />;
+      case 'signed':
+        return <BadgeCheck className="h-5 w-5 text-green-500" />;
+      case 'expired':
+        return <Clock className="h-5 w-5 text-yellow-500" />;
+      case 'cancelled':
+        return <Ban className="h-5 w-5 text-red-500" />;
+      default:
+        return <FileText className="h-5 w-5" />;
+    }
+  }
+  
+  function getStatusLabel() {
+    if (!contract) return 'Desconocido';
+    
+    switch (contract.status) {
+      case 'draft': return 'Borrador';
+      case 'sent': return 'Enviado';
+      case 'signed': return 'Firmado';
+      case 'expired': return 'Vencido';
+      case 'cancelled': return 'Cancelado';
+      default: return 'Desconocido';
+    }
+  }
+  
+  function getStatusColor() {
+    if (!contract) return 'bg-muted text-muted-foreground';
+    
+    switch (contract.status) {
+      case 'draft': return 'bg-muted text-muted-foreground';
+      case 'sent': return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
+      case 'signed': return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
+      case 'expired': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  }
+  
+  function formatDate(dateString?: string) {
+    if (!dateString) return 'No disponible';
+    try {
+      return formatDistance(new Date(dateString), new Date(), { 
+        addSuffix: true,
+        locale: es
+      });
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return 'Fecha desconocida';
+    }
+  }
 };
 
 export default SharedContract;

@@ -34,13 +34,17 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
         ctx.strokeStyle = '#000000';
         setContext(ctx);
         
+        // Ajustar el tamaño del canvas para que coincida con su contenedor
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
         // Limpiar el canvas
         clearCanvas();
       }
     }
   }, [open]);
   
-  // Asegurar que el canvas se ajuste correctamente
+  // Asegurar que el canvas se ajuste correctamente al cambiar el tamaño de la ventana
   useEffect(() => {
     const handleResize = () => {
       if (canvasRef.current && context) {
@@ -66,16 +70,15 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
     setIsDrawing(true);
     setHasSignature(true);
     
-    if (!context) return;
+    if (!context || !canvasRef.current) return;
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    
     const rect = canvas.getBoundingClientRect();
     
     let x, y;
     if ('touches' in e) {
       // Es un evento táctil
+      e.preventDefault(); // Prevenir scroll en dispositivos táctiles
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
     } else {
@@ -89,11 +92,9 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
   };
   
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !context) return;
+    if (!isDrawing || !context || !canvasRef.current) return;
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    
     const rect = canvas.getBoundingClientRect();
     
     let x, y;
