@@ -106,13 +106,62 @@ const ProposalDialog: React.FC<ProposalDialogProps> = ({
             
             <div className="space-y-2">
               <Label htmlFor="description">Descripción</Label>
-              <Textarea 
-                id="description" 
-                value={description} 
-                onChange={(e) => setDescription(e.target.value)} 
-                placeholder="Describe brevemente esta propuesta..."
-                rows={3}
-              />
+              <div className="border rounded-md">
+                <div className="p-1 bg-muted/50 border-b flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="p-1 hover:bg-muted rounded"
+                    onClick={() => setDescription(description + '<b>Texto en negrita</b>')}
+                  >
+                    <b>N</b>
+                  </button>
+                  <button
+                    type="button"
+                    className="p-1 hover:bg-muted rounded"
+                    onClick={() => setDescription(description + '<i>Texto en cursiva</i>')}
+                  >
+                    <i>C</i>
+                  </button>
+                  <button
+                    type="button"
+                    className="p-1 hover:bg-muted rounded"
+                    onClick={() => setDescription(description + '<u>Texto subrayado</u>')}
+                  >
+                    <u>S</u>
+                  </button>
+                  <button
+                    type="button"
+                    className="p-1 hover:bg-muted rounded"
+                    onClick={() => setDescription(description + '<h3>Título</h3>')}
+                  >
+                    T
+                  </button>
+                  <button
+                    type="button"
+                    className="p-1 hover:bg-muted rounded"
+                    onClick={() => setDescription(description + '<ul><li>Elemento de lista</li></ul>')}
+                  >
+                    • Lista
+                  </button>
+                </div>
+                <Textarea 
+                  id="description" 
+                  value={description} 
+                  onChange={(e) => setDescription(e.target.value)} 
+                  placeholder="Describe brevemente esta propuesta... (Admite HTML)"
+                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  rows={6}
+                />
+              </div>
+              {description && (
+                <div className="mt-2">
+                  <Label>Vista previa:</Label>
+                  <div 
+                    className="p-3 border rounded-md mt-1 prose max-w-full"
+                    dangerouslySetInnerHTML={{ __html: description }}
+                  />
+                </div>
+              )}
             </div>
             
             <div className="space-y-2">

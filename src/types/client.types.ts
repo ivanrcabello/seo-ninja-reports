@@ -27,12 +27,13 @@ export interface ClientProposal {
   id: string;
   client_id: string;
   title: string;
-  description?: string;
+  description?: string; // This can now contain HTML
   services?: string[];
   price?: number;
   status: 'draft' | 'sent' | 'accepted' | 'rejected';
   created_at: string;
   updated_at: string;
+  shared_url?: string; // Adding field for shared URL
 }
 
 export interface ClientNote {
