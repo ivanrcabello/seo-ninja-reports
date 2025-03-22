@@ -36,7 +36,8 @@ interface ReportsContextType {
     pageSpeedData?: any,
     keywords?: Keyword[],
     notes?: string,
-    businessProfile?: Partial<BusinessProfile> | null
+    businessProfile?: Partial<BusinessProfile> | null,
+    seoReport?: any
   ) => Promise<Report>;
   retryReport: (id: string) => Promise<boolean>;
   checkForStuckReports: () => Promise<void>;
@@ -63,11 +64,16 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
         const reportsData = await fetchReports();
         setReports(reportsData);
         
-        // Check for stuck reports on initial load
-        await checkAndFixStuckReports();
+        // Intentamos verificar informes atascados de manera segura
+        try {
+          await checkAndFixStuckReports();
+        } catch (stuckError) {
+          console.error('Error al verificar informes atascados:', stuckError);
+          // No interrumpimos el flujo principal si esto falla
+        }
       } catch (error) {
-        console.error('Error in loadReports:', error);
-        // Error is already handled in fetchReports
+        console.error('Error en loadReports:', error);
+        toast.error('Error al cargar informes');
       } finally {
         setIsLoading(false);
       }
@@ -75,22 +81,28 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
 
     loadReports();
     
-    // Set up interval to check for stuck reports every 5 minutes
-    const stuckReportsInterval = setInterval(async () => {
-      if (user) {
+    // Configuramos un intervalo para verificar informes atascados cada 5 minutos
+    // pero lo hacemos de manera segura para que no interrumpa la aplicación
+    let stuckReportsInterval: NodeJS.Timeout | null = null;
+    
+    if (user) {
+      stuckReportsInterval = setInterval(async () => {
         try {
           await checkAndFixStuckReports();
-          // Refresh reports list after fixing stuck reports
+          // Actualizamos la lista de informes después de arreglar los atascados
           const reportsData = await fetchReports();
           setReports(reportsData);
         } catch (error) {
-          console.error('Error checking for stuck reports:', error);
+          console.error('Error al verificar informes atascados en intervalo:', error);
+          // No hacemos nada más, simplemente registramos el error
         }
-      }
-    }, 5 * 60 * 1000); // 5 minutes
+      }, 5 * 60 * 1000); // 5 minutos
+    }
     
     return () => {
-      clearInterval(stuckReportsInterval);
+      if (stuckReportsInterval) {
+        clearInterval(stuckReportsInterval);
+      }
     };
   }, [user]);
 
@@ -103,22 +115,37 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const createReport = async (data: Omit<Report, 'id' | 'date' | 'status'>) => {
-    const newReport = await createNewReport(data);
-    setReports(prevReports => [newReport, ...prevReports]);
-    return newReport;
+    try {
+      const newReport = await createNewReport(data);
+      setReports(prevReports => [newReport, ...prevReports]);
+      return newReport;
+    } catch (error) {
+      console.error('Error al crear informe:', error);
+      throw error;
+    }
   };
 
   const updateReport = async (id: string, data: Partial<Report>) => {
-    const updatedReport = await updateExistingReport(id, data);
-    setReports(prevReports => 
-      prevReports.map(report => report.id === id ? updatedReport : report)
-    );
-    return updatedReport;
+    try {
+      const updatedReport = await updateExistingReport(id, data);
+      setReports(prevReports => 
+        prevReports.map(report => report.id === id ? updatedReport : report)
+      );
+      return updatedReport;
+    } catch (error) {
+      console.error('Error al actualizar informe:', error);
+      throw error;
+    }
   };
 
   const deleteReport = async (id: string) => {
-    await deleteReportById(id);
-    setReports(prevReports => prevReports.filter(report => report.id !== id));
+    try {
+      await deleteReportById(id);
+      setReports(prevReports => prevReports.filter(report => report.id !== id));
+    } catch (error) {
+      console.error('Error al eliminar informe:', error);
+      throw error;
+    }
   };
 
   const generateReport = async (
@@ -129,79 +156,81 @@ export const ReportsProvider = ({ children }: { children: ReactNode }) => {
     pageSpeedData?: any,
     keywords?: Keyword[],
     notes?: string,
-    businessProfile?: Partial<BusinessProfile> | null
+    businessProfile?: Partial<BusinessProfile> | null,
+    seoReport?: any
   ) => {
-    const report = await generateSeoReport(
-      clientId, 
-      url, 
-      files, 
-      customPrompt, 
-      pageSpeedData,
-      keywords,
-      notes
-    );
-    
-    // Si tenemos información de perfil de negocio, la guardamos después
-    // de que se haya creado el informe
-    if (businessProfile && report.id) {
-      try {
-        await saveBusinessProfile(report.id, {
-          businessUrl: businessProfile.businessUrl || '',
-          businessName: businessProfile.businessName,
-          businessAddress: businessProfile.businessAddress,
-          businessPhone: businessProfile.businessPhone,
-          businessCategory: businessProfile.businessCategory,
-          businessRating: businessProfile.businessRating,
-          businessReviewsCount: businessProfile.businessReviewsCount,
-          businessWebsite: businessProfile.businessWebsite,
-          businessHours: businessProfile.businessHours
-        });
-        
-        // Actualizar el reporte en el estado para incluir hasBusinessProfile
-        report.hasBusinessProfile = true;
-      } catch (error) {
-        console.error('Error al guardar perfil de negocio:', error);
-        // No detenemos la generación del informe si falla el guardado del perfil
-      }
-    }
-    
-    // Update reports state based on status
-    if (report.status === 'processing') {
-      setReports(prevReports => [report, ...prevReports]);
-    } else if (report.status === 'completed' || report.status === 'failed') {
-      setReports(prevReports => 
-        prevReports.map(r => r.id === report.id ? report : r)
+    try {
+      // Pasamos todos los parámetros necesarios
+      const report = await generateSeoReport(
+        clientId, 
+        url, 
+        files, 
+        customPrompt, 
+        pageSpeedData,
+        keywords,
+        notes,
+        businessProfile,
+        seoReport
       );
+      
+      // Actualizar el estado según el status del informe
+      if (report.status === 'processing') {
+        setReports(prevReports => [report, ...prevReports]);
+      } else if (report.status === 'completed' || report.status === 'failed') {
+        setReports(prevReports => 
+          prevReports.map(r => r.id === report.id ? report : r)
+        );
+      }
+      
+      return report;
+    } catch (error: any) {
+      console.error('Error al generar informe:', error);
+      toast.error('Error al generar informe: ' + (error.message || 'Error desconocido'));
+      throw error;
     }
-    
-    return report;
   };
   
   const retryReport = async (id: string) => {
-    const result = await retryFailedReport(id);
-    if (result) {
-      // Update the report status in the state
-      const report = getReport(id);
-      if (report) {
-        const updatedReport = {
-          ...report,
-          status: 'processing' as const,
-          summary: 'Reintentando generación de informe...'
-        };
+    try {
+      const result = await retryFailedReport(id);
+      if (result) {
+        // Actualizar el estado del informe en el estado
+        const report = getReport(id);
+        if (report) {
+          const updatedReport = {
+            ...report,
+            status: 'processing' as const,
+            summary: 'Reintentando generación de informe...'
+          };
+          
+          setReports(prevReports => 
+            prevReports.map(r => r.id === id ? updatedReport : r)
+          );
+        }
         
-        setReports(prevReports => 
-          prevReports.map(r => r.id === id ? updatedReport : r)
-        );
+        toast.success('Reintentando generación del informe');
+      } else {
+        toast.error('No se pudo reintentar el informe');
       }
+      return result;
+    } catch (error) {
+      console.error('Error al reintentar informe:', error);
+      toast.error('Error al reintentar el informe');
+      return false;
     }
-    return result;
   };
   
   const checkForStuckReports = async () => {
-    await checkAndFixStuckReports();
-    // Refresh reports list
-    const reportsData = await fetchReports();
-    setReports(reportsData);
+    try {
+      await checkAndFixStuckReports();
+      // Actualizamos la lista de informes
+      const reportsData = await fetchReports();
+      setReports(reportsData);
+    } catch (error) {
+      console.error('Error al verificar informes atascados (función manual):', error);
+      toast.error('Error al verificar informes atascados');
+      throw error;
+    }
   };
 
   const value = {
