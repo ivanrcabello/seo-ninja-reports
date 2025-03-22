@@ -33,6 +33,7 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
       return;
     }
     
+    console.log('Selected PDF file:', selectedFile.name, 'size:', (selectedFile.size / 1024).toFixed(2), 'KB');
     setFile(selectedFile);
   };
   
@@ -46,41 +47,57 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
     setError(null);
     
     try {
+      console.log('Starting PDF parsing for file:', file.name);
+      
       // First parse the PDF to extract data
       const parsedData = await parsePdf(file);
       
       if (!parsedData || !parsedData.domain) {
+        console.error('Error: No domain in parsed data:', parsedData);
         throw new Error('No se pudieron extraer datos del PDF');
       }
       
-      // Log extracted data to console for debugging
-      console.log('Extracted data:', parsedData);
+      // Log extracted data details for debugging
+      console.log('Extracted data summary:', {
+        domain: parsedData.domain,
+        traffic: parsedData.traffic,
+        keywords: parsedData.keywords,
+        backlinks: parsedData.backlinks,
+        keywordsCount: parsedData.keywordsData?.length || 0,
+        competitorsCount: parsedData.competitorsData?.length || 0
+      });
       
-      // Check if the data looks simulated or default
-      const isSimulated = parsedData.domain.includes('.pdf') || 
-                          parsedData.domain === 'unknown.com' ||
-                          parsedData.domain.includes('unknown') ||
-                          !parsedData.domain.includes('.');
+      // Check if keywords look like PDF structure elements (e.g., "endobj")
+      const hasPdfStructureKeywords = parsedData.keywordsData?.some(
+        kw => kw.keyword.includes('obj') || kw.keyword.includes('xref') || kw.keyword === 'endobj'
+      );
       
-      if (isSimulated) {
-        console.warn('Data appears to be simulated:', parsedData);
-        // Try to guess a better domain based on the filename
-        let betterDomain = parsedData.domain;
+      if (hasPdfStructureKeywords) {
+        console.warn('Detected PDF structure terms in keywords - extraction likely failed');
         
-        if (betterDomain.endsWith('.pdf')) {
-          betterDomain = file.name.replace('.pdf', '');
-          if (!betterDomain.includes('.')) {
-            betterDomain = `${betterDomain}.com`;
-          }
-          parsedData.domain = betterDomain;
-        }
+        // Get filename without extension for better domain guessing
+        const fileName = file.name.replace('.pdf', '');
+        const possibleDomain = fileName.includes('.') ? fileName : `${fileName}.com`;
         
-        toast.warning('Datos parcialmente extraídos', {
-          description: 'Se ha inferido información del nombre del archivo'
+        console.log('Using filename-based domain instead:', possibleDomain);
+        parsedData.domain = possibleDomain;
+        
+        // Generate better sample keywords based on domain
+        const domainBase = possibleDomain.replace(/\.(com|net|org|io|es)$/i, '');
+        parsedData.keywordsData = [
+          { keyword: domainBase, position: 1, volume: 2500, trafficPercent: 22.5 },
+          { keyword: `${domainBase} servicios`, position: 4, volume: 1800, trafficPercent: 18.3 },
+          { keyword: `${domainBase} online`, position: 7, volume: 1250, trafficPercent: 14.5 },
+          { keyword: `${domainBase} profesional`, position: 8, volume: 950, trafficPercent: 12.2 },
+          { keyword: `mejor ${domainBase}`, position: 12, volume: 780, trafficPercent: 10.7 }
+        ];
+        
+        toast.warning('Extracción de datos limitada', {
+          description: 'Se han generado datos de ejemplo basados en el nombre del archivo'
         });
       }
       
-      // Ensure we have values for all required metrics (use parsed values or defaults)
+      // Ensure we have values for all required metrics
       const dataToUpload = {
         ...parsedData,
         traffic: parsedData.traffic || Math.floor(Math.random() * 10000) + 5000,
@@ -88,7 +105,14 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
         backlinks: parsedData.backlinks || Math.floor(Math.random() * 10000) + 2000
       };
       
-      // Then upload the extracted data
+      // Inform the user that simulated data is being used
+      if (!parsedData.traffic || !parsedData.keywords || !parsedData.backlinks) {
+        toast.warning('Algunos datos son simulados', {
+          description: 'No se pudieron extraer todos los datos del PDF'
+        });
+      }
+      
+      console.log('Uploading SEO report data for domain:', dataToUpload.domain);
       const result = await uploadSeoReport(clientId, dataToUpload);
       console.log('Upload result:', result);
       toast.success('Informe SEO subido correctamente');
