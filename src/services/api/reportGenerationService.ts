@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
@@ -79,8 +78,7 @@ export const generateSeoReport = async (
         content: initialContent,
         custom_prompt: customPrompt || '',
         notes: notes || null,
-        has_business_profile: !!businessProfile,
-        seo_report_id: seoReport?.id || null
+        has_business_profile: !!businessProfile
       })
       .select()
       .single();
@@ -134,15 +132,10 @@ export const generateSeoReport = async (
       }
     }
     
-    // If we have SEO report data, save the reference
+    // If we have SEO report data, store it in the report content
     if (seoReport) {
-      try {
-        console.log('Guardando referencia a informe SEO:', seoReport.id);
-        // Reference already saved in the initial report creation
-      } catch (seoReportError) {
-        console.error('Error al guardar referencia al informe SEO:', seoReportError);
-        // Don't stop the process if SEO report reference save fails
-      }
+      console.log('Guardando datos de informe SEO en el contenido');
+      // The SEO report data is already included in the initialContent
     }
 
     // Start the report generation process with prefetched PageSpeed data

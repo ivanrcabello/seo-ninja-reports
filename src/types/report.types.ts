@@ -25,11 +25,10 @@ export interface Report {
     contentStrategy?: string;
     pageSpeedData?: PageSpeedData;
     businessProfile?: BusinessProfile;
-    seoReportData?: Record<string, any>; // Change to Record<string, any> to make it JSON-serializable
+    seoReportData?: Record<string, any>; // Store SEO report data in content
   };
   customPrompt?: string;
   customSections?: CustomSection[];
-  seoReportId?: string;
 }
 
 export interface CustomSection {

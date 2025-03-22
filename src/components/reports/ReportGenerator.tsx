@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -42,7 +41,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const [businessProfile, setBusinessProfile] = usePersistentState<Partial<BusinessProfile> | null>(
     `report-generator-business-profile-${clientId}`, null);
   
-  // New states for additional data sources
   const [seoReports, setSeoReports] = useState<SeoReport[]>([]);
   const [selectedSeoReport, setSelectedSeoReport] = usePersistentState<string | null>(
     `report-generator-selected-seo-report-${clientId}`, null);
@@ -61,7 +59,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const hasGoogleApiKey = !!localStorage.getItem('google_pagespeed_api_key');
   const hasOpenAIApiKey = !!localStorage.getItem('openai_api_key');
 
-  // Fetch SEO reports for this client
   useEffect(() => {
     const loadSeoReports = async () => {
       try {
@@ -76,11 +73,9 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     loadSeoReports();
   }, [clientId]);
   
-  // Handle visibility change to persist pageSpeedData
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && pageSpeedData === null) {
-        // Try to restore pageSpeedData
         const savedData = sessionStorage.getItem(`report-generator-pagespeed-${clientId}`);
         if (savedData) {
           try {
@@ -90,7 +85,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
           }
         }
       } else if (pageSpeedData !== null) {
-        // Save pageSpeedData
         sessionStorage.setItem(`report-generator-pagespeed-${clientId}`, JSON.stringify(pageSpeedData));
       }
     };
@@ -102,7 +96,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     };
   }, [clientId, pageSpeedData]);
   
-  // Clear persisted data on successful report generation
   const clearPersistedData = () => {
     sessionStorage.removeItem(`report-generator-url-${clientId}`);
     sessionStorage.removeItem(`report-generator-step-${clientId}`);
@@ -140,21 +133,18 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       console.log('Selected SEO report:', selectedSeoReport);
       console.log('Notes:', notes);
       
-      // Format keywords for database storage
       const formattedKeywords = keywords.map(k => ({
         keyword: k.keyword,
         searchVolume: k.searchVolume ? parseInt(k.searchVolume) : undefined,
         difficulty: k.difficulty ? parseInt(k.difficulty) : undefined
       }));
       
-      // Get selected SEO report data if available
       const seoReportData = selectedSeoReport 
         ? seoReports.find(r => r.id === selectedSeoReport) || null
         : null;
       
       console.log('SEO report data:', seoReportData);
       
-      // Pass the pre-fetched PageSpeed data to the generateReport function
       const report = await generateReport(
         clientId, 
         url, 
@@ -174,10 +164,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
           description: 'Informe creado exitosamente',
         });
         
-        // Clear persisted data
         clearPersistedData();
         
-        // Small delay to ensure the report is fully saved in the database
         setTimeout(() => {
           navigate(`/reports/${report.id}`);
         }, 500);
