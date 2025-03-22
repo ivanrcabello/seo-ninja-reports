@@ -1,28 +1,36 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SeoReport } from '@/types/seo-reporting.types';
+import { Info, FileSearch } from 'lucide-react';
 
 interface ReportGeneratorStep4Props {
   notes: string;
   setNotes: (notes: string) => void;
+  seoReports: SeoReport[];
+  selectedSeoReport: string | null;
+  setSelectedSeoReport: (reportId: string | null) => void;
   isLoading: boolean;
   previousStep: () => void;
-  handleSubmit: (e: React.FormEvent) => Promise<void>;
+  nextStep: () => void;
 }
 
 const ReportGeneratorStep4: React.FC<ReportGeneratorStep4Props> = ({
   notes,
   setNotes,
+  seoReports,
+  selectedSeoReport,
+  setSelectedSeoReport,
   isLoading,
   previousStep,
-  handleSubmit,
+  nextStep,
 }) => {
   return (
-    <form onSubmit={handleSubmit}>
+    <div>
       <div className="mb-6 flex items-center justify-center">
         <div className="flex items-center justify-center space-x-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
@@ -40,10 +48,74 @@ const ReportGeneratorStep4: React.FC<ReportGeneratorStep4Props> = ({
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
             4
           </div>
+          <div className="h-0.5 w-10 bg-muted"></div>
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
+            5
+          </div>
         </div>
       </div>
       
       <CardContent className="space-y-6 pt-4">
+        {seoReports.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="seo-report">Informes SEO existentes</Label>
+            <Select
+              value={selectedSeoReport || ""}
+              onValueChange={(value) => setSelectedSeoReport(value || null)}
+            >
+              <SelectTrigger id="seo-report">
+                <SelectValue placeholder="Seleccionar informe SEO existente (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Ninguno</SelectItem>
+                {seoReports.map((report) => (
+                  <SelectItem key={report.id} value={report.id}>
+                    {report.domain} ({new Date(report.createdAt).toLocaleDateString()})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Puedes seleccionar un informe SEO existente para incluir sus datos en el análisis
+            </p>
+            
+            {selectedSeoReport && (
+              <div className="mt-2 p-3 rounded-md bg-primary/5 border border-primary/10">
+                <div className="flex items-start gap-2">
+                  <FileSearch className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium">
+                      Informe seleccionado: {
+                        seoReports.find(r => r.id === selectedSeoReport)?.domain
+                      }
+                    </h4>
+                    <div className="grid grid-cols-3 gap-x-4 gap-y-1 mt-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Tráfico:</span>{' '}
+                        <span className="font-medium">{
+                          seoReports.find(r => r.id === selectedSeoReport)?.traffic.toLocaleString()
+                        }</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Keywords:</span>{' '}
+                        <span className="font-medium">{
+                          seoReports.find(r => r.id === selectedSeoReport)?.keywords.toLocaleString()
+                        }</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Backlinks:</span>{' '}
+                        <span className="font-medium">{
+                          seoReports.find(r => r.id === selectedSeoReport)?.backlinks.toLocaleString()
+                        }</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
         <div className="space-y-2">
           <Label htmlFor="notes">Notas Adicionales</Label>
           <Textarea
@@ -61,9 +133,7 @@ const ReportGeneratorStep4: React.FC<ReportGeneratorStep4Props> = ({
         <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
           <div className="flex items-start">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+              <Info className="h-5 w-5 text-blue-500" />
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-blue-800">Recomendaciones para notas</h3>
@@ -83,24 +153,19 @@ const ReportGeneratorStep4: React.FC<ReportGeneratorStep4Props> = ({
           type="button"
           variant="outline"
           onClick={previousStep}
+          disabled={isLoading}
         >
           Atrás
         </Button>
         <Button
-          type="submit"
+          type="button"
+          onClick={nextStep}
           disabled={isLoading}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generando...
-            </>
-          ) : (
-            'Generar Informe'
-          )}
+          Siguiente
         </Button>
       </CardFooter>
-    </form>
+    </div>
   );
 };
 

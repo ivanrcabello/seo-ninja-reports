@@ -11,8 +11,12 @@ import ReportGeneratorStep1 from './report-steps/ReportGeneratorStep1';
 import ReportGeneratorStep2 from './report-steps/ReportGeneratorStep2';
 import ReportGeneratorStep3 from './report-steps/ReportGeneratorStep3';
 import ReportGeneratorStep4 from './report-steps/ReportGeneratorStep4';
+import ReportGeneratorStep5 from './report-steps/ReportGeneratorStep5';
 import { BusinessProfile } from '@/types/report.types';
 import usePersistentState from '@/hooks/usePersistentState';
+import { PDFExtractor } from '@/utils/PDFExtractor';
+import { fetchClientSeoReports } from '@/services/seoReport';
+import { SeoReport } from '@/types/seo-reporting.types';
 
 interface ReportGeneratorProps {
   clientId: string;
@@ -28,7 +32,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const [url, setUrl] = usePersistentState<string>(`report-generator-url-${clientId}`, '');
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = usePersistentState<1 | 2 | 3 | 4>(`report-generator-step-${clientId}`, 1);
+  const [step, setStep] = usePersistentState<1 | 2 | 3 | 4 | 5>(`report-generator-step-${clientId}`, 1);
   const [pageSpeedData, setPageSpeedData] = useState<any>(null);
   const [customPrompt, setCustomPrompt] = usePersistentState<string>('report-generator-prompt', 
     localStorage.getItem('default_seo_prompt') || '');
@@ -38,6 +42,17 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const [businessProfile, setBusinessProfile] = usePersistentState<Partial<BusinessProfile> | null>(
     `report-generator-business-profile-${clientId}`, null);
   
+  // New states for additional data sources
+  const [seoReports, setSeoReports] = useState<SeoReport[]>([]);
+  const [selectedSeoReport, setSelectedSeoReport] = usePersistentState<string | null>(
+    `report-generator-selected-seo-report-${clientId}`, null);
+  const [usePageSpeedData, setUsePageSpeedData] = usePersistentState<boolean>(
+    `report-generator-use-pagespeed-${clientId}`, true);
+  const [useGmbData, setUseGmbData] = usePersistentState<boolean>(
+    `report-generator-use-gmb-${clientId}`, true);
+  const [useKeywordsData, setUseKeywordsData] = usePersistentState<boolean>(
+    `report-generator-use-keywords-${clientId}`, true);
+  
   const { generateReport } = useReports();
   const { getClient } = useClients();
   const navigate = useNavigate();
@@ -45,6 +60,21 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const client = getClient(clientId);
   const hasGoogleApiKey = !!localStorage.getItem('google_pagespeed_api_key');
   const hasOpenAIApiKey = !!localStorage.getItem('openai_api_key');
+
+  // Fetch SEO reports for this client
+  useEffect(() => {
+    const loadSeoReports = async () => {
+      try {
+        const reports = await fetchClientSeoReports(clientId);
+        setSeoReports(reports);
+        console.log('Loaded SEO reports:', reports.length);
+      } catch (error) {
+        console.error('Error loading SEO reports:', error);
+      }
+    };
+    
+    loadSeoReports();
+  }, [clientId]);
   
   // Handle visibility change to persist pageSpeedData
   useEffect(() => {
@@ -81,6 +111,10 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     sessionStorage.removeItem(`report-generator-business-url-${clientId}`);
     sessionStorage.removeItem(`report-generator-business-profile-${clientId}`);
     sessionStorage.removeItem(`report-generator-pagespeed-${clientId}`);
+    sessionStorage.removeItem(`report-generator-selected-seo-report-${clientId}`);
+    sessionStorage.removeItem(`report-generator-use-pagespeed-${clientId}`);
+    sessionStorage.removeItem(`report-generator-use-gmb-${clientId}`);
+    sessionStorage.removeItem(`report-generator-use-keywords-${clientId}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,10 +134,11 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     
     try {
       console.log('Generating report for client:', clientId, 'URL:', url);
-      console.log('Using PageSpeed data:', pageSpeedData);
-      console.log('Keywords:', keywords);
+      console.log('Using PageSpeed data:', usePageSpeedData ? pageSpeedData : 'No');
+      console.log('Using GMB data:', useGmbData ? businessProfile : 'No');
+      console.log('Using Keywords data:', useKeywordsData ? keywords : 'No');
+      console.log('Selected SEO report:', selectedSeoReport);
       console.log('Notes:', notes);
-      console.log('Business Profile:', businessProfile);
       
       // Format keywords for database storage
       const formattedKeywords = keywords.map(k => ({
@@ -112,16 +147,24 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         difficulty: k.difficulty ? parseInt(k.difficulty) : undefined
       }));
       
+      // Get selected SEO report data if available
+      const seoReportData = selectedSeoReport 
+        ? seoReports.find(r => r.id === selectedSeoReport) || null
+        : null;
+      
+      console.log('SEO report data:', seoReportData);
+      
       // Pass the pre-fetched PageSpeed data to the generateReport function
       const report = await generateReport(
         clientId, 
         url, 
         files, 
         customPrompt, 
-        pageSpeedData, 
-        formattedKeywords,
+        usePageSpeedData ? pageSpeedData : null,
+        useKeywordsData ? formattedKeywords : [],
         notes,
-        businessProfile
+        useGmbData ? businessProfile : null,
+        seoReportData
       );
       
       console.log('Report generated successfully:', report);
@@ -152,14 +195,14 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   };
 
   const goToNextStep = () => {
-    if (step < 4) {
-      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
+    if (step < 5) {
+      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4 | 5);
     }
   };
 
   const goToPreviousStep = () => {
     if (step > 1) {
-      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4 | 5);
     }
   };
 
@@ -190,6 +233,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
             hasGoogleApiKey={hasGoogleApiKey}
             nextStep={nextStep}
             setPageSpeedData={setPageSpeedData}
+            usePageSpeedData={usePageSpeedData}
+            setUsePageSpeedData={setUsePageSpeedData}
           />
         )}
         
@@ -208,6 +253,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
             setBusinessUrl={setBusinessUrl}
             businessProfile={businessProfile}
             setBusinessProfile={setBusinessProfile}
+            useGmbData={useGmbData}
+            setUseGmbData={setUseGmbData}
           />
         )}
         
@@ -218,6 +265,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
             isLoading={isLoading}
             previousStep={goToPreviousStep}
             nextStep={goToNextStep}
+            useKeywordsData={useKeywordsData}
+            setUseKeywordsData={setUseKeywordsData}
           />
         )}
         
@@ -225,6 +274,23 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
           <ReportGeneratorStep4
             notes={notes}
             setNotes={setNotes}
+            seoReports={seoReports}
+            selectedSeoReport={selectedSeoReport}
+            setSelectedSeoReport={setSelectedSeoReport}
+            isLoading={isLoading}
+            previousStep={goToPreviousStep}
+            nextStep={goToNextStep}
+          />
+        )}
+        
+        {step === 5 && (
+          <ReportGeneratorStep5
+            url={url}
+            usePageSpeedData={usePageSpeedData}
+            useGmbData={useGmbData}
+            useKeywordsData={useKeywordsData}
+            selectedSeoReport={selectedSeoReport ? seoReports.find(r => r.id === selectedSeoReport) : null}
+            filesCount={files.length}
             isLoading={isLoading}
             previousStep={goToPreviousStep}
             handleSubmit={handleSubmit}

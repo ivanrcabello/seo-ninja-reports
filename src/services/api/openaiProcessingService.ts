@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Report, BusinessProfile } from '@/types/report.types';
+import { SeoReport } from '@/types/seo-reporting.types';
 import { toast } from 'sonner';
 import { formatPageSpeedData, getPageSpeedData } from './pageSpeedService';
 import { generateOpenAIReport } from './openaiService';
@@ -14,7 +15,8 @@ export const processOpenAIReport = async (
   pageSpeedData: any = null,
   customPrompt?: string,
   notes?: string,
-  businessProfile?: Partial<BusinessProfile> | null
+  businessProfile?: Partial<BusinessProfile> | null,
+  seoReport?: SeoReport | null
 ): Promise<Report | null> => {
   try {
     console.log('Iniciando procesamiento de informe con OpenAI para:', url);
@@ -22,6 +24,7 @@ export const processOpenAIReport = async (
     console.log('¿Hay datos de PageSpeed?', !!pageSpeedData);
     console.log('¿Hay notas?', !!notes);
     console.log('¿Hay perfil de negocio?', !!businessProfile);
+    console.log('¿Hay informe SEO?', !!seoReport);
     
     let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
     prompt = prompt.replace('[DOMINIO]', new URL(url).hostname);
@@ -53,6 +56,33 @@ export const processOpenAIReport = async (
       if (businessProfile.businessUrl) prompt += `URL de Google Maps: ${businessProfile.businessUrl}\n`;
       
       prompt += "\nAnaliza estos datos y proporciona recomendaciones específicas para mejorar la presencia local del negocio.";
+    }
+    
+    // Add SEO report data to prompt if available
+    if (seoReport) {
+      prompt += "\n\nA continuación se incluyen datos de un informe SEO existente. Utiliza esta información para comparar y proporcionar un análisis más profundo:\n";
+      prompt += `Dominio: ${seoReport.domain}\n`;
+      prompt += `Tráfico orgánico: ${seoReport.traffic.toLocaleString()}\n`;
+      prompt += `Palabras clave posicionadas: ${seoReport.keywords.toLocaleString()}\n`;
+      prompt += `Backlinks: ${seoReport.backlinks.toLocaleString()}\n`;
+      
+      // Add keywords data if available
+      if (seoReport.keywordsData && seoReport.keywordsData.length > 0) {
+        prompt += "\nPalabras clave principales:\n";
+        seoReport.keywordsData.slice(0, 10).forEach(kw => {
+          prompt += `- "${kw.keyword}" (posición: ${kw.position}, volumen: ${kw.volume})\n`;
+        });
+      }
+      
+      // Add competitors data if available
+      if (seoReport.competitorsData && seoReport.competitorsData.length > 0) {
+        prompt += "\nCompetidores principales:\n";
+        seoReport.competitorsData.slice(0, 5).forEach(comp => {
+          prompt += `- ${comp.domain} (solapamiento: ${comp.keywordsOverlap} palabras clave)\n`;
+        });
+      }
+      
+      prompt += "\nAnaliza estos datos y proporciona comparaciones relevantes con la situación actual. Identifica cambios significativos y áreas de oportunidad.";
     }
     
     // Add notes to prompt if available
@@ -143,7 +173,9 @@ export const processOpenAIReport = async (
       // Add pageSpeedData explicitly to make sure it's saved with the report content
       pageSpeedData: pageSpeedData || null,
       // Include business profile if available
-      businessProfile: businessProfile || null
+      businessProfile: businessProfile || null,
+      // Include SEO report data if available
+      seoReportData: seoReport || null
     };
     
     console.log('Actualización de content preparada con secciones:', Object.keys(reportContent));

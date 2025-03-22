@@ -25,9 +25,11 @@ export interface Report {
     contentStrategy?: string;
     pageSpeedData?: PageSpeedData;
     businessProfile?: BusinessProfile;
+    seoReportData?: any;
   };
   customPrompt?: string;
   customSections?: CustomSection[];
+  seoReportId?: string;
 }
 
 export interface CustomSection {

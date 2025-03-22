@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Report, BusinessProfile } from '@/types/report.types';
+import { SeoReport } from '@/types/seo-reporting.types';
 import { toast } from 'sonner';
 import { fetchPageSpeedData, savePageSpeedData } from './pageSpeedService';
 import { uploadReportFiles } from './reportFileService';
@@ -25,7 +26,8 @@ export const generateSeoReport = async (
   prefetchedPageSpeedData?: any,
   keywords?: Keyword[],
   notes?: string,
-  businessProfile?: Partial<BusinessProfile> | null
+  businessProfile?: Partial<BusinessProfile> | null,
+  seoReport?: SeoReport | null
 ): Promise<Report> => {
   try {
     const session = await supabase.auth.getSession();
@@ -38,6 +40,7 @@ export const generateSeoReport = async (
     console.log('¿Hay palabras clave?', !!keywords && keywords.length > 0);
     console.log('¿Hay notas?', !!notes);
     console.log('¿Hay perfil de negocio?', !!businessProfile);
+    console.log('¿Hay informe SEO seleccionado?', !!seoReport);
 
     // Check for stuck reports and fix them
     await checkAndFixStuckReports();
@@ -55,7 +58,9 @@ export const generateSeoReport = async (
       // Include prefetched PageSpeed data if available
       pageSpeedData: prefetchedPageSpeedData || null,
       // Include business profile if available
-      businessProfile: businessProfile || null
+      businessProfile: businessProfile || null,
+      // Include SEO report data if available
+      seoReportData: seoReport || null
     };
 
     // Create a new report with status "processing"
@@ -71,7 +76,8 @@ export const generateSeoReport = async (
         content: initialContent,
         custom_prompt: customPrompt || '',
         notes: notes || null,
-        has_business_profile: !!businessProfile
+        has_business_profile: !!businessProfile,
+        seo_report_id: seoReport?.id || null
       })
       .select()
       .single();
@@ -124,6 +130,17 @@ export const generateSeoReport = async (
         // Don't stop the process if business profile save fails
       }
     }
+    
+    // If we have SEO report data, save the reference
+    if (seoReport) {
+      try {
+        console.log('Guardando referencia a informe SEO:', seoReport.id);
+        // Reference already saved in the initial report creation
+      } catch (seoReportError) {
+        console.error('Error al guardar referencia al informe SEO:', seoReportError);
+        // Don't stop the process if SEO report reference save fails
+      }
+    }
 
     // Start the report generation process with prefetched PageSpeed data
     processReportGeneration(
@@ -134,7 +151,8 @@ export const generateSeoReport = async (
       customPrompt, 
       prefetchedPageSpeedData,
       notes,
-      businessProfile
+      businessProfile,
+      seoReport
     ).catch(error => {
       console.error('Error no controlado en procesamiento de informe:', error);
       markReportAsFailed(newReport.id, `Error no controlado: ${error.message || 'Error desconocido'}`);
@@ -173,7 +191,8 @@ const processReportGeneration = async (
   customPrompt?: string,
   prefetchedPageSpeedData?: any,
   notes?: string,
-  businessProfile?: Partial<BusinessProfile> | null
+  businessProfile?: Partial<BusinessProfile> | null,
+  seoReport?: SeoReport | null
 ) => {
   try {
     console.log('Iniciando proceso de generación en segundo plano para reporte:', reportId);
@@ -219,7 +238,7 @@ const processReportGeneration = async (
     console.log('Procesando informe con OpenAI...');
     
     // Process the report with OpenAI
-    await processOpenAIReport(reportId, url, pageSpeedData, customPrompt, notes, businessProfile);
+    await processOpenAIReport(reportId, url, pageSpeedData, customPrompt, notes, businessProfile, seoReport);
     console.log('Procesamiento de informe completado con éxito');
     
   } catch (error: any) {

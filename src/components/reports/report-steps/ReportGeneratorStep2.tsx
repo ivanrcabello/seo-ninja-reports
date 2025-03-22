@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { BusinessProfile } from '@/types/report.types';
 import { extractValueserpData } from '@/services/api/businessProfile/extractValueserpData';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 
 interface ReportGeneratorStep2Props {
   files: File[];
@@ -26,6 +27,8 @@ interface ReportGeneratorStep2Props {
   setBusinessUrl: (url: string) => void;
   businessProfile: Partial<BusinessProfile> | null;
   setBusinessProfile: (profile: Partial<BusinessProfile> | null) => void;
+  useGmbData: boolean;
+  setUseGmbData: (value: boolean) => void;
 }
 
 const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
@@ -41,7 +44,9 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
   businessUrl,
   setBusinessUrl,
   businessProfile,
-  setBusinessProfile
+  setBusinessProfile,
+  useGmbData,
+  setUseGmbData
 }) => {
   const [isLoadingBusinessProfile, setIsLoadingBusinessProfile] = React.useState(false);
   
@@ -107,79 +112,95 @@ const ReportGeneratorStep2: React.FC<ReportGeneratorStep2Props> = ({
       <CardContent className="space-y-4 p-4 pt-0">
         <h3 className="text-xl font-semibold mb-4">Añade material de apoyo</h3>
         
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="businessUrl">Nombre del negocio</Label>
-            <div className="flex space-x-2">
-              <Input
-                id="businessUrl"
-                placeholder="Nombre del negocio y ubicación"
-                value={businessUrl || ''}
-                onChange={(e) => setBusinessUrl(e.target.value)}
-              />
-              <Button 
-                variant="outline"
-                size="icon"
-                type="button"
-                onClick={handleFetchBusinessProfile}
-                disabled={isLoadingBusinessProfile}
-              >
-                {isLoadingBusinessProfile ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Building2 className="h-4 w-4" />
-                )}
-              </Button>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between space-x-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="use-gmb">Incluir datos de Google My Business</Label>
+              <p className="text-xs text-muted-foreground">
+                Analiza y recomienda mejoras para el perfil del negocio
+              </p>
             </div>
-            {businessProfile && (
-              <div className="mt-2 p-2 border rounded-md bg-muted/30 text-xs">
-                <p className="font-medium">Perfil extraído: {businessProfile.businessName}</p>
-                {businessProfile.businessAddress && (
-                  <p className="text-muted-foreground truncate">{businessProfile.businessAddress}</p>
-                )}
-                {businessProfile.businessRating && (
-                  <p className="text-muted-foreground">
-                    Rating: {businessProfile.businessRating} ({businessProfile.businessReviewsCount} reseñas)
-                  </p>
-                )}
-              </div>
-            )}
+            <Switch
+              id="use-gmb"
+              checked={useGmbData}
+              onCheckedChange={setUseGmbData}
+            />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="file-upload">Archivos adicionales</Label>
-            <div className="grid grid-cols-1 gap-2">
-              <div className="flex items-center gap-2">
+          {useGmbData && (
+            <div className="space-y-2 pl-6 border-l-2 border-primary/20">
+              <Label htmlFor="businessUrl">Nombre del negocio</Label>
+              <div className="flex space-x-2">
                 <Input
-                  id="file-upload"
-                  type="file"
-                  multiple
-                  onChange={handleFileChange}
-                  className="flex-1"
+                  id="businessUrl"
+                  placeholder="Nombre del negocio y ubicación"
+                  value={businessUrl || ''}
+                  onChange={(e) => setBusinessUrl(e.target.value)}
                 />
+                <Button 
+                  variant="outline"
+                  size="icon"
+                  type="button"
+                  onClick={handleFetchBusinessProfile}
+                  disabled={isLoadingBusinessProfile}
+                >
+                  {isLoadingBusinessProfile ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Building2 className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-              
-              {files.length > 0 && (
-                <div className="mt-2 p-2 border rounded-md bg-muted/30 max-h-20 overflow-auto">
-                  <div className="text-xs space-y-1">
-                    {files.map((file, index) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <span className="truncate">{file.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5"
-                          onClick={() => handleRemoveFile(file.name)}
-                        >
-                          <span className="sr-only">Eliminar</span>
-                          <span aria-hidden="true">×</span>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+              {businessProfile && (
+                <div className="mt-2 p-2 border rounded-md bg-muted/30 text-xs">
+                  <p className="font-medium">Perfil extraído: {businessProfile.businessName}</p>
+                  {businessProfile.businessAddress && (
+                    <p className="text-muted-foreground truncate">{businessProfile.businessAddress}</p>
+                  )}
+                  {businessProfile.businessRating && (
+                    <p className="text-muted-foreground">
+                      Rating: {businessProfile.businessRating} ({businessProfile.businessReviewsCount} reseñas)
+                    </p>
+                  )}
                 </div>
               )}
             </div>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="file-upload">Archivos adicionales</Label>
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex items-center gap-2">
+              <Input
+                id="file-upload"
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="flex-1"
+              />
+            </div>
+            
+            {files.length > 0 && (
+              <div className="mt-2 p-2 border rounded-md bg-muted/30 max-h-20 overflow-auto">
+                <div className="text-xs space-y-1">
+                  {files.map((file, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="truncate">{file.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => handleRemoveFile(file.name)}
+                      >
+                        <span className="sr-only">Eliminar</span>
+                        <span aria-hidden="true">×</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
