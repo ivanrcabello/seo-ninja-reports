@@ -82,10 +82,14 @@ const ReportViewer = () => {
     return titles[section] || section;
   };
   
-  const handleEditSection = (section: string, content: string) => {
-    setActiveSection(section);
-    setEditContent(content);
-    setIsEditDialogOpen(true);
+  // Update this function to return a Promise to match the expected type
+  const handleEditSection = (section: string, content: string): Promise<void> => {
+    return new Promise((resolve) => {
+      setActiveSection(section);
+      setEditContent(content);
+      setIsEditDialogOpen(true);
+      resolve();
+    });
   };
   
   const handleSaveEdit = async () => {
