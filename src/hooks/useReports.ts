@@ -20,6 +20,11 @@ interface Keyword {
   difficulty?: number;
 }
 
+// Create a standalone ReportsProvider function that doesn't use JSX
+export const ReportsProvider = function(props: { children: any }) {
+  return props.children;
+};
+
 // Hook for managing reports
 export default function useReports() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -161,11 +166,6 @@ export default function useReports() {
     }
   }, []);
 
-  // Create a dummy ReportsProvider function that doesn't use JSX
-  const dummyReportsProvider = function(props: { children: any }) {
-    return props.children;
-  };
-
   return {
     reports,
     isLoading,
@@ -175,7 +175,6 @@ export default function useReports() {
     createReport,
     updateReport,
     deleteReport,
-    retryReport,
-    ReportsProvider: dummyReportsProvider // Add dummy ReportsProvider function for compatibility
+    retryReport
   };
 }
