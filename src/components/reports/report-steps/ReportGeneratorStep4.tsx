@@ -60,14 +60,14 @@ const ReportGeneratorStep4: React.FC<ReportGeneratorStep4Props> = ({
           <div className="space-y-2">
             <Label htmlFor="seo-report">Informes SEO existentes</Label>
             <Select
-              value={selectedSeoReport || ""}
-              onValueChange={(value) => setSelectedSeoReport(value || null)}
+              value={selectedSeoReport || "none"}
+              onValueChange={(value) => setSelectedSeoReport(value === "none" ? null : value)}
             >
               <SelectTrigger id="seo-report">
                 <SelectValue placeholder="Seleccionar informe SEO existente (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Ninguno</SelectItem>
+                <SelectItem value="none">Ninguno</SelectItem>
                 {seoReports.map((report) => (
                   <SelectItem key={report.id} value={report.id}>
                     {report.domain} ({new Date(report.createdAt).toLocaleDateString()})
