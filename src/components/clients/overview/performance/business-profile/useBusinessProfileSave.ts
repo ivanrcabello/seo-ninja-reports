@@ -32,19 +32,21 @@ export const useBusinessProfileSave = (clientId?: string) => {
       await saveToBusinessListings(clientId, displayProfile);
       
       // Save to report
-      await saveToReport(clientId, displayProfile);
+      const savedToReport = await saveToReport(clientId, displayProfile);
       
-      toast.success('Perfil de negocio guardado correctamente');
-      
-      // Store last saved profile in localStorage for backup
-      try {
-        localStorage.setItem('last_saved_business_profile', JSON.stringify({
-          profile: displayProfile,
-          clientId: clientId,
-          timestamp: new Date().toISOString()
-        }));
-      } catch (e) {
-        console.warn('Could not store profile backup in localStorage:', e);
+      if (savedToReport) {
+        toast.success('Perfil de negocio guardado correctamente');
+        
+        // Store last saved profile in localStorage for backup
+        try {
+          localStorage.setItem('last_saved_business_profile', JSON.stringify({
+            profile: displayProfile,
+            clientId: clientId,
+            timestamp: new Date().toISOString()
+          }));
+        } catch (e) {
+          console.warn('Could not store profile backup in localStorage:', e);
+        }
       }
     } catch (error) {
       console.error('Error saving business profile:', error);
@@ -123,7 +125,7 @@ export const useBusinessProfileSave = (clientId?: string) => {
     }
   };
   
-  const saveToReport = async (clientId: string, profile: Partial<BusinessProfile>) => {
+  const saveToReport = async (clientId: string, profile: Partial<BusinessProfile>): Promise<boolean> => {
     try {
       const { data: reports, error: reportsError } = await supabase
         .from('reports')
@@ -158,9 +160,10 @@ export const useBusinessProfileSave = (clientId?: string) => {
       
       console.log('Saving business profile data to report:', profileToSave);
       
-      const savedProfile = await saveBusinessProfile(latestReportId, profileToSave);
+      // Save business profile and get success status
+      const success = await saveBusinessProfile(latestReportId, profileToSave);
       
-      if (savedProfile) {
+      if (success) {
         const { error: updateError } = await supabase
           .from('reports')
           .update({ 
@@ -173,7 +176,7 @@ export const useBusinessProfileSave = (clientId?: string) => {
           console.error('Error updating has_business_profile flag:', updateError);
         }
         
-        return savedProfile;
+        return true;
       } else {
         throw new Error('Error al guardar el perfil de negocio en el informe');
       }

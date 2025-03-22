@@ -94,9 +94,9 @@ const ReportViewer = () => {
       };
       
       // Save business profile
-      const savedProfile = await saveBusinessProfile(id, profileToSave);
+      const success = await saveBusinessProfile(id, profileToSave);
       
-      if (savedProfile) {
+      if (success) {
         // Update local report state to reflect the presence of a business profile
         if (!report.hasBusinessProfile) {
           await updateReport(id, { hasBusinessProfile: true });

@@ -5,8 +5,9 @@ import { toast } from 'sonner';
 
 /**
  * Saves a business profile for a report
+ * @returns boolean indicating success (true) or failure (false)
  */
-export const saveBusinessProfile = async (reportId: string, profileData: Partial<BusinessProfile>): Promise<void> => {
+export const saveBusinessProfile = async (reportId: string, profileData: Partial<BusinessProfile>): Promise<boolean> => {
   try {
     // First, update the report to mark it as having a business profile
     const { error: reportUpdateError } = await supabase
@@ -137,11 +138,12 @@ export const saveBusinessProfile = async (reportId: string, profileData: Partial
     }
     
     console.log('Business profile saved successfully');
+    return true; // Return true on success
   } catch (error: any) {
     console.error('Error saving business profile:', error);
     toast.error('Error al guardar perfil de negocio', {
       description: error.message || 'Ha ocurrido un error al guardar el perfil'
     });
-    throw error;
+    return false; // Return false on failure
   }
 };

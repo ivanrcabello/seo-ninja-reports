@@ -123,9 +123,9 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
         };
         
         // Save the business profile to this report
-        const savedProfile = await saveBusinessProfile(latestReportId, profileToSave);
+        const success = await saveBusinessProfile(latestReportId, profileToSave);
         
-        if (savedProfile) {
+        if (success) {
           // Update the flag in reports table to indicate it has a business profile
           const { error: updateError } = await supabase
             .from('reports')
