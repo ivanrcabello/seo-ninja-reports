@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { NavDropdown } from './NavDropdown';
-import { LogOut, User, Settings, BarChart3, Archive, Users } from 'lucide-react';
+import { LogOut, User, Settings, BarChart3, Archive, Users, FileText, Newspaper } from 'lucide-react';
 
 const DesktopNavbar: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -52,6 +52,14 @@ const DesktopNavbar: React.FC = () => {
               asChild
             >
               <Link to="/activity">Actividad</Link>
+            </Button>
+
+            <Button
+              variant={isActive('/blog-admin') ? 'default' : 'ghost'}
+              className="px-4"
+              asChild
+            >
+              <Link to="/blog-admin">Blog Editor</Link>
             </Button>
           </nav>
         ) : (
@@ -124,15 +132,20 @@ const DesktopNavbar: React.FC = () => {
                 href: '/clients',
               },
               {
-                icon: <Archive className="mr-2 h-4 w-4" />,
+                icon: <FileText className="mr-2 h-4 w-4" />,
                 label: 'Informes',
                 href: '/all-reports',
+              },
+              {
+                icon: <Newspaper className="mr-2 h-4 w-4" />,
+                label: 'Blog Editor',
+                href: '/blog-admin',
               },
               {
                 icon: <LogOut className="mr-2 h-4 w-4" />,
                 label: 'Cerrar sesión',
                 onClick: signOut,
-                href: '#', // Agregamos href aunque no se use para cumplir con el tipo
+                href: '#',
               },
             ]}
           />

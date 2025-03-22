@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from './Navbar';
 import { fetchLogoFromSettings } from '@/components/settings/logo/logoService';
@@ -77,14 +77,14 @@ const Header: React.FC = () => {
           </Link>
 
           {/* Navegación para escritorio */}
-          {!isMobile && (
+          {!isMobile && user && (
             <nav className="hidden md:flex items-center space-x-1">
               <Button
                 variant="ghost"
                 className="px-4"
                 asChild
               >
-                <Link to="/caracteristicas">Características</Link>
+                <Link to="/dashboard">Dashboard</Link>
               </Button>
               
               <Button
@@ -92,7 +92,7 @@ const Header: React.FC = () => {
                 className="px-4"
                 asChild
               >
-                <Link to="/servicios">Servicios</Link>
+                <Link to="/clients">Clientes</Link>
               </Button>
               
               <Button
@@ -100,7 +100,7 @@ const Header: React.FC = () => {
                 className="px-4"
                 asChild
               >
-                <Link to="/precios">Precios</Link>
+                <Link to="/all-reports">Informes</Link>
               </Button>
               
               <Button
@@ -108,15 +108,15 @@ const Header: React.FC = () => {
                 className="px-4"
                 asChild
               >
-                <Link to="/blog">Blog</Link>
+                <Link to="/activity">Actividad</Link>
               </Button>
-              
+
               <Button
                 variant="ghost"
                 className="px-4"
                 asChild
               >
-                <Link to="/contacto">Contacto</Link>
+                <Link to="/blog-admin">Blog Editor</Link>
               </Button>
             </nav>
           )}

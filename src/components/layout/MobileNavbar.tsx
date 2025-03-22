@@ -12,9 +12,6 @@ import {
   Settings, 
   LogOut,
   LayoutDashboard,
-  Store, 
-  FileQuestion, 
-  MessageSquare,
   Newspaper,
   Phone,
   Sparkles,
@@ -101,6 +98,18 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
               <Link to="/activity">
                 <Activity className="mr-2 h-4 w-4" />
                 Actividad
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/blog-admin') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/blog-admin">
+                <Newspaper className="mr-2 h-4 w-4" />
+                Blog Editor
               </Link>
             </Button>
             
