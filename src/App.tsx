@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { ThemeProvider } from './components/theme-provider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from './components/ui/theme-provider';
 import { Toaster } from 'sonner';
 
 import Index from './pages/Index';
@@ -14,36 +15,36 @@ import ClientDetail from './pages/ClientDetail';
 import ReportDetail from './pages/ReportDetail';
 import PublicReport from './pages/PublicReport';
 import SharedProposal from './pages/SharedProposal';
+import SharedContract from './pages/SharedContract';
 import Contacto from './pages/Contacto';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
 import Caracteristicas from './pages/Caracteristicas';
 import Precios from './pages/Precios';
 import Paquetes from './pages/Paquetes';
-import PackStarter from './pages/PackStarter';
-import PackMaster from './pages/PackMaster';
-import PackAscenso from './pages/PackAscenso';
+import PackStarter from './pages/packs/PackStarter';
+import PackMaster from './pages/packs/PackMaster';
+import PackAscenso from './pages/packs/PackAscenso';
 import Documentacion from './pages/Documentacion';
 import Servicios from './pages/Servicios';
-import SeoLocal from './pages/Servicios/SeoLocal';
-import SeoTecnico from './pages/Servicios/SeoTecnico';
-import ContenidoSeo from './pages/Servicios/ContenidoSeo';
-import SeoIA from './pages/Servicios/SeoIA';
+import SeoLocal from './pages/servicios/SeoLocal';
+import SeoTecnico from './pages/servicios/SeoTecnico';
+import ContenidoSeo from './pages/servicios/ContenidoSeo';
+import SeoIA from './pages/servicios/SeoIA';
 import Guias from './pages/Guias';
 import Privacidad from './pages/Privacidad';
 import NotFoundPage from './pages/NotFoundPage';
 import BlogAdmin from './pages/BlogAdmin';
-import AnimationContext from './context/AnimationContext';
-import AuthProvider from './context/AuthContext';
+import { AnimationProvider } from './context/AnimationContext';
+import { AuthProvider } from './context/AuthContext';
 import { ClientsProvider } from './hooks/useClients';
-import SharedContract from './pages/SharedContract';
 
 const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AnimationContext>
+      <AnimationProvider>
         <AuthProvider>
           <ClientsProvider>
             <BrowserRouter>
@@ -85,7 +86,7 @@ function App() {
             </BrowserRouter>
           </ClientsProvider>
         </AuthProvider>
-      </AnimationContext>
+      </AnimationProvider>
     </QueryClientProvider>
   );
 }

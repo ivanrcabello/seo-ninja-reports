@@ -188,7 +188,9 @@ export const useClientContracts = (clientId?: string) => {
   ) => {
     try {
       const now = new Date().toISOString();
-      const updateData = isAdmin 
+      
+      // Prepare the update data based on who's signing
+      let updateData: UpdateContractData = isAdmin 
         ? {
             admin_signed: true,
             admin_signed_at: now,
@@ -200,14 +202,17 @@ export const useClientContracts = (clientId?: string) => {
             client_signature: signature
           };
       
-      // Si ambas partes han firmado, actualizar el estado a 'signed'
+      // If both parties have signed or will sign with this request, update status to 'signed'
       const contract = contracts.find(c => c.id === id);
       if (contract) {
         if (
           (isAdmin && contract.client_signed) || 
           (!isAdmin && contract.admin_signed)
         ) {
-          updateData.status = 'signed';
+          updateData = {
+            ...updateData,
+            status: 'signed'
+          };
         }
       }
       

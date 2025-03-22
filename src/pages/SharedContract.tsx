@@ -8,7 +8,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { BadgeCheck, Clock, Download, FileText, FilePen, Loader2, Pencil, Send, X, Ban } from 'lucide-react';
 import SignatureDialog from '@/components/clients/contracts/SignatureDialog';
 
@@ -31,8 +30,7 @@ const SharedContract = () => {
       try {
         const { data, error } = await supabase
           .from('settings')
-          .select('value')
-          .eq('key', 'company_logo')
+          .select('logo_url')
           .single();
         
         if (error) {
@@ -40,8 +38,8 @@ const SharedContract = () => {
           return;
         }
         
-        if (data && data.value) {
-          setLogo(data.value);
+        if (data && data.logo_url) {
+          setLogo(data.logo_url);
         }
       } catch (err) {
         console.error('Failed to fetch logo:', err);
@@ -92,11 +90,7 @@ const SharedContract = () => {
         console.error('Error loading shared contract:', err);
         setError(err.message || 'No se pudo cargar el contrato');
         
-        toast({
-          title: 'Error',
-          description: err.message || 'No se pudo cargar el contrato',
-          variant: 'destructive',
-        });
+        toast.error('Error: ' + (err.message || 'No se pudo cargar el contrato'));
       } finally {
         setLoading(false);
       }

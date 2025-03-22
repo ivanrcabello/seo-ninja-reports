@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientProposal } from '@/types/client.types';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,7 +22,6 @@ const SharedProposal = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
-  const { toast } = useToast();
 
   // Fetch the company logo
   useEffect(() => {
@@ -30,8 +29,7 @@ const SharedProposal = () => {
       try {
         const { data, error } = await supabase
           .from('settings')
-          .select('value')
-          .eq('key', 'company_logo')
+          .select('logo_url')
           .single();
         
         if (error) {
@@ -39,8 +37,8 @@ const SharedProposal = () => {
           return;
         }
         
-        if (data && data.value) {
-          setLogo(data.value);
+        if (data && data.logo_url) {
+          setLogo(data.logo_url);
         }
       } catch (err) {
         console.error('Failed to fetch logo:', err);
@@ -91,18 +89,14 @@ const SharedProposal = () => {
         console.error('Error loading shared proposal:', err);
         setError(err.message || 'No se pudo cargar la propuesta');
         
-        toast({
-          title: 'Error',
-          description: err.message || 'No se pudo cargar la propuesta',
-          variant: 'destructive',
-        });
+        toast.error('Error: ' + (err.message || 'No se pudo cargar la propuesta'));
       } finally {
         setLoading(false);
       }
     };
     
     fetchProposal();
-  }, [id, toast]);
+  }, [id]);
 
   if (loading) {
     return (
