@@ -26,7 +26,10 @@ const SharedProposal = () => {
           throw new Error('ID de propuesta no especificado');
         }
         
-        // Fetch the proposal using the shared_url
+        console.log('Fetching proposal with shared_url:', id);
+        
+        // Fetch the proposal directly without joining with clients table
+        // This avoids potential RLS recursion issues
         const { data, error: fetchError } = await supabase
           .from('client_proposals')
           .select('*')
@@ -49,6 +52,7 @@ const SharedProposal = () => {
           status: data.status as 'draft' | 'sent' | 'accepted' | 'rejected'
         };
         
+        console.log('Successfully fetched proposal:', typedProposal);
         setProposal(typedProposal);
         
       } catch (err: any) {
