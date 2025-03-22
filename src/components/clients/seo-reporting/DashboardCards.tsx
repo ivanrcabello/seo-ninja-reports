@@ -10,6 +10,11 @@ interface DashboardCardsProps {
 }
 
 const DashboardCards: React.FC<DashboardCardsProps> = ({ report }) => {
+  // Ensure we have values even if they are 0
+  const traffic = report.traffic !== null && report.traffic !== undefined ? report.traffic : 0;
+  const keywords = report.keywords !== null && report.keywords !== undefined ? report.keywords : 0;
+  const backlinks = report.backlinks !== null && report.backlinks !== undefined ? report.backlinks : 0;
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
@@ -32,7 +37,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ report }) => {
           <CardDescription>Tráfico Estimado</CardDescription>
           <CardTitle className="text-lg flex items-center">
             <TrendingUp className="mr-2 h-4 w-4 text-blue-500" />
-            {report.traffic?.toLocaleString() || 'N/A'}
+            {traffic.toLocaleString()}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -47,7 +52,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ report }) => {
           <CardDescription>Palabras Clave</CardDescription>
           <CardTitle className="text-lg flex items-center">
             <Key className="mr-2 h-4 w-4 text-yellow-500" />
-            {report.keywords?.toLocaleString() || 'N/A'}
+            {keywords.toLocaleString()}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -62,7 +67,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ report }) => {
           <CardDescription>Backlinks</CardDescription>
           <CardTitle className="text-lg flex items-center">
             <Link2 className="mr-2 h-4 w-4 text-green-500" />
-            {report.backlinks?.toLocaleString() || 'N/A'}
+            {backlinks.toLocaleString()}
           </CardTitle>
         </CardHeader>
         <CardContent>
