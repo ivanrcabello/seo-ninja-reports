@@ -1,60 +1,81 @@
 
 import React from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 interface RankingDistributionChartProps {
   data: { range: string; count: number }[];
+  showLegend?: boolean;
+  height?: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
+const RankingDistributionChart: React.FC<RankingDistributionChartProps> = ({ 
+  data,
+  showLegend = false,
+  height = 250
+}) => {
+  if (!data || data.length === 0) {
     return (
-      <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
-        <p className="font-medium text-sm">{`Posiciones: ${label}`}</p>
-        <p className="text-primary font-bold">{`Palabras clave: ${payload[0].value.toLocaleString()}`}</p>
+      <div className="text-center py-6 text-muted-foreground">
+        No hay datos de distribución de rankings disponibles
       </div>
     );
   }
-  return null;
-};
 
-const RankingDistributionChart: React.FC<RankingDistributionChartProps> = ({ data }) => {
-  // Define colors for different position ranges
+  // Define colors for each position range
   const getBarColor = (range: string) => {
-    if (range === "1-3") return "#16a34a"; // Green for top positions
-    if (range === "4-10") return "#22c55e";
-    if (range.startsWith("11-")) return "#3b82f6"; // Blue
-    if (range.startsWith("21-")) return "#60a5fa";
-    if (range.startsWith("31-")) return "#f59e0b"; // Yellow
-    if (range.startsWith("41-")) return "#fbbf24";
-    if (range.startsWith("51-")) return "#ef4444"; // Red
-    return "#8b5cf6"; // Purple for SERP Features or other
+    switch (range) {
+      case '1-3':
+        return '#22c55e'; // Green
+      case '4-10':
+        return '#10b981'; // Emerald
+      case '11-20':
+        return '#3b82f6'; // Blue
+      case '21-30':
+        return '#6366f1'; // Indigo
+      case '31-40':
+        return '#a855f7'; // Purple
+      case '41-50':
+        return '#ec4899'; // Pink
+      case '51-100':
+        return '#f43f5e'; // Rose
+      case 'SERP Features':
+        return '#f59e0b'; // Amber
+      default:
+        return '#64748b'; // Slate
+    }
   };
 
   return (
-    <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div style={{ width: '100%', height }}>
+      <ResponsiveContainer>
         <BarChart
           data={data}
-          margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-          barSize={35}
+          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
         >
-          <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
           <XAxis 
             dataKey="range" 
             tick={{ fontSize: 12 }}
-            angle={-45}
-            textAnchor="end"
-            height={60}
           />
-          <YAxis 
-            tick={{ fontSize: 12 }}
-            tickFormatter={(value) => value.toLocaleString()}
+          <YAxis />
+          <Tooltip 
+            formatter={(value) => [`${value} palabras clave`, 'Cantidad']}
+            labelFormatter={(label) => `Posición ${label}`}
           />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="count" name="Palabras clave">
+          {showLegend && (
+            <Legend 
+              align="center"
+              verticalAlign="bottom"
+              wrapperStyle={{ paddingTop: 10 }}
+              formatter={(value) => <span style={{ fontSize: 12 }}>Posición {value}</span>}
+            />
+          )}
+          <Bar dataKey="count" fill="#8884d8" radius={[4, 4, 0, 0]}>
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getBarColor(entry.range)} />
+              <Cell 
+                key={`cell-${index}`} 
+                fill={getBarColor(entry.range)}
+              />
             ))}
           </Bar>
         </BarChart>

@@ -9,13 +9,15 @@ import DeleteSeoReportButton from './DeleteSeoReportButton';
 
 interface SeoReportsListProps {
   reports: SeoReport[];
+  selectedReport: SeoReport | null;
   onSelectReport: (report: SeoReport) => void;
-  onCreateReport: () => void;
-  onDeleteReport: (reportId: string) => Promise<void>;
+  onCreateReport?: () => void;
+  onDeleteReport?: (reportId: string) => Promise<void>;
 }
 
 const SeoReportsList: React.FC<SeoReportsListProps> = ({ 
   reports, 
+  selectedReport,
   onSelectReport, 
   onCreateReport,
   onDeleteReport
@@ -29,9 +31,11 @@ const SeoReportsList: React.FC<SeoReportsListProps> = ({
             {reports.length} informes SEO disponibles
           </CardDescription>
         </div>
-        <Button onClick={onCreateReport} className="mt-4 sm:mt-0">
-          Nuevo Informe
-        </Button>
+        {onCreateReport && (
+          <Button onClick={onCreateReport} className="mt-4 sm:mt-0">
+            Nuevo Informe
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {reports.length > 0 ? (
@@ -39,7 +43,7 @@ const SeoReportsList: React.FC<SeoReportsListProps> = ({
             {reports.map((report, index) => (
               <div
                 key={report.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-md border hover:bg-muted/50 transition-colors"
+                className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-md border ${selectedReport?.id === report.id ? 'bg-muted' : 'hover:bg-muted/50'} transition-colors`}
               >
                 <div 
                   className="flex-1 mb-3 sm:mb-0 cursor-pointer"
@@ -64,7 +68,9 @@ const SeoReportsList: React.FC<SeoReportsListProps> = ({
                   <div className="text-sm text-muted-foreground">
                     {format(new Date(report.createdAt), 'dd MMM yyyy')}
                   </div>
-                  <DeleteSeoReportButton onDelete={() => onDeleteReport(report.id)} />
+                  {onDeleteReport && (
+                    <DeleteSeoReportButton onDelete={() => onDeleteReport(report.id)} />
+                  )}
                   <Button 
                     variant="ghost" 
                     size="sm"
@@ -83,9 +89,11 @@ const SeoReportsList: React.FC<SeoReportsListProps> = ({
             <p className="text-muted-foreground mb-6">
               Crea tu primer informe SEO para este cliente
             </p>
-            <Button onClick={onCreateReport}>
-              Nuevo Informe
-            </Button>
+            {onCreateReport && (
+              <Button onClick={onCreateReport}>
+                Nuevo Informe
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

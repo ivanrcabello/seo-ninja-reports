@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FileUp, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadSeoReport } from '@/services/seoReport';
+import { uploadSeoReport, parsePdf } from '@/services/seoReport';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface UploadPDFProps {
@@ -45,7 +45,15 @@ const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
     setError(null);
     
     try {
-      const result = await uploadSeoReport(clientId, file);
+      // First parse the PDF to extract data
+      const parsedData = await parsePdf(file);
+      
+      if (!parsedData) {
+        throw new Error('No se pudieron extraer datos del PDF');
+      }
+      
+      // Then upload the extracted data
+      const result = await uploadSeoReport(clientId, parsedData);
       console.log('Upload result:', result);
       toast.success('Informe SEO subido correctamente');
       setFile(null);

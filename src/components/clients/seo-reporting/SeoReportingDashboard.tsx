@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,7 +11,7 @@ import CompetitorsChart from './CompetitorsChart';
 import BacklinkChart from './BacklinkChart';
 import SeoReportsList from './SeoReportsList';
 import UploadPDF from './UploadPDF';
-import { fetchSeoReports, deleteSeoReport } from '@/services/seoReport';
+import { fetchClientSeoReports, deleteSeoReport } from '@/services/seoReport';
 import { SeoReport } from '@/types/seo-reporting.types';
 import { AlertCircle, Loader2, BadgeInfo } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -40,7 +41,7 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
       setIsLoading(true);
       setError(null);
       
-      const reportData = await fetchSeoReports(clientId);
+      const reportData = await fetchClientSeoReports(clientId);
       
       if (reportData.length > 0) {
         setReports(reportData);
@@ -134,6 +135,7 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
               reports={reports} 
               selectedReport={selectedReport} 
               onSelectReport={setSelectedReport} 
+              onDeleteReport={handleDeleteReport}
             />
             
             {selectedReport ? (
@@ -206,7 +208,10 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <CompetitorsChart competitors={selectedReport.competitorsData || []} />
+                      <CompetitorsChart 
+                        competitors={selectedReport.competitorsData || []} 
+                        domain={selectedReport.domain}
+                      />
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -224,8 +229,8 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
                         <div>
                           <h3 className="text-lg font-medium mb-2">Tipos de Backlinks</h3>
                           <BacklinkChart 
-                            backlinkTypes={selectedReport.backlinkTypes} 
-                            followNofollow={selectedReport.followNofollow || []} 
+                            types={selectedReport.backlinkTypes} 
+                            followData={selectedReport.followNofollow || []} 
                           />
                         </div>
                       ) : (
@@ -249,8 +254,6 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
                     <CardContent>
                       <RankingDistributionChart 
                         data={selectedReport.rankingDistribution || []} 
-                        showLegend={true}
-                        height={300}
                       />
                     </CardContent>
                   </Card>

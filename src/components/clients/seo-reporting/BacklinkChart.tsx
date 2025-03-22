@@ -1,78 +1,91 @@
 
 import React from 'react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { Card, CardContent } from '@/components/ui/card';
+import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface BacklinkChartProps {
-  data: { type: string; count: number }[];
-  domain: string;
-  type: 'types' | 'follow';
+  types: { type: string; count: number }[];
+  followData: { type: string; count: number; percentage: number }[];
 }
 
-const TYPE_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444'];
-const FOLLOW_COLORS = ['#3b82f6', '#f59e0b'];
-
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const percentage = ((payload[0].value / payload[0].payload.total) * 100).toFixed(1);
-    return (
-      <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
-        <p className="font-medium text-sm">{`${payload[0].name}`}</p>
-        <p className="text-primary font-bold">{`${payload[0].value} (${percentage}%)`}</p>
-      </div>
-    );
-  }
-  return null;
-};
-
-const BacklinkChart: React.FC<BacklinkChartProps> = ({ data, domain, type }) => {
-  // Calculate the total count for percentage calculation
-  const total = data.reduce((sum, item) => sum + item.count, 0);
+const BacklinkChart: React.FC<BacklinkChartProps> = ({ types, followData }) => {
+  // Colors for the pie charts
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
-  // Format data for pie chart
-  const chartData = data.map(item => ({
+  // Format data for the pie charts
+  const typesData = types.map(item => ({
+    name: item.type,
+    value: item.count
+  }));
+  
+  const followNofollow = followData.map(item => ({
     name: item.type,
     value: item.count,
-    total
+    percentage: item.percentage
   }));
-
-  // Choose colors based on chart type
-  const colors = type === 'types' ? TYPE_COLORS : FOLLOW_COLORS;
-
+  
   return (
-    <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={type === 'follow' ? 60 : 0}
-            outerRadius={100}
-            paddingAngle={2}
-            dataKey="value"
-            label={({ name, value }) => `${name}: ${value}`}
-            labelLine={true}
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-          <Legend 
-            layout="vertical" 
-            verticalAlign="middle" 
-            align="right"
-            formatter={(value, entry: any) => {
-              const percentage = ((entry.payload.value / entry.payload.total) * 100).toFixed(1);
-              return (
-                <span style={{ color: entry.color, fontWeight: 500 }}>
-                  {value} ({percentage}%)
-                </span>
-              );
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="grid gap-6 md:grid-cols-2">
+      <Card>
+        <CardContent className="pt-6">
+          <h4 className="font-medium mb-4 text-center">Tipos de Backlinks</h4>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={typesData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                >
+                  {typesData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => [`${value} enlaces`, 'Cantidad']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <h4 className="font-medium mb-4 text-center">Follow vs Nofollow</h4>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={followNofollow}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percentage }) => `${name}: ${percentage.toFixed(0)}%`}
+                >
+                  {followNofollow.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value, name, props) => [
+                    `${value} enlaces (${props.payload.percentage.toFixed(1)}%)`, 
+                    'Cantidad'
+                  ]} 
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
