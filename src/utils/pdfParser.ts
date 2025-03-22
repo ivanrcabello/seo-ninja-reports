@@ -1,6 +1,6 @@
 
-import * as pdfjsLib from 'pdfjs-dist';
-import { toast } from 'sonner';
+// Import our new PDFExtractor
+import { PDFExtractor } from './PDFExtractor';
 
 /**
  * Interface for the data extracted from PDF
@@ -25,322 +25,106 @@ interface ExtractedData {
 export const parsePdf = async (file: File): Promise<ExtractedData> => {
   try {
     console.log('[PDF Parser] Starting parsing of:', file.name);
-    console.log('[PDF Parser] File size:', (file.size / 1024).toFixed(2), 'KB, Type:', file.type);
     
-    // Set the PDF.js worker path
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    // Use our new PDFExtractor to get basic text and data
+    const extractedData = await PDFExtractor.extractData(file);
+    console.log('[PDF Parser] Basic data extracted:', extractedData);
     
-    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
-      console.error('[PDF Parser] Invalid file format:', file.type);
-      throw new Error('Invalid file format');
-    }
+    // Make sure we have a domain
+    const domain = extractedData.domain || file.name.replace('.pdf', '') + '.com';
     
-    const arrayBuffer = await file.arrayBuffer();
-    console.log('[PDF Parser] File loaded. Size in bytes:', arrayBuffer.byteLength);
+    // Parse text for keywords
+    const keywordsData = extractKeywordsFromText(extractedData.fullText, domain);
     
-    // Try to load the PDF
-    const pdfData = new Uint8Array(arrayBuffer);
-    const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+    // Parse text for competitors
+    const competitorsData = extractCompetitorsFromText(extractedData.fullText, domain);
     
-    console.log('[PDF Parser] PDF loading started');
-    const pdf = await loadingTask.promise;
-    console.log('[PDF Parser] PDF loaded successfully. Pages:', pdf.numPages);
+    // Create ranking distribution data
+    const rankingDistribution = extractRankingDistribution(extractedData.fullText) || 
+        generateSampleRankingDistribution();
     
-    // Array to store all text content from the PDF
-    let allText = '';
+    // Backlink types and follow/nofollow data
+    const backlinkTypes = extractBacklinkTypes(extractedData.fullText) || 
+        generateSampleBacklinkTypes();
+    const followNofollow = extractFollowNofollow(extractedData.fullText) || 
+        generateSampleFollowNofollow();
     
-    // Process all pages to extract text
-    for (let i = 1; i <= pdf.numPages; i++) {
-      console.log(`[PDF Parser] Processing page ${i} of ${pdf.numPages}`);
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      
-      // Extract text
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      
-      allText += pageText + '\n';
-      
-      console.log(`[PDF Parser] Page ${i} text length: ${pageText.length} characters`);
-      console.log(`[PDF Parser] Page ${i} sample: ${pageText.substring(0, 100)}...`);
-    }
-    
-    console.log('[PDF Parser] All pages processed. Total text length:', allText.length);
-    
-    // Extract domain name
-    let domain = extractDomain(allText, file.name);
-    console.log('[PDF Parser] Extracted domain:', domain);
-    
-    // Extract traffic, keywords, and backlinks metrics
-    const metrics = extractMetrics(allText);
-    console.log('[PDF Parser] Extracted metrics:', metrics);
-    
-    // Split text into lines for better processing
-    const textLines = allText.split('\n');
-    
-    // Extract keywords data
-    const keywordsData = extractKeywords(allText, domain, textLines);
-    console.log('[PDF Parser] Extracted keywords:', keywordsData?.length || 0);
-    
-    // Extract competitors data
-    const competitorsData = extractCompetitors(allText, domain);
-    console.log('[PDF Parser] Extracted competitors:', competitorsData?.length || 0);
-    
-    // Extract ranking distribution
-    const rankingDistribution = extractRankingDistribution(allText);
-    console.log('[PDF Parser] Extracted ranking distribution:', rankingDistribution?.length || 0);
-    
-    // Extract backlink data
-    const backlinkTypes = extractBacklinkTypes(allText);
-    const followNofollow = extractFollowNofollow(allText);
-    
-    // Check if we got actual data or just PDF structure elements
-    const isActualData = checkIsActualData(keywordsData);
-    if (!isActualData) {
-      console.warn('[PDF Parser] Extracted data appears to be PDF structure elements, not actual SEO data');
-      
-      // Generate better domain based on filename
-      domain = getBetterDomainFromFilename(file.name);
-      console.log('[PDF Parser] Using filename-based domain instead:', domain);
-    }
-    
-    // Assemble the result
-    const resultData: ExtractedData = {
-      domain,
-      traffic: metrics.traffic,
-      keywords: metrics.keywords,
-      backlinks: metrics.backlinks,
-      keywordsData: isActualData ? keywordsData : generateSampleKeywords(domain),
-      competitorsData: isActualData ? competitorsData : generateSampleCompetitors(domain),
-      rankingDistribution: rankingDistribution || generateSampleRankingDistribution(),
-      backlinkTypes: backlinkTypes || generateSampleBacklinkTypes(),
-      followNofollow: followNofollow || generateSampleFollowNofollow()
-    };
-    
-    console.log('[PDF Parser] Final extracted data:', resultData);
-    
-    if (!isActualData) {
-      console.log('[PDF Parser] Returning sample data based on domain:', domain);
-    }
-    
-    return resultData;
-    
-  } catch (error) {
-    console.error('[PDF Parser] Error parsing PDF:', error);
-    
-    // Return default data based on filename
-    const domain = getBetterDomainFromFilename(file.name);
-    console.log('[PDF Parser] Returning default data for domain:', domain);
-    
+    // Return all extracted and generated data
     return {
       domain,
-      traffic: Math.floor(Math.random() * 10000) + 1000,
-      keywords: Math.floor(Math.random() * 2000) + 500,
-      backlinks: Math.floor(Math.random() * 10000) + 2000,
-      keywordsData: generateSampleKeywords(domain),
-      competitorsData: generateSampleCompetitors(domain),
-      rankingDistribution: generateSampleRankingDistribution(),
-      backlinkTypes: generateSampleBacklinkTypes(),
-      followNofollow: generateSampleFollowNofollow()
+      traffic: extractedData.traffic,
+      keywords: extractedData.keywords,
+      backlinks: extractedData.backlinks,
+      keywordsData,
+      competitorsData,
+      rankingDistribution,
+      backlinkTypes,
+      followNofollow
     };
+  } catch (error) {
+    console.error('[PDF Parser] Error:', error);
+    
+    // Return default data
+    return generateDefaultData(file.name);
   }
 };
 
 /**
- * Check if extracted keyword data is actual SEO data and not PDF structure elements
+ * Extract keywords from text
  */
-function checkIsActualData(keywordsData?: { keyword: string; position?: number; volume?: number; trafficPercent?: number }[]): boolean {
-  if (!keywordsData || keywordsData.length === 0) return false;
-  
-  // Check if keywords contain PDF structure elements
-  const pdfStructureTerms = ['obj', 'endobj', 'xref', 'trailer', 'startxref'];
-  const suspiciousKeywords = keywordsData.filter(kw => 
-    pdfStructureTerms.some(term => kw.keyword.includes(term))
-  );
-  
-  return suspiciousKeywords.length < keywordsData.length / 2;
-}
-
-/**
- * Get a better domain name from the filename
- */
-function getBetterDomainFromFilename(filename: string): string {
-  // Remove extension and common prefixes
-  let name = filename.replace('.pdf', '').toLowerCase();
-  name = name.replace(/^(report_|report-|semrush_|semrush-|seo_|seo-)/i, '');
-  
-  // Check if it's already a domain-like string
-  if (name.includes('.')) {
-    return name;
-  }
-  
-  // Make it into a domain
-  return `${name}.com`;
-}
-
-/**
- * Extract domain from the PDF text
- */
-function extractDomain(text: string, fileName: string): string {
-  // Various patterns to match domain in PDF text
-  const domainPatterns = [
-    /Informe de dominio:?\s*([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)/i,
-    /Domain:?\s*([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)/i,
-    /URL:?\s*(https?:\/\/)?([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)/i,
-    /Dominio:?\s*([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)/i,
-    /Website:?\s*(https?:\/\/)?([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)/i,
-    /Web:?\s*(https?:\/\/)?([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)/i
-  ];
-  
-  for (const pattern of domainPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      // Some patterns capture the protocol in group 1 and domain in group 2
-      const domain = match[2] ? match[2] : match[1];
-      console.log(`[PDF Parser] Domain found with pattern ${pattern}:`, domain);
-      return domain.trim();
-    }
-  }
-  
-  // Try to extract from filename if nothing found in text
-  return getBetterDomainFromFilename(fileName);
-}
-
-/**
- * Extract traffic, keywords and backlinks metrics
- */
-function extractMetrics(text: string): { traffic: number, keywords: number, backlinks: number } {
-  const metrics = {
-    traffic: 0,
-    keywords: 0,
-    backlinks: 0
-  };
-  
-  // Patterns for traffic
-  const trafficPatterns = [
-    /Tráfico orgánico:?\s*([0-9,.]+)/i,
-    /Organic Traffic:?\s*([0-9,.]+)/i,
-    /Traffic:?\s*([0-9,.]+)/i,
-    /Visits:?\s*([0-9,.]+)/i,
-    /Tráfico:?\s*([0-9,.]+)/i,
-    /Visitas:?\s*([0-9,.]+)/i
-  ];
-  
-  // Patterns for keywords
-  const keywordsPatterns = [
-    /Palabras clave orgánicas:?\s*([0-9,.]+)/i,
-    /Organic Keywords:?\s*([0-9,.]+)/i,
-    /Keywords:?\s*([0-9,.]+)/i,
-    /Ranking Keywords:?\s*([0-9,.]+)/i,
-    /Palabras clave:?\s*([0-9,.]+)/i,
-    /Palabras clave SEO:?\s*([0-9,.]+)/i
-  ];
-  
-  // Patterns for backlinks
-  const backlinksPatterns = [
-    /Backlinks:?\s*([0-9,.]+)/i,
-    /Enlaces entrantes:?\s*([0-9,.]+)/i,
-    /Referring Domains:?\s*([0-9,.]+)/i,
-    /External Links:?\s*([0-9,.]+)/i,
-    /Dominios referentes:?\s*([0-9,.]+)/i,
-    /Enlaces externos:?\s*([0-9,.]+)/i
-  ];
-  
-  // Try to extract traffic
-  for (const pattern of trafficPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      metrics.traffic = parseInt(match[1].replace(/[,.]/g, ''), 10);
-      console.log(`[PDF Parser] Traffic found with pattern ${pattern}:`, metrics.traffic);
-      break;
-    }
-  }
-  
-  // Try to extract keywords
-  for (const pattern of keywordsPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      metrics.keywords = parseInt(match[1].replace(/[,.]/g, ''), 10);
-      console.log(`[PDF Parser] Keywords found with pattern ${pattern}:`, metrics.keywords);
-      break;
-    }
-  }
-  
-  // Try to extract backlinks
-  for (const pattern of backlinksPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      metrics.backlinks = parseInt(match[1].replace(/[,.]/g, ''), 10);
-      console.log(`[PDF Parser] Backlinks found with pattern ${pattern}:`, metrics.backlinks);
-      break;
-    }
-  }
-  
-  return metrics;
-}
-
-/**
- * Extract keywords from the PDF text
- */
-function extractKeywords(text: string, domain: string, textLines: string[]): { keyword: string; position?: number; volume?: number; trafficPercent?: number }[] {
+function extractKeywordsFromText(text: string, domain: string): { keyword: string; position?: number; volume?: number; trafficPercent?: number }[] {
+  console.log('[PDF Parser] Extracting keywords from text');
   const keywordsData: { keyword: string; position?: number; volume?: number; trafficPercent?: number }[] = [];
   
-  console.log('[PDF Parser] Extracting keywords...');
+  // Split text into lines for better processing
+  const textLines = text.split('\n');
   
-  // Different patterns to match keyword data
+  // Look for specific keyword sections
+  let keywordSection = '';
   const keywordSectionPatterns = [
-    /Top\s+Keywords\s+[^\n]*\n([\s\S]*?)(?:Competitors|Top\s+Competitors|$)/i,
-    /Palabras\s+clave\s+principales\s+[^\n]*\n([\s\S]*?)(?:Competidores|Competidores\s+principales|$)/i,
-    /Organic\s+Keywords\s+[^\n]*\n([\s\S]*?)(?:Competitors|$)/i
+    /Palabras\s+Clave\s+Principales([\s\S]*?)(?:Competidores|$)/i,
+    /Top\s+Keywords([\s\S]*?)(?:Competitors|$)/i,
+    /Organic\s+Keywords([\s\S]*?)(?:Competitors|$)/i
   ];
   
-  let keywordSection = '';
-  
-  // Try to find the keywords section
   for (const pattern of keywordSectionPatterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
       keywordSection = match[1];
-      console.log('[PDF Parser] Found keywords section with pattern:', pattern);
+      console.log('[PDF Parser] Found keywords section');
       break;
     }
   }
   
+  // Try to extract keywords from the section
   if (keywordSection) {
-    // Different patterns to match individual keyword data
-    const keywordDataPatterns = [
-      /([a-zA-Z0-9\s\-_+&\'".]+)\s+(\d+)(?:\s+|\|+)(\d[\d.,]*)(?:\s+|\|+)([\d.]+)%/g,
-      /([a-zA-Z0-9\s\-_+&\'".]+)\s+(\d+)(?:\s+|\|+)(\d[\d.,]*K?)(?:\s+|\|+)([\d.]+)/g,
-      /([a-zA-Z0-9\s\-_+&\'".]+)\s+(\d+)(?:\s+|\|+)(\d[\d.,]*)/g
+    const keywordPatterns = [
+      /(\w+(?:\s+\w+)*)\s+(\d+)\s+(\d[\d.,]*K?)\s+([\d.]+)%/g,
+      /(\w+(?:\s+\w+)*)\s+(\d+)\s+(\d[\d.,]*)/g
     ];
     
-    for (const pattern of keywordDataPatterns) {
-      let match;
+    for (const pattern of keywordPatterns) {
       pattern.lastIndex = 0;
+      let match;
       
       while ((match = pattern.exec(keywordSection)) !== null && keywordsData.length < 20) {
         const keyword = match[1].trim();
         
-        // Skip keywords that look like PDF structure elements
-        if (keyword.includes('obj') || keyword.includes('xref') || keyword === 'endobj') {
-          continue;
-        }
-        
-        // Skip very short or very long keywords
-        if (keyword.length < 3 || keyword.length > 100) {
+        // Skip invalid keywords
+        if (keyword.length < 3 || keyword.length > 50 || 
+            keyword.includes('obj') || keyword.includes('xref')) {
           continue;
         }
         
         const position = parseInt(match[2], 10);
         
-        // Handle volume, which could be in format like "1.2K"
+        // Handle volume with K suffix (like 1.2K)
         let volume = match[3] ? match[3].replace(/,/g, '') : '0';
         if (volume.includes('K')) {
           volume = (parseFloat(volume.replace('K', '')) * 1000).toString();
         }
         
-        // Handle traffic percent
+        // Get traffic percent if available
         const trafficPercent = match[4] ? parseFloat(match[4]) : Math.random() * 20 + 5;
         
         keywordsData.push({
@@ -351,147 +135,138 @@ function extractKeywords(text: string, domain: string, textLines: string[]): { k
         });
       }
       
-      if (keywordsData.length > 0) {
-        console.log(`[PDF Parser] Extracted ${keywordsData.length} keywords with pattern:`, pattern);
-        break;
-      }
+      if (keywordsData.length > 0) break;
     }
   }
   
-  // If no keywords found, try looking line by line
+  // If no keywords found, look for lines that might be keywords
   if (keywordsData.length === 0) {
-    console.log('[PDF Parser] No keywords found in section, trying line-by-line extraction');
-    
     for (const line of textLines) {
-      if (line.trim().length < 5) continue;
+      if (line.length < 10) continue;
       
-      // Look for lines that might contain keyword data (word + numbers)
-      if (/[a-zA-Z]{3,}.*\d+.*\d+/.test(line)) {
-        const parts = line.split(/\s+/).filter(p => p.trim() !== '');
+      // Look for lines with keyword-like format
+      const keywordLineMatch = line.match(/([a-zA-Z0-9\s\-+&'".,]{3,50})\s+(\d+)\s+(\d[\d.,]*)/);
+      if (keywordLineMatch) {
+        const keyword = keywordLineMatch[1].trim();
+        const position = parseInt(keywordLineMatch[2], 10);
+        const volume = parseInt(keywordLineMatch[3].replace(/,/g, ''), 10);
         
-        if (parts.length >= 3) {
-          let keywordParts = [];
-          let position = 0;
-          let volume = 0;
-          
-          // Try to identify position and volume in the line
-          for (let i = 0; i < parts.length; i++) {
-            if (/^\d+$/.test(parts[i])) {
-              if (position === 0) {
-                position = parseInt(parts[i], 10);
-                keywordParts = parts.slice(0, i);
-              } else {
-                volume = parseInt(parts[i].replace(/,/g, ''), 10);
-                break;
-              }
-            }
-          }
-          
-          if (keywordParts.length > 0 && position > 0) {
-            const keyword = keywordParts.join(' ').trim();
-            
-            // Skip keywords that look like PDF structure elements
-            if (keyword.includes('obj') || keyword.includes('xref') || keyword === 'endobj') {
-              continue;
-            }
-            
-            // Skip very short or very long keywords
-            if (keyword.length < 3 || keyword.length > 50) {
-              continue;
-            }
-            
-            keywordsData.push({
-              keyword,
-              position,
-              volume: volume || Math.floor(Math.random() * 5000) + 100,
-              trafficPercent: Math.random() * 20 + 5
-            });
-            
-            if (keywordsData.length >= 20) break;
-          }
-        }
+        keywordsData.push({
+          keyword,
+          position,
+          volume,
+          trafficPercent: Math.random() * 20 + 5
+        });
+        
+        if (keywordsData.length >= 20) break;
       }
     }
-    
-    console.log(`[PDF Parser] Extracted ${keywordsData.length} keywords from line-by-line analysis`);
   }
   
+  // If still no keywords, generate sample data
+  if (keywordsData.length === 0) {
+    console.log('[PDF Parser] No keywords found, generating samples');
+    return generateSampleKeywords(domain);
+  }
+  
+  console.log(`[PDF Parser] Extracted ${keywordsData.length} keywords`);
   return keywordsData;
 }
 
 /**
- * Extract competitors from the PDF text
+ * Extract competitors from text
  */
-function extractCompetitors(text: string, domain: string): { domain: string; keywordsOverlap?: number; competitionLevel?: number }[] {
+function extractCompetitorsFromText(text: string, domain: string): { domain: string; keywordsOverlap?: number; competitionLevel?: number }[] {
+  console.log('[PDF Parser] Extracting competitors from text');
   const competitorsData: { domain: string; keywordsOverlap?: number; competitionLevel?: number }[] = [];
   
-  // Different patterns to match competitor data
-  const competitorPatterns = [
-    /([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)\s+(\d[\d,]*)\s+([\d.]+)/g,
-    /([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)\s+(\d[\d,]*)/g,
-    /Competitor\s+([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)\s+(\d[\d,]*)/g,
-    /Competidor\s+([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+)\s+(\d[\d,]*)/g
+  // Look for competitors section
+  let competitorsSection = '';
+  const competitorsSectionPatterns = [
+    /Competidores(?:\s+Principales)?([\s\S]*?)(?:Backlinks|$)/i,
+    /Competitors([\s\S]*?)(?:Backlinks|$)/i
   ];
   
-  for (const pattern of competitorPatterns) {
-    let match;
-    pattern.lastIndex = 0;
-    
-    while ((match = pattern.exec(text)) !== null && competitorsData.length < 10) {
-      const competitorDomain = match[1].toLowerCase().trim();
-      
-      // Skip if competitor domain is the same as the main domain
-      if (competitorDomain === domain.toLowerCase()) continue;
-      
-      const keywordsOverlap = parseInt(match[2].replace(/,/g, ''), 10);
-      const competitionLevel = match[3] ? parseFloat(match[3]) : (Math.random() * 0.5 + 0.3);
-      
-      competitorsData.push({
-        domain: competitorDomain,
-        keywordsOverlap,
-        competitionLevel
-      });
-    }
-    
-    if (competitorsData.length > 0) {
-      console.log(`[PDF Parser] Extracted ${competitorsData.length} competitors with pattern:`, pattern);
+  for (const pattern of competitorsSectionPatterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      competitorsSection = match[1];
+      console.log('[PDF Parser] Found competitors section');
       break;
     }
   }
   
+  // Try to extract competitors
+  if (competitorsSection) {
+    const competitorPatterns = [
+      /((?:https?:\/\/)?[\w.-]+\.[\w]{2,})[\s\n]+(\d+)[\s\n]+([\d.]+)/g,
+      /((?:https?:\/\/)?[\w.-]+\.[\w]{2,})[\s\n]+(\d+)/g
+    ];
+    
+    for (const pattern of competitorPatterns) {
+      pattern.lastIndex = 0;
+      let match;
+      
+      while ((match = pattern.exec(competitorsSection)) !== null && competitorsData.length < 10) {
+        const competitorDomain = match[1].trim().toLowerCase();
+        
+        // Skip if it's our own domain
+        if (competitorDomain === domain.toLowerCase()) continue;
+        
+        const keywordsOverlap = parseInt(match[2], 10);
+        const competitionLevel = match[3] ? parseFloat(match[3]) : Math.random() * 0.5 + 0.3;
+        
+        competitorsData.push({
+          domain: competitorDomain,
+          keywordsOverlap,
+          competitionLevel
+        });
+      }
+      
+      if (competitorsData.length > 0) break;
+    }
+  }
+  
+  // If no competitors found, generate sample data
+  if (competitorsData.length === 0) {
+    console.log('[PDF Parser] No competitors found, generating samples');
+    return generateSampleCompetitors(domain);
+  }
+  
+  console.log(`[PDF Parser] Extracted ${competitorsData.length} competitors`);
   return competitorsData;
 }
 
 /**
- * Extract ranking distribution from PDF text
+ * Extract ranking distribution from text
  */
 function extractRankingDistribution(text: string): { range: string; count: number }[] | null {
-  const sectionPatterns = [
-    /Ranking\s+Distribution([\s\S]*?)(?:Competitors|$)/i,
-    /Distribución\s+de\s+Rankings([\s\S]*?)(?:Competidores|$)/i
+  console.log('[PDF Parser] Extracting ranking distribution');
+  
+  // Look for ranking distribution section
+  let rankingSection = '';
+  const rankingSectionPatterns = [
+    /Distribución(?:\s+de)?\s+Rankings([\s\S]*?)(?:Palabras|Keywords|Competidores|Competitors|$)/i,
+    /Ranking\s+Distribution([\s\S]*?)(?:Keywords|Competitors|$)/i
   ];
   
-  let section = '';
-  
-  // Try to find the ranking distribution section
-  for (const pattern of sectionPatterns) {
+  for (const pattern of rankingSectionPatterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
-      section = match[1];
-      console.log('[PDF Parser] Found ranking distribution section with pattern:', pattern);
+      rankingSection = match[1];
+      console.log('[PDF Parser] Found ranking distribution section');
       break;
     }
   }
   
-  if (!section) return null;
+  if (!rankingSection) return null;
   
+  // Try to extract ranking ranges
   const distribution: { range: string; count: number }[] = [];
-  
-  // Pattern for ranges like "1-3: 42" or similar formats
   const rangePattern = /(\d+(?:-\d+)?)[:\s]+(\d+)/g;
   let match;
   
-  while ((match = rangePattern.exec(section)) !== null) {
+  while ((match = rangePattern.exec(rankingSection)) !== null) {
     distribution.push({
       range: match[1],
       count: parseInt(match[2], 10)
@@ -499,7 +274,7 @@ function extractRankingDistribution(text: string): { range: string; count: numbe
   }
   
   if (distribution.length > 0) {
-    console.log(`[PDF Parser] Extracted ${distribution.length} ranking distribution ranges`);
+    console.log(`[PDF Parser] Extracted ${distribution.length} ranking ranges`);
     return distribution;
   }
   
@@ -507,35 +282,35 @@ function extractRankingDistribution(text: string): { range: string; count: numbe
 }
 
 /**
- * Extract backlink types from PDF text
+ * Extract backlink types from text
  */
 function extractBacklinkTypes(text: string): { type: string; count: number }[] | null {
-  const sectionPatterns = [
-    /Backlink\s+Types([\s\S]*?)(?:Follow|NoFollow|$)/i,
-    /Tipos\s+de\s+Backlinks([\s\S]*?)(?:Follow|NoFollow|$)/i
+  console.log('[PDF Parser] Extracting backlink types');
+  
+  // Look for backlink types section
+  let backlinkSection = '';
+  const backlinkSectionPatterns = [
+    /Tipos\s+de\s+Backlinks([\s\S]*?)(?:Follow|NoFollow|Enlaces|$)/i,
+    /Backlink\s+Types([\s\S]*?)(?:Follow|NoFollow|Links|$)/i
   ];
   
-  let section = '';
-  
-  // Try to find the backlink types section
-  for (const pattern of sectionPatterns) {
+  for (const pattern of backlinkSectionPatterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
-      section = match[1];
-      console.log('[PDF Parser] Found backlink types section with pattern:', pattern);
+      backlinkSection = match[1];
+      console.log('[PDF Parser] Found backlink types section');
       break;
     }
   }
   
-  if (!section) return null;
+  if (!backlinkSection) return null;
   
+  // Try to extract backlink types
   const types: { type: string; count: number }[] = [];
-  
-  // Pattern for "Text: 3250" or similar formats
   const typePattern = /(Text|Image|Form|Frame|Other|Texto|Imagen|Formulario|Marco|Otro)[:\s]+(\d[\d,]*)/gi;
   let match;
   
-  while ((match = typePattern.exec(section)) !== null) {
+  while ((match = typePattern.exec(backlinkSection)) !== null) {
     types.push({
       type: match[1],
       count: parseInt(match[2].replace(/,/g, ''), 10)
@@ -551,35 +326,34 @@ function extractBacklinkTypes(text: string): { type: string; count: number }[] |
 }
 
 /**
- * Extract follow/nofollow distribution from PDF text
+ * Extract follow/nofollow distribution from text
  */
 function extractFollowNofollow(text: string): { type: string; count: number; percentage: number }[] | null {
-  const sectionPatterns = [
-    /Follow\/NoFollow([\s\S]*?)(?:Backlink\s+Types|$)/i,
-    /Follow\/NoFollow([\s\S]*?)(?:Tipos\s+de\s+Backlinks|$)/i
+  console.log('[PDF Parser] Extracting follow/nofollow distribution');
+  
+  // Look for follow/nofollow section
+  let followSection = '';
+  const followSectionPatterns = [
+    /Follow\/NoFollow([\s\S]*?)(?:Backlink|Tipos|Types|$)/i
   ];
   
-  let section = '';
-  
-  // Try to find the follow/nofollow section
-  for (const pattern of sectionPatterns) {
+  for (const pattern of followSectionPatterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
-      section = match[1];
-      console.log('[PDF Parser] Found follow/nofollow section with pattern:', pattern);
+      followSection = match[1];
+      console.log('[PDF Parser] Found follow/nofollow section');
       break;
     }
   }
   
-  if (!section) return null;
+  if (!followSection) return null;
   
+  // Try to extract follow/nofollow data
   const distribution: { type: string; count: number; percentage: number }[] = [];
-  
-  // Pattern for "Follow: 4200 (76%)" or similar formats
   const followPattern = /(Follow|NoFollow)[:\s]+(\d[\d,]*)[^\d]*([\d.]+)%/gi;
   let match;
   
-  while ((match = followPattern.exec(section)) !== null) {
+  while ((match = followPattern.exec(followSection)) !== null) {
     distribution.push({
       type: match[1],
       count: parseInt(match[2].replace(/,/g, ''), 10),
@@ -624,8 +398,6 @@ function generateSampleCompetitors(domain: string): { domain: string; keywordsOv
   console.log('[PDF Parser] Generating sample competitors for domain:', domain);
   
   const domainBase = domain.replace(/\.(com|net|org|io|es)$/i, '');
-  
-  // Create more realistic competitor domains
   const industryTerms = ['pro', 'digital', 'web', 'online', 'tech', 'media', 'top', 'best'];
   
   const competitors = [];
@@ -633,7 +405,7 @@ function generateSampleCompetitors(domain: string): { domain: string; keywordsOv
   for (let i = 0; i < 5; i++) {
     const randomTerm = industryTerms[Math.floor(Math.random() * industryTerms.length)];
     const keywordsOverlap = Math.floor(Math.random() * 150) + 50;
-    const competitionLevel = (Math.random() * 0.5 + 0.3).toFixed(2) as unknown as number;
+    const competitionLevel = (Math.random() * 0.5 + 0.3);
     
     let competitorDomain;
     
@@ -687,4 +459,27 @@ function generateSampleFollowNofollow(): { type: string; count: number; percenta
     { type: "Follow", count: 4200, percentage: 76 },
     { type: "NoFollow", count: 1320, percentage: 24 }
   ];
+}
+
+/**
+ * Generate default data when parsing fails
+ */
+function generateDefaultData(fileName: string): ExtractedData {
+  console.log('[PDF Parser] Generating default data for file:', fileName);
+  
+  const domain = fileName.replace('.pdf', '').toLowerCase();
+  const cleanDomain = domain.replace(/^(informe_|informe-|reporte_|reporte-|report_|report-|semrush_|semrush-|seo_|seo-)/i, '');
+  const domainWithExt = cleanDomain.includes('.') ? cleanDomain : `${cleanDomain}.com`;
+  
+  return {
+    domain: domainWithExt,
+    traffic: Math.floor(Math.random() * 10000) + 1000,
+    keywords: Math.floor(Math.random() * 2000) + 500,
+    backlinks: Math.floor(Math.random() * 10000) + 2000,
+    keywordsData: generateSampleKeywords(domainWithExt),
+    competitorsData: generateSampleCompetitors(domainWithExt),
+    rankingDistribution: generateSampleRankingDistribution(),
+    backlinkTypes: generateSampleBacklinkTypes(),
+    followNofollow: generateSampleFollowNofollow()
+  };
 }
