@@ -32,8 +32,6 @@ const Header: React.FC = () => {
       setLogoLoading(true);
       const logoUrl = await fetchLogoFromSettings();
       
-      console.log('Fetched logo URL:', logoUrl);
-      
       if (logoUrl) {
         setLogoUrl(logoUrl);
         localStorage.setItem('app_logo_url', logoUrl);
@@ -55,7 +53,7 @@ const Header: React.FC = () => {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 glass backdrop-blur-md bg-emerald-50/10 dark:bg-emerald-900/10 border-b border-emerald-600/10">
+    <header className="fixed top-0 left-0 w-full z-50 bg-background/95 backdrop-blur-sm border-b">
       <div className="container mx-auto px-4 sm:px-6 py-2">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
@@ -64,9 +62,9 @@ const Header: React.FC = () => {
             ) : logoUrl ? (
               <img 
                 src={logoUrl} 
-                alt="SoyLocal SEO" 
+                alt="SoySeoLocal" 
                 className="h-10 w-auto object-contain"
-                onError={(e) => {
+                onError={() => {
                   console.error('Error loading logo image');
                   setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
                 }}
@@ -92,72 +90,13 @@ const Header: React.FC = () => {
               )}
             </Button>
           ) : (
-            <div className="flex items-center space-x-8">
-              <Navbar isMobile={false} />
-              
-              {user ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                    <User className="inline-block mr-1 h-4 w-4" />
-                    {user.email?.split('@')[0]}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={signOut}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <LogOut className="mr-1 h-4 w-4" />
-                    Cerrar Sesión
-                  </Button>
-                </div>
-              ) : (
-                <Link to="/auth">
-                  <Button variant="outline" size="sm">
-                    Iniciar Sesión
-                  </Button>
-                </Link>
-              )}
-            </div>
+            <Navbar isMobile={false} />
           )}
         </div>
 
         {isMobile && isMenuOpen && (
-          <div className="absolute top-full left-0 w-full glass backdrop-blur-lg p-4 border-b border-emerald-600/10 animate-slide-down">
+          <div className="absolute top-full left-0 w-full bg-background p-4 border-b animate-slide-down">
             <Navbar isMobile={true} closeMenu={closeMenu} />
-            
-            {user ? (
-              <div className="flex flex-col space-y-2 pt-2 border-t border-emerald-600/10 mt-4">
-                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                  <User className="inline-block mr-1 h-4 w-4" />
-                  {user.email?.split('@')[0]}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    signOut();
-                    closeMenu();
-                  }}
-                  className="justify-start text-muted-foreground hover:text-destructive"
-                >
-                  <LogOut className="mr-1 h-4 w-4" />
-                  Cerrar Sesión
-                </Button>
-              </div>
-            ) : (
-              <div className="pt-2 border-t border-emerald-600/10 mt-4">
-                <Link
-                  to="/auth"
-                  className="w-full"
-                  onClick={closeMenu}
-                >
-                  <Button variant="outline" size="sm" className="w-full">
-                    Iniciar Sesión
-                  </Button>
-                </Link>
-              </div>
-            )}
           </div>
         )}
       </div>

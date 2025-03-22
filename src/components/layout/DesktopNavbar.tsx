@@ -18,7 +18,7 @@ const DesktopNavbar: React.FC = () => {
   return (
     <div className="hidden lg:flex w-full items-center justify-between px-6 py-4">
       <div className="flex items-center space-x-8">
-        <Link to="/" className="text-2xl font-bold text-primary">SeoLocal</Link>
+        <Link to="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-emerald-800">SoySeoLocal</Link>
         
         {user ? (
           <nav className="flex items-center space-x-1">
