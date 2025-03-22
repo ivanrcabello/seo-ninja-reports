@@ -37,8 +37,22 @@ const Activity = () => {
 
   // Filter recent clients
   const recentClients = clients
-    .filter(client => new Date(client.createdAt) >= sevenDaysAgo)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .filter(client => {
+      try {
+        return new Date(client.created_at) >= sevenDaysAgo;
+      } catch (error) {
+        console.error("Invalid date in client:", client.id, client.created_at);
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      try {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } catch (error) {
+        console.error("Error sorting clients by date:", error);
+        return 0;
+      }
+    });
   
   // Combine and sort all activities
   const activities = [
@@ -47,11 +61,18 @@ const Activity = () => {
       date: new Date(report.date),
       data: report
     })),
-    ...recentClients.map(client => ({
-      type: 'client',
-      date: new Date(client.createdAt),
-      data: client
-    }))
+    ...recentClients.map(client => {
+      try {
+        return {
+          type: 'client',
+          date: new Date(client.created_at),
+          data: client
+        };
+      } catch (error) {
+        console.error("Error creating activity for client:", client.id, error);
+        return null;
+      }
+    }).filter(Boolean)
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
   const getClientName = (clientId: string): string => {

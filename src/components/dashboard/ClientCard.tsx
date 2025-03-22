@@ -5,17 +5,29 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Activity, File, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import BlurredCard from '../ui/BlurredCard';
-import { formatDistanceToNow } from 'date-fns';
-import { Client } from '@/hooks/useClients';
+import { format } from 'date-fns';
+import { Client } from '@/types/client.types';
 import { es } from 'date-fns/locale';
 
 interface ClientCardProps {
   client: Client;
   index: number;
+  reportsCount?: number;
 }
 
-const ClientCard: React.FC<ClientCardProps> = ({ client, index }) => {
-  const { id, name, website, industry, createdAt, reportsCount, active } = client;
+const ClientCard: React.FC<ClientCardProps> = ({ client, index, reportsCount = 0 }) => {
+  const { id, name, website, industry, created_at, active } = client;
+  
+  // Safely format the creation date
+  const formattedDate = () => {
+    try {
+      if (!created_at) return "Fecha desconocida";
+      return format(new Date(created_at), 'dd/MM/yyyy');
+    } catch (e) {
+      console.error("Error formatting date:", e, created_at);
+      return "Fecha inválida";
+    }
+  };
   
   return (
     <BlurredCard
@@ -60,7 +72,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, index }) => {
           <div className="flex flex-col items-center justify-center p-3 bg-primary/5 rounded-lg">
             <Calendar className="h-5 w-5 text-primary mb-1" />
             <span className="text-sm font-medium">
-              {formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: es })}
+              {formattedDate()}
             </span>
             <span className="text-xs text-muted-foreground">Añadido</span>
           </div>

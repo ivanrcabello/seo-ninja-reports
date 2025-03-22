@@ -54,16 +54,16 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSuccess }) =>
     defaultValues: {
       name: client.name,
       website: client.website,
-      industry: client.industry,
-      phoneNumber: client.phoneNumber || '',
+      industry: client.industry || '',
+      phoneNumber: client.phone_number || '',
       active: client.active,
-      wpUsername: client.wpCredentials?.username || '',
-      wpPassword: client.wpCredentials?.password || '',
-      wpUrl: client.wpCredentials?.url || '',
-      hostingProvider: client.hostingCredentials?.provider || '',
-      hostingUsername: client.hostingCredentials?.username || '',
-      hostingPassword: client.hostingCredentials?.password || '',
-      hostingUrl: client.hostingCredentials?.url || '',
+      wpUsername: client.wp_credentials?.username || '',
+      wpPassword: client.wp_credentials?.password || '',
+      wpUrl: client.wp_credentials?.url || '',
+      hostingProvider: client.hosting_credentials?.provider || '',
+      hostingUsername: client.hosting_credentials?.username || '',
+      hostingPassword: client.hosting_credentials?.password || '',
+      hostingUrl: client.hosting_credentials?.url || '',
     }
   });
 
@@ -77,14 +77,14 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSuccess }) =>
         name: data.name,
         website: data.website,
         industry: data.industry,
-        phoneNumber: data.phoneNumber,
+        phone_number: data.phoneNumber,
         active: data.active,
-        wpCredentials: data.wpUsername ? {
+        wp_credentials: data.wpUsername ? {
           username: data.wpUsername,
           password: data.wpPassword,
           url: data.wpUrl
         } : null,
-        hostingCredentials: data.hostingProvider && data.hostingUsername ? {
+        hosting_credentials: data.hostingProvider && data.hostingUsername ? {
           provider: data.hostingProvider,
           username: data.hostingUsername,
           password: data.hostingPassword,

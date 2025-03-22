@@ -14,8 +14,8 @@ const ClientCredentials: React.FC<ClientCredentialsProps> = ({ client }) => {
   const [showWpPassword, setShowWpPassword] = useState(false);
   const [showHostingPassword, setShowHostingPassword] = useState(false);
   
-  const hasWpCredentials = client.wpCredentials && client.wpCredentials.username;
-  const hasHostingCredentials = client.hostingCredentials && client.hostingCredentials.username;
+  const hasWpCredentials = client.wp_credentials && client.wp_credentials.username;
+  const hasHostingCredentials = client.hosting_credentials && client.hosting_credentials.username;
   
   if (!hasWpCredentials && !hasHostingCredentials) {
     return null;
@@ -42,13 +42,13 @@ const ClientCredentials: React.FC<ClientCredentialsProps> = ({ client }) => {
             <div className="grid gap-1">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Usuario:</span>
-                <span className="text-sm font-medium">{client.wpCredentials.username}</span>
+                <span className="text-sm font-medium">{client.wp_credentials.username}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Contraseña:</span>
                 <div className="flex items-center">
                   <span className="text-sm font-medium mr-2">
-                    {showWpPassword ? client.wpCredentials.password : '••••••••••'}
+                    {showWpPassword ? client.wp_credentials.password : '••••••••••'}
                   </span>
                   <Button 
                     variant="ghost" 
@@ -60,16 +60,16 @@ const ClientCredentials: React.FC<ClientCredentialsProps> = ({ client }) => {
                   </Button>
                 </div>
               </div>
-              {client.wpCredentials.url && (
+              {client.wp_credentials.url && (
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">URL:</span>
                   <a 
-                    href={client.wpCredentials.url} 
+                    href={client.wp_credentials.url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-sm font-medium text-primary hover:underline"
                   >
-                    {client.wpCredentials.url}
+                    {client.wp_credentials.url}
                   </a>
                 </div>
               )}
@@ -82,20 +82,20 @@ const ClientCredentials: React.FC<ClientCredentialsProps> = ({ client }) => {
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-medium flex items-center">
                 <Server className="mr-2 h-4 w-4 text-primary" />
-                {client.hostingCredentials.provider || 'Hosting'}
+                {client.hosting_credentials.provider || 'Hosting'}
               </h3>
             </div>
             <Separator className="my-2" />
             <div className="grid gap-1">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Usuario:</span>
-                <span className="text-sm font-medium">{client.hostingCredentials.username}</span>
+                <span className="text-sm font-medium">{client.hosting_credentials.username}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Contraseña:</span>
                 <div className="flex items-center">
                   <span className="text-sm font-medium mr-2">
-                    {showHostingPassword ? client.hostingCredentials.password : '••••••••••'}
+                    {showHostingPassword ? client.hosting_credentials.password : '••••••••••'}
                   </span>
                   <Button 
                     variant="ghost" 
@@ -107,16 +107,16 @@ const ClientCredentials: React.FC<ClientCredentialsProps> = ({ client }) => {
                   </Button>
                 </div>
               </div>
-              {client.hostingCredentials.url && (
+              {client.hosting_credentials.url && (
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">URL:</span>
                   <a 
-                    href={client.hostingCredentials.url} 
+                    href={client.hosting_credentials.url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-sm font-medium text-primary hover:underline"
                   >
-                    {client.hostingCredentials.url}
+                    {client.hosting_credentials.url}
                   </a>
                 </div>
               )}

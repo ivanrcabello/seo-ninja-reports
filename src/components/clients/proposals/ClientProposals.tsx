@@ -31,7 +31,13 @@ const ClientProposals: React.FC<ClientProposalsProps> = ({ clientId }) => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setProposals(data || []);
+        
+        const typedProposals = data?.map(item => ({
+          ...item,
+          status: item.status as 'draft' | 'sent' | 'accepted' | 'rejected'
+        })) || [];
+        
+        setProposals(typedProposals);
       } catch (error: any) {
         console.error('Error fetching proposals:', error);
         toast({
@@ -77,7 +83,7 @@ const ClientProposals: React.FC<ClientProposalsProps> = ({ clientId }) => {
 
         // Update local state
         setProposals(proposals.map(p => 
-          p.id === editingProposal.id ? { ...p, ...proposal, updated_at: new Date().toISOString() } : p
+          p.id === editingProposal.id ? { ...p, ...proposal, updated_at: new Date().toISOString() } as ClientProposal : p
         ));
 
         toast({
@@ -102,7 +108,11 @@ const ClientProposals: React.FC<ClientProposalsProps> = ({ clientId }) => {
 
         // Update local state
         if (data && data[0]) {
-          setProposals([data[0], ...proposals]);
+          const newProposal = {
+            ...data[0],
+            status: data[0].status as 'draft' | 'sent' | 'accepted' | 'rejected'
+          };
+          setProposals([newProposal, ...proposals]);
         }
 
         toast({

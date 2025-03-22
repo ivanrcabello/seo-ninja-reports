@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
 import useAuth from './useAuth';
@@ -11,7 +10,6 @@ import {
 } from '@/services/clientService';
 import { Json } from '@/integrations/supabase/types';
 
-// Define the ClientsContextType
 interface ClientsContextType {
   clients: Client[];
   isLoading: boolean;
@@ -21,7 +19,6 @@ interface ClientsContextType {
   deleteClient: (id: string) => Promise<void>;
 }
 
-// Type guard to check if a value is a valid credential object
 function isWpCredentials(value: Json | null): value is { username: string; password: string; url?: string } {
   return value !== null && 
          typeof value === 'object' && 
@@ -37,7 +34,6 @@ function isHostingCredentials(value: Json | null): value is { provider: string; 
          'password' in value;
 }
 
-// Create context
 const ClientsContext = createContext<ClientsContextType | undefined>(undefined);
 
 export const ClientsProvider = ({ children }: { children: ReactNode }) => {
@@ -45,7 +41,6 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
-  // Load clients when user changes
   useEffect(() => {
     const loadClients = async () => {
       if (!user) {
@@ -59,11 +54,7 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         
         const { clients: clientsData, reportCountMap } = await fetchClients(user.id);
 
-        // Format clients data
         const formattedClients = clientsData.map((client: any) => {
-          const wpCreds = client.wp_credentials;
-          const hostingCreds = client.hosting_credentials;
-          
           return {
             id: client.id,
             name: client.name,
@@ -74,8 +65,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
             user_id: client.user_id,
             phone_number: client.phone_number,
             active: client.active,
-            wp_credentials: isWpCredentials(wpCreds) ? wpCreds : null,
-            hosting_credentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
+            wp_credentials: isWpCredentials(client.wp_credentials) ? client.wp_credentials : null,
+            hosting_credentials: isHostingCredentials(client.hosting_credentials) ? client.hosting_credentials : null
           };
         });
         
@@ -99,10 +90,6 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const newClient = await addClientToDb(data, user?.id);
       
-      // Apply the same type safety for the new client
-      const wpCreds = newClient.wp_credentials;
-      const hostingCreds = newClient.hosting_credentials;
-      
       const formattedClient: Client = {
         id: newClient.id,
         name: newClient.name,
@@ -113,8 +100,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         user_id: newClient.user_id,
         phone_number: newClient.phone_number,
         active: newClient.active,
-        wp_credentials: isWpCredentials(wpCreds) ? wpCreds : null,
-        hosting_credentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
+        wp_credentials: isWpCredentials(newClient.wp_credentials) ? newClient.wp_credentials : null,
+        hosting_credentials: isHostingCredentials(newClient.hosting_credentials) ? newClient.hosting_credentials : null
       };
       
       setClients(prevClients => [formattedClient, ...prevClients]);
@@ -135,10 +122,6 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('Cliente no encontrado');
       }
       
-      // Apply the same type safety for the updated client
-      const wpCreds = updatedClient.wp_credentials;
-      const hostingCreds = updatedClient.hosting_credentials;
-      
       const formattedClient: Client = {
         id: updatedClient.id,
         name: updatedClient.name,
@@ -149,8 +132,8 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         user_id: updatedClient.user_id,
         phone_number: updatedClient.phone_number,
         active: updatedClient.active,
-        wp_credentials: isWpCredentials(wpCreds) ? wpCreds : null,
-        hosting_credentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
+        wp_credentials: isWpCredentials(updatedClient.wp_credentials) ? updatedClient.wp_credentials : null,
+        hosting_credentials: isHostingCredentials(updatedClient.hosting_credentials) ? updatedClient.hosting_credentials : null
       };
       
       setClients(prevClients => 
