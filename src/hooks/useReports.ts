@@ -161,6 +161,11 @@ export default function useReports() {
     }
   }, []);
 
+  // Create a dummy ReportsProvider function that doesn't use JSX
+  const dummyReportsProvider = function(props: { children: any }) {
+    return props.children;
+  };
+
   return {
     reports,
     isLoading,
@@ -171,6 +176,6 @@ export default function useReports() {
     updateReport,
     deleteReport,
     retryReport,
-    ReportsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> // Add dummy ReportsProvider component for compatibility
+    ReportsProvider: dummyReportsProvider // Add dummy ReportsProvider function for compatibility
   };
 }
