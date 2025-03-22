@@ -15,7 +15,8 @@ import {
   Newspaper,
   Phone,
   Sparkles,
-  LightbulbIcon
+  LightbulbIcon,
+  FileIcon
 } from 'lucide-react';
 
 interface MobileNavbarProps {
@@ -183,7 +184,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
               onClick={closeMenu}
             >
               <Link to="/precios">
-                <FileQuestion className="mr-2 h-4 w-4" />
+                <FileIcon className="mr-2 h-4 w-4" />
                 Precios
               </Link>
             </Button>
