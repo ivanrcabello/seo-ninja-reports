@@ -11,6 +11,8 @@ interface MetricsVisualizerProps {
   icon?: React.ReactNode;
   maxValue?: number;
   defaultValue?: number;
+  description?: string;
+  showProgress?: boolean;
 }
 
 export const MetricsVisualizer: React.FC<MetricsVisualizerProps> = ({ 
@@ -19,7 +21,9 @@ export const MetricsVisualizer: React.FC<MetricsVisualizerProps> = ({
   searchTerm,
   icon,
   maxValue = 100,
-  defaultValue = 50
+  defaultValue = 50,
+  description,
+  showProgress = true
 }) => {
   const [value, setValue] = useState<number>(defaultValue);
 
@@ -58,7 +62,12 @@ export const MetricsVisualizer: React.FC<MetricsVisualizerProps> = ({
         <div className="text-3xl font-bold mb-2 flex items-center gap-2">
           <span className={getColorClass()}>{value}%</span>
         </div>
-        <Progress className="h-2" value={value} indicatorClassName={getProgressClass()} />
+        {description && (
+          <p className="text-sm text-muted-foreground mb-2">{description}</p>
+        )}
+        {showProgress && (
+          <Progress className="h-2" value={value} indicatorClassName={getProgressClass()} />
+        )}
       </CardContent>
     </Card>
   );
