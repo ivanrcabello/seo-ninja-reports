@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
 import KeywordTags from '../../keywords/KeywordTags';
 import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 interface KeywordsSectionProps {
   keywordsContent?: string;
@@ -39,23 +40,61 @@ const KeywordsSection: React.FC<KeywordsSectionProps> = ({
             )}
           </div>
           
-          {/* Display keywords in a grid for better visibility */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
+          {/* Display keywords in a grid for better visibility - SEMrush inspired */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {keywords.map((keyword) => (
-              <Card key={keyword.id} className="border p-2 rounded">
-                <CardContent className="p-2 flex justify-between items-center">
-                  <span className="font-medium">{keyword.keyword}</span>
-                  <div className="flex gap-2">
-                    {keyword.searchVolume !== undefined && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                        {keyword.searchVolume} búsquedas
+              <Card key={keyword.id} className="border p-4 rounded overflow-hidden hover:shadow-md transition-all">
+                <CardContent className="p-0 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-lg">{keyword.keyword}</span>
+                    <div className="flex gap-2">
+                      {keyword.searchVolume !== undefined && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                          {keyword.searchVolume} búsquedas
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {keyword.difficulty !== undefined && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span>Dificultad</span>
+                        <span className="font-semibold">{keyword.difficulty}/100</span>
+                      </div>
+                      <Progress 
+                        value={keyword.difficulty} 
+                        className="h-2"
+                        indicatorClassName={
+                          keyword.difficulty > 70 ? "bg-red-500" : 
+                          keyword.difficulty > 40 ? "bg-amber-500" : 
+                          "bg-green-500"
+                        }
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Fácil</span>
+                        <span>Difícil</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Potential section - just for visual enhancement */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Potencial</span>
+                      <span className="font-semibold">
+                        {keyword.searchVolume && keyword.difficulty 
+                          ? Math.round(100 - (keyword.difficulty * 0.7)) 
+                          : 65}/100
                       </span>
-                    )}
-                    {keyword.difficulty !== undefined && (
-                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                        Dificultad: {keyword.difficulty}/100
-                      </span>
-                    )}
+                    </div>
+                    <Progress 
+                      value={keyword.searchVolume && keyword.difficulty 
+                        ? Math.round(100 - (keyword.difficulty * 0.7)) 
+                        : 65} 
+                      className="h-2"
+                      indicatorClassName="bg-blue-500"
+                    />
                   </div>
                 </CardContent>
               </Card>

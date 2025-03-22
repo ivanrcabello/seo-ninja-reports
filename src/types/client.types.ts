@@ -3,29 +3,40 @@ export interface Client {
   id: string;
   name: string;
   website: string;
-  industry: string;
-  createdAt: string;
-  reportsCount: number;
-  phoneNumber?: string;
+  industry?: string;
+  phone_number?: string;
+  hosting_credentials?: {
+    provider?: string;
+    username?: string;
+    password?: string;
+  };
+  wp_credentials?: {
+    username?: string;
+    password?: string;
+    admin_url?: string;
+  };
+  created_at: string;
+  updated_at: string;
+  user_id: string;
   active: boolean;
-  wpCredentials?: {
-    username: string;
-    password: string;
-    url?: string;
-  } | null;
-  hostingCredentials?: {
-    provider: string;
-    username: string;
-    password: string;
-    url?: string;
-  } | null;
 }
 
-export interface ClientsContextType {
-  clients: Client[];
-  isLoading: boolean;
-  getClient: (id: string) => Client | undefined;
-  addClient: (data: Omit<Client, 'id' | 'createdAt' | 'reportsCount'>) => Promise<Client>;
-  updateClient: (id: string, data: Partial<Omit<Client, 'id' | 'createdAt' | 'reportsCount'>>) => Promise<Client>;
-  deleteClient: (id: string) => Promise<void>;
+export interface ClientProposal {
+  id: string;
+  client_id: string;
+  title: string;
+  description?: string;
+  services?: string[];
+  price?: number;
+  status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientNote {
+  id: string;
+  client_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
 }
