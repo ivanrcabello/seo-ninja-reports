@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ClientsProvider } from "@/hooks/useClients";
-import { ReportsProvider } from "@/hooks/useReports"; // Import ReportsProvider as named export
+import { ReportsProvider } from "@/hooks/useReports.tsx"; // Fixed import path with explicit .tsx extension
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";

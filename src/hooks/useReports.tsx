@@ -44,6 +44,7 @@ interface ReportsContextType {
 
 const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
 
+// Export ReportsProvider as a named export
 export const ReportsProvider = ({ children }: { children: ReactNode }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
