@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Menu, X, User, LogOut } from 'lucide-react';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import Navbar from './Navbar';
 import { fetchLogoFromSettings } from '@/components/settings/logo/logoService';
 
@@ -18,14 +17,12 @@ const Header: React.FC = () => {
   const { user, signOut } = useAuth();
 
   useEffect(() => {
-    // Try to load from localStorage first for immediate display
     const cachedLogo = localStorage.getItem('app_logo_url');
     if (cachedLogo) {
       setLogoUrl(cachedLogo);
       setLogoLoading(false);
     }
     
-    // Then fetch from database to ensure it's up to date
     fetchLogo();
   }, []);
 
@@ -38,22 +35,18 @@ const Header: React.FC = () => {
       
       if (logoUrl) {
         setLogoUrl(logoUrl);
-        // Cache the logo URL in localStorage
         localStorage.setItem('app_logo_url', logoUrl);
       } else {
-        // Fallback to static logo if no custom logo is set
         setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
       }
     } catch (error) {
       console.error('Error fetching logo:', error);
-      // Fallback to static logo
       setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
     } finally {
       setLogoLoading(false);
     }
   };
 
-  // Check if we're on the auth page to avoid showing the header
   const isAuthPage = location.pathname === '/auth';
   if (isAuthPage) return null;
 
@@ -128,7 +121,6 @@ const Header: React.FC = () => {
           )}
         </div>
 
-        {/* Mobile Menu */}
         {isMobile && isMenuOpen && (
           <div className="absolute top-full left-0 w-full glass backdrop-blur-lg p-4 border-b border-emerald-600/10 animate-slide-down">
             <Navbar isMobile={true} closeMenu={closeMenu} />
