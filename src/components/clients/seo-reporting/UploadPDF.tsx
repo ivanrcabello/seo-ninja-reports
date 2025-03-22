@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, Upload, FileText, Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { FileUp, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { parseSemrushPdf, createSeoReport } from '@/services/seoReportService';
+import { uploadSeoReport } from '@/services/seoReport';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface UploadPDFProps {
   clientId: string;
@@ -12,193 +13,118 @@ interface UploadPDFProps {
 }
 
 const UploadPDF: React.FC<UploadPDFProps> = ({ clientId, onUploadSuccess }) => {
+  const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<string>('');
-  const [processingProgress, setProcessingProgress] = useState<number>(0);
-
+  const [error, setError] = useState<string | null>(null);
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      
-      console.log('File selected:', file.name, 'Size:', (file.size / 1024).toFixed(2), 'KB, Type:', file.type);
-      
-      if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-        console.error('Invalid file format:', file.type);
-        toast.error('Formato no válido', {
-          description: 'Por favor, sube un archivo PDF'
-        });
-        return;
-      }
-      
-      setSelectedFile(file);
-      toast.info('Archivo seleccionado', {
-        description: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
-      });
-    }
-  };
-
-  const handleUpload = async () => {
+    const selectedFile = e.target.files?.[0];
+    setError(null);
+    
     if (!selectedFile) {
-      toast.error('Ningún archivo seleccionado', {
-        description: 'Por favor, selecciona un archivo PDF para subir'
-      });
+      setFile(null);
       return;
     }
-
-    if (!clientId) {
-      console.error('No client ID provided');
-      toast.error('Error de configuración', {
-        description: 'ID de cliente no especificado'
-      });
+    
+    if (selectedFile.type !== 'application/pdf') {
+      setError('Por favor, selecciona un archivo PDF');
+      setFile(null);
       return;
     }
-
+    
+    setFile(selectedFile);
+  };
+  
+  const handleUpload = async () => {
+    if (!file) {
+      setError('Por favor, selecciona un archivo PDF');
+      return;
+    }
+    
     setIsUploading(true);
-    setProcessingProgress(10);
-    console.log('Starting PDF upload and processing for client:', clientId);
+    setError(null);
     
     try {
-      setProcessingStatus('Leyendo archivo PDF...');
-      console.log('Processing PDF file:', selectedFile.name);
-      toast.info('Procesando informe', {
-        description: 'Extrayendo datos del PDF...'
-      });
+      const result = await uploadSeoReport(clientId, file);
+      console.log('Upload result:', result);
+      toast.success('Informe SEO subido correctamente');
+      setFile(null);
       
-      setProcessingProgress(30);
-      // Parse the PDF
-      const parsedData = await parseSemrushPdf(selectedFile);
-      setProcessingProgress(60);
-      
-      if (!parsedData) {
-        console.error('Failed to parse PDF, no data returned');
-        toast.error('Error al procesar el informe', {
-          description: 'No se pudieron extraer datos del PDF'
-        });
-        setIsUploading(false);
-        setProcessingStatus('');
-        setProcessingProgress(0);
-        return;
+      // Reset file input
+      const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
       }
-
-      setProcessingStatus(`Datos extraídos para: ${parsedData.domain}. Guardando informe...`);
-      console.log('Parsed data successfully:', parsedData);
-      toast.info('Guardando informe', {
-        description: `Creando informe para ${parsedData.domain}...`
-      });
       
-      setProcessingProgress(80);
-      // Create a new SEO report
-      const result = await createSeoReport(clientId, parsedData);
-      setProcessingProgress(100);
-      
-      if (result) {
-        console.log('SEO report created successfully:', result);
-        toast.success('Informe guardado correctamente', {
-          description: `Se ha creado un nuevo informe para ${parsedData.domain}`
-        });
-        setSelectedFile(null);
-        setProcessingStatus('');
-        onUploadSuccess();
-      } else {
-        console.error('Failed to create SEO report, no result returned');
-        toast.error('Error al guardar informe', {
-          description: 'No se pudo guardar el informe en la base de datos'
-        });
-        setProcessingStatus('Error al guardar el informe');
-      }
-    } catch (error) {
-      console.error('Error uploading/processing PDF:', error);
-      toast.error('Error al procesar el PDF', {
-        description: 'Ocurrió un error al procesar el archivo'
-      });
-      setProcessingStatus('Error en el procesamiento');
+      onUploadSuccess();
+    } catch (err: any) {
+      console.error('Error uploading PDF:', err);
+      setError(err.message || 'Error al subir el informe SEO');
+      toast.error('Error al subir el informe SEO');
     } finally {
       setIsUploading(false);
-      setProcessingProgress(0);
     }
   };
-
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Subir Informe Semrush</CardTitle>
-        <CardDescription>
-          Sube un PDF de Semrush para analizar los datos SEO de este cliente
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-6">
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center hover:border-primary/50 transition-colors">
+    <div className="space-y-4 p-4 bg-card rounded-lg border">
+      <div>
+        <h3 className="text-lg font-medium">Subir Informe SEO</h3>
+        <p className="text-sm text-muted-foreground">
+          Sube un informe de SEMrush en formato PDF para analizarlo automáticamente
+        </p>
+      </div>
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="space-y-2">
+        <Label htmlFor="pdf-upload">Archivo PDF</Label>
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
             <input
-              type="file"
               id="pdf-upload"
-              className="hidden"
-              accept="application/pdf,.pdf"
+              type="file"
+              accept=".pdf"
               onChange={handleFileChange}
-              disabled={isUploading}
+              className="border border-input bg-background rounded-md px-3 py-2 text-sm w-full file:border-0 file:bg-transparent file:text-sm file:font-medium"
             />
-            <label
-              htmlFor="pdf-upload"
-              className={`cursor-pointer flex flex-col items-center justify-center gap-2 ${isUploading ? 'opacity-50' : ''}`}
-            >
-              {selectedFile ? (
-                <FileText className="h-10 w-10 text-primary" />
-              ) : (
-                <FileUp className="h-10 w-10 text-muted-foreground" />
-              )}
-              <div className="text-sm text-muted-foreground">
-                {selectedFile ? selectedFile.name : 'Haz clic para seleccionar un PDF de Semrush'}
-              </div>
-              {selectedFile && (
-                <div className="text-xs text-muted-foreground">
-                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                </div>
-              )}
-            </label>
+            <p className="text-xs text-muted-foreground mt-1">Tamaño máximo: 10MB</p>
           </div>
-          
-          <Button 
-            onClick={handleUpload} 
-            disabled={!selectedFile || isUploading}
-            className="w-full"
+          <Button
+            onClick={handleUpload}
+            disabled={!file || isUploading}
           >
             {isUploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Procesando...
+                Subiendo...
               </>
             ) : (
               <>
-                Subir y Procesar PDF
-                <Upload className="ml-2 h-4 w-4" />
+                <FileUp className="mr-2 h-4 w-4" />
+                Subir
               </>
             )}
           </Button>
-          
-          {processingStatus && (
-            <div className="text-sm text-muted-foreground">
-              <div className="flex items-center justify-between mb-1">
-                <span>Estado: {processingStatus}</span>
-                {isUploading && <span>{processingProgress}%</span>}
-              </div>
-              {isUploading && (
-                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-                  <div 
-                    className="bg-primary h-2.5 rounded-full transition-all duration-300" 
-                    style={{ width: `${processingProgress}%` }}
-                  ></div>
-                </div>
-              )}
-            </div>
-          )}
-          
-          <div className="text-xs text-muted-foreground mt-2">
-            ID de Cliente: {clientId}
-          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      
+      <div className="text-sm">
+        <p className="font-medium">Información extraída automáticamente:</p>
+        <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2 mt-1">
+          <li>Dominio, tráfico, palabras clave, backlinks</li>
+          <li>Las 20 palabras clave principales con posiciones</li>
+          <li>Competidores principales</li>
+          <li>Distribución de rankings</li>
+          <li>Tipos de backlinks y métricas de enlaces</li>
+        </ul>
+      </div>
+    </div>
   );
 };
 

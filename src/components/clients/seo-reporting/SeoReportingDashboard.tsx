@@ -1,263 +1,289 @@
-
-import React, { useState, useEffect } from 'react';
-import { SeoReport } from '@/types/seo-reporting.types';
-import { fetchClientSeoReports, deleteSeoReport } from '@/services/seoReportService';
-import UploadPDF from './UploadPDF';
-import SeoReportsList from './SeoReportsList';
-import DashboardCards from './DashboardCards';
-import KeywordsTable from './KeywordsTable';
-import CompetitorsChart from './CompetitorsChart';
-import DeleteSeoReportButton from './DeleteSeoReportButton';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import BlurredCard from '@/components/ui/BlurredCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DashboardCards from './DashboardCards';
 import SeoTrafficChart from './SeoTrafficChart';
+import KeywordsTable from './KeywordsTable';
 import RankingDistributionChart from './RankingDistributionChart';
 import KeywordIntentionsChart from './KeywordIntentionsChart';
+import CompetitorsChart from './CompetitorsChart';
 import BacklinkChart from './BacklinkChart';
+import SeoReportsList from './SeoReportsList';
+import UploadPDF from './UploadPDF';
+import { fetchSeoReports, deleteSeoReport } from '@/services/seoReport';
+import { SeoReport } from '@/types/seo-reporting.types';
+import { AlertCircle, Loader2, BadgeInfo } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
+import DeleteSeoReportButton from './DeleteSeoReportButton';
 
 interface SeoReportingDashboardProps {
   clientId: string;
 }
 
-type ViewMode = 'list' | 'upload' | 'detail';
-
 const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId }) => {
   const [reports, setReports] = useState<SeoReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<SeoReport | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isLoading, setIsLoading] = useState(true);
-
-  console.log('SeoReportingDashboard rendering with clientId:', clientId);
-
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  
   useEffect(() => {
-    loadReports();
+    console.info('SeoReportingDashboard rendering with clientId:', clientId);
+    if (clientId) {
+      loadReports();
+    }
   }, [clientId]);
-
+  
   const loadReports = async () => {
-    setIsLoading(true);
     try {
-      console.log('Loading SEO reports for client:', clientId);
-      const data = await fetchClientSeoReports(clientId);
-      console.log('Loaded SEO reports:', data);
-      setReports(data);
+      setIsLoading(true);
+      setError(null);
       
-      if (data.length > 0 && !selectedReport) {
-        setSelectedReport(data[0]);
+      const reportData = await fetchSeoReports(clientId);
+      
+      if (reportData.length > 0) {
+        setReports(reportData);
+        setSelectedReport(reportData[0]); // Select the first report by default
+      } else {
+        setReports([]);
+        setSelectedReport(null);
       }
-    } catch (error) {
-      console.error('Error loading SEO reports:', error);
-      toast.error('Error al cargar informes SEO', {
-        description: 'No se pudieron obtener los informes SEO para este cliente'
-      });
+    } catch (err: any) {
+      console.error('Error loading SEO reports:', err);
+      setError(err.message || 'Error al cargar informes SEO');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleSelectReport = (report: SeoReport) => {
-    setSelectedReport(report);
-    setViewMode('detail');
-  };
-
-  const handleCreateReport = () => {
-    setViewMode('upload');
-  };
-
-  const handleUploadSuccess = () => {
-    loadReports();
-    setViewMode('list');
-  };
-
-  const handleBackToList = () => {
-    setViewMode('list');
-  };
   
   const handleDeleteReport = async (reportId: string) => {
     try {
-      const success = await deleteSeoReport(reportId);
+      console.info('Deleting SEO report:', reportId);
+      await deleteSeoReport(reportId);
+      console.info('SEO report deleted successfully');
       
-      if (success) {
-        toast.success('Informe SEO eliminado', {
-          description: 'El informe ha sido eliminado correctamente'
-        });
-        
-        setReports(prevReports => prevReports.filter(r => r.id !== reportId));
-        
-        if (selectedReport && selectedReport.id === reportId) {
-          setSelectedReport(null);
-          setViewMode('list');
-        }
+      // Remove the deleted report from state
+      setReports(prevReports => prevReports.filter(report => report.id !== reportId));
+      
+      // If the deleted report was the selected one, select the first available report
+      if (selectedReport && selectedReport.id === reportId) {
+        const remainingReports = reports.filter(report => report.id !== reportId);
+        setSelectedReport(remainingReports.length > 0 ? remainingReports[0] : null);
       }
-    } catch (error) {
-      console.error('Error deleting SEO report:', error);
-      toast.error('Error al eliminar informe SEO', {
-        description: 'Ocurrió un error al eliminar el informe'
-      });
+      
+      toast.success('Informe SEO eliminado correctamente');
+    } catch (err: any) {
+      console.error('Error deleting SEO report:', err);
+      toast.error('Error al eliminar el informe SEO');
     }
   };
-
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-muted-foreground">Cargando informes SEO...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
+  
+  if (error) {
+    return (
+      <Alert variant="destructive" className="my-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+  
   return (
-    <BlurredCard>
-      {viewMode === 'list' && (
-        <SeoReportsList
-          reports={reports}
-          onSelectReport={handleSelectReport}
-          onCreateReport={handleCreateReport}
-          onDeleteReport={handleDeleteReport}
-        />
-      )}
-
-      {viewMode === 'upload' && (
-        <>
-          <div className="mb-4">
-            <Button variant="ghost" onClick={handleBackToList}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver a la lista
-            </Button>
-          </div>
-          <UploadPDF clientId={clientId} onUploadSuccess={handleUploadSuccess} />
-        </>
-      )}
-
-      {viewMode === 'detail' && selectedReport && (
-        <>
-          <div className="mb-4 flex justify-between items-center">
-            <Button variant="ghost" onClick={handleBackToList}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver a la lista
-            </Button>
-            <DeleteSeoReportButton onDelete={() => handleDeleteReport(selectedReport.id)} />
+    <div className="space-y-6">
+      {reports.length === 0 ? (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informes SEO</CardTitle>
+              <CardDescription>
+                No hay informes SEO para este cliente. Sube un informe para comenzar.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UploadPDF clientId={clientId} onUploadSuccess={loadReports} />
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-bold">Informes SEO</h2>
+              <p className="text-muted-foreground">
+                Análisis de SEO para {selectedReport?.domain || 'este dominio'}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {selectedReport && (
+                <DeleteSeoReportButton onDelete={() => handleDeleteReport(selectedReport.id)} />
+              )}
+            </div>
           </div>
           
-          <div className="space-y-8">
-            <DashboardCards report={selectedReport} />
+          <div className="grid grid-cols-1 gap-6">
+            <SeoReportsList 
+              reports={reports} 
+              selectedReport={selectedReport} 
+              onSelectReport={setSelectedReport} 
+            />
             
-            {/* Traffic Trends Chart */}
-            {selectedReport.organicTrafficData && (
+            {selectedReport ? (
+              <Tabs 
+                defaultValue="overview" 
+                className="w-full" 
+                value={activeTab}
+                onValueChange={setActiveTab}
+              >
+                <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 mb-4">
+                  <TabsTrigger value="overview">Resumen</TabsTrigger>
+                  <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
+                  <TabsTrigger value="competitors">Competidores</TabsTrigger>
+                  <TabsTrigger value="backlinks">Backlinks</TabsTrigger>
+                  <TabsTrigger value="ranking">Rankings</TabsTrigger>
+                  <TabsTrigger value="upload">Subir PDF</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="overview" className="space-y-6">
+                  <DashboardCards report={selectedReport} />
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Tráfico Orgánico</CardTitle>
+                        <CardDescription>Tendencia de tráfico en los últimos meses</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <SeoTrafficChart data={selectedReport.organicTrafficData || []} />
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Distribución de Rankings</CardTitle>
+                        <CardDescription>Posiciones de palabras clave</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <RankingDistributionChart data={selectedReport.rankingDistribution || []} />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="keywords" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Palabras Clave Orgánicas</CardTitle>
+                      <CardDescription>
+                        Análisis de las palabras clave principales de {selectedReport.domain}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <KeywordsTable keywords={selectedReport.keywordsData || []} />
+                      
+                      {selectedReport.keywordIntentions && selectedReport.keywordIntentions.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Intenciones de Búsqueda</h3>
+                          <KeywordIntentionsChart data={selectedReport.keywordIntentions} />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="competitors" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Competidores Orgánicos</CardTitle>
+                      <CardDescription>
+                        Principales competidores en búsquedas orgánicas
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <CompetitorsChart competitors={selectedReport.competitorsData || []} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="backlinks" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Análisis de Backlinks</CardTitle>
+                      <CardDescription>
+                        Perfil de enlaces entrantes a {selectedReport.domain}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {selectedReport.backlinkTypes && selectedReport.backlinkTypes.length > 0 ? (
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Tipos de Backlinks</h3>
+                          <BacklinkChart 
+                            backlinkTypes={selectedReport.backlinkTypes} 
+                            followNofollow={selectedReport.followNofollow || []} 
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <BadgeInfo className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                          <p>No hay datos disponibles de backlinks</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="ranking" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Distribución de Rankings</CardTitle>
+                      <CardDescription>
+                        Análisis de posiciones en los resultados de búsqueda
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <RankingDistributionChart 
+                        data={selectedReport.rankingDistribution || []} 
+                        showLegend={true}
+                        height={300}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="upload" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Subir Nuevo Informe</CardTitle>
+                      <CardDescription>
+                        Actualiza los datos SEO subiendo un informe reciente
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <UploadPDF clientId={clientId} onUploadSuccess={loadReports} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            ) : (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl">Tendencia de Tráfico Orgánico</CardTitle>
-                  <CardDescription>
-                    Evolución del tráfico orgánico para {selectedReport.domain}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SeoTrafficChart data={selectedReport.organicTrafficData} />
+                <CardContent className="py-8">
+                  <div className="text-center text-muted-foreground">
+                    <BadgeInfo className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                    <p>Selecciona un informe para ver sus detalles</p>
+                  </div>
                 </CardContent>
               </Card>
             )}
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Keywords Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl">Palabras Clave Principales</CardTitle>
-                  <CardDescription>
-                    Palabras clave más relevantes para {selectedReport.domain}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <KeywordsTable keywords={selectedReport.keywordsData || []} />
-                </CardContent>
-              </Card>
-              
-              {/* Competitors Chart */}
-              <CompetitorsChart 
-                competitors={selectedReport.competitorsData || []}
-                domain={selectedReport.domain}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Ranking Distribution Chart */}
-              {selectedReport.rankingDistribution && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl">Distribución de Rankings</CardTitle>
-                    <CardDescription>
-                      Distribución de posiciones en los resultados de búsqueda
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-80">
-                    <RankingDistributionChart data={selectedReport.rankingDistribution} />
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Keyword Intentions Chart */}
-              {selectedReport.keywordIntentions && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl">Intención de Palabras Clave</CardTitle>
-                    <CardDescription>
-                      Distribución por tipo de intención del usuario
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-80">
-                    <KeywordIntentionsChart data={selectedReport.keywordIntentions} />
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Backlink Types Chart */}
-              {selectedReport.backlinkTypes && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl">Tipos de Backlinks</CardTitle>
-                    <CardDescription>
-                      Distribución de los diferentes tipos de enlaces entrantes
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-80">
-                    <BacklinkChart 
-                      data={selectedReport.backlinkTypes} 
-                      domain={selectedReport.domain}
-                      type="types"
-                    />
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Follow vs Nofollow Chart */}
-              {selectedReport.followNofollow && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl">Follow vs Nofollow</CardTitle>
-                    <CardDescription>
-                      Distribución de enlaces Follow y Nofollow
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-80">
-                    <BacklinkChart 
-                      data={selectedReport.followNofollow.map(item => ({ 
-                        type: item.type, 
-                        count: item.count 
-                      }))}
-                      domain={selectedReport.domain}
-                      type="follow"
-                    />
-                  </CardContent>
-                </Card>
-              )}
-            </div>
           </div>
-        </>
+        </div>
       )}
-    </BlurredCard>
+    </div>
   );
 };
 
