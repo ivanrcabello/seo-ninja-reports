@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import ReportDetailHeader from './ReportDetailHeader';
 import ReportDetailActions from './ReportDetailActions';
+import ReportViewer from '@/components/reports/ReportViewer';
 
 interface ReportDetailContentProps {
   report: Report | undefined;
@@ -70,8 +71,7 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
       <AnimatedContainer animation="fade" delay={100}>
         {report && (
           <div className="w-full">
-            {/* ReportViewer component doesn't need the props that were causing the error */}
-            {/* The component will fetch the report using the ID from the URL */}
+            <ReportViewer />
           </div>
         )}
       </AnimatedContainer>

@@ -40,8 +40,16 @@ const TabContent: React.FC<TabContentProps> = ({
   });
   
   if (!content) {
-    return <p>No hay contenido disponible.</p>;
+    console.error('Report content is missing:', report);
+    return (
+      <div className="p-4 text-center">
+        <p className="text-red-500 font-medium mb-2">El informe no tiene contenido disponible</p>
+        <p className="text-muted-foreground text-sm">Hay un problema con la generación del informe. Por favor, intenta generarlo nuevamente.</p>
+      </div>
+    );
   }
+  
+  console.log('TabContent rendering with content:', content);
   
   // Use pageSpeed data from the passed props or from the report content
   const pageSpeedDataToUse = pageSpeedData || content?.pageSpeedData;
@@ -81,7 +89,7 @@ const TabContent: React.FC<TabContentProps> = ({
           </div>
         ) : (
           <KeywordsSection 
-            keywordsContent={content.keywords} 
+            keywordsContent={content.keywords || ''} 
             keywords={keywords || []}
             reportId={report.id}
             isEditing={isEditing}
@@ -116,7 +124,7 @@ const TabContent: React.FC<TabContentProps> = ({
       <TabsContent value="localSeo" className="focus-visible:outline-none">
         <ReportSection 
           title="SEO Local" 
-          content={content.localSeo} 
+          content={content.localSeo || ''} 
           sectionKey="localSeo"
           isEditing={isEditing}
           onEdit={onEdit}
@@ -170,7 +178,7 @@ const TabContent: React.FC<TabContentProps> = ({
       <TabsContent value="serviceProposal" className="focus-visible:outline-none">
         <ReportSection 
           title="Propuesta de Servicios" 
-          content={content.serviceProposal} 
+          content={content.serviceProposal || ''} 
           sectionKey="serviceProposal"
           isEditing={isEditing}
           onEdit={onEdit}

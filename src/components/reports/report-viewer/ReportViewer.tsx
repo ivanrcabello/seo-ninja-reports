@@ -17,7 +17,7 @@ import { BusinessProfile } from '@/types/report.types';
 
 const ReportViewer = () => {
   const { id } = useParams();
-  const { getReport, updateReport } = useReports();
+  const { getReport, updateReport, isLoading: reportsLoading } = useReports();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingBusinessProfile, setIsSavingBusinessProfile] = useState(false);
@@ -43,6 +43,14 @@ const ReportViewer = () => {
     queryFn: () => fetchBusinessProfile(id),
     enabled: !!id && report?.status === 'completed' && report?.hasBusinessProfile === true
   });
+
+  console.log('Report data:', report);
+  console.log('PageSpeed data:', pageSpeedData);
+  console.log('Business profile:', businessProfile);
+  
+  if (reportsLoading) {
+    return <SkeletonReport />;
+  }
 
   if (!report) {
     return <NotFoundPage />;
