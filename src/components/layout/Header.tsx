@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -55,7 +56,7 @@ const Header: React.FC = () => {
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 glass backdrop-blur-md bg-emerald-50/10 dark:bg-emerald-900/10 border-b border-emerald-600/10">
-      <div className="container mx-auto px-4 sm:px-6 py-4">
+      <div className="container mx-auto px-4 sm:px-6 py-2">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             {logoLoading ? (

@@ -132,6 +132,7 @@ const DesktopNavbar: React.FC = () => {
                 icon: <LogOut className="mr-2 h-4 w-4" />,
                 label: 'Cerrar sesión',
                 onClick: signOut,
+                href: '#', // Agregamos href aunque no se use para cumplir con el tipo
               },
             ]}
           />

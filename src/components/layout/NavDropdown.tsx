@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 
-interface NavDropdownItemProps {
+export interface NavDropdownItemProps {
   href: string;
   label: string;
   description?: string;

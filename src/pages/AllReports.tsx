@@ -30,7 +30,7 @@ const AllReports = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-background/90">
       <Header />
       
-      <main className="flex-1 pt-24 pb-16">
+      <main className="flex-1 pt-28 pb-16">
         <div className="container px-4 sm:px-6 mx-auto">
           <AnimatedContainer animation="slide-down" className="mb-6">
             <h1 className="text-3xl font-bold text-primary">Todos los Informes SEO</h1>
