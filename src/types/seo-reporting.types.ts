@@ -10,6 +10,11 @@ export interface SeoReport {
   updatedAt: string;
   keywordsData?: SeoKeyword[];
   competitorsData?: SeoCompetitor[];
+  organicTrafficData?: { date: string; value: number }[];
+  rankingDistribution?: { range: string; count: number }[];
+  keywordIntentions?: { intention: string; count: number; traffic: number; percentage: number }[];
+  backlinkTypes?: { type: string; count: number }[];
+  followNofollow?: { type: string; count: number; percentage: number }[];
 }
 
 export interface SeoKeyword {

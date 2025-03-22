@@ -15,6 +15,11 @@ export const uploadSeoReport = async (
     backlinks?: number;
     keywordsData?: Omit<SeoKeyword, 'id' | 'reportId' | 'createdAt'>[];
     competitorsData?: Omit<SeoCompetitor, 'id' | 'reportId' | 'createdAt'>[];
+    organicTrafficData?: { date: string; value: number }[];
+    rankingDistribution?: { range: string; count: number }[];
+    keywordIntentions?: { intention: string; count: number; traffic: number; percentage: number }[];
+    backlinkTypes?: { type: string; count: number }[];
+    followNofollow?: { type: string; count: number; percentage: number }[];
   }
 ): Promise<SeoReport> => {
   try {
@@ -77,6 +82,7 @@ export const uploadSeoReport = async (
       }
     }
 
+    // Store the additional data in the return object
     return {
       id: report.id,
       clientId: report.client_id,
@@ -102,7 +108,12 @@ export const uploadSeoReport = async (
         domain: c.domain,
         keywordsOverlap: c.keywordsOverlap,
         competitionLevel: c.competitionLevel
-      })) || []
+      })) || [],
+      organicTrafficData: reportData.organicTrafficData,
+      rankingDistribution: reportData.rankingDistribution,
+      keywordIntentions: reportData.keywordIntentions,
+      backlinkTypes: reportData.backlinkTypes,
+      followNofollow: reportData.followNofollow
     };
   } catch (error) {
     console.error('Error uploading SEO report:', error);

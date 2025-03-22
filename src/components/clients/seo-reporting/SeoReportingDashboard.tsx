@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { SeoReport } from '@/types/seo-reporting.types';
 import { fetchClientSeoReports, deleteSeoReport } from '@/services/seoReportService';
@@ -12,6 +13,10 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import BlurredCard from '@/components/ui/BlurredCard';
+import SeoTrafficChart from './SeoTrafficChart';
+import RankingDistributionChart from './RankingDistributionChart';
+import KeywordIntentionsChart from './KeywordIntentionsChart';
+import BacklinkChart from './BacklinkChart';
 
 interface SeoReportingDashboardProps {
   clientId: string;
@@ -136,10 +141,26 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
             <DeleteSeoReportButton onDelete={() => handleDeleteReport(selectedReport.id)} />
           </div>
           
-          <div className="space-y-6">
+          <div className="space-y-8">
             <DashboardCards report={selectedReport} />
             
+            {/* Traffic Trends Chart */}
+            {selectedReport.organicTrafficData && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl">Tendencia de Tráfico Orgánico</CardTitle>
+                  <CardDescription>
+                    Evolución del tráfico orgánico para {selectedReport.domain}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SeoTrafficChart data={selectedReport.organicTrafficData} />
+                </CardContent>
+              </Card>
+            )}
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Keywords Table */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl">Palabras Clave Principales</CardTitle>
@@ -152,10 +173,86 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
                 </CardContent>
               </Card>
               
+              {/* Competitors Chart */}
               <CompetitorsChart 
                 competitors={selectedReport.competitorsData || []}
                 domain={selectedReport.domain}
               />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Ranking Distribution Chart */}
+              {selectedReport.rankingDistribution && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl">Distribución de Rankings</CardTitle>
+                    <CardDescription>
+                      Distribución de posiciones en los resultados de búsqueda
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <RankingDistributionChart data={selectedReport.rankingDistribution} />
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Keyword Intentions Chart */}
+              {selectedReport.keywordIntentions && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl">Intención de Palabras Clave</CardTitle>
+                    <CardDescription>
+                      Distribución por tipo de intención del usuario
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <KeywordIntentionsChart data={selectedReport.keywordIntentions} />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Backlink Types Chart */}
+              {selectedReport.backlinkTypes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl">Tipos de Backlinks</CardTitle>
+                    <CardDescription>
+                      Distribución de los diferentes tipos de enlaces entrantes
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <BacklinkChart 
+                      data={selectedReport.backlinkTypes} 
+                      domain={selectedReport.domain}
+                      type="types"
+                    />
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Follow vs Nofollow Chart */}
+              {selectedReport.followNofollow && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl">Follow vs Nofollow</CardTitle>
+                    <CardDescription>
+                      Distribución de enlaces Follow y Nofollow
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <BacklinkChart 
+                      data={selectedReport.followNofollow.map(item => ({ 
+                        type: item.type, 
+                        count: item.count 
+                      }))}
+                      domain={selectedReport.domain}
+                      type="follow"
+                    />
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </>

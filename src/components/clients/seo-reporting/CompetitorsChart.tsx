@@ -1,110 +1,121 @@
 
 import React from 'react';
-import { SeoCompetitor } from '@/types/seo-reporting.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { SeoCompetitor } from '@/types/seo-reporting.types';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface CompetitorsChartProps {
   competitors: SeoCompetitor[];
   domain: string;
 }
 
-const CompetitorsChart: React.FC<CompetitorsChartProps> = ({ competitors, domain }) => {
-  // Prepare data for the chart
-  const chartData = competitors.map(comp => ({
-    name: comp.domain.replace(/^www\./, '').split('.')[0], // Simplify domain name for chart
-    overlap: comp.keywordsOverlap || 0,
-    competition: Math.round((comp.competitionLevel || 0) * 100),
-    fullDomain: comp.domain // Keep full domain for tooltip
-  }));
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
+        <p className="font-medium text-sm">{label}</p>
+        <p className="text-primary">{`Palabras clave comunes: ${payload[0].value}`}</p>
+        {payload[1] && (
+          <p className="text-orange-500">{`Nivel de competencia: ${(payload[1].value * 100).toFixed(0)}%`}</p>
+        )}
+      </div>
+    );
+  }
+  return null;
+};
 
-  const colorConfig = {
-    overlap: { color: "#60a5fa" }, // blue-400
-    competition: { color: "#f97316" } // orange-500
-  };
+const CompetitorsChart: React.FC<CompetitorsChartProps> = ({ competitors, domain }) => {
+  if (!competitors || competitors.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Principales Competidores</CardTitle>
+          <CardDescription>No hay datos de competidores disponibles</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-60 text-muted-foreground">
+          No se encontraron datos de competidores para {domain}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Sort competitors by keywords overlap and take top 5
+  const sortedCompetitors = [...competitors]
+    .sort((a, b) => (b.keywordsOverlap || 0) - (a.keywordsOverlap || 0))
+    .slice(0, 5);
+
+  // Prepare data for chart
+  const data = sortedCompetitors.map(comp => ({
+    name: comp.domain.replace(/^www\./, '').replace(/\.(com|es|net|org)$/, ''),
+    keywordsOverlap: comp.keywordsOverlap || 0,
+    competitionLevel: comp.competitionLevel || 0
+  }));
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Competidores</CardTitle>
+        <CardTitle className="text-xl">Principales Competidores</CardTitle>
         <CardDescription>
-          Dominios que compiten por las mismas palabras clave que {domain}
+          Competidores más relevantes para {domain}
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-0">
-        {competitors.length > 0 ? (
-          <>
-            <div className="h-[300px] px-4">
-              <ChartContainer 
-                config={colorConfig}
-                className="w-full h-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    barGap={10}
-                  >
-                    <XAxis dataKey="name" />
-                    <YAxis yAxisId="left" orientation="left" label={{ value: 'Keywords Overlap', angle: -90, position: 'insideLeft' }} />
-                    <YAxis yAxisId="right" orientation="right" label={{ value: 'Competition Level (%)', angle: 90, position: 'insideRight' }} />
-                    <Tooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="rounded-lg border bg-background p-2 shadow-md">
-                              <div className="font-medium">{payload[0]?.payload.fullDomain}</div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                <div className="flex items-center">
-                                  <div className="h-2 w-2 rounded-full bg-blue-400 mr-1.5"></div>
-                                  Keywords overlap: {payload[0]?.value}
-                                </div>
-                                <div className="flex items-center">
-                                  <div className="h-2 w-2 rounded-full bg-orange-500 mr-1.5"></div>
-                                  Competition level: {payload[1]?.value}%
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="overlap" fill="#60a5fa" yAxisId="left" name="Keywords Overlap" />
-                    <Bar dataKey="competition" fill="#f97316" yAxisId="right" name="Competition Level (%)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </div>
-            
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Dominio</TableHead>
-                  <TableHead className="text-right">Keywords Overlap</TableHead>
-                  <TableHead className="text-right">Nivel de Competencia</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {competitors.map((competitor) => (
-                  <TableRow key={competitor.id || competitor.domain}>
-                    <TableCell className="font-medium">{competitor.domain}</TableCell>
-                    <TableCell className="text-right">{competitor.keywordsOverlap || 'N/A'}</TableCell>
-                    <TableCell className="text-right">{competitor.competitionLevel 
-                      ? `${(competitor.competitionLevel * 100).toFixed(1)}%` 
-                      : 'N/A'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No hay datos de competidores disponibles
-          </div>
-        )}
+      <CardContent>
+        <div className="h-80 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+              barSize={30}
+            >
+              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 11 }}
+                angle={-45}
+                textAnchor="end"
+                height={70}
+              />
+              <YAxis 
+                yAxisId="left"
+                orientation="left"
+                tick={{ fontSize: 11 }}
+                label={{ 
+                  value: 'Palabras clave comunes', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  style: { fontSize: '12px', fill: '#3b82f6' }
+                }}
+              />
+              <YAxis 
+                yAxisId="right"
+                orientation="right"
+                tick={{ fontSize: 11 }}
+                tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
+                domain={[0, 1]}
+                label={{ 
+                  value: 'Nivel de competencia', 
+                  angle: 90, 
+                  position: 'insideRight',
+                  style: { fontSize: '12px', fill: '#f59e0b' }
+                }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Bar 
+                yAxisId="left"
+                dataKey="keywordsOverlap" 
+                name="Palabras clave comunes" 
+                fill="#3b82f6" 
+              />
+              <Bar 
+                yAxisId="right"
+                dataKey="competitionLevel" 
+                name="Nivel de competencia" 
+                fill="#f59e0b" 
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );
