@@ -66,6 +66,51 @@ const TabContent: React.FC<TabContentProps> = ({
            text.includes('valor:') || text.includes('evaluación:');
   };
   
+  // Extract section-specific content from recommendations if needed
+  const extractSectionFromContent = (sectionType: string, text: string): string => {
+    if (!text) return '';
+    
+    const lowerText = text.toLowerCase();
+    let sectionContent = '';
+    
+    // Look for section markers in the text
+    const markers = {
+      technicalAnalysis: ['seo técnico', 'análisis técnico', 'technical analysis'],
+      contentAnalysis: ['análisis de contenido', 'content analysis', 'contenido'],
+      backlinksAnalysis: ['backlinks', 'enlaces', 'análisis de backlinks', 'backlinks analysis'],
+      localSeo: ['seo local', 'local seo', 'google my business', 'gmb']
+    };
+    
+    const currentMarkers = markers[sectionType as keyof typeof markers] || [];
+    
+    // Try to find the section in the text
+    for (const marker of currentMarkers) {
+      if (lowerText.includes(marker)) {
+        const startIndex = lowerText.indexOf(marker);
+        let endIndex = lowerText.length;
+        
+        // Find the next section marker, if any
+        for (const key of Object.keys(markers)) {
+          if (key !== sectionType) {
+            const nextMarkers = markers[key as keyof typeof markers];
+            for (const nextMarker of nextMarkers) {
+              const nextIndex = lowerText.indexOf(nextMarker, startIndex + marker.length);
+              if (nextIndex > -1 && nextIndex < endIndex) {
+                endIndex = nextIndex;
+              }
+            }
+          }
+        }
+        
+        // Extract the content between the markers
+        sectionContent = text.substring(startIndex, endIndex).trim();
+        break;
+      }
+    }
+    
+    return sectionContent || text;
+  };
+  
   return (
     <div className="p-4 mt-4">
       {/* Executive Summary Tab */}
@@ -105,7 +150,7 @@ const TabContent: React.FC<TabContentProps> = ({
       <TabsContent value="technicalAnalysis" className="focus-visible:outline-none">
         <ReportSection 
           title="Análisis Técnico SEO" 
-          content={content.technicalAnalysis} 
+          content={content.technicalAnalysis || extractSectionFromContent('technicalAnalysis', content.recommendations || '')} 
           sectionKey="technicalAnalysis"
           isEditing={isEditing}
           onEdit={onEdit}
@@ -157,7 +202,7 @@ const TabContent: React.FC<TabContentProps> = ({
       <TabsContent value="contentAnalysis" className="focus-visible:outline-none">
         <ReportSection 
           title="Análisis de Contenido" 
-          content={content.contentAnalysis} 
+          content={content.contentAnalysis || extractSectionFromContent('contentAnalysis', content.recommendations || '')} 
           sectionKey="contentAnalysis"
           isEditing={isEditing}
           onEdit={onEdit}
@@ -181,7 +226,7 @@ const TabContent: React.FC<TabContentProps> = ({
       <TabsContent value="backlinksAnalysis" className="focus-visible:outline-none">
         <ReportSection 
           title="Análisis de Backlinks" 
-          content={content.backlinksAnalysis} 
+          content={content.backlinksAnalysis || extractSectionFromContent('backlinksAnalysis', content.recommendations || '')} 
           sectionKey="backlinksAnalysis"
           isEditing={isEditing}
           onEdit={onEdit}
@@ -204,7 +249,7 @@ const TabContent: React.FC<TabContentProps> = ({
       <TabsContent value="localSeo" className="focus-visible:outline-none">
         <ReportSection 
           title="SEO Local" 
-          content={content.localSeo || ''} 
+          content={content.localSeo || extractSectionFromContent('localSeo', content.recommendations || '')} 
           sectionKey="localSeo"
           isEditing={isEditing}
           onEdit={onEdit}
@@ -237,21 +282,14 @@ const TabContent: React.FC<TabContentProps> = ({
       
       {/* Recommendations Tab */}
       <TabsContent value="recommendations" className="focus-visible:outline-none">
-        {content.recommendations?.includes('<recommendation>') ? (
-          <RecommendationsList 
-            content={content.recommendations} 
-            isEditing={isEditing}
-            onEdit={(newContent) => onEdit('recommendations', newContent)}
-          />
-        ) : (
-          <ReportSection 
-            title="Recomendaciones" 
-            content={content.recommendations} 
-            sectionKey="recommendations"
-            isEditing={isEditing}
-            onEdit={onEdit}
-          />
-        )}
+        <ReportSection 
+          title="Recomendaciones" 
+          content={content.recommendations} 
+          sectionKey="recommendations"
+          isEditing={isEditing}
+          onEdit={onEdit}
+          isRecommendations={true}
+        />
       </TabsContent>
       
       {/* Service Proposal Tab */}

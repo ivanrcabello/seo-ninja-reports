@@ -14,13 +14,24 @@ import { fetchPageSpeedData } from '@/services/api/pagespeed/fetchPageSpeedData'
 import { fetchBusinessProfile } from '@/services/api/businessProfile/fetchBusinessProfile';
 import { saveBusinessProfile } from '@/services/api/businessProfile/saveBusinessProfile';
 import { BusinessProfile } from '@/types/report.types';
+import ReportEditDialog from '../ReportEditDialog';
 
 const ReportViewer = () => {
   const { id } = useParams();
   const { getReport, updateReport, isLoading: reportsLoading } = useReports();
   const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
+  
+  // Get the isEditing state from the URL search params
+  const searchParams = new URLSearchParams(window.location.search);
+  const editMode = searchParams.get('mode') === 'edit';
+  
+  const [isEditing, setIsEditing] = useState(editMode);
   const [isSavingBusinessProfile, setIsSavingBusinessProfile] = useState(false);
+  
+  // States for the edit dialog
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   
   // If no ID is provided, redirect to reports page
   if (!id) {
@@ -56,20 +67,41 @@ const ReportViewer = () => {
     return <NotFoundPage />;
   }
   
-  const handleSaveEdit = async (section: string, content: string) => {
-    if (!report.content) return;
+  // Function to get section title from section key
+  const getSectionTitle = (section: string): string => {
+    const titles: Record<string, string> = {
+      executiveSummary: "Resumen Ejecutivo",
+      technicalAnalysis: "Análisis Técnico SEO",
+      contentAnalysis: "Análisis de Contenido",
+      backlinksAnalysis: "Análisis de Backlinks",
+      recommendations: "Recomendaciones",
+      localSeo: "SEO Local",
+      serviceProposal: "Propuesta de Servicios",
+      keywords: "Palabras Clave"
+    };
+    return titles[section] || section;
+  };
+  
+  const handleEditSection = (section: string, content: string) => {
+    setActiveSection(section);
+    setEditContent(content);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleSaveEdit = async () => {
+    if (!report.content || !activeSection) return;
     
     try {
       // Create updated content
       const updatedContent = {
         ...report.content,
-        [section]: content
+        [activeSection]: editContent
       };
       
       // Update report with new content
       await updateReport(id, { content: updatedContent });
       
-      setIsEditing(false);
+      setIsEditDialogOpen(false);
       
       toast.success('Contenido actualizado', {
         description: 'Los cambios se han guardado correctamente'
@@ -141,48 +173,61 @@ const ReportViewer = () => {
   const isLoadingData = isLoadingPageSpeed || isLoadingBusinessProfile;
 
   return (
-    <div className="w-full mx-auto">
-      <BlurredCard className="p-0 overflow-hidden">
-        {report.status === 'completed' ? (
-          <>
-            <ReportHeader 
-              title={report.title}
-              date={report.date}
-              url={report.url || ''}
-              isEditing={isEditing}
-              reportId={id}
-              setIsEditing={setIsEditing}
-            />
-            
-            <ReportTabs 
-              report={report}
-              isEditing={isEditing}
-              onSaveEdit={handleSaveEdit}
-              pageSpeedData={pageSpeedData}
-              businessProfile={businessProfile}
-              isLoadingPageSpeed={isLoadingPageSpeed}
-              isLoadingBusinessProfile={isLoadingBusinessProfile}
-              isSavingBusinessProfile={isSavingBusinessProfile}
-              onSaveBusinessProfile={handleSaveBusinessProfile}
-            />
-          </>
-        ) : report.status === 'failed' ? (
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4 text-red-500">
-              Error en la generación del informe
-            </h2>
-            <p className="mb-4">
-              {report.summary || 'No se pudo completar la generación del informe.'}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Por favor, comprueba la URL y vuelve a intentarlo, o contacta con soporte si el problema persiste.
-            </p>
-          </div>
-        ) : (
-          <SkeletonReport />
-        )}
-      </BlurredCard>
-    </div>
+    <>
+      <div className="w-full mx-auto">
+        <BlurredCard className="p-0 overflow-hidden">
+          {report.status === 'completed' ? (
+            <>
+              <ReportHeader 
+                title={report.title}
+                date={report.date}
+                url={report.url || ''}
+                isEditing={isEditing}
+                reportId={id}
+                setIsEditing={setIsEditing}
+              />
+              
+              <ReportTabs 
+                report={report}
+                isEditing={isEditing}
+                onSaveEdit={handleEditSection}
+                pageSpeedData={pageSpeedData}
+                businessProfile={businessProfile}
+                isLoadingPageSpeed={isLoadingPageSpeed}
+                isLoadingBusinessProfile={isLoadingBusinessProfile}
+                isSavingBusinessProfile={isSavingBusinessProfile}
+                onSaveBusinessProfile={handleSaveBusinessProfile}
+              />
+            </>
+          ) : report.status === 'failed' ? (
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4 text-red-500">
+                Error en la generación del informe
+              </h2>
+              <p className="mb-4">
+                {report.summary || 'No se pudo completar la generación del informe.'}
+              </p>
+              <p className="text-muted-foreground text-sm">
+                Por favor, comprueba la URL y vuelve a intentarlo, o contacta con soporte si el problema persiste.
+              </p>
+            </div>
+          ) : (
+            <SkeletonReport />
+          )}
+        </BlurredCard>
+      </div>
+      
+      {/* Edit Dialog */}
+      <ReportEditDialog 
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        activeSection={activeSection}
+        editContent={editContent}
+        setEditContent={setEditContent}
+        onSave={handleSaveEdit}
+        getSectionTitle={getSectionTitle}
+      />
+    </>
   );
 };
 

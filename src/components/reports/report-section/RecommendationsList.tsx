@@ -37,15 +37,50 @@ const RecommendationsList: React.FC<RecommendationsListProps> = ({
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [categorizedRecommendations, setCategorizedRecommendations] = useState<Record<string, any[]>>({});
   
-  // Categorize recommendations based on their content
+  // Extract only the recommendations part if the content contains a full report
   useEffect(() => {
     if (!content) return;
     
-    const recommendations = content.split('\n').filter(item => item.trim() !== '');
+    let recommendationsText = content;
+    
+    // If content includes sections like "SEO Técnico", "Contenido", etc., extract only the recommendations
+    if (content.includes('### Recomendaciones') || content.includes('Recomendaciones:')) {
+      const recommendationsMatch = content.match(/(?:### Recomendaciones|Recomendaciones:)([\s\S]*?)(?=$|### [^#])/i);
+      if (recommendationsMatch && recommendationsMatch[1]) {
+        recommendationsText = recommendationsMatch[1].trim();
+      }
+    }
+    
+    // Extract pure recommendations (usually numbered or bulleted lists)
+    let recommendations: string[] = [];
+    
+    // Try to extract numbered recommendations (1. recommendation)
+    const numberedItems = recommendationsText.match(/\d+\.\s*(.*?)(?=\n\d+\.|$)/gs);
+    if (numberedItems && numberedItems.length > 0) {
+      recommendations = numberedItems.map(item => item.trim());
+    } 
+    // Try to extract bulleted recommendations (- recommendation or * recommendation)
+    else {
+      const bulletedItems = recommendationsText.match(/[-*]\s*(.*?)(?=\n[-*]|$)/gs);
+      if (bulletedItems && bulletedItems.length > 0) {
+        recommendations = bulletedItems.map(item => item.trim().replace(/^[-*]\s*/, ''));
+      } 
+      // If no clear pattern, split by newlines
+      else {
+        recommendations = recommendationsText.split('\n').filter(line => 
+          line.trim() !== '' && 
+          !line.includes('#') && 
+          !line.includes('Recomendaciones:')
+        );
+      }
+    }
+    
+    // Categorize recommendations
     const categorized: Record<string, any[]> = {};
     
     recommendations.forEach((item, index) => {
-      const cleanItem = item.replace(/^\d+\.\s*/, '');
+      // Clean the item (remove numbers, bullets)
+      const cleanItem = item.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '');
       const priority = getRecommendationPriority(cleanItem);
       const category = getCategoryForRecommendation(cleanItem);
       
@@ -134,14 +169,6 @@ const RecommendationsList: React.FC<RecommendationsListProps> = ({
       default:
         return "bg-gray-500/10 text-gray-500 border-gray-500/20";
     }
-  };
-  
-  // Get the appropriate icon based on priority
-  const getPriorityIcon = (priority: any) => {
-    if (priority.color.includes("red")) return <AlertTriangle className="h-5 w-5 text-red-600" />;
-    if (priority.color.includes("amber")) return <Clock className="h-5 w-5 text-amber-600" />;
-    if (priority.color.includes("green")) return <Check className="h-5 w-5 text-green-600" />;
-    return <Info className="h-5 w-5 text-blue-600" />;
   };
   
   // If content is already HTML formatted

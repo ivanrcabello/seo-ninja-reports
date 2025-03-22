@@ -29,6 +29,51 @@ interface ContentTabProps {
 
 const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [] }) => {
   
+  // Extract section-specific content from recommendations if needed
+  const extractSectionFromContent = (sectionType: string, text: string): string => {
+    if (!text) return '';
+    
+    const lowerText = text.toLowerCase();
+    let sectionContent = '';
+    
+    // Look for section markers in the text
+    const markers = {
+      technicalAnalysis: ['seo técnico', 'análisis técnico', 'technical analysis'],
+      contentAnalysis: ['análisis de contenido', 'content analysis', 'contenido'],
+      backlinksAnalysis: ['backlinks', 'enlaces', 'análisis de backlinks', 'backlinks analysis'],
+      localSeo: ['seo local', 'local seo', 'google my business', 'gmb']
+    };
+    
+    const currentMarkers = markers[sectionType as keyof typeof markers] || [];
+    
+    // Try to find the section in the text
+    for (const marker of currentMarkers) {
+      if (lowerText.includes(marker)) {
+        const startIndex = lowerText.indexOf(marker);
+        let endIndex = lowerText.length;
+        
+        // Find the next section marker, if any
+        for (const key of Object.keys(markers)) {
+          if (key !== sectionType) {
+            const nextMarkers = markers[key as keyof typeof markers];
+            for (const nextMarker of nextMarkers) {
+              const nextIndex = lowerText.indexOf(nextMarker, startIndex + marker.length);
+              if (nextIndex > -1 && nextIndex < endIndex) {
+                endIndex = nextIndex;
+              }
+            }
+          }
+        }
+        
+        // Extract the content between the markers
+        sectionContent = text.substring(startIndex, endIndex).trim();
+        break;
+      }
+    }
+    
+    return sectionContent || text;
+  };
+  
   const getTabContent = () => {
     switch (tabValue) {
       case 'executive-summary':
@@ -56,7 +101,7 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
                 </Badge>
                 Análisis Técnico SEO
               </h2>
-              <FormattedContent content={content?.technicalAnalysis || ''} />
+              <FormattedContent content={content?.technicalAnalysis || extractSectionFromContent('technicalAnalysis', content?.recommendations || '')} />
             </CardContent>
           </Card>
         );
@@ -71,7 +116,7 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
                 </Badge>
                 Análisis de Contenido
               </h2>
-              <FormattedContent content={content?.contentAnalysis || ''} />
+              <FormattedContent content={content?.contentAnalysis || extractSectionFromContent('contentAnalysis', content?.recommendations || '')} />
             </CardContent>
           </Card>
         );
@@ -86,27 +131,12 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
                 </Badge>
                 Análisis de Backlinks
               </h2>
-              <FormattedContent content={content?.backlinksAnalysis || ''} />
+              <FormattedContent content={content?.backlinksAnalysis || extractSectionFromContent('backlinksAnalysis', content?.recommendations || '')} />
             </CardContent>
           </Card>
         );
       
       case 'recommendations':
-        if (content?.recommendations?.includes('<recommendation>')) {
-          return (
-            <Card className="bg-gradient-to-br from-background/90 via-background/80 to-background/70 shadow-md border-primary/10 backdrop-blur-md">
-              <CardContent className="p-6">
-                <h2 className="text-2xl font-bold mb-4 text-yellow-500 flex items-center gap-2">
-                  <Badge variant="outline" className="bg-yellow-500/10 border-yellow-500/20 text-yellow-500">
-                    Importante
-                  </Badge>
-                  Recomendaciones
-                </h2>
-                <RecommendationsList content={content.recommendations} isPublic={true} />
-              </CardContent>
-            </Card>
-          );
-        }
         return (
           <Card className="bg-gradient-to-br from-background/90 via-background/80 to-background/70 shadow-md border-primary/10 backdrop-blur-md">
             <CardContent className="p-6">
@@ -116,7 +146,7 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
                 </Badge>
                 Recomendaciones
               </h2>
-              <FormattedContent content={content?.recommendations || ''} />
+              <RecommendationsList content={content?.recommendations || ''} isPublic={true} />
             </CardContent>
           </Card>
         );
@@ -131,7 +161,7 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords = [
                 </Badge>
                 SEO Local
               </h2>
-              <FormattedContent content={content?.localSeo || ''} />
+              <FormattedContent content={content?.localSeo || extractSectionFromContent('localSeo', content?.recommendations || '')} />
             </CardContent>
           </Card>
         );
