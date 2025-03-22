@@ -1,11 +1,10 @@
-
 import { toast } from 'sonner';
 
 /**
  * Interface for the data extracted from PDF
  */
 interface ExtractedData {
-  domain: string;
+  domain: string;  // Make domain required
   traffic?: number;
   keywords?: number;
   backlinks?: number;
@@ -27,9 +26,6 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
     
     if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
       console.error('Invalid file format:', file.type);
-      toast.error('Formato no válido', {
-        description: 'El archivo debe ser un PDF de Semrush'
-      });
       throw new Error('Invalid file format');
     }
     
@@ -37,7 +33,7 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
     
     console.log('Archivo leído correctamente. Tamaño en bytes:', arrayBuffer.byteLength);
     
-    console.log('Procesando PDF con pdf-parse...');
+    console.log('Procesando PDF...');
     let extractedText = '';
     
     try {
@@ -135,9 +131,6 @@ export const parsePdf = async (file: File): Promise<ExtractedData> => {
     return resultData;
   } catch (error) {
     console.error('Error parsing PDF:', error);
-    toast.error('Error al procesar el PDF', {
-      description: 'No se pudo extraer la información del archivo'
-    });
     
     // Return a minimal valid object with the domain derived from the filename
     return {
@@ -191,11 +184,11 @@ async function extractTextAlternative(file: File): Promise<string> {
       try {
         // This is a simplified approach that works in some cases
         // In a real implementation, you might want to use more sophisticated PDF parsing
-        const binary = '';
+        let binaryString = '';
         const bytes = new Uint8Array(reader.result as ArrayBuffer);
         const length = bytes.byteLength;
         for (let i = 0; i < length; i++) {
-          binary += String.fromCharCode(bytes[i]);
+          binaryString += String.fromCharCode(bytes[i]);
         }
         
         // Extract text using regex patterns that often appear in PDFs
@@ -211,7 +204,7 @@ async function extractTextAlternative(file: File): Promise<string> {
         
         patterns.forEach(pattern => {
           let match;
-          while ((match = pattern.exec(binary)) !== null) {
+          while ((match = pattern.exec(binaryString)) !== null) {
             text += match[1] + '\n';
           }
         });
@@ -343,9 +336,9 @@ function extractMetrics(text: string): { traffic: number, keywords: number, back
       /Keywords:\s*([0-9,.]+)/i,
       /Organic Keywords[:\s]+([0-9,.]+)/i,
       /Ranking Keywords[:\s]+([0-9,.]+)/i,
-      /Palabras clave[:\s]+([0-9,.]+)/i,
-      /Palabras clave orgánicas[:\s]+([0-9,.]+)/i,
-      /Keywords orgánicas[:\s]+([0-9,.]+)/i,
+      /Palabras clave[\s\|]+Position[\s\|]+Volume[\s\|]+(?:[\s\S]*?)([a-zA-Z0-9 -]+)[\s\|]+(\d+)[\s\|]+(\d[\d,]*)/gi,
+      /Palabras clave orgánicas[\s\|]+([0-9,.]+)/i,
+      /Keywords orgánicas[\s\|]+([0-9,.]+)/i,
     ],
     backlinks: [
       /Backlinks:\s*([0-9,.]+)/i,
@@ -642,4 +635,3 @@ function extractFollowNofollow(text: string): { type: string; count: number; per
   
   return null;
 }
-
