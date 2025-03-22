@@ -15,7 +15,10 @@ import {
   Store, 
   FileQuestion, 
   MessageSquare,
-  Newspaper
+  Newspaper,
+  Phone,
+  Sparkles,
+  LightbulbIcon
 } from 'lucide-react';
 
 interface MobileNavbarProps {
@@ -36,13 +39,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col p-6 bg-background">
-      <div className="flex items-center justify-between mb-8">
-        <Link to="/" className="text-2xl font-bold text-primary" onClick={closeMenu}>
-          SeoLocal
-        </Link>
-      </div>
-      
+    <div className="py-4 bg-background">
       {user ? (
         <div className="flex flex-col space-y-6">
           <div className="flex items-center space-x-3 pb-6 border-b">
@@ -153,8 +150,20 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
               onClick={closeMenu}
             >
               <Link to="/caracteristicas">
-                <Store className="mr-2 h-4 w-4" />
+                <Sparkles className="mr-2 h-4 w-4" />
                 Características
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/servicios') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/servicios">
+                <LightbulbIcon className="mr-2 h-4 w-4" />
+                Servicios
               </Link>
             </Button>
             
@@ -189,7 +198,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
               onClick={closeMenu}
             >
               <Link to="/contacto">
-                <MessageSquare className="mr-2 h-4 w-4" />
+                <Phone className="mr-2 h-4 w-4" />
                 Contacto
               </Link>
             </Button>

@@ -76,24 +76,86 @@ const Header: React.FC = () => {
             )}
           </Link>
 
-          {isMobile ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleMenu}
-              className="rounded-full"
-            >
-              {isMenuOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
-            </Button>
-          ) : (
-            <Navbar isMobile={false} />
+          {/* Navegación para escritorio */}
+          {!isMobile && (
+            <nav className="hidden md:flex items-center space-x-1">
+              <Button
+                variant="ghost"
+                className="px-4"
+                asChild
+              >
+                <Link to="/caracteristicas">Características</Link>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                className="px-4"
+                asChild
+              >
+                <Link to="/servicios">Servicios</Link>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                className="px-4"
+                asChild
+              >
+                <Link to="/precios">Precios</Link>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                className="px-4"
+                asChild
+              >
+                <Link to="/blog">Blog</Link>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                className="px-4"
+                asChild
+              >
+                <Link to="/contacto">Contacto</Link>
+              </Button>
+            </nav>
           )}
+
+          {/* Botones de inicio de sesión/registro o menú de usuario */}
+          <div className="flex items-center space-x-2">
+            {user ? (
+              <Navbar isMobile={false} />
+            ) : (
+              <>
+                <Button variant="ghost" asChild className="hidden md:inline-flex">
+                  <Link to="/auth">Iniciar sesión</Link>
+                </Button>
+                
+                <Button asChild>
+                  <Link to="/auth?register=true">Registrarse</Link>
+                </Button>
+              </>
+            )}
+
+            {/* Botón de menú móvil */}
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleMenu}
+                className="rounded-full md:hidden"
+              >
+                {isMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
 
+        {/* Menú móvil desplegable */}
         {isMobile && isMenuOpen && (
           <div className="absolute top-full left-0 w-full bg-background p-4 border-b animate-slide-down">
             <Navbar isMobile={true} closeMenu={closeMenu} />
