@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import ClientDetail from "./pages/ClientDetail";
 import ReportDetail from "./pages/ReportDetail";
 import PublicReport from "./pages/PublicReport";
+import SharedProposal from "./pages/SharedProposal";
 import AllReports from "./pages/AllReports";
 import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
@@ -58,6 +59,7 @@ const App = () => {
                   <Route path="/reports" element={<AllReports />} />
                   <Route path="/reports/:id" element={<ReportDetail />} />
                   <Route path="/shared/reports/:id" element={<PublicReport />} />
+                  <Route path="/shared/proposals/:id" element={<SharedProposal />} />
                   <Route path="/activity" element={<Activity />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/servicios" element={<Servicios />} />

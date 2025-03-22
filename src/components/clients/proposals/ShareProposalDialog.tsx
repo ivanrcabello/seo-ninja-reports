@@ -31,6 +31,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
       setIsLoading(true);
       onGenerateShareUrl()
         .then(url => {
+          console.log('Successfully generated URL:', url);
           setShareUrl(url);
         })
         .catch(error => {

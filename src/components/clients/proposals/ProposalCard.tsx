@@ -74,6 +74,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onEdit, onDelete 
         return `${window.location.origin}/shared/proposals/${proposal.shared_url}`;
       }
       
+      console.log('Generating share URL for proposal ID:', proposal.id);
+      
       // Generate a unique ID for sharing
       const shareId = crypto.randomUUID();
       
@@ -83,7 +85,12 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onEdit, onDelete 
         .update({ shared_url: shareId })
         .eq('id', proposal.id);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating proposal with shared_url:', error);
+        throw error;
+      }
+      
+      console.log('Generated share ID:', shareId);
       
       // Return the full share URL
       return `${window.location.origin}/shared/proposals/${shareId}`;
