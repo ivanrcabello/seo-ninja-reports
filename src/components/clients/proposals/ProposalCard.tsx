@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { BadgeCheck, Clock, Edit, FileText, MoreHorizontal, Send, Share2, Trash2, X } from 'lucide-react';
 import { ClientProposal } from '@/types/client.types';
 import { formatDistance } from 'date-fns';
@@ -101,10 +102,21 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onEdit, onDelete 
     }
   };
   
+  // Determine the border color based on status
+  const getBorderColor = () => {
+    switch (proposal.status) {
+      case 'draft': return 'border-t-slate-400';
+      case 'sent': return 'border-t-blue-500';
+      case 'accepted': return 'border-t-green-500';
+      case 'rejected': return 'border-t-red-500';
+      default: return 'border-t-slate-400';
+    }
+  };
+  
   return (
     <>
-      <Card className="h-full flex flex-col">
-        <CardHeader className="pb-2">
+      <Card className={`h-full flex flex-col shadow-md hover:shadow-lg transition-shadow border-t-4 ${getBorderColor()}`}>
+        <CardHeader className="pb-2 bg-muted/20">
           <div className="flex justify-between items-start">
             <CardTitle className="text-xl font-bold">{proposal.title}</CardTitle>
             <DropdownMenu>
@@ -142,16 +154,16 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onEdit, onDelete 
               <span className="ml-1">{getStatusLabel()}</span>
             </span>
             {proposal.price && (
-              <span className="text-xs bg-muted px-2 py-1 rounded-full flex items-center">
+              <span className="text-xs bg-muted px-2 py-1 rounded-full flex items-center font-semibold">
                 {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(proposal.price)}
               </span>
             )}
           </div>
         </CardHeader>
-        <CardContent className="py-2 flex-grow">
+        <CardContent className="py-3 flex-grow">
           {proposal.description ? (
             <div 
-              className="text-sm text-muted-foreground mt-1 prose prose-sm max-w-full"
+              className="text-sm text-muted-foreground mt-1 prose prose-sm max-w-full line-clamp-3"
               dangerouslySetInnerHTML={{ __html: proposal.description }}
             />
           ) : (
@@ -160,22 +172,36 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onEdit, onDelete 
           
           {proposal.services && proposal.services.length > 0 && (
             <div className="mt-4">
-              <h4 className="text-sm font-medium mb-2">Servicios incluidos:</h4>
+              <h4 className="text-sm font-medium mb-2 text-primary/80">Servicios incluidos:</h4>
               <ul className="space-y-1">
-                {proposal.services.map((service, index) => (
-                  <li key={index} className="text-xs bg-muted/50 px-2 py-1 rounded-md">
-                    {service}
+                {proposal.services.slice(0, 3).map((service, index) => (
+                  <li key={index} className="text-xs bg-muted/50 px-2 py-1 rounded-md flex items-center">
+                    <Badge variant="outline" className="mr-1.5 h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{service}</span>
                   </li>
                 ))}
+                {proposal.services.length > 3 && (
+                  <li className="text-xs text-muted-foreground italic">
+                    +{proposal.services.length - 3} servicios más...
+                  </li>
+                )}
               </ul>
             </div>
           )}
         </CardContent>
-        <CardFooter className="pt-2 pb-4 text-xs text-muted-foreground">
+        <CardFooter className="pt-2 pb-4 text-xs text-muted-foreground bg-muted/10 border-t mt-auto">
           <div className="flex items-center">
             <Clock className="h-3 w-3 mr-1" />
             {formatDate(proposal.updated_at)}
           </div>
+          {proposal.shared_url && (
+            <div className="ml-auto">
+              <Badge variant="outline" className="text-xs">
+                <Share2 className="h-3 w-3 mr-1" />
+                Compartida
+              </Badge>
+            </div>
+          )}
         </CardFooter>
       </Card>
       
