@@ -52,7 +52,7 @@ export async function fetchClients(userId: string | undefined) {
 }
 
 export async function addClientToDb(
-  data: Omit<Client, 'id' | 'createdAt' | 'reportsCount'>, 
+  data: Omit<Client, 'id' | 'created_at' | 'updated_at' | 'user_id'>, 
   userId: string | undefined
 ) {
   if (!userId) {
@@ -60,7 +60,7 @@ export async function addClientToDb(
   }
 
   try {
-    const { name, website, industry, phoneNumber, active, wpCredentials, hostingCredentials } = data;
+    const { name, website, industry, phone_number, active, wp_credentials, hosting_credentials } = data;
     
     const { data: newClient, error } = await supabase
       .from('clients')
@@ -69,10 +69,10 @@ export async function addClientToDb(
         website,
         industry,
         user_id: userId,
-        phone_number: phoneNumber,
+        phone_number,
         active,
-        wp_credentials: wpCredentials || null,
-        hosting_credentials: hostingCredentials || null
+        wp_credentials: wp_credentials || null,
+        hosting_credentials: hosting_credentials || null
       })
       .select()
       .single();
@@ -91,7 +91,7 @@ export async function addClientToDb(
 
 export async function updateClientInDb(
   id: string, 
-  data: Partial<Omit<Client, 'id' | 'createdAt' | 'reportsCount'>>
+  data: Partial<Omit<Client, 'id' | 'created_at' | 'updated_at' | 'user_id'>>
 ) {
   try {
     // Transform camelCase to snake_case for Supabase
@@ -99,10 +99,10 @@ export async function updateClientInDb(
     if (data.name !== undefined) transformedData.name = data.name;
     if (data.website !== undefined) transformedData.website = data.website;
     if (data.industry !== undefined) transformedData.industry = data.industry;
-    if (data.phoneNumber !== undefined) transformedData.phone_number = data.phoneNumber;
+    if (data.phone_number !== undefined) transformedData.phone_number = data.phone_number;
     if (data.active !== undefined) transformedData.active = data.active;
-    if (data.wpCredentials !== undefined) transformedData.wp_credentials = data.wpCredentials;
-    if (data.hostingCredentials !== undefined) transformedData.hosting_credentials = data.hostingCredentials;
+    if (data.wp_credentials !== undefined) transformedData.wp_credentials = data.wp_credentials;
+    if (data.hosting_credentials !== undefined) transformedData.hosting_credentials = data.hosting_credentials;
     
     const { data: updatedClient, error } = await supabase
       .from('clients')

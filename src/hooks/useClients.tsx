@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
 import useAuth from './useAuth';
-import { Client, ClientsContextType } from '@/types/client.types';
+import { Client } from '@/types/client.types';
 import { 
   fetchClients, 
   addClientToDb, 
@@ -10,6 +10,16 @@ import {
   deleteClientFromDb 
 } from '@/services/clientService';
 import { Json } from '@/integrations/supabase/types';
+
+// Define the ClientsContextType
+interface ClientsContextType {
+  clients: Client[];
+  isLoading: boolean;
+  getClient: (id: string) => Client | undefined;
+  addClient: (data: Omit<Client, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<Client>;
+  updateClient: (id: string, data: Partial<Omit<Client, 'id' | 'created_at' | 'updated_at' | 'user_id'>>) => Promise<Client>;
+  deleteClient: (id: string) => Promise<void>;
+}
 
 // Type guard to check if a value is a valid credential object
 function isWpCredentials(value: Json | null): value is { username: string; password: string; url?: string } {
@@ -59,12 +69,13 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
             name: client.name,
             website: client.website,
             industry: client.industry || '',
-            createdAt: client.created_at,
-            reportsCount: reportCountMap[client.id] || 0,
-            phoneNumber: client.phone_number,
+            created_at: client.created_at,
+            updated_at: client.updated_at,
+            user_id: client.user_id,
+            phone_number: client.phone_number,
             active: client.active,
-            wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
-            hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
+            wp_credentials: isWpCredentials(wpCreds) ? wpCreds : null,
+            hosting_credentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
           };
         });
         
@@ -84,7 +95,7 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
     return clients.find(client => client.id === id);
   };
 
-  const addClient = async (data: Omit<Client, 'id' | 'createdAt' | 'reportsCount'>) => {
+  const addClient = async (data: Omit<Client, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
     try {
       const newClient = await addClientToDb(data, user?.id);
       
@@ -97,12 +108,13 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         name: newClient.name,
         website: newClient.website,
         industry: newClient.industry || '',
-        createdAt: newClient.created_at,
-        reportsCount: 0,
-        phoneNumber: newClient.phone_number,
+        created_at: newClient.created_at,
+        updated_at: newClient.updated_at,
+        user_id: newClient.user_id,
+        phone_number: newClient.phone_number,
         active: newClient.active,
-        wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
-        hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
+        wp_credentials: isWpCredentials(wpCreds) ? wpCreds : null,
+        hosting_credentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
       };
       
       setClients(prevClients => [formattedClient, ...prevClients]);
@@ -114,7 +126,7 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updateClient = async (id: string, data: Partial<Omit<Client, 'id' | 'createdAt' | 'reportsCount'>>) => {
+  const updateClient = async (id: string, data: Partial<Omit<Client, 'id' | 'created_at' | 'updated_at' | 'user_id'>>) => {
     try {
       const updatedClient = await updateClientInDb(id, data);
       
@@ -132,12 +144,13 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
         name: updatedClient.name,
         website: updatedClient.website,
         industry: updatedClient.industry || '',
-        createdAt: updatedClient.created_at,
-        reportsCount: clientToUpdate.reportsCount,
-        phoneNumber: updatedClient.phone_number,
+        created_at: updatedClient.created_at,
+        updated_at: updatedClient.updated_at,
+        user_id: updatedClient.user_id,
+        phone_number: updatedClient.phone_number,
         active: updatedClient.active,
-        wpCredentials: isWpCredentials(wpCreds) ? wpCreds : null,
-        hostingCredentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
+        wp_credentials: isWpCredentials(wpCreds) ? wpCreds : null,
+        hosting_credentials: isHostingCredentials(hostingCreds) ? hostingCreds : null
       };
       
       setClients(prevClients => 
@@ -182,6 +195,4 @@ const useClients = () => {
   return context;
 };
 
-// Fix: Use 'export type' for re-exporting types when 'isolatedModules' is enabled
-export type { Client };
 export default useClients;

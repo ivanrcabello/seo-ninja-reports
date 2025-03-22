@@ -34,7 +34,7 @@ const ClientInfoCards: React.FC<ClientInfoCardsProps> = ({ client, reports }) =>
         </div>
       </BlurredCard>
       
-      {client.phoneNumber && (
+      {client.phone_number && (
         <BlurredCard>
           <div className="flex items-start space-x-3">
             <div className="p-2 bg-primary/10 rounded-full">
@@ -43,7 +43,7 @@ const ClientInfoCards: React.FC<ClientInfoCardsProps> = ({ client, reports }) =>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-1">Teléfono</h3>
               <p className="text-lg font-medium">
-                {client.phoneNumber}
+                {client.phone_number}
               </p>
             </div>
           </div>
@@ -58,7 +58,7 @@ const ClientInfoCards: React.FC<ClientInfoCardsProps> = ({ client, reports }) =>
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Client Since</h3>
             <p className="text-lg font-medium">
-              {format(new Date(client.createdAt), 'MMMM d, yyyy')}
+              {format(new Date(client.created_at), 'MMMM d, yyyy')}
             </p>
           </div>
         </div>
