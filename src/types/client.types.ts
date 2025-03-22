@@ -1,3 +1,4 @@
+
 export interface Client {
   id: string;
   name: string;
@@ -33,6 +34,23 @@ export interface ClientProposal {
   created_at: string;
   updated_at: string;
   shared_url?: string;
+}
+
+export interface ClientContract {
+  id: string;
+  client_id: string;
+  title: string;
+  content: string;
+  status: 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  shared_url?: string;
+  client_signed: boolean;
+  client_signed_at?: string;
+  client_signature?: string;
+  admin_signed: boolean;
+  admin_signed_at?: string;
+  admin_signature?: string;
 }
 
 export interface ClientNote {

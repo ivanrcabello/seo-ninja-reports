@@ -1,0 +1,251 @@
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { ClientContract } from '@/types/client.types';
+import { toast } from 'sonner';
+
+export interface CreateContractData {
+  title: string;
+  content: string;
+  status?: 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled';
+}
+
+export interface UpdateContractData {
+  title?: string;
+  content?: string;
+  status?: 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled';
+  client_signed?: boolean;
+  client_signed_at?: string;
+  client_signature?: string;
+  admin_signed?: boolean;
+  admin_signed_at?: string;
+  admin_signature?: string;
+}
+
+export const useClientContracts = (clientId?: string) => {
+  const [contracts, setContracts] = useState<ClientContract[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchContracts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const query = supabase.from('client_contracts').select('*');
+      
+      if (clientId) {
+        query.eq('client_id', clientId);
+      }
+      
+      query.order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      setContracts(data as ClientContract[]);
+    } catch (err: any) {
+      console.error('Error fetching contracts:', err);
+      setError(err.message || 'Error al cargar los contratos');
+      toast.error('Error al cargar los contratos');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchContracts();
+  }, [clientId]);
+
+  const getContract = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_contracts')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (error) throw error;
+      
+      return data as ClientContract;
+    } catch (err: any) {
+      console.error('Error fetching contract:', err);
+      toast.error('Error al cargar el contrato');
+      throw err;
+    }
+  };
+
+  const createContract = async (contractData: CreateContractData) => {
+    if (!clientId) {
+      throw new Error('ID de cliente no especificado');
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('client_contracts')
+        .insert({
+          client_id: clientId,
+          title: contractData.title,
+          content: contractData.content,
+          status: contractData.status || 'draft'
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setContracts(prev => [data as ClientContract, ...prev]);
+      toast.success('Contrato creado exitosamente');
+      
+      return data as ClientContract;
+    } catch (err: any) {
+      console.error('Error creating contract:', err);
+      toast.error('Error al crear el contrato');
+      throw err;
+    }
+  };
+
+  const updateContract = async (id: string, contractData: UpdateContractData) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_contracts')
+        .update(contractData)
+        .eq('id', id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setContracts(prev => 
+        prev.map(contract => 
+          contract.id === id ? data as ClientContract : contract
+        )
+      );
+      
+      toast.success('Contrato actualizado exitosamente');
+      
+      return data as ClientContract;
+    } catch (err: any) {
+      console.error('Error updating contract:', err);
+      toast.error('Error al actualizar el contrato');
+      throw err;
+    }
+  };
+
+  const deleteContract = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('client_contracts')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setContracts(prev => prev.filter(contract => contract.id !== id));
+      toast.success('Contrato eliminado exitosamente');
+    } catch (err: any) {
+      console.error('Error deleting contract:', err);
+      toast.error('Error al eliminar el contrato');
+      throw err;
+    }
+  };
+
+  const generateShareUrl = async (id: string) => {
+    try {
+      // Generar un UUID único para compartir
+      const shareId = crypto.randomUUID();
+      
+      // Actualizar el contrato con el UUID de compartir
+      const { error } = await supabase
+        .from('client_contracts')
+        .update({ shared_url: shareId })
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      // Actualizar la lista local de contratos
+      setContracts(prev => 
+        prev.map(contract => 
+          contract.id === id 
+            ? { ...contract, shared_url: shareId } 
+            : contract
+        )
+      );
+      
+      return `${window.location.origin}/shared/contracts/${shareId}`;
+    } catch (err: any) {
+      console.error('Error generating share URL:', err);
+      toast.error('Error al generar enlace para compartir');
+      throw err;
+    }
+  };
+
+  const signContract = async (
+    id: string, 
+    signature: string, 
+    isAdmin: boolean = false
+  ) => {
+    try {
+      const now = new Date().toISOString();
+      const updateData = isAdmin 
+        ? {
+            admin_signed: true,
+            admin_signed_at: now,
+            admin_signature: signature
+          }
+        : {
+            client_signed: true,
+            client_signed_at: now,
+            client_signature: signature
+          };
+      
+      // Si ambas partes han firmado, actualizar el estado a 'signed'
+      const contract = contracts.find(c => c.id === id);
+      if (contract) {
+        if (
+          (isAdmin && contract.client_signed) || 
+          (!isAdmin && contract.admin_signed)
+        ) {
+          updateData.status = 'signed';
+        }
+      }
+      
+      const { data, error } = await supabase
+        .from('client_contracts')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setContracts(prev => 
+        prev.map(contract => 
+          contract.id === id ? data as ClientContract : contract
+        )
+      );
+      
+      toast.success('Contrato firmado exitosamente');
+      
+      return data as ClientContract;
+    } catch (err: any) {
+      console.error('Error signing contract:', err);
+      toast.error('Error al firmar el contrato');
+      throw err;
+    }
+  };
+
+  return {
+    contracts,
+    isLoading,
+    error,
+    getContract,
+    fetchContracts,
+    createContract,
+    updateContract,
+    deleteContract,
+    generateShareUrl,
+    signContract
+  };
+};

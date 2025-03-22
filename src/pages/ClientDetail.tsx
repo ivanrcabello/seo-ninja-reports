@@ -17,7 +17,7 @@ const ClientDetail = () => {
   const { getClient, isLoading: clientsLoading, deleteClient } = useClients();
   const { getClientReports, isLoading: reportsLoading } = useReports();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'new-report' | 'proposals'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts'>('overview');
 
   // Redirect if not logged in
   if (!user && !authLoading) {
@@ -56,6 +56,8 @@ const ClientDetail = () => {
         setActiveTab('new-report');
       } else if (hash === '#proposals') {
         setActiveTab('proposals');
+      } else if (hash === '#contracts') {
+        setActiveTab('contracts');
       } else {
         setActiveTab('overview');
       }

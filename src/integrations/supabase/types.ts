@@ -117,6 +117,65 @@ export type Database = {
           },
         ]
       }
+      client_contracts: {
+        Row: {
+          admin_signature: string | null
+          admin_signed: boolean
+          admin_signed_at: string | null
+          client_id: string
+          client_signature: string | null
+          client_signed: boolean
+          client_signed_at: string | null
+          content: string
+          created_at: string
+          id: string
+          shared_url: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_signature?: string | null
+          admin_signed?: boolean
+          admin_signed_at?: string | null
+          client_id: string
+          client_signature?: string | null
+          client_signed?: boolean
+          client_signed_at?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          shared_url?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_signature?: string | null
+          admin_signed?: boolean
+          admin_signed_at?: string | null
+          client_id?: string
+          client_signature?: string | null
+          client_signed?: boolean
+          client_signed_at?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          shared_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           client_id: string
@@ -664,6 +723,26 @@ export type Database = {
       }
     }
     Views: {
+      public_contracts: {
+        Row: {
+          admin_signature: string | null
+          admin_signed: boolean | null
+          admin_signed_at: string | null
+          client_name: string | null
+          client_signature: string | null
+          client_signed: boolean | null
+          client_signed_at: string | null
+          client_website: string | null
+          content: string | null
+          created_at: string | null
+          id: string | null
+          shared_url: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       public_proposals: {
         Row: {
           client_name: string | null

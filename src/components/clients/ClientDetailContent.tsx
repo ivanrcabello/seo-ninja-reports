@@ -8,12 +8,13 @@ import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import ClientProposals from './proposals/ClientProposals';
+import ClientContracts from './contracts/ClientContracts';
 
 interface ClientDetailContentProps {
   client: Client;
   reports: Report[];
-  activeTab: 'overview' | 'reports' | 'new-report' | 'proposals';
-  setActiveTab: (tab: 'overview' | 'reports' | 'new-report' | 'proposals') => void;
+  activeTab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts';
+  setActiveTab: (tab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts') => void;
   clientId: string;
 }
 
@@ -28,14 +29,15 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
     <AnimatedContainer animation="slide-up">
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as 'overview' | 'reports' | 'new-report' | 'proposals')}
+        onValueChange={(value) => setActiveTab(value as 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts')}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-4 w-full max-w-md">
+        <TabsList className="grid grid-cols-5 w-full max-w-md">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="new-report">New Report</TabsTrigger>
           <TabsTrigger value="proposals">Propuestas</TabsTrigger>
+          <TabsTrigger value="contracts">Contratos</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="mt-6">
@@ -61,6 +63,10 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         
         <TabsContent value="proposals" className="mt-6">
           <ClientProposals clientId={clientId} />
+        </TabsContent>
+        
+        <TabsContent value="contracts" className="mt-6">
+          <ClientContracts clientId={clientId} clientName={client.name} />
         </TabsContent>
       </Tabs>
     </AnimatedContainer>
