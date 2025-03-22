@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { SeoReport } from '@/types/seo-reporting.types';
 import { fetchClientSeoReports, deleteSeoReport } from '@/services/seoReportService';
@@ -7,6 +6,7 @@ import SeoReportsList from './SeoReportsList';
 import DashboardCards from './DashboardCards';
 import KeywordsTable from './KeywordsTable';
 import CompetitorsChart from './CompetitorsChart';
+import DeleteSeoReportButton from './DeleteSeoReportButton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -39,7 +39,6 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
       console.log('Loaded SEO reports:', data);
       setReports(data);
       
-      // If we have reports and none selected, select the first one
       if (data.length > 0 && !selectedReport) {
         setSelectedReport(data[0]);
       }
@@ -80,10 +79,8 @@ const SeoReportingDashboard: React.FC<SeoReportingDashboardProps> = ({ clientId 
           description: 'El informe ha sido eliminado correctamente'
         });
         
-        // Remove the report from the state
         setReports(prevReports => prevReports.filter(r => r.id !== reportId));
         
-        // If the deleted report was selected, go back to list view
         if (selectedReport && selectedReport.id === reportId) {
           setSelectedReport(null);
           setViewMode('list');
