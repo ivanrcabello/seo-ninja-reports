@@ -403,117 +403,227 @@ serve(async (req) => {
       );
     }
     
+    try {
+      // Comprobar que la URL es accesible antes de iniciar el rastreo completo
+      const testResponse = await fetch(validUrl, {
+        method: 'HEAD',
+        headers: {
+          'User-Agent': 'SEOAuditBot/1.0 (+https://midominio.com/bot.html)'
+        }
+      });
+      
+      if (!testResponse.ok) {
+        // Actualizar el registro como error
+        await supabase
+          .from('seo_crawl_results')
+          .update({
+            status: 'error',
+            pages_crawled: 0,
+            issues_count: 1,
+            total_time_seconds: 0
+          })
+          .eq('id', crawlId);
+        
+        // Si la URL no es accesible, devolver error
+        return new Response(
+          JSON.stringify({ 
+            error: `La URL no es accesible. Código de estado: ${testResponse.status}` 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (accessError) {
+      console.error("Error al verificar acceso a URL:", accessError);
+      
+      // Actualizar el registro como error
+      await supabase
+        .from('seo_crawl_results')
+        .update({
+          status: 'error',
+          pages_crawled: 0,
+          issues_count: 1,
+          total_time_seconds: 0
+        })
+        .eq('id', crawlId);
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `Error al acceder a la URL: ${accessError.message}` 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Iniciar temporizador
     const startTime = new Date().getTime();
     
-    // Realizar el rastreo
-    const visitedUrls = new Set();
-    const results = await crawlSite(validUrl, maxPages, visitedUrls, excludePatterns, includePatterns, followExternalLinks);
-    
-    // Calcular tiempo total
-    const endTime = new Date().getTime();
-    const totalTimeSeconds = Math.floor((endTime - startTime) / 1000);
-    
-    // Contar problemas totales
-    let totalIssues = 0;
-    
-    // Insertar los resultados en la base de datos
-    for (const page of results) {
-      try {
-        // Insertar página
-        const { data: pageData, error: pageError } = await supabase
-          .from('seo_crawl_pages')
-          .insert({
-            crawl_id: crawlId,
-            url: page.url,
-            status_code: page.statusCode,
-            title: page.title,
-            meta_description: page.metaDescription,
-            h1: page.h1,
-            canonical_url: page.canonicalUrl,
-            robots_directives: page.robotsDirectives,
-            is_indexable: page.isIndexable
-          })
-          .select()
-          .single();
-          
-        if (pageError) {
-          console.error(`Error al insertar página ${page.url}:`, pageError);
-          continue;
-        }
-        
-        const pageId = pageData.id;
-        
-        // Insertar problemas
-        if (page.issues && page.issues.length > 0) {
-          totalIssues += page.issues.length;
-          
-          for (const issue of page.issues) {
-            const { error: issueError } = await supabase
-              .from('seo_crawl_issues')
-              .insert({
-                page_id: pageId,
-                issue_type: issue.issueType,
-                severity: issue.severity,
-                description: issue.description,
-                recommended_fix: issue.recommendedFix
-              });
-              
-            if (issueError) {
-              console.error(`Error al insertar problema en página ${page.url}:`, issueError);
-            }
-          }
-        }
-        
-        // Insertar enlaces
-        if (page.links && page.links.length > 0) {
-          for (const link of page.links) {
-            const { error: linkError } = await supabase
-              .from('seo_crawl_links')
-              .insert({
-                page_id: pageId,
-                url: link.url,
-                anchor_text: link.anchorText,
-                is_internal: link.isInternal,
-                is_broken: false, // Se actualizará después
-                follow: link.follow
-              });
-              
-            if (linkError) {
-              console.error(`Error al insertar enlace en página ${page.url}:`, linkError);
-            }
-          }
-        }
-      } catch (error) {
-        console.error(`Error procesando página ${page.url}:`, error);
-      }
-    }
-    
-    // Actualizar el resultado del rastreo
-    const { error: updateError } = await supabase
-      .from('seo_crawl_results')
-      .update({
-        status: 'completed',
-        pages_crawled: results.length,
-        issues_count: totalIssues,
-        total_time_seconds: totalTimeSeconds
-      })
-      .eq('id', crawlId);
+    try {
+      // Realizar el rastreo
+      const visitedUrls = new Set();
       
-    if (updateError) {
-      throw new Error(`Error al actualizar resultado de análisis: ${updateError.message}`);
+      // Limitar el tiempo máximo del rastreo a 25 segundos para evitar timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      
+      let results;
+      
+      try {
+        results = await Promise.race([
+          crawlSite(validUrl, maxPages, visitedUrls, excludePatterns, includePatterns, followExternalLinks),
+          new Promise((_, reject) => {
+            controller.signal.addEventListener('abort', () => {
+              reject(new Error('El rastreo ha excedido el tiempo máximo permitido'));
+            });
+          })
+        ]);
+        
+        clearTimeout(timeoutId);
+      } catch (raceError) {
+        clearTimeout(timeoutId);
+        
+        // Si el error es por timeout, usar las páginas que ya se hayan analizado
+        if (raceError.message === 'El rastreo ha excedido el tiempo máximo permitido') {
+          console.log('El rastreo ha excedido el tiempo máximo. Usando páginas ya analizadas:', visitedUrls.size);
+          
+          if (visitedUrls.size === 0) {
+            // Si no hay páginas analizadas, analizar al menos la página principal
+            results = [await analyzePage(validUrl)];
+          }
+        } else {
+          throw raceError;
+        }
+      }
+      
+      // Ensure results is defined
+      if (!results || results.length === 0) {
+        results = [await analyzePage(validUrl)]; // Analyze at least the main page
+      }
+      
+      // Calcular tiempo total
+      const endTime = new Date().getTime();
+      const totalTimeSeconds = Math.floor((endTime - startTime) / 1000);
+      
+      // Contar problemas totales
+      let totalIssues = 0;
+      
+      // Insertar los resultados en la base de datos
+      for (const page of results) {
+        try {
+          // Insertar página
+          const { data: pageData, error: pageError } = await supabase
+            .from('seo_crawl_pages')
+            .insert({
+              crawl_id: crawlId,
+              url: page.url,
+              status_code: page.statusCode,
+              title: page.title,
+              meta_description: page.metaDescription,
+              h1: page.h1,
+              canonical_url: page.canonicalUrl,
+              robots_directives: page.robotsDirectives,
+              is_indexable: page.isIndexable
+            })
+            .select()
+            .single();
+            
+          if (pageError) {
+            console.error(`Error al insertar página ${page.url}:`, pageError);
+            continue;
+          }
+          
+          const pageId = pageData.id;
+          
+          // Insertar problemas
+          if (page.issues && page.issues.length > 0) {
+            totalIssues += page.issues.length;
+            
+            for (const issue of page.issues) {
+              const { error: issueError } = await supabase
+                .from('seo_crawl_issues')
+                .insert({
+                  page_id: pageId,
+                  issue_type: issue.issueType,
+                  severity: issue.severity,
+                  description: issue.description,
+                  recommended_fix: issue.recommendedFix
+                });
+                
+              if (issueError) {
+                console.error(`Error al insertar problema en página ${page.url}:`, issueError);
+              }
+            }
+          }
+          
+          // Insertar enlaces
+          if (page.links && page.links.length > 0) {
+            for (const link of page.links) {
+              const { error: linkError } = await supabase
+                .from('seo_crawl_links')
+                .insert({
+                  page_id: pageId,
+                  url: link.url,
+                  anchor_text: link.anchorText,
+                  is_internal: link.isInternal,
+                  is_broken: false, // Se actualizará después
+                  follow: link.follow
+                });
+                
+              if (linkError) {
+                console.error(`Error al insertar enlace en página ${page.url}:`, linkError);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error procesando página ${page.url}:`, error);
+        }
+      }
+      
+      // Actualizar el resultado del rastreo
+      const { error: updateError } = await supabase
+        .from('seo_crawl_results')
+        .update({
+          status: 'completed',
+          pages_crawled: results.length,
+          issues_count: totalIssues,
+          total_time_seconds: totalTimeSeconds
+        })
+        .eq('id', crawlId);
+        
+      if (updateError) {
+        throw new Error(`Error al actualizar resultado de análisis: ${updateError.message}`);
+      }
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          crawlId,
+          pagesAnalyzed: results.length,
+          issuesFound: totalIssues,
+          timeSeconds: totalTimeSeconds
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (crawlError) {
+      console.error('Error durante el rastreo:', crawlError);
+      
+      // Actualizar el registro como error
+      await supabase
+        .from('seo_crawl_results')
+        .update({
+          status: 'error',
+          pages_crawled: 0,
+          issues_count: 0,
+          total_time_seconds: 0
+        })
+        .eq('id', crawlId);
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `Error durante el rastreo: ${crawlError.message}` 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-    
-    return new Response(
-      JSON.stringify({
-        success: true,
-        crawlId,
-        pagesAnalyzed: results.length,
-        issuesFound: totalIssues,
-        timeSeconds: totalTimeSeconds
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     console.error('Error en el servidor:', error);
     

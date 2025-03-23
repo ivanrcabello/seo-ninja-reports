@@ -45,12 +45,42 @@ export const startCrawl = async (settings: CrawlSettings) => {
     // Guardamos también los ajustes usados para este análisis
     await saveSettings(settings);
     
-    // Luego, llamar a la función Edge con el ID del registro recién creado
-    const response = await invokeCrawlerFunction(settings, crawlResult.id);
-    
-    console.log('Crawl started successfully, response:', response);
-    toast.success('Análisis SEO iniciado correctamente');
-    return { ...response, crawlId: crawlResult.id };
+    try {
+      // Luego, llamar a la función Edge con el ID del registro recién creado
+      const response = await invokeCrawlerFunction(settings, crawlResult.id);
+      
+      console.log('Crawl started successfully, response:', response);
+      toast.success('Análisis SEO iniciado correctamente');
+      return { ...response, crawlId: crawlResult.id };
+    } catch (invokeError: any) {
+      console.error('Error al invocar la función de análisis SEO', invokeError);
+      
+      // Actualizar estado del análisis a fallido
+      try {
+        const { error: updateError } = await supabase
+          .from('seo_crawl_results')
+          .update({
+            status: 'error',
+            issues_count: 0,
+            pages_crawled: 0,
+            total_time_seconds: 0
+          })
+          .eq('id', crawlResult.id);
+          
+        if (updateError) {
+          console.error('Error al actualizar el estado del análisis:', updateError);
+        }
+      } catch (updateError) {
+        console.error('Error crítico al actualizar estado:', updateError);
+      }
+      
+      // Lanzar el error para que se maneje en el nivel superior
+      if (invokeError.message.includes('WORKER_LIMIT')) {
+        throw new Error('El servidor está ocupado. Por favor, inténtelo de nuevo en unos minutos.');
+      } else {
+        throw invokeError;
+      }
+    }
   } catch (error: any) {
     console.error('Error starting crawl:', error);
     toast.error(error.message || 'Error al iniciar el análisis SEO');
