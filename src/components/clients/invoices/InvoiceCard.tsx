@@ -59,6 +59,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   const { title, amount, status, created_at, due_date } = invoice;
   
   const handleCardClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
     onClick();
   }, [onClick]);
 
@@ -113,17 +114,30 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white border z-50">
-                <DropdownMenuItem onClick={handleViewInvoice}>
+                <DropdownMenuItem 
+                  onClick={handleViewInvoice}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                  }}
+                >
                   <Eye className="mr-2 h-4 w-4" />
                   Ver factura
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleEdit}>
+                <DropdownMenuItem 
+                  onClick={handleEdit}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                  }}
+                >
                   <Edit2 className="mr-2 h-4 w-4" />
                   Editar
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={handleDelete}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                  }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Eliminar
