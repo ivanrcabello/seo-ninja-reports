@@ -8,7 +8,7 @@ const Navbar: React.FC<{ isMobile: boolean; closeMenu?: () => void }> = ({
   isMobile, 
   closeMenu = () => {} 
 }) => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   if (isMobile) {
     return <MobileNavbar closeMenu={closeMenu} />;

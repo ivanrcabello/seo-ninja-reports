@@ -36,11 +36,11 @@ const Header: React.FC = () => {
         setLogoUrl(logoUrl);
         localStorage.setItem('app_logo_url', logoUrl);
       } else {
-        setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+        setLogoUrl('/lovable-uploads/a7c0f8be-be1f-47d8-a699-df8d64d1ca21.png');
       }
     } catch (error) {
       console.error('Error fetching logo:', error);
-      setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+      setLogoUrl('/lovable-uploads/a7c0f8be-be1f-47d8-a699-df8d64d1ca21.png');
     } finally {
       setLogoLoading(false);
     }
@@ -62,100 +62,43 @@ const Header: React.FC = () => {
             ) : logoUrl ? (
               <img 
                 src={logoUrl} 
-                alt="SoySeoLocal" 
+                alt="SeoLocal" 
                 className="h-10 w-auto object-contain"
                 onError={() => {
                   console.error('Error loading logo image');
-                  setLogoUrl('/lovable-uploads/5bbceab4-84b0-4d87-8031-b66720c03d8f.png');
+                  setLogoUrl('/lovable-uploads/a7c0f8be-be1f-47d8-a699-df8d64d1ca21.png');
                 }}
               />
             ) : (
               <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-emerald-800">
-                SoySeoLocal.com
+                SeoLocal.com
               </span>
             )}
           </Link>
 
-          {/* Navegación para escritorio */}
-          {!isMobile && user && (
-            <nav className="hidden md:flex items-center space-x-1">
-              <Button
-                variant="ghost"
-                className="px-4"
-                asChild
-              >
-                <Link to="/dashboard">Dashboard</Link>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                className="px-4"
-                asChild
-              >
-                <Link to="/clients">Clientes</Link>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                className="px-4"
-                asChild
-              >
-                <Link to="/all-reports">Informes</Link>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                className="px-4"
-                asChild
-              >
-                <Link to="/activity">Actividad</Link>
-              </Button>
-
-              <Button
-                variant="ghost"
-                className="px-4"
-                asChild
-              >
-                <Link to="/blog-admin">Blog Editor</Link>
-              </Button>
-            </nav>
+          {/* Desktop navigation */}
+          {!isMobile && (
+            <Navbar isMobile={false} />
           )}
 
-          {/* Botones de inicio de sesión/registro o menú de usuario */}
-          <div className="flex items-center space-x-2">
-            {user ? (
-              <Navbar isMobile={false} />
-            ) : (
-              <>
-                <Button variant="ghost" asChild className="hidden md:inline-flex">
-                  <Link to="/auth">Iniciar sesión</Link>
-                </Button>
-                
-                <Button asChild>
-                  <Link to="/auth?register=true">Registrarse</Link>
-                </Button>
-              </>
-            )}
-
-            {/* Botón de menú móvil */}
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMenu}
-                className="rounded-full md:hidden"
-              >
-                {isMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </Button>
-            )}
-          </div>
+          {/* Mobile menu button */}
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMenu}
+              className="rounded-full md:hidden"
+            >
+              {isMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          )}
         </div>
 
-        {/* Menú móvil desplegable */}
+        {/* Mobile menu dropdown */}
         {isMobile && isMenuOpen && (
           <div className="absolute top-full left-0 w-full bg-background p-4 border-b animate-slide-down">
             <Navbar isMobile={true} closeMenu={closeMenu} />

@@ -6,17 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   HomeIcon, 
-  UsersRound, 
-  FileText, 
-  Activity, 
   Settings, 
   LogOut,
   LayoutDashboard,
   Newspaper,
   Phone,
-  Sparkles,
-  LightbulbIcon,
-  FileIcon
+  Package,
+  BookOpen,
+  Briefcase
 } from 'lucide-react';
 
 interface MobileNavbarProps {
@@ -55,8 +52,58 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
           
           <nav className="flex flex-col space-y-1">
             <Button
-              variant={isActive('/dashboard') ? 'default' : 'ghost'}
+              variant={isActive('/servicios') ? 'default' : 'ghost'}
               className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/servicios">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Servicios
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/paquetes') || isActive('/productos') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/paquetes">
+                <Package className="mr-2 h-4 w-4" />
+                Productos
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/blog') || isActive('/recursos') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/blog">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Recursos
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive('/contacto') ? 'default' : 'ghost'}
+              className="justify-start"
+              asChild
+              onClick={closeMenu}
+            >
+              <Link to="/contacto">
+                <Phone className="mr-2 h-4 w-4" />
+                Contacto
+              </Link>
+            </Button>
+            
+            <div className="border-t my-4"></div>
+            
+            <Button
+              variant="default"
+              className="justify-start bg-emerald-600 hover:bg-emerald-700"
               asChild
               onClick={closeMenu}
             >
@@ -67,66 +114,28 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
             </Button>
             
             <Button
-              variant={isActive('/clients') ? 'default' : 'ghost'}
-              className="justify-start"
-              asChild
-              onClick={closeMenu}
-            >
-              <Link to="/clients">
-                <UsersRound className="mr-2 h-4 w-4" />
-                Clientes
-              </Link>
-            </Button>
-            
-            <Button
-              variant={isActive('/all-reports') ? 'default' : 'ghost'}
-              className="justify-start"
-              asChild
-              onClick={closeMenu}
-            >
-              <Link to="/all-reports">
-                <FileText className="mr-2 h-4 w-4" />
-                Informes
-              </Link>
-            </Button>
-            
-            <Button
-              variant={isActive('/activity') ? 'default' : 'ghost'}
-              className="justify-start"
-              asChild
-              onClick={closeMenu}
-            >
-              <Link to="/activity">
-                <Activity className="mr-2 h-4 w-4" />
-                Actividad
-              </Link>
-            </Button>
-            
-            <Button
-              variant={isActive('/blog-admin') ? 'default' : 'ghost'}
+              variant="outline"
               className="justify-start"
               asChild
               onClick={closeMenu}
             >
               <Link to="/blog-admin">
                 <Newspaper className="mr-2 h-4 w-4" />
-                Blog Editor
+                Blog Admin
               </Link>
             </Button>
             
             <Button
-              variant={isActive('/settings') ? 'default' : 'ghost'}
+              variant="outline"
               className="justify-start"
               asChild
               onClick={closeMenu}
             >
               <Link to="/settings">
                 <Settings className="mr-2 h-4 w-4" />
-                Ajustes
+                Configuración
               </Link>
             </Button>
-            
-            <div className="border-t my-4"></div>
             
             <Button
               variant="ghost"
@@ -142,62 +151,38 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
         <div className="flex flex-col space-y-6">
           <nav className="flex flex-col space-y-1">
             <Button
-              variant={isActive('/') ? 'default' : 'ghost'}
-              className="justify-start"
-              asChild
-              onClick={closeMenu}
-            >
-              <Link to="/">
-                <HomeIcon className="mr-2 h-4 w-4" />
-                Inicio
-              </Link>
-            </Button>
-            
-            <Button
-              variant={isActive('/caracteristicas') ? 'default' : 'ghost'}
-              className="justify-start"
-              asChild
-              onClick={closeMenu}
-            >
-              <Link to="/caracteristicas">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Características
-              </Link>
-            </Button>
-            
-            <Button
               variant={isActive('/servicios') ? 'default' : 'ghost'}
               className="justify-start"
               asChild
               onClick={closeMenu}
             >
               <Link to="/servicios">
-                <LightbulbIcon className="mr-2 h-4 w-4" />
+                <Briefcase className="mr-2 h-4 w-4" />
                 Servicios
               </Link>
             </Button>
             
             <Button
-              variant={isActive('/precios') ? 'default' : 'ghost'}
+              variant={isActive('/paquetes') || isActive('/productos') ? 'default' : 'ghost'}
               className="justify-start"
               asChild
               onClick={closeMenu}
             >
-              <Link to="/precios">
-                <FileIcon className="mr-2 h-4 w-4" />
-                Precios
+              <Link to="/paquetes">
+                <Package className="mr-2 h-4 w-4" />
+                Productos
               </Link>
             </Button>
             
             <Button
-              variant={isActive('/blog') ? 'default' : 'ghost'}
+              variant={isActive('/blog') || isActive('/recursos') ? 'default' : 'ghost'}
               className="justify-start"
               asChild
               onClick={closeMenu}
             >
               <Link to="/blog">
-                <Newspaper className="mr-2 h-4 w-4" />
-                Blog
+                <BookOpen className="mr-2 h-4 w-4" />
+                Recursos
               </Link>
             </Button>
             
@@ -225,7 +210,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
             </Button>
             
             <Button
-              className="w-full"
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
               asChild
               onClick={closeMenu}
             >
