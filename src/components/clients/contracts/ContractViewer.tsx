@@ -28,6 +28,7 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
   // Clean up component state when closing
   useEffect(() => {
     if (!open) {
+      console.log("ContractViewer closing, resetting dialog states");
       setIsSignDialogOpen(false);
       setIsShareDialogOpen(false);
     }
@@ -35,6 +36,7 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
 
   const handleSignContract = useCallback(async (signature: string) => {
     try {
+      console.log("Signing contract with ID:", contract.id);
       await signContract(contract.id, signature, true);
       setIsSignDialogOpen(false);
     } catch (error) {
@@ -43,6 +45,7 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
   }, [contract.id, signContract]);
 
   const handlePrintContract = useCallback(() => {
+    console.log("Printing contract with ID:", contract.id);
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       console.error('Failed to open print window');
@@ -94,15 +97,18 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
   }, [contract]);
 
   const handleOpenSignDialog = useCallback(() => {
+    console.log("Opening signature dialog");
     setIsSignDialogOpen(true);
   }, []);
 
   const handleOpenShareDialog = useCallback(() => {
+    console.log("Opening share dialog");
     setIsShareDialogOpen(true);
   }, []);
 
   const handleGenerateShareUrl = useCallback(async () => {
     try {
+      console.log("Generating share URL for contract ID:", contract.id);
       return await generateShareUrl(contract.id);
     } catch (error) {
       console.error('Error generating share URL:', error);

@@ -27,6 +27,8 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
 }) => {
   // Force cleanup of any popovers or dialogs when tab changes
   useEffect(() => {
+    console.log("Tab changed to:", activeTab);
+    
     // Close any open popups or dialogs when tab changes
     const closeAnyModals = () => {
       // This helps force the UI to release any stuck dialogs
@@ -41,11 +43,16 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
     };
   }, [activeTab]);
 
+  const handleTabChange = (value: string) => {
+    console.log("Tab changing from", activeTab, "to", value);
+    setActiveTab(value as 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts');
+  };
+
   return (
     <AnimatedContainer animation="slide-up">
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts')}
+        onValueChange={handleTabChange}
         className="w-full"
       >
         <TabsList className="grid grid-cols-5 w-full max-w-md">

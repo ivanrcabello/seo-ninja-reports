@@ -26,7 +26,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   console.log("ClientContracts rendered with clientId:", clientId);
   console.log("Contracts data:", contracts);
 
-  // Set up the mounted ref
+  // Set up the mounted ref and clean up on unmount
   useEffect(() => {
     isMounted.current = true;
     
@@ -43,7 +43,12 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     loadData();
     
     return () => {
+      console.log("ClientContracts unmounting");
       isMounted.current = false;
+      // Reset all state when unmounting to prevent state persistence issues
+      setIsContractDialogOpen(false);
+      setEditingContract(null);
+      setViewingContract(null);
     };
   }, [clientId, fetchContracts]);
 
@@ -51,6 +56,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   useEffect(() => {
     const handlePopState = () => {
       if (isMounted.current) {
+        console.log("Popstate event detected, resetting dialog states");
         setIsContractDialogOpen(false);
         setEditingContract(null);
         setViewingContract(null);
@@ -64,7 +70,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     };
   }, []);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     if (!isMounted.current) return;
     
     try {
@@ -81,7 +87,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
         setIsRefreshing(false);
       }
     }
-  };
+  }, [clientId, fetchContracts]);
 
   const handleCreateContract = useCallback(() => {
     if (!isMounted.current) return;
@@ -106,21 +112,25 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     if (window.confirm('¿Estás seguro de que quieres eliminar este contrato? Esta acción no se puede deshacer.')) {
       try {
         await deleteContract(id);
+        // After deletion, refresh the contracts list
+        handleRefresh();
       } catch (error) {
         console.error('Error deleting contract:', error);
       }
     }
-  }, [deleteContract]);
+  }, [deleteContract, handleRefresh]);
 
   // Handler for closing the contract viewer
   const handleCloseViewer = useCallback(() => {
     if (!isMounted.current) return;
+    console.log("Closing contract viewer");
     setViewingContract(null);
   }, []);
 
   // Handler for closing the contract dialog
   const handleCloseDialog = useCallback((open: boolean) => {
     if (!isMounted.current) return;
+    console.log("Contract dialog open state changed to:", open);
     setIsContractDialogOpen(open);
     if (!open) {
       setEditingContract(null);
@@ -150,7 +160,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
       />
       
       <ContractsList
-        contracts={contracts}
+        contracts={contracts || []}
         isLoading={isLoading}
         onCreateContract={handleCreateContract}
         onEditContract={handleEditContract}
