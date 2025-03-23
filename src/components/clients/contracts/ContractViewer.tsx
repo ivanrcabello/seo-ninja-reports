@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ClientContract } from '@/types/client.types';
@@ -18,13 +19,21 @@ interface ContractViewerProps {
 }
 
 const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenChange }) => {
-  const { signContract, generateShareUrl } = useClientContracts(contract.client_id);
+  const { signContract, generateShareUrl } = useClientContracts(contract?.client_id);
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isSigningAsAdmin, setIsSigningAsAdmin] = useState(false);
   
+  // Close all child dialogs when parent dialog closes
+  useEffect(() => {
+    if (!open) {
+      setIsSignDialogOpen(false);
+      setIsShareDialogOpen(false);
+    }
+  }, [open]);
+  
   const getStatusIcon = () => {
-    switch (contract.status) {
+    switch (contract?.status) {
       case 'draft':
         return <FileText className="h-5 w-5 text-muted-foreground" />;
       case 'sent':
@@ -41,7 +50,7 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
   };
   
   const getStatusLabel = () => {
-    switch (contract.status) {
+    switch (contract?.status) {
       case 'draft': return 'Borrador';
       case 'sent': return 'Enviado';
       case 'signed': return 'Firmado';
@@ -52,7 +61,7 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
   };
   
   const getStatusColor = () => {
-    switch (contract.status) {
+    switch (contract?.status) {
       case 'draft': return 'bg-muted text-muted-foreground';
       case 'sent': return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
       case 'signed': return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
@@ -87,11 +96,11 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
       toast.success('Contrato firmado exitosamente');
     } catch (error) {
       console.error('Error signing contract:', error);
+      toast.error('Error al firmar el contrato');
     }
   };
   
   const handleShare = () => {
-    console.log('Opening share dialog for contract:', contract.id);
     setIsShareDialogOpen(true);
   };
   
@@ -142,9 +151,13 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
     
     setTimeout(() => {
       printWindow.print();
-      //printWindow.close();
     }, 500);
   };
+  
+  // Ensure we don't render anything if contract is not available
+  if (!contract) {
+    return null;
+  }
   
   return (
     <>
@@ -273,23 +286,24 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
         </DialogContent>
       </Dialog>
       
-      <SignatureDialog 
-        open={isSignDialogOpen}
-        onOpenChange={setIsSignDialogOpen}
-        onSign={handleSignContract}
-        isAdmin={isSigningAsAdmin}
-      />
-      
-      <ShareContractDialog 
-        open={isShareDialogOpen}
-        onOpenChange={setIsShareDialogOpen}
-        contractId={contract.id}
-        contractTitle={contract.title}
-        onGenerateShareUrl={() => {
-          console.log('Generating share URL from ContractViewer for contract:', contract.id);
-          return generateShareUrl(contract.id);
-        }}
-      />
+      {open && (
+        <>
+          <SignatureDialog 
+            open={isSignDialogOpen}
+            onOpenChange={setIsSignDialogOpen}
+            onSign={handleSignContract}
+            isAdmin={isSigningAsAdmin}
+          />
+          
+          <ShareContractDialog 
+            open={isShareDialogOpen}
+            onOpenChange={setIsShareDialogOpen}
+            contractId={contract.id}
+            contractTitle={contract.title}
+            onGenerateShareUrl={() => generateShareUrl(contract.id)}
+          />
+        </>
+      )}
     </>
   );
 };

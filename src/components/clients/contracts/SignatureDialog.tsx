@@ -21,6 +21,7 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [hasSignature, setHasSignature] = useState(false);
+  const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
   
   // Initialize canvas when dialog opens
   useEffect(() => {
@@ -76,8 +77,8 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
       y = e.touches[0].clientY - rect.top;
     } else {
       // Mouse event
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
+      x = e.nativeEvent.offsetX;
+      y = e.nativeEvent.offsetY;
     }
     
     return { x, y };
@@ -95,6 +96,7 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
     setHasSignature(true);
     
     const { x, y } = getCoordinates(e, canvasRef.current);
+    setLastPosition({ x, y });
     
     context.beginPath();
     context.moveTo(x, y);
@@ -110,8 +112,12 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
     
     const { x, y } = getCoordinates(e, canvasRef.current);
     
+    context.beginPath();
+    context.moveTo(lastPosition.x, lastPosition.y);
     context.lineTo(x, y);
     context.stroke();
+    
+    setLastPosition({ x, y });
   };
   
   const endDrawing = () => {

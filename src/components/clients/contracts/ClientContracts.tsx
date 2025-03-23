@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useClientContracts } from '@/hooks/useClientContracts';
 import { ClientContract } from '@/types/client.types';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,15 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   const [editingContract, setEditingContract] = useState<ClientContract | null>(null);
   const [viewingContract, setViewingContract] = useState<ClientContract | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Clean up state on component unmount
+  useEffect(() => {
+    return () => {
+      setIsContractDialogOpen(false);
+      setEditingContract(null);
+      setViewingContract(null);
+    };
+  }, []);
 
   const handleRefresh = async () => {
     try {
@@ -58,6 +67,21 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     }
   };
 
+  // Handler for closing the contract viewer
+  const handleCloseViewer = () => {
+    setViewingContract(null);
+  };
+
+  // Handler for closing the contract dialog
+  const handleCloseDialog = (open: boolean) => {
+    if (!open) {
+      setIsContractDialogOpen(false);
+      setEditingContract(null);
+    } else {
+      setIsContractDialogOpen(true);
+    }
+  };
+
   if (error) {
     return (
       <div className="p-4 bg-destructive/10 border border-destructive rounded-md text-center">
@@ -91,7 +115,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
         clientId={clientId}
         clientName={clientName}
         open={isContractDialogOpen}
-        onOpenChange={setIsContractDialogOpen}
+        onOpenChange={handleCloseDialog}
         editingContract={editingContract}
       />
       
@@ -99,7 +123,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
         <ContractViewer
           contract={viewingContract}
           open={!!viewingContract}
-          onOpenChange={(open) => !open && setViewingContract(null)}
+          onOpenChange={handleCloseViewer}
         />
       )}
     </div>
