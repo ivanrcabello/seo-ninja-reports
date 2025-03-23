@@ -15,7 +15,7 @@ export interface CrawlResult {
   crawl_date: string;
   pages_crawled: number;
   issues_count: number;
-  status: 'processing' | 'completed' | 'failed';
+  status: 'processing' | 'completed' | 'failed' | 'error';
   total_time_seconds: number;
 }
 
@@ -32,6 +32,17 @@ export interface CrawlPage {
   word_count: number;
   load_time_ms: number;
   is_indexable: boolean;
+  h2_count?: number;
+  h3_count?: number;
+  image_count?: number;
+  images_without_alt?: number;
+  internal_links_count?: number;
+  external_links_count?: number;
+  has_schema_markup?: boolean;
+  content_length?: number;
+  meta_robots?: string;
+  mobile_friendly?: boolean;
+  page_size_kb?: number;
 }
 
 export interface CrawlIssue {

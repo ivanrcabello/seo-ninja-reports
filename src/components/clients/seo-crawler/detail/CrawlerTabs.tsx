@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CrawlPage, CrawlIssue } from '@/services/seo-crawler';
+import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler';
 import IssuesTabContent from './tabs/IssuesTabContent';
 import PagesTabContent from './tabs/PagesTabContent';
 
@@ -9,6 +9,7 @@ interface CrawlerTabsProps {
   pages: CrawlPage[];
   selectedPage: CrawlPage | null;
   pageIssues: CrawlIssue[];
+  pageLinks?: CrawlLink[];
   issuesByType: Record<string, CrawlIssue[]>;
   onPageSelect: (page: CrawlPage) => void;
 }
@@ -17,6 +18,7 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
   pages,
   selectedPage,
   pageIssues,
+  pageLinks = [],
   issuesByType,
   onPageSelect
 }) => {
@@ -36,6 +38,7 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
           pages={pages}
           selectedPage={selectedPage}
           pageIssues={pageIssues}
+          pageLinks={pageLinks}
           onPageSelect={onPageSelect}
         />
       </TabsContent>

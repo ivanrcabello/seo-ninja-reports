@@ -76,7 +76,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
       }
       
       // Lanzar el error para que se maneje en el nivel superior
-      if (invokeError.message.includes('WORKER_LIMIT')) {
+      if (invokeError.message && invokeError.message.includes('WORKER_LIMIT')) {
         throw new Error('El servidor está ocupado. Por favor, inténtelo de nuevo en unos minutos.');
       } else {
         throw invokeError;

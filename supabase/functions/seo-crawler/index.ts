@@ -13,11 +13,16 @@ const corsHeaders = {
 async function analyzePage(url: string) {
   try {
     console.log(`Analizando página: ${url}`);
+    const startTime = new Date().getTime();
+    
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'SEOAuditBot/1.0 (+https://midominio.com/bot.html)'
       }
     });
+    
+    const endTime = new Date().getTime();
+    const loadTimeMs = endTime - startTime;
     
     if (!response.ok) {
       return {
@@ -39,6 +44,7 @@ async function analyzePage(url: string) {
     }
     
     const html = await response.text();
+    const pageSize = Math.round(html.length / 1024); // Tamaño en KB
     
     // Crear un DOMParser para analizar el HTML usando Deno DOM
     const parser = new DenoDOM();
@@ -70,6 +76,25 @@ async function analyzePage(url: string) {
     const canonicalUrl = doc.querySelector('link[rel="canonical"]')?.getAttribute('href') || '';
     const robotsMeta = doc.querySelector('meta[name="robots"]')?.getAttribute('content') || '';
     const isIndexable = !robotsMeta.includes('noindex');
+    
+    // Contar palabras en el contenido visible
+    const bodyText = doc.querySelector('body')?.textContent || '';
+    const wordCount = bodyText.trim().split(/\s+/).length;
+    
+    // Contar encabezados
+    const h2Count = doc.querySelectorAll('h2').length;
+    const h3Count = doc.querySelectorAll('h3').length;
+    
+    // Contar imágenes y encontrar imágenes sin atributo alt
+    const images = Array.from(doc.querySelectorAll('img'));
+    const imageCount = images.length;
+    const imagesWithoutAlt = images.filter(img => !img.getAttribute('alt')).length;
+    
+    // Buscar marcado estructurado (Schema.org)
+    const hasSchemaMarkup = html.includes('itemtype="http://schema.org') || 
+                            html.includes('itemtype="https://schema.org') ||
+                            html.includes('"@context":"http://schema.org') ||
+                            html.includes('"@context":"https://schema.org');
     
     // Extraer enlaces
     const links = Array.from(doc.querySelectorAll('a[href]')).map(link => {
@@ -115,6 +140,10 @@ async function analyzePage(url: string) {
       };
     });
     
+    // Contar enlaces internos y externos
+    const internalLinksCount = links.filter(link => link.isInternal).length;
+    const externalLinksCount = links.filter(link => !link.isInternal).length;
+    
     // Detectar problemas SEO
     const issues = [];
     
@@ -133,6 +162,13 @@ async function analyzePage(url: string) {
         description: `El título tiene ${title.length} caracteres, lo cual excede el límite recomendado`,
         recommendedFix: 'Acortar el título a menos de 60 caracteres para una mejor visualización en resultados de búsqueda'
       });
+    } else if (title.length < 20) {
+      issues.push({
+        issueType: 'title_too_short',
+        severity: 'medium',
+        description: `El título tiene solo ${title.length} caracteres, lo cual es demasiado corto`,
+        recommendedFix: 'Ampliar el título a 30-60 caracteres para una mejor optimización SEO'
+      });
     }
     
     // Meta descripción vacía o demasiado larga
@@ -149,6 +185,13 @@ async function analyzePage(url: string) {
         severity: 'low',
         description: `La meta descripción tiene ${metaDescription.length} caracteres, lo cual excede el límite recomendado`,
         recommendedFix: 'Acortar la meta descripción a menos de 160 caracteres'
+      });
+    } else if (metaDescription.length < 70) {
+      issues.push({
+        issueType: 'meta_description_too_short',
+        severity: 'low',
+        description: `La meta descripción tiene solo ${metaDescription.length} caracteres, lo cual es demasiado corto`,
+        recommendedFix: 'Ampliar la meta descripción a 70-160 caracteres para una mejor optimización SEO'
       });
     }
     
@@ -179,6 +222,66 @@ async function analyzePage(url: string) {
       });
     }
     
+    // Imágenes sin atributo alt
+    if (imagesWithoutAlt > 0) {
+      issues.push({
+        issueType: 'images_without_alt',
+        severity: 'medium',
+        description: `La página tiene ${imagesWithoutAlt} imágenes sin atributo alt`,
+        recommendedFix: 'Añadir atributos alt descriptivos a todas las imágenes para mejorar accesibilidad y SEO'
+      });
+    }
+    
+    // Contenido escaso
+    if (wordCount < 300) {
+      issues.push({
+        issueType: 'thin_content',
+        severity: 'medium',
+        description: `La página tiene solo ${wordCount} palabras, lo cual podría considerarse contenido escaso`,
+        recommendedFix: 'Expandir el contenido a al menos 300 palabras para mejorar el valor SEO de la página'
+      });
+    }
+    
+    // Tiempo de carga lento
+    if (loadTimeMs > 3000) {
+      issues.push({
+        issueType: 'slow_page_load',
+        severity: 'medium',
+        description: `La página tarda ${Math.round(loadTimeMs / 100) / 10} segundos en cargar, lo cual es demasiado lento`,
+        recommendedFix: 'Optimizar el rendimiento de la página para mejorar la velocidad de carga'
+      });
+    }
+    
+    // Falta de estructura de encabezados
+    if (h2Count === 0) {
+      issues.push({
+        issueType: 'no_h2_headings',
+        severity: 'low',
+        description: 'La página no tiene encabezados H2',
+        recommendedFix: 'Añadir encabezados H2 para estructurar mejor el contenido'
+      });
+    }
+    
+    // Falta Schema.org
+    if (!hasSchemaMarkup) {
+      issues.push({
+        issueType: 'no_schema_markup',
+        severity: 'low',
+        description: 'La página no contiene marcado estructurado Schema.org',
+        recommendedFix: 'Implementar marcado Schema.org para mejorar la comprensión del contenido por buscadores'
+      });
+    }
+    
+    // Tamaño de página demasiado grande
+    if (pageSize > 1024) {
+      issues.push({
+        issueType: 'large_page_size',
+        severity: 'medium',
+        description: `El tamaño de la página es de ${pageSize} KB, lo cual es demasiado grande`,
+        recommendedFix: 'Optimizar el tamaño de la página para mejorar la velocidad de carga'
+      });
+    }
+    
     return {
       url,
       statusCode: response.status,
@@ -188,6 +291,16 @@ async function analyzePage(url: string) {
       canonicalUrl,
       robotsDirectives: robotsMeta,
       isIndexable,
+      wordCount,
+      loadTimeMs,
+      h2Count,
+      h3Count,
+      imageCount,
+      imagesWithoutAlt,
+      internalLinksCount,
+      externalLinksCount,
+      hasSchemaMarkup,
+      pageSize,
       links,
       issues
     };
@@ -461,9 +574,9 @@ serve(async (req) => {
       // Realizar el rastreo
       const visitedUrls = new Set();
       
-      // Limitar el tiempo máximo del rastreo a 25 segundos para evitar timeout
+      // Limitar el tiempo máximo del rastreo a 28 segundos para evitar timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const timeoutId = setTimeout(() => controller.abort(), 28000);
       
       let results;
       
@@ -521,7 +634,17 @@ serve(async (req) => {
               h1: page.h1,
               canonical_url: page.canonicalUrl,
               robots_directives: page.robotsDirectives,
-              is_indexable: page.isIndexable
+              is_indexable: page.isIndexable,
+              word_count: page.wordCount,
+              load_time_ms: page.loadTimeMs,
+              h2_count: page.h2Count,
+              h3_count: page.h3Count,
+              image_count: page.imageCount,
+              images_without_alt: page.imagesWithoutAlt,
+              internal_links_count: page.internalLinksCount,
+              external_links_count: page.externalLinksCount,
+              has_schema_markup: page.hasSchemaMarkup,
+              page_size_kb: page.pageSize
             })
             .select()
             .single();

@@ -4,10 +4,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   fetchCrawlResult, 
   fetchCrawlPages, 
-  fetchCrawlIssues, 
+  fetchCrawlIssues,
+  fetchCrawlLinks,
   CrawlResult, 
   CrawlPage, 
-  CrawlIssue 
+  CrawlIssue,
+  CrawlLink
 } from '@/services/seo-crawler';
 import { toast } from 'sonner';
 
@@ -26,6 +28,7 @@ const CrawlerDetailPage: React.FC = () => {
   const [pages, setPages] = useState<CrawlPage[]>([]);
   const [selectedPage, setSelectedPage] = useState<CrawlPage | null>(null);
   const [pageIssues, setPageIssues] = useState<CrawlIssue[]>([]);
+  const [pageLinks, setPageLinks] = useState<CrawlLink[]>([]);
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
   const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
   
@@ -98,15 +101,19 @@ const CrawlerDetailPage: React.FC = () => {
     loadData();
   }, [crawlId, clientId, navigate]);
   
-  // Cargar problemas de una página específica
+  // Cargar problemas y enlaces de una página específica
   const handlePageSelect = async (page: CrawlPage) => {
     try {
       setSelectedPage(page);
       const issues = await fetchCrawlIssues(page.id);
       setPageIssues(issues || []);
+      
+      // Cargar también los enlaces de la página
+      const links = await fetchCrawlLinks(page.id);
+      setPageLinks(links || []);
     } catch (error) {
-      console.error('Error loading page issues:', error);
-      toast.error('Error al cargar los problemas de la página');
+      console.error('Error loading page data:', error);
+      toast.error('Error al cargar los datos de la página');
     }
   };
   
@@ -134,6 +141,7 @@ const CrawlerDetailPage: React.FC = () => {
         pages={pages}
         selectedPage={selectedPage}
         pageIssues={pageIssues}
+        pageLinks={pageLinks}
         issuesByType={issuesByType}
         onPageSelect={handlePageSelect}
       />

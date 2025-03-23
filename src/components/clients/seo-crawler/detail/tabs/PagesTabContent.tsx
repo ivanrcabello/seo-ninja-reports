@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CrawlPage, CrawlIssue } from '@/services/seo-crawler';
+import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler';
 import BlurredCard from '@/components/ui/BlurredCard';
 import PagesList from './PagesList';
 import PageDetail from './PageDetail';
@@ -10,6 +10,7 @@ interface PagesTabContentProps {
   pages: CrawlPage[];
   selectedPage: CrawlPage | null;
   pageIssues: CrawlIssue[];
+  pageLinks?: CrawlLink[];
   onPageSelect: (page: CrawlPage) => void;
 }
 
@@ -17,6 +18,7 @@ const PagesTabContent: React.FC<PagesTabContentProps> = ({
   pages,
   selectedPage,
   pageIssues,
+  pageLinks = [],
   onPageSelect
 }) => {
   if (!pages || pages.length === 0) {
@@ -49,6 +51,7 @@ const PagesTabContent: React.FC<PagesTabContentProps> = ({
           <PageDetail
             page={selectedPage}
             issues={pageIssues}
+            links={pageLinks}
           />
         ) : (
           <div className="flex flex-col items-center justify-center p-12">
