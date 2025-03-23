@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,8 +78,16 @@ const SharedContract = () => {
         
         console.log('Successfully fetched contract:', data[0]);
         
-        // Type the data as PublicContract
-        const typedContract: PublicContract = data[0];
+        // Type the data as PublicContract with proper status validation
+        const contractData = data[0];
+        const validStatuses: ClientContract['status'][] = ['draft', 'sent', 'signed', 'expired', 'cancelled'];
+        const typedContract: PublicContract = {
+          ...contractData,
+          // Ensure status is one of the valid statuses, defaulting to 'draft' if not
+          status: validStatuses.includes(contractData.status as any) 
+            ? (contractData.status as ClientContract['status']) 
+            : 'draft'
+        };
         
         setContract(typedContract);
         
