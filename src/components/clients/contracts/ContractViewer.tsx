@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ClientContract } from '@/types/client.types';
@@ -32,8 +32,19 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
     }
   }, [open]);
   
-  const getStatusIcon = () => {
-    switch (contract?.status) {
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      setIsSignDialogOpen(false);
+      setIsShareDialogOpen(false);
+      setIsSigningAsAdmin(false);
+    };
+  }, []);
+  
+  const getStatusIcon = useCallback(() => {
+    if (!contract) return <FileText className="h-5 w-5" />;
+    
+    switch (contract.status) {
       case 'draft':
         return <FileText className="h-5 w-5 text-muted-foreground" />;
       case 'sent':
@@ -47,10 +58,12 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
       default:
         return <FileText className="h-5 w-5" />;
     }
-  };
+  }, [contract]);
   
-  const getStatusLabel = () => {
-    switch (contract?.status) {
+  const getStatusLabel = useCallback(() => {
+    if (!contract) return 'Desconocido';
+    
+    switch (contract.status) {
       case 'draft': return 'Borrador';
       case 'sent': return 'Enviado';
       case 'signed': return 'Firmado';
@@ -58,10 +71,12 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
       case 'cancelled': return 'Cancelado';
       default: return 'Desconocido';
     }
-  };
+  }, [contract]);
   
-  const getStatusColor = () => {
-    switch (contract?.status) {
+  const getStatusColor = useCallback(() => {
+    if (!contract) return 'bg-muted text-muted-foreground';
+    
+    switch (contract.status) {
       case 'draft': return 'bg-muted text-muted-foreground';
       case 'sent': return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
       case 'signed': return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
@@ -69,9 +84,9 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
       case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
       default: return 'bg-muted text-muted-foreground';
     }
-  };
+  }, [contract]);
   
-  const formatDate = (dateString?: string) => {
+  const formatDate = useCallback((dateString?: string) => {
     if (!dateString) return 'No disponible';
     try {
       return formatDistance(new Date(dateString), new Date(), { 
@@ -82,15 +97,17 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
       console.error('Error parsing date:', error);
       return 'Fecha desconocida';
     }
-  };
+  }, []);
   
-  const handleOpenSignDialog = (isAdmin: boolean) => {
+  const handleOpenSignDialog = useCallback((isAdmin: boolean) => {
     setIsSigningAsAdmin(isAdmin);
     setIsSignDialogOpen(true);
-  };
+  }, []);
   
-  const handleSignContract = async (signature: string) => {
+  const handleSignContract = useCallback(async (signature: string) => {
     try {
+      if (!contract) return;
+      
       await signContract(contract.id, signature, isSigningAsAdmin);
       setIsSignDialogOpen(false);
       toast.success('Contrato firmado exitosamente');
@@ -98,13 +115,15 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
       console.error('Error signing contract:', error);
       toast.error('Error al firmar el contrato');
     }
-  };
+  }, [contract, signContract, isSigningAsAdmin]);
   
-  const handleShare = () => {
+  const handleShare = useCallback(() => {
     setIsShareDialogOpen(true);
-  };
+  }, []);
   
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
+    if (!contract) return;
+    
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast.error('El navegador bloqueó la ventana emergente. Por favor, permita ventanas emergentes para imprimir.');
@@ -152,16 +171,24 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
     setTimeout(() => {
       printWindow.print();
     }, 500);
-  };
+  }, [contract]);
   
-  // Ensure we don't render anything if contract is not available
+  // If contract is undefined or null, don't render dialog
   if (!contract) {
     return null;
   }
   
+  // Handle dialog close
+  const handleDialogOpenChange = (open: boolean) => {
+    // Only close if not already closing child dialogs
+    if (!isSignDialogOpen && !isShareDialogOpen) {
+      onOpenChange(open);
+    }
+  };
+  
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-between items-center">
@@ -286,6 +313,7 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
         </DialogContent>
       </Dialog>
       
+      {/* Only render dialogs if the main dialog is open */}
       {open && (
         <>
           <SignatureDialog 
@@ -295,13 +323,15 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
             isAdmin={isSigningAsAdmin}
           />
           
-          <ShareContractDialog 
-            open={isShareDialogOpen}
-            onOpenChange={setIsShareDialogOpen}
-            contractId={contract.id}
-            contractTitle={contract.title}
-            onGenerateShareUrl={() => generateShareUrl(contract.id)}
-          />
+          {contract && (
+            <ShareContractDialog 
+              open={isShareDialogOpen}
+              onOpenChange={setIsShareDialogOpen}
+              contractId={contract.id}
+              contractTitle={contract.title}
+              onGenerateShareUrl={() => generateShareUrl(contract.id)}
+            />
+          )}
         </>
       )}
     </>

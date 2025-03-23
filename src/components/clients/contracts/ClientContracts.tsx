@@ -24,14 +24,16 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
 
   // Clean up state on component unmount or when clientId changes
   useEffect(() => {
-    return () => {
+    const cleanup = () => {
       setIsContractDialogOpen(false);
       setEditingContract(null);
       setViewingContract(null);
     };
+    
+    return cleanup;
   }, [clientId]);
 
-  // Handle browser back button
+  // Handle browser back button with popstate event
   useEffect(() => {
     const handlePopState = () => {
       setIsContractDialogOpen(false);
@@ -40,6 +42,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     };
 
     window.addEventListener('popstate', handlePopState);
+    
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
@@ -57,21 +60,21 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     }
   };
 
-  const handleCreateContract = () => {
+  const handleCreateContract = useCallback(() => {
     setEditingContract(null);
     setIsContractDialogOpen(true);
-  };
+  }, []);
 
-  const handleEditContract = (contract: ClientContract) => {
+  const handleEditContract = useCallback((contract: ClientContract) => {
     setEditingContract(contract);
     setIsContractDialogOpen(true);
-  };
+  }, []);
 
-  const handleViewContract = (contract: ClientContract) => {
+  const handleViewContract = useCallback((contract: ClientContract) => {
     setViewingContract(contract);
-  };
+  }, []);
 
-  const handleDeleteContract = async (id: string) => {
+  const handleDeleteContract = useCallback(async (id: string) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este contrato? Esta acción no se puede deshacer.')) {
       try {
         await deleteContract(id);
@@ -79,14 +82,14 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
         console.error('Error deleting contract:', error);
       }
     }
-  };
+  }, [deleteContract]);
 
-  // Handler for closing the contract viewer - using useCallback to avoid recreating the function
+  // Handler for closing the contract viewer
   const handleCloseViewer = useCallback(() => {
     setViewingContract(null);
   }, []);
 
-  // Handler for closing the contract dialog - using useCallback to avoid recreating the function
+  // Handler for closing the contract dialog
   const handleCloseDialog = useCallback((open: boolean) => {
     setIsContractDialogOpen(open);
     if (!open) {

@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, Copy, Link, Mail } from 'lucide-react';
+import { Loader2, Copy, Check, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ShareContractDialogProps {
@@ -22,112 +22,122 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
   onGenerateShareUrl
 }) => {
   const [shareUrl, setShareUrl] = useState<string>('');
-  const [copied, setCopied] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   
-  // Generate share link when dialog opens
-  React.useEffect(() => {
-    if (open) {
-      generateShareLink();
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setIsCopied(false);
     }
   }, [open]);
   
-  const generateShareLink = async () => {
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      setShareUrl('');
+      setIsLoading(false);
+      setIsCopied(false);
+    };
+  }, []);
+  
+  const handleGenerateUrl = async () => {
+    setIsLoading(true);
     try {
-      setIsGenerating(true);
-      
-      // Log for debugging
-      console.log('Generating share URL for contract:', contractId);
-      
       const url = await onGenerateShareUrl();
-      console.log('Generated share URL:', url);
-      
       setShareUrl(url);
     } catch (error) {
       console.error('Error generating share URL:', error);
-      toast.error('Error al generar enlace para compartir');
+      toast.error('No se pudo generar el enlace para compartir');
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
   };
   
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      toast.success('Enlace copiado al portapapeles');
-      
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch (error) {
-      toast.error('No se pudo copiar el enlace');
-      console.error('Error copiando al portapapeles:', error);
-    }
-  };
-  
-  const handleEmailShare = () => {
-    const subject = encodeURIComponent(`Contrato: ${contractTitle}`);
-    const body = encodeURIComponent(`Hola,\n\nQuiero compartir contigo este contrato para tu revisión y firma.\n\nPuedes verlo en: ${shareUrl}\n\nSaludos.`);
+  const handleCopyToClipboard = () => {
+    if (!shareUrl) return;
     
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        setIsCopied(true);
+        toast.success('Enlace copiado al portapapeles');
+        setTimeout(() => setIsCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('Error copying to clipboard:', err);
+        toast.error('No se pudo copiar el enlace');
+      });
   };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md glass">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Compartir Contrato</DialogTitle>
           <DialogDescription>
-            Comparte este contrato mediante un enlace directo para que pueda ser firmado.
+            Genera un enlace para compartir este contrato con tu cliente.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6 py-4">
-          <div className="flex items-center space-x-2">
-            <div className="grid flex-1 gap-2">
-              <Input
-                value={shareUrl}
-                readOnly
-                className="w-full"
-                placeholder={isGenerating ? "Generando enlace..." : "Enlace de compartir"}
-                disabled={isGenerating}
-              />
-            </div>
+        
+        <div className="flex flex-col gap-4 py-4">
+          <p className="text-sm text-muted-foreground">
+            <strong>Contrato:</strong> {contractTitle}
+          </p>
+          
+          {!shareUrl ? (
             <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={handleCopyLink} 
-              className="transition-all group hover:bg-primary hover:text-primary-foreground"
-              disabled={isGenerating || !shareUrl}
+              onClick={handleGenerateUrl} 
+              className="w-full" 
+              disabled={isLoading}
             >
-              {copied ? (
-                <Check className="h-4 w-4 text-green-500 group-hover:text-primary-foreground" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generando enlace...
+                </>
               ) : (
-                <Copy className="h-4 w-4 group-hover:text-primary-foreground" />
+                <>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Generar enlace para compartir
+                </>
               )}
             </Button>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button 
-              onClick={handleCopyLink} 
-              className="w-full sm:w-auto gap-2 group"
-              disabled={isGenerating || !shareUrl}
-            >
-              <Link className="h-4 w-4 group-hover:animate-pulse" />
-              Copiar enlace
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleEmailShare} 
-              className="w-full sm:w-auto gap-2 group transition-colors hover:bg-primary hover:text-primary-foreground"
-              disabled={isGenerating || !shareUrl}
-            >
-              <Mail className="h-4 w-4 group-hover:animate-pulse" />
-              Compartir por email
-            </Button>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1"
+                />
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  onClick={handleCopyToClipboard}
+                  className="shrink-0"
+                >
+                  {isCopied ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Cualquier persona con este enlace podrá ver y firmar el contrato.
+              </p>
+            </div>
+          )}
         </div>
+        
+        <DialogFooter className="sm:justify-end">
+          <Button
+            variant="secondary"
+            onClick={() => onOpenChange(false)}
+          >
+            Cerrar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

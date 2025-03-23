@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Navigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ClientHeader from '@/components/clients/ClientHeader';
@@ -13,11 +13,21 @@ import useReports from '@/hooks/useReports';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   const { getClient, isLoading: clientsLoading, deleteClient } = useClients();
   const { getClientReports, isLoading: reportsLoading } = useReports();
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts'>('overview');
+  const [didMount, setDidMount] = useState(false);
+
+  // Set mount state
+  useEffect(() => {
+    setDidMount(true);
+    return () => {
+      setDidMount(false);
+    };
+  }, []);
 
   // Redirect if not logged in
   if (!user && !authLoading) {
@@ -46,30 +56,44 @@ const ClientDetail = () => {
     }
   };
 
+  // Handle tab changes
+  const handleTabChange = useCallback((tab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts') => {
+    setActiveTab(tab);
+    // Update URL hash without triggering full page reload
+    if (didMount) {
+      const newUrl = tab === 'overview' 
+        ? `${window.location.pathname}` 
+        : `${window.location.pathname}#${tab}`;
+      
+      window.history.pushState({}, '', newUrl);
+    }
+  }, [didMount]);
+
   // Handle anchor navigation to tabs (for direct links)
-  React.useEffect(() => {
+  useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '#reports') {
+      const hash = window.location.hash.replace('#', '');
+      
+      if (hash === 'reports') {
         setActiveTab('reports');
-      } else if (hash === '#new-report') {
+      } else if (hash === 'new-report') {
         setActiveTab('new-report');
-      } else if (hash === '#proposals') {
+      } else if (hash === 'proposals') {
         setActiveTab('proposals');
-      } else if (hash === '#contracts') {
+      } else if (hash === 'contracts') {
         setActiveTab('contracts');
-      } else {
+      } else if (!hash) {
         setActiveTab('overview');
       }
     };
     
-    // Check on mount
+    // Check on mount and location changes
     handleHashChange();
     
     // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [location]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -93,7 +117,7 @@ const ClientDetail = () => {
                 client={client}
                 reports={reports}
                 activeTab={activeTab}
-                setActiveTab={setActiveTab}
+                setActiveTab={handleTabChange}
                 clientId={id}
               />
             </>
