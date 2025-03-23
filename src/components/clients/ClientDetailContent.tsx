@@ -9,12 +9,13 @@ import { Report } from '@/types/report.types';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import ClientProposals from './proposals/ClientProposals';
 import ClientContracts from './contracts/ClientContracts';
+import ClientInvoices from './invoices/ClientInvoices';
 
 interface ClientDetailContentProps {
   client: Client;
   reports: Report[];
-  activeTab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts';
-  setActiveTab: (tab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts') => void;
+  activeTab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts' | 'invoices';
+  setActiveTab: (tab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts' | 'invoices') => void;
   clientId: string;
 }
 
@@ -45,7 +46,7 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
 
   const handleTabChange = (value: string) => {
     console.log("Tab changing from", activeTab, "to", value);
-    setActiveTab(value as 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts');
+    setActiveTab(value as 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts' | 'invoices');
   };
 
   return (
@@ -55,12 +56,13 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-5 w-full max-w-md">
+        <TabsList className="grid grid-cols-6 w-full max-w-md">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="new-report">New Report</TabsTrigger>
           <TabsTrigger value="proposals">Propuestas</TabsTrigger>
           <TabsTrigger value="contracts">Contratos</TabsTrigger>
+          <TabsTrigger value="invoices">Facturas</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="mt-6">
@@ -91,6 +93,14 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         <TabsContent value="contracts" className="mt-6">
           <ClientContracts 
             key={`contracts-${clientId}-${activeTab}`} 
+            clientId={clientId} 
+            clientName={client.name} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="invoices" className="mt-6">
+          <ClientInvoices 
+            key={`invoices-${clientId}-${activeTab}`} 
             clientId={clientId} 
             clientName={client.name} 
           />

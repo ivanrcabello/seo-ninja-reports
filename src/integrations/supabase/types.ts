@@ -176,6 +176,59 @@ export type Database = {
           },
         ]
       }
+      client_invoices: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          payment_date: string | null
+          payment_method: string | null
+          shared_url: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          payment_date?: string | null
+          payment_method?: string | null
+          shared_url?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          payment_date?: string | null
+          payment_method?: string | null
+          shared_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           client_id: string
@@ -743,6 +796,24 @@ export type Database = {
         }
         Relationships: []
       }
+      public_invoices: {
+        Row: {
+          amount: number | null
+          client_name: string | null
+          client_website: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string | null
+          payment_date: string | null
+          payment_method: string | null
+          shared_url: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       public_proposals: {
         Row: {
           client_name: string | null
@@ -799,6 +870,26 @@ export type Database = {
           admin_signed_at: string
           admin_signature: string
           shared_url: string
+        }[]
+      }
+      get_public_invoice_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          amount: number
+          status: string
+          due_date: string
+          payment_method: string
+          payment_date: string
+          shared_url: string
+          created_at: string
+          updated_at: string
+          client_name: string
+          client_website: string
         }[]
       }
       update_contract_by_shared_url: {

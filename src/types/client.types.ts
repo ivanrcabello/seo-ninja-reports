@@ -53,6 +53,21 @@ export interface ClientContract {
   admin_signature?: string;
 }
 
+export interface ClientInvoice {
+  id: string;
+  client_id: string;
+  title: string;
+  description?: string;
+  amount: number;
+  status: 'pending' | 'paid' | 'cancelled' | 'overdue';
+  due_date?: string;
+  payment_method?: string;
+  payment_date?: string;
+  shared_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ClientNote {
   id: string;
   client_id: string;

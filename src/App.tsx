@@ -16,6 +16,7 @@ import ReportDetail from './pages/ReportDetail';
 import PublicReport from './pages/PublicReport';
 import SharedProposal from './pages/SharedProposal';
 import SharedContract from './pages/SharedContract';
+import SharedInvoice from './pages/SharedInvoice';
 import Contacto from './pages/Contacto';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
@@ -61,6 +62,7 @@ function App() {
                   <Route path="/shared/reports/:id" element={<PublicReport />} />
                   <Route path="/shared/proposals/:id" element={<SharedProposal />} />
                   <Route path="/shared/contracts/:id" element={<SharedContract />} />
+                  <Route path="/shared/invoices/:id" element={<SharedInvoice />} />
                   <Route path="/contacto" element={<Contacto />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogDetail />} />
