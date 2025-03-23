@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,37 +59,28 @@ const SharedContract = () => {
         
         console.log('Fetching contract with shared_url:', id);
         
-        // Use the client_contracts table directly with a view that includes client name
+        // Use the SECURITY DEFINER function to get contract data without RLS issues
         const { data, error: fetchError } = await supabase
-          .from('client_contracts')
-          .select(`
-            *,
-            clients:client_id (
-              name,
-              website
-            )
-          `)
-          .eq('shared_url', id)
-          .single();
+          .rpc('get_public_contract_by_shared_url', {
+            shared_url_param: id
+          });
         
         if (fetchError) {
           console.error('Error fetching shared contract:', fetchError);
           throw new Error(`Error al cargar contrato: ${fetchError.message}`);
         }
         
-        if (!data) {
+        if (!data || data.length === 0) {
           console.error('No contract found with shared_url:', id);
           throw new Error(`Contrato no encontrado`);
         }
         
-        console.log('Successfully fetched contract:', data);
+        console.log('Successfully fetched contract:', data[0]);
         
-        // Type the data as PublicContract with client info
+        // Type the data as PublicContract
         const typedContract: PublicContract = {
-          ...data,
-          client_name: data.clients?.name,
-          client_website: data.clients?.website,
-          status: data.status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
+          ...data[0],
+          status: data[0].status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
         };
         
         setContract(typedContract);
@@ -114,21 +104,25 @@ const SharedContract = () => {
       
       const now = new Date().toISOString();
       
-      // Actualizar el contrato con la firma del cliente
-      const { error } = await supabase
-        .from('client_contracts')
-        .update({
-          client_signed: true,
-          client_signed_at: now,
-          client_signature: signature,
-          // Si el admin ya firmó, cambiar el estado a 'signed'
-          ...(contract.admin_signed ? { status: 'signed' } : {})
-        })
-        .eq('shared_url', id);
+      // Use the SECURITY DEFINER function to update the contract
+      const { data, error } = await supabase
+        .rpc('update_contract_by_shared_url', {
+          shared_url_param: id,
+          client_signed_param: true,
+          client_signed_at_param: now,
+          client_signature_param: signature,
+          // If the admin already signed, change the status to 'signed'
+          status_param: contract.admin_signed ? 'signed' : null
+        });
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating contract:', error);
+        throw error;
+      }
       
-      // Actualizar el estado local
+      console.log('Contract updated successfully:', data);
+      
+      // Update the local state
       setContract(prev => {
         if (!prev) return null;
         return {
