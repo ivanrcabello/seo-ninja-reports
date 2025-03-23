@@ -12,13 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Download, Search, Filter, FileText, RefreshCw, FileBarChart } from 'lucide-react';
+import { Download, Search, RefreshCw, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Loader2 } from 'lucide-react';
 import { ClientInvoice } from '@/types/client.types';
-import { SharedInvoice } from '@/components/shared-invoice/types';
 
 const InvoicesTab: React.FC = () => {
   const [invoices, setInvoices] = useState<(ClientInvoice & { client_name: string })[]>([]);
@@ -55,7 +54,7 @@ const InvoicesTab: React.FC = () => {
       const formattedData = data.map(invoice => ({
         ...invoice,
         client_name: invoice.clients?.name || 'Cliente desconocido'
-      }));
+      })) as (ClientInvoice & { client_name: string })[];
 
       setInvoices(formattedData);
 
@@ -68,7 +67,7 @@ const InvoicesTab: React.FC = () => {
     }
   };
 
-  const calculateStats = (invoicesData: any[]) => {
+  const calculateStats = (invoicesData: (ClientInvoice & { client_name: string })[]) => {
     const total = invoicesData.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
     const paid = invoicesData
       .filter(invoice => invoice.status === 'paid')
