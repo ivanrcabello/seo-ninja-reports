@@ -58,15 +58,18 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
 }) => {
   const { title, amount, status, created_at, due_date } = invoice;
   
+  // Function to handle card click while avoiding dropdown menu clicks
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Check if the click occurred in the dropdown area
+    if (!(e.target as HTMLElement).closest('.dropdown-area')) {
+      onClick();
+    }
+  };
+  
   return (
     <Card 
       className="hover:shadow-md transition-shadow cursor-pointer"
-      onClick={(e) => {
-        // Prevent click when clicking dropdown menu
-        if (!(e.target as HTMLElement).closest('.dropdown-trigger')) {
-          onClick();
-        }
-      }}
+      onClick={handleCardClick}
     >
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
@@ -74,32 +77,39 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <h3 className="font-medium text-lg line-clamp-1">{title}</h3>
             <p className="text-2xl font-bold">{amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 dropdown-trigger"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Abrir menú</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                <Edit2 className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="dropdown-area">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 dropdown-trigger"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Abrir menú</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={(e) => { 
+                  e.stopPropagation(); 
+                  onEdit(); 
+                }}>
+                  <Edit2 className="mr-2 h-4 w-4" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    onDelete(); 
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         <div className="mt-4 flex flex-col gap-1">
@@ -123,15 +133,20 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
         </div>
         
         {invoice.shared_url && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8"
-            onClick={(e) => { e.stopPropagation(); window.open(`/shared/invoices/${invoice.shared_url}`, '_blank'); }}
-          >
-            <ExternalLink className="h-4 w-4 mr-1" />
-            Ver enlace
-          </Button>
+          <div className="dropdown-area">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                window.open(`/shared/invoices/${invoice.shared_url}`, '_blank'); 
+              }}
+            >
+              <ExternalLink className="h-4 w-4 mr-1" />
+              Ver enlace
+            </Button>
+          </div>
         )}
       </CardFooter>
     </Card>
