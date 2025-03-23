@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2, ExternalLink, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Client } from '@/types/client.types';
-import { getCrawlResults, deleteCrawlResult, CrawlResult } from '@/services/seoCrawlerService';
+import { fetchCrawlResults, deleteCrawlRecord, CrawlResult } from '@/services/seo-crawler';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import CrawlerDialog from './CrawlerDialog';
@@ -29,7 +28,7 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
   const loadCrawlResults = async () => {
     try {
       setIsLoading(true);
-      const results = await getCrawlResults(client.id);
+      const results = await fetchCrawlResults(client.id);
       setCrawlResults(results || []);
     } catch (error) {
       console.error('Error al cargar resultados de crawl:', error);
@@ -42,7 +41,7 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
   const handleDeleteResult = async (id: string) => {
     try {
       setIsDeleting(id);
-      await deleteCrawlResult(id);
+      await deleteCrawlRecord(id);
       setCrawlResults(prev => prev.filter(r => r.id !== id));
       toast.success('Análisis eliminado correctamente');
     } catch (error) {

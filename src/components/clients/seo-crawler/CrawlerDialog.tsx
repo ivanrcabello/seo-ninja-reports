@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Client } from '@/types/client.types';
-import { startCrawl, getSettings } from '@/services/seoCrawlerService';
+import { startCrawl, getSettings } from '@/services/seo-crawler';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash } from 'lucide-react';
 
