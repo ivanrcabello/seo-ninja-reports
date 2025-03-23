@@ -12,12 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Download, Search, RefreshCw, FileText } from 'lucide-react';
+import { Download, Search, RefreshCw, FileText, Eye, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Loader2 } from 'lucide-react';
 import { ClientInvoice } from '@/types/client.types';
+import { useNavigate } from 'react-router-dom';
 
 const InvoicesTab: React.FC = () => {
   const [invoices, setInvoices] = useState<(ClientInvoice & { client_name: string })[]>([]);
@@ -25,6 +26,7 @@ const InvoicesTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const navigate = useNavigate();
 
   // Stats
   const [totalAmount, setTotalAmount] = useState(0);
@@ -165,6 +167,20 @@ const InvoicesTab: React.FC = () => {
     });
   };
 
+  // Handle view invoice
+  const handleViewInvoice = (invoice: ClientInvoice & { client_name: string }) => {
+    if (invoice.client_id) {
+      navigate(`/clients/${invoice.client_id}?tab=invoices&invoiceId=${invoice.id}`);
+    }
+  };
+
+  // Handle edit invoice
+  const handleEditInvoice = (invoice: ClientInvoice & { client_name: string }) => {
+    if (invoice.client_id) {
+      navigate(`/clients/${invoice.client_id}?tab=invoices&invoiceId=${invoice.id}&edit=true`);
+    }
+  };
+
   const filteredInvoices = getFilteredInvoices();
 
   return (
@@ -274,12 +290,13 @@ const InvoicesTab: React.FC = () => {
                       <TableHead>Vencimiento</TableHead>
                       <TableHead>Fecha de pago</TableHead>
                       <TableHead>Método de pago</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredInvoices.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                           No se encontraron facturas con los filtros actuales
                         </TableCell>
                       </TableRow>
@@ -297,6 +314,26 @@ const InvoicesTab: React.FC = () => {
                             {invoice.payment_date && format(new Date(invoice.payment_date), 'dd MMM yyyy', { locale: es })}
                           </TableCell>
                           <TableCell>{invoice.payment_method || '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end space-x-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleViewInvoice(invoice)}
+                                title="Ver factura"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleEditInvoice(invoice)}
+                                title="Editar factura"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
