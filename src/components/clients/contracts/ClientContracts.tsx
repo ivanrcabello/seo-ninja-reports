@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useClientContracts } from '@/hooks/useClientContracts';
 import { ClientContract } from '@/types/client.types';
 import { Button } from '@/components/ui/button';
@@ -22,12 +22,26 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   const [viewingContract, setViewingContract] = useState<ClientContract | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Clean up state on component unmount
+  // Clean up state on component unmount or when clientId changes
   useEffect(() => {
     return () => {
       setIsContractDialogOpen(false);
       setEditingContract(null);
       setViewingContract(null);
+    };
+  }, [clientId]);
+
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsContractDialogOpen(false);
+      setEditingContract(null);
+      setViewingContract(null);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
@@ -67,20 +81,18 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     }
   };
 
-  // Handler for closing the contract viewer
-  const handleCloseViewer = () => {
+  // Handler for closing the contract viewer - using useCallback to avoid recreating the function
+  const handleCloseViewer = useCallback(() => {
     setViewingContract(null);
-  };
+  }, []);
 
-  // Handler for closing the contract dialog
-  const handleCloseDialog = (open: boolean) => {
+  // Handler for closing the contract dialog - using useCallback to avoid recreating the function
+  const handleCloseDialog = useCallback((open: boolean) => {
+    setIsContractDialogOpen(open);
     if (!open) {
-      setIsContractDialogOpen(false);
       setEditingContract(null);
-    } else {
-      setIsContractDialogOpen(true);
     }
-  };
+  }, []);
 
   if (error) {
     return (
@@ -111,13 +123,15 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
         onViewContract={handleViewContract}
       />
       
-      <ContractDialog
-        clientId={clientId}
-        clientName={clientName}
-        open={isContractDialogOpen}
-        onOpenChange={handleCloseDialog}
-        editingContract={editingContract}
-      />
+      {isContractDialogOpen && (
+        <ContractDialog
+          clientId={clientId}
+          clientName={clientName}
+          open={isContractDialogOpen}
+          onOpenChange={handleCloseDialog}
+          editingContract={editingContract}
+        />
+      )}
       
       {viewingContract && (
         <ContractViewer

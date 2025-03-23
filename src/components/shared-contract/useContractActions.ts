@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PublicContract } from './types';
 import { toast } from 'sonner';
@@ -11,9 +11,12 @@ export const useContractActions = (
 ) => {
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
 
-  const handleSignContract = async (signature: string) => {
+  const handleSignContract = useCallback(async (signature: string) => {
     try {
-      if (!id || !contract) return;
+      if (!id || !contract) {
+        toast.error('No se puede firmar el contrato: Información faltante');
+        return;
+      }
       
       const now = new Date().toISOString();
       
@@ -53,9 +56,9 @@ export const useContractActions = (
       console.error('Error signing contract:', error);
       toast.error('Error al firmar el contrato: ' + error.message);
     }
-  };
+  }, [id, contract, setContract]);
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     if (!contract) return;
     
     const printWindow = window.open('', '_blank');
@@ -106,7 +109,7 @@ export const useContractActions = (
     setTimeout(() => {
       printWindow.print();
     }, 500);
-  };
+  }, [contract]);
 
   return {
     isSignDialogOpen,

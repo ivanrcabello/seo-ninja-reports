@@ -3,16 +3,23 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Pencil, Download } from 'lucide-react';
 import { PublicContract } from './types';
+import SignatureDialog from '@/components/clients/contracts/SignatureDialog';
 
 interface SignatureSectionProps {
   contract: PublicContract;
   onOpenSignDialog: () => void;
+  onSign: (signature: string) => void;
+  isSignDialogOpen: boolean;
+  setIsSignDialogOpen: (open: boolean) => void;
   onPrint: () => void;
 }
 
 const SignatureSection: React.FC<SignatureSectionProps> = ({ 
   contract, 
   onOpenSignDialog, 
+  onSign,
+  isSignDialogOpen,
+  setIsSignDialogOpen,
   onPrint 
 }) => {
   if (!contract) return null;
@@ -87,6 +94,14 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({
           Imprimir / Guardar PDF
         </Button>
       </div>
+      
+      {/* Signature dialog */}
+      <SignatureDialog 
+        open={isSignDialogOpen}
+        onOpenChange={setIsSignDialogOpen}
+        onSign={onSign}
+        isAdmin={false}
+      />
     </div>
   );
 };

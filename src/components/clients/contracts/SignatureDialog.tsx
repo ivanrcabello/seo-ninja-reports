@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Check, X, RefreshCw } from 'lucide-react';
 
@@ -19,125 +19,124 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [hasSignature, setHasSignature] = useState(false);
-  const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
   
   // Initialize canvas when dialog opens
   useEffect(() => {
-    if (open && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      
-      if (ctx) {
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#000000';
-        setContext(ctx);
-        
-        // Adjust canvas size to match its container
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        
-        // Clear the canvas
-        clearCanvas();
-      }
-    }
+    if (!open) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas properties
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000000';
+    
+    // Set canvas dimensions to match displayed size
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSignature(false);
+    
+    // Cleanup function
+    return () => {
+      setIsDrawing(false);
+      setHasSignature(false);
+    };
   }, [open]);
   
-  // Ensure canvas adjusts correctly when window is resized
-  useEffect(() => {
-    const handleResize = () => {
-      if (canvasRef.current && context) {
-        const imageData = context.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
-        canvasRef.current.width = canvasRef.current.offsetWidth;
-        canvasRef.current.height = canvasRef.current.offsetHeight;
-        context.putImageData(imageData, 0, 0);
-        context.lineWidth = 2;
-        context.lineCap = 'round';
-        context.strokeStyle = '#000000';
-      }
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [context]);
-  
-  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement) => {
-    const rect = canvas.getBoundingClientRect();
-    let x, y;
-    
-    if ('touches' in e) {
-      // Touch event
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      // Mouse event
-      x = e.nativeEvent.offsetX;
-      y = e.nativeEvent.offsetY;
-    }
-    
-    return { x, y };
-  };
-  
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!context || !canvasRef.current) return;
-    
-    // Prevent default behavior for touch events to avoid scrolling
-    if ('touches' in e) {
-      e.preventDefault();
-    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     
     setIsDrawing(true);
     setHasSignature(true);
     
-    const { x, y } = getCoordinates(e, canvasRef.current);
-    setLastPosition({ x, y });
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     
-    context.beginPath();
-    context.moveTo(x, y);
+    // Get the correct coordinates
+    const rect = canvas.getBoundingClientRect();
+    const x = e.type.includes('mouse') 
+      ? (e as React.MouseEvent).clientX - rect.left 
+      : (e as React.TouchEvent).touches[0].clientX - rect.left;
+    const y = e.type.includes('mouse') 
+      ? (e as React.MouseEvent).clientY - rect.top 
+      : (e as React.TouchEvent).touches[0].clientY - rect.top;
+    
+    // Begin the path at the current position
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    
+    // Prevent default behavior to avoid scrolling on touch devices
+    e.preventDefault();
   };
   
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !context || !canvasRef.current) return;
+    if (!isDrawing) return;
     
-    // Prevent default behavior for touch events to avoid scrolling
-    if ('touches' in e) {
-      e.preventDefault();
-    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     
-    const { x, y } = getCoordinates(e, canvasRef.current);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     
-    context.beginPath();
-    context.moveTo(lastPosition.x, lastPosition.y);
-    context.lineTo(x, y);
-    context.stroke();
+    // Get the correct coordinates
+    const rect = canvas.getBoundingClientRect();
+    const x = e.type.includes('mouse') 
+      ? (e as React.MouseEvent).clientX - rect.left 
+      : (e as React.TouchEvent).touches[0].clientX - rect.left;
+    const y = e.type.includes('mouse') 
+      ? (e as React.MouseEvent).clientY - rect.top 
+      : (e as React.TouchEvent).touches[0].clientY - rect.top;
     
-    setLastPosition({ x, y });
+    // Draw line to the current position
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    
+    // Prevent default behavior to avoid scrolling on touch devices
+    e.preventDefault();
   };
   
   const endDrawing = () => {
     setIsDrawing(false);
-    if (context) {
-      context.closePath();
-    }
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.closePath();
   };
   
   const clearCanvas = () => {
-    if (context && canvasRef.current) {
-      context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      setHasSignature(false);
-    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSignature(false);
   };
   
   const saveSignature = () => {
-    if (canvasRef.current) {
+    if (!canvasRef.current) return;
+    
+    try {
       const signatureImage = canvasRef.current.toDataURL('image/png');
       onSign(signatureImage);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error saving signature:', error);
     }
   };
   
@@ -148,15 +147,16 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
           <DialogTitle>
             {isAdmin ? 'Firma como Administrador' : 'Firma como Cliente'}
           </DialogTitle>
+          <DialogDescription>
+            Dibuja tu firma en el área blanca de abajo
+          </DialogDescription>
         </DialogHeader>
         
         <div className="flex flex-col items-center space-y-4">
           <div className="border rounded-md w-full bg-background overflow-hidden">
             <canvas
               ref={canvasRef}
-              width={500}
-              height={200}
-              className="w-full h-[200px] touch-none cursor-crosshair"
+              className="w-full h-[200px] cursor-crosshair touch-none"
               onMouseDown={startDrawing}
               onMouseMove={draw}
               onMouseUp={endDrawing}
@@ -167,10 +167,6 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
               onTouchCancel={endDrawing}
             />
           </div>
-          
-          <p className="text-xs text-muted-foreground text-center">
-            Dibuja tu firma en el área blanca arriba
-          </p>
           
           <div className="flex justify-center gap-2">
             <Button 
@@ -185,7 +181,7 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
           </div>
         </div>
         
-        <DialogFooter className="mt-4 flex">
+        <DialogFooter className="mt-4 flex gap-2">
           <Button 
             type="button" 
             variant="outline" 

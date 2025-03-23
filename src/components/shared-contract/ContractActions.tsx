@@ -15,6 +15,8 @@ const ContractActions: React.FC<ContractActionsProps> = ({
   onOpenSignDialog, 
   onPrint 
 }) => {
+  if (!contract) return null;
+  
   return (
     <div className="w-full flex flex-col sm:flex-row sm:justify-between gap-4">
       {/* Botón para firmar si el cliente aún no ha firmado */}
