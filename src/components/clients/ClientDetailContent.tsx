@@ -64,11 +64,12 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-4 w-full max-w-3xl mx-auto mb-6 bg-muted/80 rounded-lg p-1">
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl mx-auto mb-6 bg-muted/80 rounded-lg p-1">
           <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Resumen</TabsTrigger>
           <TabsTrigger value="reports" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Informes</TabsTrigger>
           <TabsTrigger value="proposals" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Propuestas</TabsTrigger>
           <TabsTrigger value="contracts" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Contratos</TabsTrigger>
+          <TabsTrigger value="invoices" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Facturas</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="mt-6">
@@ -84,8 +85,20 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
           <ClientReportsList 
             client={client} 
             reports={reports} 
-            onCreateReport={() => {}} 
+            onCreateReport={() => {
+              // Set activeTab to 'reports' and display ReportGenerator component
+              console.log("Creating new report for client:", clientId);
+              // We'll handle this with the ReportGenerator component which should
+              // already be configured for the client
+              const reportGeneratorEl = document.getElementById('report-generator');
+              if (reportGeneratorEl) {
+                reportGeneratorEl.scrollIntoView({ behavior: 'smooth' });
+              }
+            }} 
           />
+          <div id="report-generator" className="mt-8">
+            <ReportGenerator clientId={clientId} />
+          </div>
         </TabsContent>
         
         <TabsContent value="proposals" className="mt-6">

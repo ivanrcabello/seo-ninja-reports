@@ -64,7 +64,10 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
         <div className="flex justify-between items-start">
           <div 
             className="space-y-1 cursor-pointer flex-1"
-            onClick={onClick}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
           >
             <h3 className="font-medium text-lg line-clamp-1">{title}</h3>
             <p className="text-2xl font-bold">{amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
@@ -76,23 +79,40 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                   variant="ghost" 
                   size="icon" 
                   className="h-8 w-8"
+                  onClick={(e) => {
+                    // Stop event from bubbling up to parent
+                    e.stopPropagation();
+                  }}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">Abrir menú</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onClick}>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClick();
+                  }}
+                >
                   <Eye className="mr-2 h-4 w-4" />
                   Ver factura
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onEdit}>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                >
                   <Edit2 className="mr-2 h-4 w-4" />
                   Editar
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onClick={onDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Eliminar
@@ -104,7 +124,10 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
         
         <div 
           className="mt-4 flex flex-col gap-1 cursor-pointer"
-          onClick={onClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
         >
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Fecha:</span>

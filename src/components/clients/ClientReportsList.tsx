@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale'; 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -26,13 +27,13 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
     <BlurredCard>
       <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
-          <CardTitle className="text-xl">All Reports</CardTitle>
+          <CardTitle className="text-xl">Informes</CardTitle>
           <CardDescription>
-            {reports.length} reports for {client.name}
+            {reports.length} informes para {client.name}
           </CardDescription>
         </div>
         <Button onClick={onCreateReport} className="mt-4 sm:mt-0">
-          <Plus className="h-4 w-4 mr-1.5" /> New Report
+          <Plus className="h-4 w-4 mr-1.5" /> Nuevo Informe
         </Button>
       </CardHeader>
       <Separator />
@@ -59,7 +60,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground self-end sm:self-auto">
-                      {format(new Date(report.date), 'MMM d, yyyy')}
+                      {format(new Date(report.date), 'd MMM yyyy', { locale: es })}
                     </div>
                   </div>
                 </Link>
@@ -69,12 +70,12 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
         ) : (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Reports Yet</h3>
+            <h3 className="text-lg font-medium mb-2">No hay informes todavía</h3>
             <p className="text-muted-foreground mb-6">
-              Generate your first SEO report for {client.name} to get started.
+              Genera tu primer informe SEO para {client.name} para comenzar.
             </p>
             <Button onClick={onCreateReport}>
-              Generate Report
+              Generar Informe
             </Button>
           </div>
         )}
