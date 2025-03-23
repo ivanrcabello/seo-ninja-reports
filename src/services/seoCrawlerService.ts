@@ -58,6 +58,18 @@ export interface CrawlLink {
   follow: boolean;
 }
 
+export interface SavedCrawlSettings {
+  id: string;
+  client_id: string;
+  domain: string;
+  max_pages: number;
+  exclude_patterns: string[];
+  include_patterns: string[];
+  follow_external_links: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export const startCrawl = async (settings: CrawlSettings) => {
   try {
     // Primero, crear un registro inicial en la base de datos directamente
@@ -75,6 +87,9 @@ export const startCrawl = async (settings: CrawlSettings) => {
     if (insertError) {
       throw new Error(`Error al crear registro de análisis: ${insertError.message}`);
     }
+    
+    // Guardamos también los ajustes usados para este análisis
+    await saveSettings(settings);
     
     // Luego, llamar a la función Edge con el ID del registro recién creado
     const response = await supabase.functions.invoke('seo-crawler', {
@@ -217,5 +232,72 @@ export const deleteCrawlResult = async (id: string) => {
     toast.success('Análisis SEO eliminado correctamente');
   } catch (error: any) {
     return handleServiceError(error, 'Error al eliminar análisis SEO');
+  }
+};
+
+// Nuevas funciones para gestionar las configuraciones guardadas
+
+export const saveSettings = async (settings: CrawlSettings) => {
+  try {
+    // Comprobar si ya existe una configuración para este dominio y cliente
+    const { data: existingSettings } = await supabase
+      .from('seo_crawl_settings')
+      .select('*')
+      .eq('client_id', settings.clientId)
+      .eq('domain', settings.url)
+      .single();
+      
+    const configToSave = {
+      client_id: settings.clientId,
+      domain: settings.url,
+      max_pages: settings.maxPages || 100,
+      exclude_patterns: settings.excludePatterns || [],
+      include_patterns: settings.includePatterns || [],
+      follow_external_links: settings.followExternalLinks || false
+    };
+    
+    if (existingSettings) {
+      // Actualizar configuración existente
+      const { error } = await supabase
+        .from('seo_crawl_settings')
+        .update(configToSave)
+        .eq('id', existingSettings.id);
+        
+      if (error) throw error;
+    } else {
+      // Crear nueva configuración
+      const { error } = await supabase
+        .from('seo_crawl_settings')
+        .insert(configToSave);
+        
+      if (error) throw error;
+    }
+  } catch (error: any) {
+    console.error('Error al guardar configuración:', error);
+    // No mostramos toast para no interrumpir el flujo principal
+  }
+};
+
+export const getSettings = async (clientId: string, domain: string): Promise<SavedCrawlSettings | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('seo_crawl_settings')
+      .select('*')
+      .eq('client_id', clientId)
+      .eq('domain', domain)
+      .single();
+      
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No se encontró configuración, es normal
+        return null;
+      }
+      throw error;
+    }
+    
+    return data as SavedCrawlSettings;
+  } catch (error: any) {
+    console.error('Error al obtener configuración guardada:', error);
+    return null;
   }
 };

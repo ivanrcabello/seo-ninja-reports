@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Client } from '@/types/client.types';
-import { startCrawl } from '@/services/seoCrawlerService';
+import { startCrawl, getSettings } from '@/services/seoCrawlerService';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash } from 'lucide-react';
 
@@ -26,6 +26,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   onSuccess
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const [url, setUrl] = useState(client.website);
   const [maxPages, setMaxPages] = useState(100);
   const [followExternalLinks, setFollowExternalLinks] = useState(false);
@@ -33,6 +34,42 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   const [includePatterns, setIncludePatterns] = useState<string[]>([]);
   const [newPattern, setNewPattern] = useState('');
   const [patternType, setPatternType] = useState<'include' | 'exclude'>('exclude');
+
+  // Cargar configuraciones guardadas cuando se abre el diálogo
+  useEffect(() => {
+    if (open && url) {
+      loadSavedSettings(url);
+    }
+  }, [open, url]);
+
+  const loadSavedSettings = async (domain: string) => {
+    try {
+      setIsLoadingSettings(true);
+      const savedSettings = await getSettings(client.id, domain);
+      
+      if (savedSettings) {
+        setMaxPages(savedSettings.max_pages);
+        setExcludePatterns(savedSettings.exclude_patterns || []);
+        setIncludePatterns(savedSettings.include_patterns || []);
+        setFollowExternalLinks(savedSettings.follow_external_links);
+        toast.info('Configuración guardada cargada');
+      }
+    } catch (error) {
+      console.error('Error cargando configuración guardada:', error);
+    } finally {
+      setIsLoadingSettings(false);
+    }
+  };
+
+  // Cuando cambia la URL, intentar cargar configuraciones guardadas
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUrl = e.target.value;
+    setUrl(newUrl);
+    
+    if (newUrl && newUrl.includes('.')) {
+      loadSavedSettings(newUrl);
+    }
+  };
 
   const addPattern = () => {
     if (!newPattern.trim()) return;
@@ -93,9 +130,16 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
             <Input 
               id="url" 
               value={url} 
-              onChange={e => setUrl(e.target.value)} 
+              onChange={handleUrlChange} 
               placeholder="https://ejemplo.com"
+              disabled={isLoadingSettings}
             />
+            {isLoadingSettings && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Cargando configuración guardada...</span>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground">
               URL completa desde donde comenzará el análisis
             </p>
