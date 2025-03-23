@@ -37,9 +37,15 @@ const CrawlerDetailPage: React.FC = () => {
         
         if (!crawlId) {
           toast.error('ID de análisis no especificado');
-          navigate(`/clients/${clientId}`);
+          if (clientId) {
+            navigate(`/clients/${clientId}`);
+          } else {
+            navigate('/dashboard');
+          }
           return;
         }
+        
+        console.log(`Loading crawl result for ID: ${crawlId}`);
         
         // Obtener resultado principal
         const result = await fetchCrawlResult(crawlId);
@@ -82,6 +88,7 @@ const CrawlerDetailPage: React.FC = () => {
         setIssuesBySeverity(issuesBySeverity);
         
       } catch (error) {
+        console.error('Error loading crawl data:', error);
         toast.error('Error al cargar los datos del análisis SEO');
       } finally {
         setIsLoading(false);
@@ -98,6 +105,7 @@ const CrawlerDetailPage: React.FC = () => {
       const issues = await fetchCrawlIssues(page.id);
       setPageIssues(issues || []);
     } catch (error) {
+      console.error('Error loading page issues:', error);
       toast.error('Error al cargar los problemas de la página');
     }
   };

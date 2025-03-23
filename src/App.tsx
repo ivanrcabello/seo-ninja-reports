@@ -58,6 +58,7 @@ function App() {
                   <Route path="/activity" element={<Activity />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/clients/:id" element={<ClientDetail />} />
+                  <Route path="/clients/:clientId/seo-crawler/:crawlId" element={<ReportDetail />} />
                   <Route path="/reports/:id" element={<ReportDetail />} />
                   <Route path="/shared/reports/:id" element={<PublicReport />} />
                   <Route path="/shared/proposals/:id" element={<SharedProposal />} />

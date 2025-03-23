@@ -1,13 +1,7 @@
 
 import React from 'react';
-import { ExternalLink, CheckCircle, XCircle } from 'lucide-react';
 import { CrawlPage, CrawlIssue } from '@/services/seo-crawler';
 import BlurredCard from '@/components/ui/BlurredCard';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import { getIssueTypeIcon, getSeverityColor } from '../utils/crawlerUtils';
 import PagesList from './PagesList';
 import PageDetail from './PageDetail';
 

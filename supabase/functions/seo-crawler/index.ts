@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
@@ -262,7 +263,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Extraer datos de la solicitud
-    const { url, clientId, crawlId, maxPages = 100, excludePatterns = [], includePatterns = [], followExternalLinks = false } = await req.json();
+    const requestData = await req.json();
+    console.log("Received request data:", JSON.stringify(requestData));
+    
+    const { url, clientId, crawlId, maxPages = 100, excludePatterns = [], includePatterns = [], followExternalLinks = false } = requestData;
     
     if (!url) {
       return new Response(
@@ -276,12 +280,31 @@ serve(async (req) => {
     console.log(`Patrones de exclusión: ${JSON.stringify(excludePatterns)}`);
     console.log(`Patrones de inclusión: ${JSON.stringify(includePatterns)}`);
     
+    // Validar URL
+    let validUrl;
+    try {
+      // Verificar que tenga protocolo
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        validUrl = 'https://' + url;
+      } else {
+        validUrl = url;
+      }
+      
+      // Verificar que sea una URL válida
+      new URL(validUrl);
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: 'URL inválida. Formato correcto: https://ejemplo.com' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Iniciar temporizador
     const startTime = new Date().getTime();
     
     // Realizar el rastreo
     const visitedUrls = new Set();
-    const results = await crawlSite(url, maxPages, visitedUrls, excludePatterns, includePatterns, followExternalLinks);
+    const results = await crawlSite(validUrl, maxPages, visitedUrls, excludePatterns, includePatterns, followExternalLinks);
     
     // Calcular tiempo total
     const endTime = new Date().getTime();
@@ -292,69 +315,73 @@ serve(async (req) => {
     
     // Insertar los resultados en la base de datos
     for (const page of results) {
-      // Insertar página
-      const { data: pageData, error: pageError } = await supabase
-        .from('seo_crawl_pages')
-        .insert({
-          crawl_id: crawlId,
-          url: page.url,
-          status_code: page.statusCode,
-          title: page.title,
-          meta_description: page.metaDescription,
-          h1: page.h1,
-          canonical_url: page.canonicalUrl,
-          robots_directives: page.robotsDirectives,
-          is_indexable: page.isIndexable
-        })
-        .select()
-        .single();
+      try {
+        // Insertar página
+        const { data: pageData, error: pageError } = await supabase
+          .from('seo_crawl_pages')
+          .insert({
+            crawl_id: crawlId,
+            url: page.url,
+            status_code: page.statusCode,
+            title: page.title,
+            meta_description: page.metaDescription,
+            h1: page.h1,
+            canonical_url: page.canonicalUrl,
+            robots_directives: page.robotsDirectives,
+            is_indexable: page.isIndexable
+          })
+          .select()
+          .single();
+          
+        if (pageError) {
+          console.error(`Error al insertar página ${page.url}:`, pageError);
+          continue;
+        }
         
-      if (pageError) {
-        console.error(`Error al insertar página ${page.url}:`, pageError);
-        continue;
-      }
-      
-      const pageId = pageData.id;
-      
-      // Insertar problemas
-      if (page.issues && page.issues.length > 0) {
-        totalIssues += page.issues.length;
+        const pageId = pageData.id;
         
-        for (const issue of page.issues) {
-          const { error: issueError } = await supabase
-            .from('seo_crawl_issues')
-            .insert({
-              page_id: pageId,
-              issue_type: issue.issueType,
-              severity: issue.severity,
-              description: issue.description,
-              recommended_fix: issue.recommendedFix
-            });
-            
-          if (issueError) {
-            console.error(`Error al insertar problema en página ${page.url}:`, issueError);
+        // Insertar problemas
+        if (page.issues && page.issues.length > 0) {
+          totalIssues += page.issues.length;
+          
+          for (const issue of page.issues) {
+            const { error: issueError } = await supabase
+              .from('seo_crawl_issues')
+              .insert({
+                page_id: pageId,
+                issue_type: issue.issueType,
+                severity: issue.severity,
+                description: issue.description,
+                recommended_fix: issue.recommendedFix
+              });
+              
+            if (issueError) {
+              console.error(`Error al insertar problema en página ${page.url}:`, issueError);
+            }
           }
         }
-      }
-      
-      // Insertar enlaces
-      if (page.links && page.links.length > 0) {
-        for (const link of page.links) {
-          const { error: linkError } = await supabase
-            .from('seo_crawl_links')
-            .insert({
-              page_id: pageId,
-              url: link.url,
-              anchor_text: link.anchorText,
-              is_internal: link.isInternal,
-              is_broken: false, // Se actualizará después
-              follow: link.follow
-            });
-            
-          if (linkError) {
-            console.error(`Error al insertar enlace en página ${page.url}:`, linkError);
+        
+        // Insertar enlaces
+        if (page.links && page.links.length > 0) {
+          for (const link of page.links) {
+            const { error: linkError } = await supabase
+              .from('seo_crawl_links')
+              .insert({
+                page_id: pageId,
+                url: link.url,
+                anchor_text: link.anchorText,
+                is_internal: link.isInternal,
+                is_broken: false, // Se actualizará después
+                follow: link.follow
+              });
+              
+            if (linkError) {
+              console.error(`Error al insertar enlace en página ${page.url}:`, linkError);
+            }
           }
         }
+      } catch (error) {
+        console.error(`Error procesando página ${page.url}:`, error);
       }
     }
     
