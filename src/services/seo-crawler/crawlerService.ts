@@ -32,6 +32,13 @@ export const startCrawl = async (settings: CrawlSettings) => {
       }
     }
     
+    // Verificar que la URL termine con una barra si no tiene ruta
+    const urlObj = new URL(settings.url);
+    if (urlObj.pathname === "" || urlObj.pathname === "/") {
+      urlObj.pathname = "/";
+      settings.url = urlObj.toString();
+    }
+    
     // Primero, crear un registro inicial en la base de datos
     const crawlResult = await createInitialCrawlRecord(settings);
     

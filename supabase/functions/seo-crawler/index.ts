@@ -2,6 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { DOMParser as DenoDOM } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,15 +29,39 @@ async function analyzePage(url: string) {
         canonicalUrl: null,
         isIndexable: false,
         links: [],
-        issues: []
+        issues: [{
+          issueType: 'page_not_found',
+          severity: 'high',
+          description: `Error al acceder a la página: ${response.status} ${response.statusText}`,
+          recommendedFix: 'Verificar la URL y asegurarse de que la página esté accesible'
+        }]
       };
     }
     
     const html = await response.text();
     
-    // Crear un DOMParser para analizar el HTML
-    const parser = new DOMParser();
+    // Crear un DOMParser para analizar el HTML usando Deno DOM
+    const parser = new DenoDOM();
     const doc = parser.parseFromString(html, "text/html");
+    
+    if (!doc) {
+      return {
+        url,
+        statusCode: response.status,
+        title: null,
+        metaDescription: null,
+        h1: null,
+        canonicalUrl: null,
+        isIndexable: false,
+        links: [],
+        issues: [{
+          issueType: 'parse_error',
+          severity: 'high',
+          description: 'Error al analizar el HTML de la página',
+          recommendedFix: 'La página tiene un formato HTML inválido, revisar su estructura'
+        }]
+      };
+    }
     
     // Extraer información básica
     const title = doc.querySelector('title')?.textContent || '';
@@ -48,7 +73,7 @@ async function analyzePage(url: string) {
     
     // Extraer enlaces
     const links = Array.from(doc.querySelectorAll('a[href]')).map(link => {
-      const href = (link as HTMLAnchorElement).href;
+      const href = link.getAttribute('href') || '';
       const anchorText = link.textContent?.trim() || '';
       const rel = link.getAttribute('rel') || '';
       const follow = !rel.includes('nofollow');
@@ -56,12 +81,30 @@ async function analyzePage(url: string) {
       // Determinar si es un enlace interno o externo
       let isInternal = false;
       try {
-        const linkUrl = new URL(href);
-        const pageUrl = new URL(url);
-        isInternal = linkUrl.hostname === pageUrl.hostname;
+        // Manejar URLs relativas
+        let fullUrl = href;
+        if (href.startsWith('/')) {
+          const baseUrl = new URL(url);
+          fullUrl = `${baseUrl.origin}${href}`;
+        } else if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('#')) {
+          const baseUrl = new URL(url);
+          // Eliminar la parte del path después del último slash
+          const basePath = baseUrl.pathname.split('/').slice(0, -1).join('/') + '/';
+          fullUrl = `${baseUrl.origin}${basePath}${href}`;
+        }
+        
+        // Solo comprobar si es interno si es una URL completa
+        if (href.startsWith('http://') || href.startsWith('https://')) {
+          const linkUrl = new URL(href);
+          const pageUrl = new URL(url);
+          isInternal = linkUrl.hostname === pageUrl.hostname;
+        } else if (!href.startsWith('mailto:') && !href.startsWith('tel:') && !href.startsWith('#')) {
+          // Si no es una URL externa, mailto, tel o ancla, consideramos que es interna
+          isInternal = true;
+        }
       } catch (e) {
         // Si no es una URL válida, asumir que es una ruta relativa (interna)
-        isInternal = true;
+        isInternal = !href.startsWith('mailto:') && !href.startsWith('tel:') && !href.startsWith('#');
       }
       
       return {
@@ -170,15 +213,32 @@ async function crawlSite(startUrl: string, maxPages: number = 100, visitedUrls =
   const urlsToVisit = [startUrl];
   
   try {
+    console.log(`Iniciando crawl desde ${startUrl} con límite de ${maxPages} páginas`);
+    
     // Asegurarnos de que la URL inicial tiene un protocolo válido
-    const baseUrl = new URL(startUrl);
+    let baseUrl;
+    try {
+      baseUrl = new URL(startUrl);
+    } catch (e) {
+      if (!startUrl.startsWith('http://') && !startUrl.startsWith('https://')) {
+        baseUrl = new URL('https://' + startUrl);
+      } else {
+        throw new Error(`URL inicial inválida: ${startUrl}`);
+      }
+    }
+    
     const baseHostname = baseUrl.hostname;
+    console.log(`Hostname base: ${baseHostname}`);
     
     while (urlsToVisit.length > 0 && visitedUrls.size < maxPages) {
       const currentUrl = urlsToVisit.shift();
+      if (!currentUrl) continue;
+      
+      console.log(`Procesando URL: ${currentUrl} (${visitedUrls.size + 1}/${maxPages})`);
       
       // Evitar visitar la misma URL más de una vez
       if (visitedUrls.has(currentUrl)) {
+        console.log(`URL ya visitada: ${currentUrl}, saltando...`);
         continue;
       }
       
@@ -188,15 +248,53 @@ async function crawlSite(startUrl: string, maxPages: number = 100, visitedUrls =
       const pageData = await analyzePage(currentUrl);
       results.push(pageData);
       
+      console.log(`Página analizada: ${currentUrl}, encontrados ${pageData.links?.length || 0} enlaces`);
+      
       // Comprobar si hay enlaces en la página y añadirlos a la cola
       if (pageData.links && pageData.links.length > 0) {
         for (const link of pageData.links) {
           try {
+            if (!link.url) continue;
+            
+            // Saltar enlaces vacíos, anclas o protocolos especiales
+            if (
+              link.url === '' || 
+              link.url.startsWith('#') || 
+              link.url.startsWith('mailto:') || 
+              link.url.startsWith('tel:') ||
+              link.url.startsWith('javascript:')
+            ) {
+              continue;
+            }
+            
             // Normalizar URL
             let fullUrl;
             try {
-              fullUrl = new URL(link.url, currentUrl).href;
+              if (link.url.startsWith('http://') || link.url.startsWith('https://')) {
+                fullUrl = link.url;
+              } else if (link.url.startsWith('/')) {
+                // URL absoluta relativa al dominio
+                fullUrl = `${baseUrl.origin}${link.url}`;
+              } else {
+                // URL relativa a la página actual
+                const currentUrlObj = new URL(currentUrl);
+                // Eliminar el nombre de archivo si existe
+                let basePath = currentUrlObj.pathname;
+                if (!basePath.endsWith('/')) {
+                  basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+                }
+                fullUrl = `${currentUrlObj.origin}${basePath}${link.url}`;
+              }
+              
+              // Limpiar anclas de la URL
+              if (fullUrl.includes('#')) {
+                fullUrl = fullUrl.split('#')[0];
+              }
+              
+              // Validar que es una URL válida
+              new URL(fullUrl);
             } catch (e) {
+              console.error(`URL inválida: ${link.url}, error: ${e.message}`);
               continue; // URL inválida, saltar
             }
             
@@ -206,26 +304,30 @@ async function crawlSite(startUrl: string, maxPages: number = 100, visitedUrls =
             }
             
             // Verificar si es un enlace interno o externo
-            const linkUrl = new URL(fullUrl);
-            const isInternal = linkUrl.hostname === baseHostname;
+            let isInternal = false;
+            try {
+              const linkUrl = new URL(fullUrl);
+              isInternal = linkUrl.hostname === baseHostname;
+            } catch (e) {
+              console.error(`Error al analizar hostname: ${e.message}`);
+              continue;
+            }
             
             // Solo seguir enlaces externos si está habilitada la opción
             if (!isInternal && !followExternalLinks) {
+              console.log(`Saltando enlace externo: ${fullUrl}`);
               continue;
             }
             
             // Verificar patrones de exclusión
-            if (excludePatterns.some(pattern => fullUrl.includes(pattern))) {
+            if (excludePatterns.length > 0 && excludePatterns.some(pattern => fullUrl.includes(pattern))) {
+              console.log(`URL excluida por patrón: ${fullUrl}`);
               continue;
             }
             
             // Verificar patrones de inclusión si están definidos
             if (includePatterns.length > 0 && !includePatterns.some(pattern => fullUrl.includes(pattern))) {
-              continue;
-            }
-            
-            // Ignorar anclas dentro de la misma página
-            if (fullUrl.includes('#') && fullUrl.split('#')[0] === currentUrl.split('#')[0]) {
+              console.log(`URL no incluida por patrón: ${fullUrl}`);
               continue;
             }
             
@@ -234,6 +336,7 @@ async function crawlSite(startUrl: string, maxPages: number = 100, visitedUrls =
               continue;
             }
             
+            console.log(`Añadiendo a la cola: ${fullUrl}`);
             // Añadir URL a la cola
             urlsToVisit.push(fullUrl);
           } catch (e) {
@@ -243,6 +346,7 @@ async function crawlSite(startUrl: string, maxPages: number = 100, visitedUrls =
       }
     }
     
+    console.log(`Crawl finalizado. Páginas analizadas: ${results.length}`);
     return results;
   } catch (error) {
     console.error("Error en crawlSite:", error);

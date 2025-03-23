@@ -4,6 +4,7 @@ import { CrawlPage, CrawlIssue } from '@/services/seo-crawler';
 import BlurredCard from '@/components/ui/BlurredCard';
 import PagesList from './PagesList';
 import PageDetail from './PageDetail';
+import { AlertTriangle } from 'lucide-react';
 
 interface PagesTabContentProps {
   pages: CrawlPage[];
@@ -18,6 +19,21 @@ const PagesTabContent: React.FC<PagesTabContentProps> = ({
   pageIssues,
   onPageSelect
 }) => {
+  if (!pages || pages.length === 0) {
+    return (
+      <BlurredCard className="p-6">
+        <div className="flex flex-col items-center justify-center p-12 text-center">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+          <h3 className="text-lg font-medium mb-2">No se encontraron páginas analizadas</h3>
+          <p className="text-muted-foreground max-w-md">
+            No se pudieron encontrar páginas para analizar. Esto puede deberse a problemas de acceso al sitio web 
+            o a errores durante el análisis. Intente nuevamente y verifique que la URL sea accesible.
+          </p>
+        </div>
+      </BlurredCard>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <BlurredCard className="md:col-span-1">
