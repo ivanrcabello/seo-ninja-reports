@@ -23,6 +23,12 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
   reports, 
   onCreateReport 
 }) => {
+  const handleCreateReport = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onCreateReport();
+  };
+
   return (
     <BlurredCard>
       <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -32,7 +38,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
             {reports.length} informes para {client.name}
           </CardDescription>
         </div>
-        <Button onClick={onCreateReport} className="mt-4 sm:mt-0">
+        <Button onClick={handleCreateReport} className="mt-4 sm:mt-0">
           <Plus className="h-4 w-4 mr-1.5" /> Nuevo Informe
         </Button>
       </CardHeader>
@@ -46,7 +52,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
                 animation="fade"
                 delay={index * 100}
               >
-                <Link to={`/reports/${report.id}`}>
+                <Link to={`/reports/${report.id}`} className="block">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-background/50 hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/10">
                     <div className="mb-3 sm:mb-0">
                       <div className="flex items-center gap-2">
@@ -74,7 +80,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
             <p className="text-muted-foreground mb-6">
               Genera tu primer informe SEO para {client.name} para comenzar.
             </p>
-            <Button onClick={onCreateReport}>
+            <Button onClick={handleCreateReport}>
               Generar Informe
             </Button>
           </div>

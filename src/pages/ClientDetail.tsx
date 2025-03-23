@@ -1,8 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
 import ClientHeader from '@/components/clients/ClientHeader';
 import ClientDetailContent from '@/components/clients/ClientDetailContent';
 import ClientLoadingState from '@/components/clients/ClientLoadingState';
@@ -23,17 +21,20 @@ const ClientDetail = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices'>('overview');
   const [didMount, setDidMount] = useState(false);
   const isMounted = useRef(true);
+  const previousPathRef = useRef('');
 
   // Set mount state and cleanup on unmount
   useEffect(() => {
+    console.log("ClientDetail mounting");
     setDidMount(true);
     isMounted.current = true;
+    previousPathRef.current = location.pathname;
     
-    // Cleanup event listeners and state when component unmounts
-    return () => {
-      setDidMount(false);
-      isMounted.current = false;
-      
+    // Abortar cualquier solicitud de red pendiente al desmontar
+    const controller = new AbortController();
+    
+    // Función mejorada para limpiar recursos y cerrar modales
+    const cleanupResources = () => {
       // Force document body click to close any stuck modals or popovers
       document.body.click();
       
@@ -44,6 +45,28 @@ const ClientDetail = () => {
           button.click();
         }
       });
+      
+      // Cerrar cualquier menú desplegable que pudiera estar abierto
+      const dropdownMenus = document.querySelectorAll('[data-state="open"][data-radix-dropdown-menu-content]');
+      dropdownMenus.forEach(menu => {
+        if (menu.parentElement) {
+          document.body.click(); // Esto suele cerrar menús desplegables
+        }
+      });
+    };
+    
+    // Cleanup event listeners and state when component unmounts
+    return () => {
+      console.log("ClientDetail unmounting");
+      setDidMount(false);
+      isMounted.current = false;
+      controller.abort();
+      
+      // Limpiar antes de desmontar
+      cleanupResources();
+      
+      // Asegurarse de que los modales están cerrados incluso después de desmontar
+      setTimeout(cleanupResources, 0);
     };
   }, []);
 
@@ -80,6 +103,7 @@ const ClientDetail = () => {
   const handleTabChange = useCallback((tab: 'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices') => {
     // Only update if the component is still mounted
     if (isMounted.current && tab !== activeTab) {
+      console.log(`Changing tab from ${activeTab} to ${tab}`);
       setActiveTab(tab);
       
       // Update URL hash without triggering full page reload
@@ -95,6 +119,9 @@ const ClientDetail = () => {
 
   // Handle anchor navigation to tabs (for direct links) with improved error handling
   useEffect(() => {
+    // Solo ejecutar si el componente está montado
+    if (!isMounted.current) return;
+    
     const handleHashChange = () => {
       if (!isMounted.current) return;
       
@@ -115,7 +142,9 @@ const ClientDetail = () => {
       } catch (error) {
         console.error('Error handling hash change:', error);
         // Default to overview tab if there's an error
-        setActiveTab('overview');
+        if (isMounted.current) {
+          setActiveTab('overview');
+        }
       }
     };
     
@@ -129,16 +158,33 @@ const ClientDetail = () => {
     };
   }, [location]);
 
-  // Add event listener for page navigation
+  // Manejar eventos de navegación del navegador
   useEffect(() => {
     const handleBeforeUnload = () => {
+      console.log("beforeunload event triggered");
       // Clean up any open modals before navigating away
       document.body.click();
     };
     
+    const handlePopState = (event: PopStateEvent) => {
+      console.log("popstate event triggered", event);
+      // Limpiar modales y procesar el evento back/forward
+      document.body.click();
+      
+      const closeButtons = document.querySelectorAll('[data-state="open"] button[aria-label="Close"]');
+      closeButtons.forEach(button => {
+        if (button instanceof HTMLElement) {
+          button.click();
+        }
+      });
+    };
+    
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 

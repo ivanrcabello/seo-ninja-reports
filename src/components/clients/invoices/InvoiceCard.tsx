@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ClientInvoice } from '@/types/client.types';
 import { format } from 'date-fns';
@@ -58,17 +58,44 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
 }) => {
   const { title, amount, status, created_at, due_date } = invoice;
   
+  // Usar useCallback para los manejadores de eventos
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  }, [onClick]);
+
+  const handleEdit = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit();
+  }, [onEdit]);
+
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete();
+  }, [onDelete]);
+
+  const handleViewInvoice = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  }, [onClick]);
+
+  const handleExternalLink = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (invoice.shared_url) {
+      window.open(`/shared/invoices/${invoice.shared_url}`, '_blank');
+    }
+  }, [invoice.shared_url]);
+  
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleCardClick}>
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
-          <div 
-            className="space-y-1 cursor-pointer flex-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick();
-            }}
-          >
+          <div className="space-y-1 flex-1">
             <h3 className="font-medium text-lg line-clamp-1">{title}</h3>
             <p className="text-2xl font-bold">{amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
           </div>
@@ -80,7 +107,6 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                   size="icon" 
                   className="h-8 w-8"
                   onClick={(e) => {
-                    // Stop event from bubbling up to parent
                     e.stopPropagation();
                   }}
                 >
@@ -89,30 +115,17 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClick();
-                  }}
-                >
+                <DropdownMenuItem onClick={handleViewInvoice}>
                   <Eye className="mr-2 h-4 w-4" />
                   Ver factura
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                  }}
-                >
+                <DropdownMenuItem onClick={handleEdit}>
                   <Edit2 className="mr-2 h-4 w-4" />
                   Editar
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                  }}
+                  onClick={handleDelete}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Eliminar
@@ -122,13 +135,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </div>
         </div>
         
-        <div 
-          className="mt-4 flex flex-col gap-1 cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-        >
+        <div className="mt-4 flex flex-col gap-1">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Fecha:</span>
             <span>{format(new Date(created_at), 'PPP', { locale: es })}</span>
@@ -154,10 +161,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
               variant="ghost" 
               size="sm" 
               className="h-8"
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                window.open(`/shared/invoices/${invoice.shared_url}`, '_blank'); 
-              }}
+              onClick={handleExternalLink}
             >
               <ExternalLink className="h-4 w-4 mr-1" />
               Ver enlace

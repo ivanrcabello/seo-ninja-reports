@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ReportGenerator from '@/components/reports/ReportGenerator';
 import ClientOverview from './ClientOverview';
@@ -26,11 +26,14 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
   setActiveTab,
   clientId
 }) => {
+  // Crear una referencia para controlar si el componente está montado
+  const isMounted = useRef(true);
+
   // Improved cleanup that forces any popovers or dialogs to close
   useEffect(() => {
     console.log("Tab changed to:", activeTab);
     
-    // Close any open popups or dialogs when tab changes
+    // Función mejorada para cerrar cualquier modal o diálogo abierto
     const closeAnyModals = () => {
       // Click on document body to close any open popovers
       document.body.click();
@@ -42,19 +45,42 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
           button.click();
         }
       });
+      
+      // Cerrar cualquier menú desplegable que pudiera estar abierto
+      const dropdownMenus = document.querySelectorAll('[data-state="open"][data-radix-dropdown-menu-content]');
+      dropdownMenus.forEach(menu => {
+        document.body.click(); // Esto suele cerrar menús desplegables
+      });
     };
     
     closeAnyModals();
     
+    // Hacer que el componente se registre como montado
+    isMounted.current = true;
+    
     // Make sure to clean up properly when component unmounts
     return () => {
+      // Marcar que el componente se ha desmontado para evitar actualizaciones de estado
+      isMounted.current = false;
+      
+      // Intentar cerrar modales otra vez para asegurar que no queda nada abierto
       closeAnyModals();
+      
+      // Añadir un timeout para asegurar que otras operaciones asíncronas tengan tiempo de completarse
+      setTimeout(() => {
+        if (document.body) {
+          document.body.click();
+        }
+      }, 0);
     };
   }, [activeTab]);
 
   const handleTabChange = (value: string) => {
-    console.log("Tab changing from", activeTab, "to", value);
-    setActiveTab(value as 'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices');
+    // Solo cambiar el tab si el componente está montado
+    if (isMounted.current) {
+      console.log("Tab changing from", activeTab, "to", value);
+      setActiveTab(value as 'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices');
+    }
   };
 
   return (
