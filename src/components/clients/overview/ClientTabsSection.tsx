@@ -55,13 +55,13 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-      <TabsList className="grid grid-cols-6 mb-4">
-        <TabsTrigger value="summary">Resumen</TabsTrigger>
-        <TabsTrigger value="gmb">Google My Business</TabsTrigger>
-        <TabsTrigger value="pagespeed">PageSpeed</TabsTrigger>
-        <TabsTrigger value="keywords">Palabras Clave</TabsTrigger>
-        <TabsTrigger value="seo-reporting">Informes SEO</TabsTrigger>
-        <TabsTrigger value="credentials">Credenciales</TabsTrigger>
+      <TabsList className="grid grid-cols-6 mb-4 bg-muted/80 rounded-lg p-1">
+        <TabsTrigger value="summary" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Resumen</TabsTrigger>
+        <TabsTrigger value="gmb" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Google Negocio</TabsTrigger>
+        <TabsTrigger value="pagespeed" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Rendimiento</TabsTrigger>
+        <TabsTrigger value="keywords" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Palabras Clave</TabsTrigger>
+        <TabsTrigger value="seo-reporting" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Informes SEO</TabsTrigger>
+        <TabsTrigger value="credentials" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Credenciales</TabsTrigger>
       </TabsList>
       
       <AnimatePresence mode="wait">

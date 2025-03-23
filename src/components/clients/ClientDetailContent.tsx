@@ -14,8 +14,8 @@ import ClientInvoices from './invoices/ClientInvoices';
 interface ClientDetailContentProps {
   client: Client;
   reports: Report[];
-  activeTab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts' | 'invoices';
-  setActiveTab: (tab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts' | 'invoices') => void;
+  activeTab: 'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices';
+  setActiveTab: (tab: 'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices') => void;
   clientId: string;
 }
 
@@ -46,7 +46,7 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
 
   const handleTabChange = (value: string) => {
     console.log("Tab changing from", activeTab, "to", value);
-    setActiveTab(value as 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts' | 'invoices');
+    setActiveTab(value as 'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices');
   };
 
   return (
@@ -56,13 +56,12 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-6 w-full max-w-md">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="new-report">New Report</TabsTrigger>
-          <TabsTrigger value="proposals">Propuestas</TabsTrigger>
-          <TabsTrigger value="contracts">Contratos</TabsTrigger>
-          <TabsTrigger value="invoices">Facturas</TabsTrigger>
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl mx-auto mb-6 bg-muted/80 rounded-lg p-1">
+          <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Resumen</TabsTrigger>
+          <TabsTrigger value="reports" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Informes</TabsTrigger>
+          <TabsTrigger value="proposals" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Propuestas</TabsTrigger>
+          <TabsTrigger value="contracts" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Contratos</TabsTrigger>
+          <TabsTrigger value="invoices" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Facturas</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="mt-6">
@@ -70,7 +69,7 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
             client={client} 
             reports={reports} 
             onViewReports={() => setActiveTab('reports')}
-            onCreateReport={() => setActiveTab('new-report')}
+            onCreateReport={() => setActiveTab('reports')}
           />
         </TabsContent>
         
@@ -78,12 +77,8 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
           <ClientReportsList 
             client={client} 
             reports={reports} 
-            onCreateReport={() => setActiveTab('new-report')}
+            onCreateReport={() => {}} 
           />
-        </TabsContent>
-        
-        <TabsContent value="new-report" className="mt-6">
-          <ReportGenerator clientId={clientId} />
         </TabsContent>
         
         <TabsContent value="proposals" className="mt-6">

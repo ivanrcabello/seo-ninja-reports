@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ClientInvoice } from '@/types/client.types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { MoreHorizontal, Edit2, Trash2, ExternalLink } from 'lucide-react';
+import { MoreHorizontal, Edit2, Trash2, ExternalLink, Eye } from 'lucide-react';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -58,51 +58,41 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
 }) => {
   const { title, amount, status, created_at, due_date } = invoice;
   
-  // Function to handle card click while avoiding dropdown menu clicks
-  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Check if the click occurred in the dropdown area
-    if (!(e.target as HTMLElement).closest('.dropdown-area')) {
-      onClick();
-    }
-  };
-  
   return (
-    <Card 
-      className="hover:shadow-md transition-shadow cursor-pointer"
-      onClick={handleCardClick}
-    >
+    <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
-          <div className="space-y-1">
+          <div 
+            className="space-y-1 cursor-pointer flex-1"
+            onClick={onClick}
+          >
             <h3 className="font-medium text-lg line-clamp-1">{title}</h3>
             <p className="text-2xl font-bold">{amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
           </div>
-          <div className="dropdown-area">
+          <div className="dropdown-area z-10">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 dropdown-trigger"
+                  className="h-8 w-8"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">Abrir menú</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => { 
-                  e.stopPropagation(); 
-                  onEdit(); 
-                }}>
+                <DropdownMenuItem onClick={onClick}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Ver factura
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onEdit}>
                   <Edit2 className="mr-2 h-4 w-4" />
                   Editar
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    onDelete(); 
-                  }}
+                  onClick={onDelete}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Eliminar
@@ -112,7 +102,10 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </div>
         </div>
         
-        <div className="mt-4 flex flex-col gap-1">
+        <div 
+          className="mt-4 flex flex-col gap-1 cursor-pointer"
+          onClick={onClick}
+        >
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Fecha:</span>
             <span>{format(new Date(created_at), 'PPP', { locale: es })}</span>

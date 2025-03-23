@@ -18,7 +18,7 @@ const ClientDetail = () => {
   const { getClient, isLoading: clientsLoading, deleteClient } = useClients();
   const { getClientReports, isLoading: reportsLoading } = useReports();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts' | 'invoices'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices'>('overview');
   const [didMount, setDidMount] = useState(false);
   const prevTabRef = useRef<string | null>(null);
 
@@ -58,7 +58,7 @@ const ClientDetail = () => {
   };
 
   // Handle tab changes with improved state handling
-  const handleTabChange = useCallback((tab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts' | 'invoices') => {
+  const handleTabChange = useCallback((tab: 'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices') => {
     // Only update if the tab is actually changing
     if (tab !== activeTab) {
       prevTabRef.current = activeTab;
@@ -83,8 +83,6 @@ const ClientDetail = () => {
         
         if (hash === 'reports') {
           setActiveTab('reports');
-        } else if (hash === 'new-report') {
-          setActiveTab('new-report');
         } else if (hash === 'proposals') {
           setActiveTab('proposals');
         } else if (hash === 'contracts') {
