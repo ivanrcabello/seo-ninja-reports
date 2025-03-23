@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { useAuth } from '@/context/AuthContext';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
-import { Loader2, Search, Filter, PieChart, BarChart3, ArrowUpRight, Users, FileText, Clock } from 'lucide-react';
+import { Loader2, Search, Filter, PieChart, BarChart3, ArrowUpRight, Users, FileText, Clock, Receipt } from 'lucide-react';
 import usePersistentState from '@/hooks/usePersistentState';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import InvoicesTab from '@/components/dashboard/InvoicesTab';
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -97,7 +97,7 @@ const Dashboard = () => {
           <AnimatedContainer animation="slide-up" className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold mb-2">Panel de Control</h1>
             <p className="text-muted-foreground">
-              Gestiona tus clientes e informes SEO
+              Gestiona tus clientes, informes SEO y facturas
             </p>
           </AnimatedContainer>
           
@@ -112,6 +112,7 @@ const Dashboard = () => {
                   <TabsTrigger value="overview">Vista general</TabsTrigger>
                   <TabsTrigger value="clients">Clientes</TabsTrigger>
                   <TabsTrigger value="reports">Informes</TabsTrigger>
+                  <TabsTrigger value="invoices">Facturas</TabsTrigger>
                   <TabsTrigger value="activity">Actividad</TabsTrigger>
                 </TabsList>
 
@@ -400,6 +401,12 @@ const Dashboard = () => {
                         </Button>
                       </CardFooter>
                     </Card>
+                  </AnimatedContainer>
+                </TabsContent>
+
+                <TabsContent value="invoices">
+                  <AnimatedContainer animation="fade" delay={400}>
+                    <InvoicesTab />
                   </AnimatedContainer>
                 </TabsContent>
 
