@@ -1,758 +1,663 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// SEO Crawler Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { DOMParser as DenoDOM } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import * as cheerio from 'https://esm.sh/cheerio@1.0.0-rc.12';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Función para analizar una URL
-async function analyzePage(url: string) {
+const MAX_PAGES = 200; // Límite máximo de páginas a analizar
+const TIMEOUT_MS = 120000; // 2 minutos de timeout para evitar que la función se quede atascada
+
+// Create a Supabase client
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+interface CrawlSettings {
+  url: string;
+  clientId: string;
+  crawlId: string;
+  maxPages?: number;
+  excludePatterns?: string[];
+  includePatterns?: string[];
+  followExternalLinks?: boolean;
+}
+
+// Definition of the SEO issues
+const SEO_ISSUES = {
+  MISSING_TITLE: {
+    type: 'missing_title',
+    severity: 'high',
+    description: 'La página no tiene título',
+    fix: 'Añadir un título descriptivo y relevante a la página'
+  },
+  SHORT_TITLE: {
+    type: 'title_too_short',
+    severity: 'medium',
+    description: 'El título es demasiado corto (menos de 30 caracteres)',
+    fix: 'Ampliar el título para que sea más descriptivo y tenga entre 50-60 caracteres'
+  },
+  LONG_TITLE: {
+    type: 'title_too_long',
+    severity: 'medium',
+    description: 'El título es demasiado largo (más de 60 caracteres)',
+    fix: 'Reducir el título a menos de 60 caracteres para una visualización óptima en resultados de búsqueda'
+  },
+  MISSING_META_DESCRIPTION: {
+    type: 'missing_meta_description',
+    severity: 'medium',
+    description: 'La página no tiene meta descripción',
+    fix: 'Añadir una meta descripción concisa y relevante'
+  },
+  SHORT_META_DESCRIPTION: {
+    type: 'meta_description_too_short',
+    severity: 'low',
+    description: 'La meta descripción es demasiado corta (menos de 70 caracteres)',
+    fix: 'Ampliar la meta descripción para que tenga entre 120-158 caracteres'
+  },
+  LONG_META_DESCRIPTION: {
+    type: 'meta_description_too_long',
+    severity: 'low',
+    description: 'La meta descripción es demasiado larga (más de 160 caracteres)',
+    fix: 'Reducir la meta descripción a menos de 158 caracteres para una visualización óptima'
+  },
+  MISSING_H1: {
+    type: 'missing_h1',
+    severity: 'high',
+    description: 'La página no tiene un encabezado H1',
+    fix: 'Añadir un encabezado H1 que refleje el contenido principal de la página'
+  },
+  MULTIPLE_H1: {
+    type: 'multiple_h1',
+    severity: 'medium',
+    description: 'La página tiene múltiples encabezados H1',
+    fix: 'Usar un único encabezado H1 por página y utilizar H2-H6 para las subsecciones'
+  },
+  LOW_WORD_COUNT: {
+    type: 'low_word_count',
+    severity: 'medium',
+    description: 'La página tiene poco contenido (menos de 300 palabras)',
+    fix: 'Añadir más contenido relevante y de calidad a la página'
+  },
+  MISSING_ALT_TEXT: {
+    type: 'missing_alt_text',
+    severity: 'medium',
+    description: 'Hay imágenes sin texto alternativo',
+    fix: 'Añadir texto alternativo descriptivo a todas las imágenes'
+  },
+  BROKEN_LINKS: {
+    type: 'broken_links',
+    severity: 'high',
+    description: 'La página contiene enlaces rotos',
+    fix: 'Corregir o eliminar los enlaces rotos'
+  },
+  MISSING_CANONICAL: {
+    type: 'missing_canonical',
+    severity: 'medium',
+    description: 'La página no tiene una URL canónica definida',
+    fix: 'Añadir una etiqueta link rel="canonical" para evitar contenido duplicado'
+  },
+  SLOW_PAGE_LOAD: {
+    type: 'slow_page_load',
+    severity: 'medium',
+    description: 'La página tarda demasiado en cargar (más de 3 segundos)',
+    fix: 'Optimizar el tiempo de carga reduciendo el tamaño de las imágenes, minificando CSS/JS, etc.'
+  },
+  LARGE_PAGE_SIZE: {
+    type: 'large_page_size',
+    severity: 'low',
+    description: 'El tamaño de la página es demasiado grande (más de 1MB)',
+    fix: 'Reducir el tamaño de la página optimizando imágenes y recursos'
+  },
+  NO_SCHEMA_MARKUP: {
+    type: 'no_schema_markup',
+    severity: 'low',
+    description: 'La página no tiene marcado schema.org',
+    fix: 'Implementar marcado estructurado schema.org relevante al contenido'
+  }
+};
+
+// Helper function to detect if a URL is internal
+function isInternalUrl(baseUrl: string, url: string): boolean {
+  if (!url || url.startsWith('#') || url.startsWith('javascript:')) {
+    return false;
+  }
+  
   try {
-    console.log(`Analizando página: ${url}`);
-    const startTime = new Date().getTime();
+    const parsedBaseUrl = new URL(baseUrl);
+    const baseDomain = parsedBaseUrl.hostname;
     
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'SEOAuditBot/1.0 (+https://midominio.com/bot.html)'
-      }
-    });
-    
-    const endTime = new Date().getTime();
-    const loadTimeMs = endTime - startTime;
-    
-    if (!response.ok) {
-      return {
-        url,
-        statusCode: response.status,
-        title: null,
-        metaDescription: null,
-        h1: null,
-        canonicalUrl: null,
-        isIndexable: false,
-        links: [],
-        issues: [{
-          issueType: 'page_not_found',
-          severity: 'high',
-          description: `Error al acceder a la página: ${response.status} ${response.statusText}`,
-          recommendedFix: 'Verificar la URL y asegurarse de que la página esté accesible'
-        }]
-      };
+    // Handle relative URLs
+    if (url.startsWith('/')) {
+      return true;
     }
     
-    const html = await response.text();
-    const pageSize = Math.round(html.length / 1024); // Tamaño en KB
-    
-    // Crear un DOMParser para analizar el HTML usando Deno DOM
-    const parser = new DenoDOM();
-    const doc = parser.parseFromString(html, "text/html");
-    
-    if (!doc) {
-      return {
-        url,
-        statusCode: response.status,
-        title: null,
-        metaDescription: null,
-        h1: null,
-        canonicalUrl: null,
-        isIndexable: false,
-        links: [],
-        issues: [{
-          issueType: 'parse_error',
-          severity: 'high',
-          description: 'Error al analizar el HTML de la página',
-          recommendedFix: 'La página tiene un formato HTML inválido, revisar su estructura'
-        }]
-      };
-    }
-    
-    // Extraer información básica
-    const title = doc.querySelector('title')?.textContent || '';
-    const metaDescription = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
-    const h1 = doc.querySelector('h1')?.textContent || '';
-    const canonicalUrl = doc.querySelector('link[rel="canonical"]')?.getAttribute('href') || '';
-    const robotsMeta = doc.querySelector('meta[name="robots"]')?.getAttribute('content') || '';
-    const isIndexable = !robotsMeta.includes('noindex');
-    
-    // Contar palabras en el contenido visible
-    const bodyText = doc.querySelector('body')?.textContent || '';
-    const wordCount = bodyText.trim().split(/\s+/).length;
-    
-    // Contar encabezados
-    const h2Count = doc.querySelectorAll('h2').length;
-    const h3Count = doc.querySelectorAll('h3').length;
-    
-    // Contar imágenes y encontrar imágenes sin atributo alt
-    const images = Array.from(doc.querySelectorAll('img'));
-    const imageCount = images.length;
-    const imagesWithoutAlt = images.filter(img => !img.getAttribute('alt')).length;
-    
-    // Buscar marcado estructurado (Schema.org)
-    const hasSchemaMarkup = html.includes('itemtype="http://schema.org') || 
-                            html.includes('itemtype="https://schema.org') ||
-                            html.includes('"@context":"http://schema.org') ||
-                            html.includes('"@context":"https://schema.org');
-    
-    // Extraer enlaces
-    const links = Array.from(doc.querySelectorAll('a[href]')).map(link => {
-      const href = link.getAttribute('href') || '';
-      const anchorText = link.textContent?.trim() || '';
-      const rel = link.getAttribute('rel') || '';
-      const follow = !rel.includes('nofollow');
-      
-      // Determinar si es un enlace interno o externo
-      let isInternal = false;
-      try {
-        // Manejar URLs relativas
-        let fullUrl = href;
-        if (href.startsWith('/')) {
-          const baseUrl = new URL(url);
-          fullUrl = `${baseUrl.origin}${href}`;
-        } else if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('#')) {
-          const baseUrl = new URL(url);
-          // Eliminar la parte del path después del último slash
-          const basePath = baseUrl.pathname.split('/').slice(0, -1).join('/') + '/';
-          fullUrl = `${baseUrl.origin}${basePath}${href}`;
-        }
-        
-        // Solo comprobar si es interno si es una URL completa
-        if (href.startsWith('http://') || href.startsWith('https://')) {
-          const linkUrl = new URL(href);
-          const pageUrl = new URL(url);
-          isInternal = linkUrl.hostname === pageUrl.hostname;
-        } else if (!href.startsWith('mailto:') && !href.startsWith('tel:') && !href.startsWith('#')) {
-          // Si no es una URL externa, mailto, tel o ancla, consideramos que es interna
-          isInternal = true;
-        }
-      } catch (e) {
-        // Si no es una URL válida, asumir que es una ruta relativa (interna)
-        isInternal = !href.startsWith('mailto:') && !href.startsWith('tel:') && !href.startsWith('#');
-      }
-      
-      return {
-        url: href,
-        anchorText,
-        isInternal,
-        follow
-      };
-    });
-    
-    // Contar enlaces internos y externos
-    const internalLinksCount = links.filter(link => link.isInternal).length;
-    const externalLinksCount = links.filter(link => !link.isInternal).length;
-    
-    // Detectar problemas SEO
-    const issues = [];
-    
-    // Título vacío o demasiado largo
-    if (!title) {
-      issues.push({
-        issueType: 'missing_title',
-        severity: 'high',
-        description: 'La página no tiene un título definido',
-        recommendedFix: 'Añadir un título descriptivo y conciso a la página'
-      });
-    } else if (title.length > 60) {
-      issues.push({
-        issueType: 'title_too_long',
-        severity: 'medium',
-        description: `El título tiene ${title.length} caracteres, lo cual excede el límite recomendado`,
-        recommendedFix: 'Acortar el título a menos de 60 caracteres para una mejor visualización en resultados de búsqueda'
-      });
-    } else if (title.length < 20) {
-      issues.push({
-        issueType: 'title_too_short',
-        severity: 'medium',
-        description: `El título tiene solo ${title.length} caracteres, lo cual es demasiado corto`,
-        recommendedFix: 'Ampliar el título a 30-60 caracteres para una mejor optimización SEO'
-      });
-    }
-    
-    // Meta descripción vacía o demasiado larga
-    if (!metaDescription) {
-      issues.push({
-        issueType: 'missing_meta_description',
-        severity: 'medium',
-        description: 'La página no tiene meta descripción',
-        recommendedFix: 'Añadir una meta descripción descriptiva y persuasiva'
-      });
-    } else if (metaDescription.length > 160) {
-      issues.push({
-        issueType: 'meta_description_too_long',
-        severity: 'low',
-        description: `La meta descripción tiene ${metaDescription.length} caracteres, lo cual excede el límite recomendado`,
-        recommendedFix: 'Acortar la meta descripción a menos de 160 caracteres'
-      });
-    } else if (metaDescription.length < 70) {
-      issues.push({
-        issueType: 'meta_description_too_short',
-        severity: 'low',
-        description: `La meta descripción tiene solo ${metaDescription.length} caracteres, lo cual es demasiado corto`,
-        recommendedFix: 'Ampliar la meta descripción a 70-160 caracteres para una mejor optimización SEO'
-      });
-    }
-    
-    // H1 vacío o múltiples H1
-    if (!h1) {
-      issues.push({
-        issueType: 'missing_h1',
-        severity: 'medium',
-        description: 'La página no tiene un encabezado H1',
-        recommendedFix: 'Añadir un encabezado H1 claro y descriptivo'
-      });
-    } else if (doc.querySelectorAll('h1').length > 1) {
-      issues.push({
-        issueType: 'multiple_h1',
-        severity: 'medium',
-        description: `La página tiene ${doc.querySelectorAll('h1').length} encabezados H1`,
-        recommendedFix: 'Mantener un solo H1 por página para una estructura de contenido clara'
-      });
-    }
-    
-    // Falta URL canónica
-    if (!canonicalUrl) {
-      issues.push({
-        issueType: 'missing_canonical',
-        severity: 'medium',
-        description: 'La página no tiene una URL canónica definida',
-        recommendedFix: 'Añadir una etiqueta canónica para evitar problemas de contenido duplicado'
-      });
-    }
-    
-    // Imágenes sin atributo alt
-    if (imagesWithoutAlt > 0) {
-      issues.push({
-        issueType: 'images_without_alt',
-        severity: 'medium',
-        description: `La página tiene ${imagesWithoutAlt} imágenes sin atributo alt`,
-        recommendedFix: 'Añadir atributos alt descriptivos a todas las imágenes para mejorar accesibilidad y SEO'
-      });
-    }
-    
-    // Contenido escaso
-    if (wordCount < 300) {
-      issues.push({
-        issueType: 'thin_content',
-        severity: 'medium',
-        description: `La página tiene solo ${wordCount} palabras, lo cual podría considerarse contenido escaso`,
-        recommendedFix: 'Expandir el contenido a al menos 300 palabras para mejorar el valor SEO de la página'
-      });
-    }
-    
-    // Tiempo de carga lento
-    if (loadTimeMs > 3000) {
-      issues.push({
-        issueType: 'slow_page_load',
-        severity: 'medium',
-        description: `La página tarda ${Math.round(loadTimeMs / 100) / 10} segundos en cargar, lo cual es demasiado lento`,
-        recommendedFix: 'Optimizar el rendimiento de la página para mejorar la velocidad de carga'
-      });
-    }
-    
-    // Falta de estructura de encabezados
-    if (h2Count === 0) {
-      issues.push({
-        issueType: 'no_h2_headings',
-        severity: 'low',
-        description: 'La página no tiene encabezados H2',
-        recommendedFix: 'Añadir encabezados H2 para estructurar mejor el contenido'
-      });
-    }
-    
-    // Falta Schema.org
-    if (!hasSchemaMarkup) {
-      issues.push({
-        issueType: 'no_schema_markup',
-        severity: 'low',
-        description: 'La página no contiene marcado estructurado Schema.org',
-        recommendedFix: 'Implementar marcado Schema.org para mejorar la comprensión del contenido por buscadores'
-      });
-    }
-    
-    // Tamaño de página demasiado grande
-    if (pageSize > 1024) {
-      issues.push({
-        issueType: 'large_page_size',
-        severity: 'medium',
-        description: `El tamaño de la página es de ${pageSize} KB, lo cual es demasiado grande`,
-        recommendedFix: 'Optimizar el tamaño de la página para mejorar la velocidad de carga'
-      });
-    }
-    
-    return {
-      url,
-      statusCode: response.status,
-      title,
-      metaDescription,
-      h1,
-      canonicalUrl,
-      robotsDirectives: robotsMeta,
-      isIndexable,
-      wordCount,
-      loadTimeMs,
-      h2Count,
-      h3Count,
-      imageCount,
-      imagesWithoutAlt,
-      internalLinksCount,
-      externalLinksCount,
-      hasSchemaMarkup,
-      pageSize,
-      links,
-      issues
-    };
-  } catch (error) {
-    console.error(`Error analizando ${url}:`, error);
-    return {
-      url,
-      statusCode: 0,
-      error: error.message,
-      issues: [{
-        issueType: 'crawl_error',
-        severity: 'high',
-        description: `Error al analizar la página: ${error.message}`,
-        recommendedFix: 'Verificar la accesibilidad de la URL'
-      }]
-    };
+    const parsedUrl = new URL(url, baseUrl);
+    return parsedUrl.hostname === baseDomain;
+  } catch (e) {
+    console.error(`Error checking if URL is internal: ${url}`, e);
+    return false;
   }
 }
 
-// Función recursiva para rastrear un sitio web
-async function crawlSite(startUrl: string, maxPages: number = 100, visitedUrls = new Set(), excludePatterns = [], includePatterns = [], followExternalLinks = false) {
-  const results = [];
-  const urlsToVisit = [startUrl];
+// Main crawl function
+async function crawlSite(settings: CrawlSettings) {
+  console.log(`Starting crawl for ${settings.url}`);
   
-  try {
-    console.log(`Iniciando crawl desde ${startUrl} con límite de ${maxPages} páginas`);
-    
-    // Asegurarnos de que la URL inicial tiene un protocolo válido
-    let baseUrl;
-    try {
-      baseUrl = new URL(startUrl);
-    } catch (e) {
-      if (!startUrl.startsWith('http://') && !startUrl.startsWith('https://')) {
-        baseUrl = new URL('https://' + startUrl);
-      } else {
-        throw new Error(`URL inicial inválida: ${startUrl}`);
-      }
-    }
-    
-    const baseHostname = baseUrl.hostname;
-    console.log(`Hostname base: ${baseHostname}`);
-    
-    while (urlsToVisit.length > 0 && visitedUrls.size < maxPages) {
-      const currentUrl = urlsToVisit.shift();
-      if (!currentUrl) continue;
+  const startTime = Date.now();
+  const baseUrl = settings.url;
+  const maxPages = settings.maxPages || 100;
+  const limitedMaxPages = Math.min(maxPages, MAX_PAGES); // Ensure we don't exceed the maximum
+  const excludePatterns = settings.excludePatterns || [];
+  const includePatterns = settings.includePatterns || [];
+  const followExternalLinks = settings.followExternalLinks || false;
+  
+  // Initialize data structures
+  const visited = new Set<string>();
+  const queue: string[] = [baseUrl];
+  const pages: any[] = [];
+  const issues: any[] = [];
+  const links: any[] = [];
+  let totalIssues = 0;
+  
+  // Timeout mechanism
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Crawl timed out')), TIMEOUT_MS);
+  });
+  
+  // Main crawl logic
+  const crawlPromise = new Promise<void>(async (resolve) => {
+    while (queue.length > 0 && pages.length < limitedMaxPages) {
+      const url = queue.shift() as string;
       
-      console.log(`Procesando URL: ${currentUrl} (${visitedUrls.size + 1}/${maxPages})`);
-      
-      // Evitar visitar la misma URL más de una vez
-      if (visitedUrls.has(currentUrl)) {
-        console.log(`URL ya visitada: ${currentUrl}, saltando...`);
+      // Skip if already visited
+      if (visited.has(url)) {
         continue;
       }
       
-      visitedUrls.add(currentUrl);
+      visited.add(url);
+      console.log(`Analizando página: ${url}\n`);
       
-      // Analizar la página actual
-      const pageData = await analyzePage(currentUrl);
-      results.push(pageData);
-      
-      console.log(`Página analizada: ${currentUrl}, encontrados ${pageData.links?.length || 0} enlaces`);
-      
-      // Comprobar si hay enlaces en la página y añadirlos a la cola
-      if (pageData.links && pageData.links.length > 0) {
-        for (const link of pageData.links) {
-          try {
-            if (!link.url) continue;
-            
-            // Saltar enlaces vacíos, anclas o protocolos especiales
-            if (
-              link.url === '' || 
-              link.url.startsWith('#') || 
-              link.url.startsWith('mailto:') || 
-              link.url.startsWith('tel:') ||
-              link.url.startsWith('javascript:')
-            ) {
-              continue;
-            }
-            
-            // Normalizar URL
-            let fullUrl;
-            try {
-              if (link.url.startsWith('http://') || link.url.startsWith('https://')) {
-                fullUrl = link.url;
-              } else if (link.url.startsWith('/')) {
-                // URL absoluta relativa al dominio
-                fullUrl = `${baseUrl.origin}${link.url}`;
-              } else {
-                // URL relativa a la página actual
-                const currentUrlObj = new URL(currentUrl);
-                // Eliminar el nombre de archivo si existe
-                let basePath = currentUrlObj.pathname;
-                if (!basePath.endsWith('/')) {
-                  basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
-                }
-                fullUrl = `${currentUrlObj.origin}${basePath}${link.url}`;
-              }
-              
-              // Limpiar anclas de la URL
-              if (fullUrl.includes('#')) {
-                fullUrl = fullUrl.split('#')[0];
-              }
-              
-              // Validar que es una URL válida
-              new URL(fullUrl);
-            } catch (e) {
-              console.error(`URL inválida: ${link.url}, error: ${e.message}`);
-              continue; // URL inválida, saltar
-            }
-            
-            // Verificar si ya hemos visitado esta URL
-            if (visitedUrls.has(fullUrl) || urlsToVisit.includes(fullUrl)) {
-              continue;
-            }
-            
-            // Verificar si es un enlace interno o externo
-            let isInternal = false;
-            try {
-              const linkUrl = new URL(fullUrl);
-              isInternal = linkUrl.hostname === baseHostname;
-            } catch (e) {
-              console.error(`Error al analizar hostname: ${e.message}`);
-              continue;
-            }
-            
-            // Solo seguir enlaces externos si está habilitada la opción
-            if (!isInternal && !followExternalLinks) {
-              console.log(`Saltando enlace externo: ${fullUrl}`);
-              continue;
-            }
-            
-            // Verificar patrones de exclusión
-            if (excludePatterns.length > 0 && excludePatterns.some(pattern => fullUrl.includes(pattern))) {
-              console.log(`URL excluida por patrón: ${fullUrl}`);
-              continue;
-            }
-            
-            // Verificar patrones de inclusión si están definidos
-            if (includePatterns.length > 0 && !includePatterns.some(pattern => fullUrl.includes(pattern))) {
-              console.log(`URL no incluida por patrón: ${fullUrl}`);
-              continue;
-            }
-            
-            // Ignorar enlaces con protocolos no HTTP/HTTPS
-            if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
-              continue;
-            }
-            
-            console.log(`Añadiendo a la cola: ${fullUrl}`);
-            // Añadir URL a la cola
-            urlsToVisit.push(fullUrl);
-          } catch (e) {
-            console.error(`Error procesando enlace ${link.url}:`, e);
-          }
+      try {
+        const startPageTime = Date.now();
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'SEO-Crawler/1.0' }
+        });
+        const loadTimeMs = Date.now() - startPageTime;
+        
+        // Get content type
+        const contentType = response.headers.get('content-type') || '';
+        
+        // Skip non-HTML content
+        if (!contentType.includes('text/html')) {
+          continue;
         }
+        
+        // Get content
+        const html = await response.text();
+        const pageSize = Math.round(html.length / 1024); // Size in KB
+        const $ = cheerio.load(html);
+        
+        // Extract basic page details
+        const title = $('title').text().trim();
+        const metaDescription = $('meta[name="description"]').attr('content') || '';
+        const h1 = $('h1').first().text().trim();
+        const canonicalUrl = $('link[rel="canonical"]').attr('href') || '';
+        const robotsDirectives = $('meta[name="robots"]').attr('content') || '';
+        
+        // Count elements
+        const h1Count = $('h1').length;
+        const h2Count = $('h2').length;
+        const h3Count = $('h3').length;
+        const wordCount = html.replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .split(' ')
+          .length;
+        
+        // Image analysis
+        const images = $('img');
+        const imageCount = images.length;
+        let imagesWithoutAlt = 0;
+        
+        images.each((_, img) => {
+          if (!$(img).attr('alt')) {
+            imagesWithoutAlt++;
+          }
+        });
+        
+        // Link analysis
+        const pageLinks = $('a[href]');
+        let internalLinksCount = 0;
+        let externalLinksCount = 0;
+        
+        const pageEntry = {
+          id: crypto.randomUUID(),
+          crawl_id: settings.crawlId,
+          url: url,
+          status_code: response.status,
+          title: title,
+          meta_description: metaDescription,
+          h1: h1,
+          canonical_url: canonicalUrl,
+          robots_directives: robotsDirectives,
+          word_count: wordCount,
+          load_time_ms: loadTimeMs,
+          is_indexable: !robotsDirectives.includes('noindex'),
+          h2_count: h2Count,
+          h3_count: h3Count,
+          image_count: imageCount,
+          images_without_alt: imagesWithoutAlt,
+          internal_links_count: 0, // Will update after processing links
+          external_links_count: 0, // Will update after processing links
+          has_schema_markup: html.includes('schema.org') || $('script[type="application/ld+json"]').length > 0,
+          content_length: html.length,
+          meta_robots: robotsDirectives,
+          mobile_friendly: true, // Simplified assumption
+          page_size_kb: pageSize
+        };
+        
+        // Store page in database
+        const { data: savedPage, error: pageError } = await supabase
+          .from('seo_crawl_pages')
+          .insert(pageEntry)
+          .select();
+          
+        if (pageError) {
+          console.error(`Error saving page ${url}:`, pageError);
+          continue;
+        }
+        
+        const pageId = savedPage[0].id;
+        pages.push(pageEntry);
+        
+        // Process links and add to queue if internal
+        pageLinks.each((_, link) => {
+          const href = $(link).attr('href') || '';
+          const anchorText = $(link).text().trim();
+          
+          // Skip empty links and javascript links
+          if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('mailto:')) {
+            return;
+          }
+          
+          try {
+            // Normalize URL
+            let fullUrl = href;
+            if (href.startsWith('/')) {
+              const baseUrlObj = new URL(baseUrl);
+              fullUrl = `${baseUrlObj.protocol}//${baseUrlObj.host}${href}`;
+            } else if (!href.startsWith('http')) {
+              // Relative URL - resolve against the current page URL
+              const pageUrlObj = new URL(url);
+              const path = pageUrlObj.pathname.endsWith('/') 
+                ? pageUrlObj.pathname 
+                : pageUrlObj.pathname.substring(0, pageUrlObj.pathname.lastIndexOf('/') + 1);
+              fullUrl = `${pageUrlObj.protocol}//${pageUrlObj.host}${path}${href}`;
+            }
+            
+            // Check if internal or external
+            const internal = isInternalUrl(baseUrl, fullUrl);
+            
+            if (internal) {
+              internalLinksCount++;
+              
+              // Apply exclude and include patterns
+              const shouldExclude = excludePatterns.some(pattern => fullUrl.includes(pattern));
+              const shouldInclude = includePatterns.length === 0 || includePatterns.some(pattern => fullUrl.includes(pattern));
+              
+              if (!shouldExclude && shouldInclude && !visited.has(fullUrl)) {
+                queue.push(fullUrl);
+              }
+            } else {
+              externalLinksCount++;
+              
+              // Only follow external links if configured to do so
+              if (followExternalLinks && !visited.has(fullUrl)) {
+                queue.push(fullUrl);
+              }
+            }
+            
+            // Test if the link is broken (for both internal and external links)
+            let isLinkBroken = false;
+            let linkStatusCode = 200;
+            
+            try {
+              const linkCheckResponse = await fetch(fullUrl, {
+                method: 'HEAD',
+                headers: { 'User-Agent': 'SEO-Crawler/1.0' }
+              });
+              linkStatusCode = linkCheckResponse.status;
+              isLinkBroken = linkStatusCode >= 400;
+            } catch (error) {
+              console.log(`Error checking link ${fullUrl}:`, error);
+              isLinkBroken = true;
+              linkStatusCode = 0;
+            }
+            
+            // Store the link
+            const linkEntry = {
+              id: crypto.randomUUID(),
+              page_id: pageId,
+              url: fullUrl,
+              anchor_text: anchorText,
+              is_internal: internal,
+              is_broken: isLinkBroken,
+              status_code: linkStatusCode,
+              follow: !robotsDirectives.includes('nofollow')
+            };
+            
+            links.push(linkEntry);
+            
+            // Store broken link issue
+            if (isLinkBroken) {
+              const brokenLinkIssue = {
+                id: crypto.randomUUID(),
+                page_id: pageId,
+                issue_type: SEO_ISSUES.BROKEN_LINKS.type,
+                severity: SEO_ISSUES.BROKEN_LINKS.severity,
+                description: `Enlace roto a: ${fullUrl}`,
+                recommended_fix: SEO_ISSUES.BROKEN_LINKS.fix
+              };
+              
+              issues.push(brokenLinkIssue);
+              totalIssues++;
+            }
+          } catch (linkError) {
+            console.error(`Error processing link ${href}:`, linkError);
+          }
+        });
+        
+        // Update link counts in the page record
+        await supabase
+          .from('seo_crawl_pages')
+          .update({
+            internal_links_count: internalLinksCount,
+            external_links_count: externalLinksCount
+          })
+          .eq('id', pageId);
+        
+        // Store links in database
+        if (links.length > 0) {
+          const { error: linksError } = await supabase
+            .from('seo_crawl_links')
+            .insert(links);
+            
+          if (linksError) {
+            console.error(`Error saving links for page ${url}:`, linksError);
+          }
+          
+          // Clear the links array after storing
+          links.length = 0;
+        }
+        
+        // Detect SEO issues
+        const pageIssues = [];
+        
+        // Title issues
+        if (!title) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.MISSING_TITLE.type,
+            severity: SEO_ISSUES.MISSING_TITLE.severity,
+            description: SEO_ISSUES.MISSING_TITLE.description,
+            recommended_fix: SEO_ISSUES.MISSING_TITLE.fix
+          });
+        } else if (title.length < 30) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.SHORT_TITLE.type,
+            severity: SEO_ISSUES.SHORT_TITLE.severity,
+            description: SEO_ISSUES.SHORT_TITLE.description,
+            recommended_fix: SEO_ISSUES.SHORT_TITLE.fix
+          });
+        } else if (title.length > 60) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.LONG_TITLE.type,
+            severity: SEO_ISSUES.LONG_TITLE.severity,
+            description: SEO_ISSUES.LONG_TITLE.description,
+            recommended_fix: SEO_ISSUES.LONG_TITLE.fix
+          });
+        }
+        
+        // Meta description issues
+        if (!metaDescription) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.MISSING_META_DESCRIPTION.type,
+            severity: SEO_ISSUES.MISSING_META_DESCRIPTION.severity,
+            description: SEO_ISSUES.MISSING_META_DESCRIPTION.description,
+            recommended_fix: SEO_ISSUES.MISSING_META_DESCRIPTION.fix
+          });
+        } else if (metaDescription.length < 70) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.SHORT_META_DESCRIPTION.type,
+            severity: SEO_ISSUES.SHORT_META_DESCRIPTION.severity,
+            description: SEO_ISSUES.SHORT_META_DESCRIPTION.description,
+            recommended_fix: SEO_ISSUES.SHORT_META_DESCRIPTION.fix
+          });
+        } else if (metaDescription.length > 160) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.LONG_META_DESCRIPTION.type,
+            severity: SEO_ISSUES.LONG_META_DESCRIPTION.severity,
+            description: SEO_ISSUES.LONG_META_DESCRIPTION.description,
+            recommended_fix: SEO_ISSUES.LONG_META_DESCRIPTION.fix
+          });
+        }
+        
+        // H1 issues
+        if (!h1) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.MISSING_H1.type,
+            severity: SEO_ISSUES.MISSING_H1.severity,
+            description: SEO_ISSUES.MISSING_H1.description,
+            recommended_fix: SEO_ISSUES.MISSING_H1.fix
+          });
+        } else if (h1Count > 1) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.MULTIPLE_H1.type,
+            severity: SEO_ISSUES.MULTIPLE_H1.severity,
+            description: SEO_ISSUES.MULTIPLE_H1.description,
+            recommended_fix: SEO_ISSUES.MULTIPLE_H1.fix
+          });
+        }
+        
+        // Word count issue
+        if (wordCount < 300) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.LOW_WORD_COUNT.type,
+            severity: SEO_ISSUES.LOW_WORD_COUNT.severity,
+            description: SEO_ISSUES.LOW_WORD_COUNT.description,
+            recommended_fix: SEO_ISSUES.LOW_WORD_COUNT.fix
+          });
+        }
+        
+        // Missing alt text
+        if (imagesWithoutAlt > 0) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.MISSING_ALT_TEXT.type,
+            severity: SEO_ISSUES.MISSING_ALT_TEXT.severity,
+            description: `${imagesWithoutAlt} imágenes sin texto alternativo`,
+            recommended_fix: SEO_ISSUES.MISSING_ALT_TEXT.fix
+          });
+        }
+        
+        // Canonical issue
+        if (!canonicalUrl) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.MISSING_CANONICAL.type,
+            severity: SEO_ISSUES.MISSING_CANONICAL.severity,
+            description: SEO_ISSUES.MISSING_CANONICAL.description,
+            recommended_fix: SEO_ISSUES.MISSING_CANONICAL.fix
+          });
+        }
+        
+        // Page load time issue
+        if (loadTimeMs > 3000) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.SLOW_PAGE_LOAD.type,
+            severity: SEO_ISSUES.SLOW_PAGE_LOAD.severity,
+            description: `Tiempo de carga: ${loadTimeMs}ms`,
+            recommended_fix: SEO_ISSUES.SLOW_PAGE_LOAD.fix
+          });
+        }
+        
+        // Page size issue
+        if (pageSize > 1000) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.LARGE_PAGE_SIZE.type,
+            severity: SEO_ISSUES.LARGE_PAGE_SIZE.severity,
+            description: `Tamaño de página: ${pageSize}KB`,
+            recommended_fix: SEO_ISSUES.LARGE_PAGE_SIZE.fix
+          });
+        }
+        
+        // Schema markup issue
+        if (!pageEntry.has_schema_markup) {
+          pageIssues.push({
+            id: crypto.randomUUID(),
+            page_id: pageId,
+            issue_type: SEO_ISSUES.NO_SCHEMA_MARKUP.type,
+            severity: SEO_ISSUES.NO_SCHEMA_MARKUP.severity,
+            description: SEO_ISSUES.NO_SCHEMA_MARKUP.description,
+            recommended_fix: SEO_ISSUES.NO_SCHEMA_MARKUP.fix
+          });
+        }
+        
+        // Store issues in database
+        if (pageIssues.length > 0) {
+          const { error: issuesError } = await supabase
+            .from('seo_crawl_issues')
+            .insert(pageIssues);
+            
+          if (issuesError) {
+            console.error(`Error saving issues for page ${url}:`, issuesError);
+          }
+          
+          issues.push(...pageIssues);
+          totalIssues += pageIssues.length;
+        }
+        
+      } catch (error) {
+        console.error(`Error crawling ${url}:`, error);
       }
     }
     
-    console.log(`Crawl finalizado. Páginas analizadas: ${results.length}`);
-    return results;
+    resolve();
+  });
+  
+  // Execute the crawl with timeout
+  try {
+    await Promise.race([crawlPromise, timeoutPromise]);
   } catch (error) {
-    console.error("Error en crawlSite:", error);
-    throw error;
+    console.error('Crawl execution error:', error);
   }
+  
+  const totalTimeSeconds = Math.round((Date.now() - startTime) / 1000);
+  console.log(`Crawl completed. Analyzed ${pages.length} pages, found ${totalIssues} issues. Time: ${totalTimeSeconds}s`);
+  
+  // Update crawl result
+  const { error: updateError } = await supabase
+    .from('seo_crawl_results')
+    .update({
+      pages_crawled: pages.length,
+      issues_count: totalIssues,
+      total_time_seconds: totalTimeSeconds,
+      status: 'completed'
+    })
+    .eq('id', settings.crawlId);
+    
+  if (updateError) {
+    console.error('Error updating crawl result:', updateError);
+  }
+  
+  return {
+    pages_crawled: pages.length,
+    issues_count: totalIssues,
+    total_time_seconds: totalTimeSeconds
+  };
 }
 
-// Función principal para manejar la petición
 serve(async (req) => {
-  // Manejar solicitudes CORS preflight
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      headers: corsHeaders
+    });
   }
   
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    // Extraer datos de la solicitud
-    const requestData = await req.json();
-    console.log("Received request data:", JSON.stringify(requestData));
-    
-    const { url, clientId, crawlId, maxPages = 100, excludePatterns = [], includePatterns = [], followExternalLinks = false } = requestData;
-    
-    if (!url) {
-      return new Response(
-        JSON.stringify({ error: 'Se requiere una URL para analizar' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log(`Iniciando análisis de: ${url}`);
-    console.log(`Configuración: maxPages=${maxPages}, followExternalLinks=${followExternalLinks}`);
-    console.log(`Patrones de exclusión: ${JSON.stringify(excludePatterns)}`);
-    console.log(`Patrones de inclusión: ${JSON.stringify(includePatterns)}`);
-    
-    // Validar URL
-    let validUrl;
-    try {
-      // Verificar que tenga protocolo
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        validUrl = 'https://' + url;
-      } else {
-        validUrl = url;
-      }
+    if (req.method === 'POST') {
+      const settings: CrawlSettings = await req.json();
       
-      // Verificar que sea una URL válida
-      new URL(validUrl);
-    } catch (e) {
-      return new Response(
-        JSON.stringify({ error: 'URL inválida. Formato correcto: https://ejemplo.com' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    try {
-      // Comprobar que la URL es accesible antes de iniciar el rastreo completo
-      const testResponse = await fetch(validUrl, {
-        method: 'HEAD',
-        headers: {
-          'User-Agent': 'SEOAuditBot/1.0 (+https://midominio.com/bot.html)'
-        }
-      });
-      
-      if (!testResponse.ok) {
-        // Actualizar el registro como error
-        await supabase
-          .from('seo_crawl_results')
-          .update({
-            status: 'error',
-            pages_crawled: 0,
-            issues_count: 1,
-            total_time_seconds: 0
-          })
-          .eq('id', crawlId);
-        
-        // Si la URL no es accesible, devolver error
+      if (!settings.url || !settings.clientId || !settings.crawlId) {
         return new Response(
           JSON.stringify({ 
-            error: `La URL no es accesible. Código de estado: ${testResponse.status}` 
+            error: 'Missing required fields: url, clientId, and crawlId are required' 
           }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
         );
       }
-    } catch (accessError) {
-      console.error("Error al verificar acceso a URL:", accessError);
       
-      // Actualizar el registro como error
-      await supabase
-        .from('seo_crawl_results')
-        .update({
-          status: 'error',
-          pages_crawled: 0,
-          issues_count: 1,
-          total_time_seconds: 0
-        })
-        .eq('id', crawlId);
+      // Start the crawl process asynchronously
+      const result = await crawlSite(settings);
       
       return new Response(
-        JSON.stringify({ 
-          error: `Error al acceder a la URL: ${accessError.message}` 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify(result),
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
       );
     }
-    
-    // Iniciar temporizador
-    const startTime = new Date().getTime();
-    
-    try {
-      // Realizar el rastreo
-      const visitedUrls = new Set();
-      
-      // Limitar el tiempo máximo del rastreo a 28 segundos para evitar timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 28000);
-      
-      let results;
-      
-      try {
-        results = await Promise.race([
-          crawlSite(validUrl, maxPages, visitedUrls, excludePatterns, includePatterns, followExternalLinks),
-          new Promise((_, reject) => {
-            controller.signal.addEventListener('abort', () => {
-              reject(new Error('El rastreo ha excedido el tiempo máximo permitido'));
-            });
-          })
-        ]);
-        
-        clearTimeout(timeoutId);
-      } catch (raceError) {
-        clearTimeout(timeoutId);
-        
-        // Si el error es por timeout, usar las páginas que ya se hayan analizado
-        if (raceError.message === 'El rastreo ha excedido el tiempo máximo permitido') {
-          console.log('El rastreo ha excedido el tiempo máximo. Usando páginas ya analizadas:', visitedUrls.size);
-          
-          if (visitedUrls.size === 0) {
-            // Si no hay páginas analizadas, analizar al menos la página principal
-            results = [await analyzePage(validUrl)];
-          }
-        } else {
-          throw raceError;
-        }
-      }
-      
-      // Ensure results is defined
-      if (!results || results.length === 0) {
-        results = [await analyzePage(validUrl)]; // Analyze at least the main page
-      }
-      
-      // Calcular tiempo total
-      const endTime = new Date().getTime();
-      const totalTimeSeconds = Math.floor((endTime - startTime) / 1000);
-      
-      // Contar problemas totales
-      let totalIssues = 0;
-      
-      // Insertar los resultados en la base de datos
-      for (const page of results) {
-        try {
-          // Insertar página
-          const { data: pageData, error: pageError } = await supabase
-            .from('seo_crawl_pages')
-            .insert({
-              crawl_id: crawlId,
-              url: page.url,
-              status_code: page.statusCode,
-              title: page.title,
-              meta_description: page.metaDescription,
-              h1: page.h1,
-              canonical_url: page.canonicalUrl,
-              robots_directives: page.robotsDirectives,
-              is_indexable: page.isIndexable,
-              word_count: page.wordCount,
-              load_time_ms: page.loadTimeMs,
-              h2_count: page.h2Count,
-              h3_count: page.h3Count,
-              image_count: page.imageCount,
-              images_without_alt: page.imagesWithoutAlt,
-              internal_links_count: page.internalLinksCount,
-              external_links_count: page.externalLinksCount,
-              has_schema_markup: page.hasSchemaMarkup,
-              page_size_kb: page.pageSize
-            })
-            .select()
-            .single();
-            
-          if (pageError) {
-            console.error(`Error al insertar página ${page.url}:`, pageError);
-            continue;
-          }
-          
-          const pageId = pageData.id;
-          
-          // Insertar problemas
-          if (page.issues && page.issues.length > 0) {
-            totalIssues += page.issues.length;
-            
-            for (const issue of page.issues) {
-              const { error: issueError } = await supabase
-                .from('seo_crawl_issues')
-                .insert({
-                  page_id: pageId,
-                  issue_type: issue.issueType,
-                  severity: issue.severity,
-                  description: issue.description,
-                  recommended_fix: issue.recommendedFix
-                });
-                
-              if (issueError) {
-                console.error(`Error al insertar problema en página ${page.url}:`, issueError);
-              }
-            }
-          }
-          
-          // Insertar enlaces
-          if (page.links && page.links.length > 0) {
-            for (const link of page.links) {
-              const { error: linkError } = await supabase
-                .from('seo_crawl_links')
-                .insert({
-                  page_id: pageId,
-                  url: link.url,
-                  anchor_text: link.anchorText,
-                  is_internal: link.isInternal,
-                  is_broken: false, // Se actualizará después
-                  follow: link.follow
-                });
-                
-              if (linkError) {
-                console.error(`Error al insertar enlace en página ${page.url}:`, linkError);
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`Error procesando página ${page.url}:`, error);
-        }
-      }
-      
-      // Actualizar el resultado del rastreo
-      const { error: updateError } = await supabase
-        .from('seo_crawl_results')
-        .update({
-          status: 'completed',
-          pages_crawled: results.length,
-          issues_count: totalIssues,
-          total_time_seconds: totalTimeSeconds
-        })
-        .eq('id', crawlId);
-        
-      if (updateError) {
-        throw new Error(`Error al actualizar resultado de análisis: ${updateError.message}`);
-      }
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          crawlId,
-          pagesAnalyzed: results.length,
-          issuesFound: totalIssues,
-          timeSeconds: totalTimeSeconds
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } catch (crawlError) {
-      console.error('Error durante el rastreo:', crawlError);
-      
-      // Actualizar el registro como error
-      await supabase
-        .from('seo_crawl_results')
-        .update({
-          status: 'error',
-          pages_crawled: 0,
-          issues_count: 0,
-          total_time_seconds: 0
-        })
-        .eq('id', crawlId);
-      
-      return new Response(
-        JSON.stringify({ 
-          error: `Error durante el rastreo: ${crawlError.message}` 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-  } catch (error) {
-    console.error('Error en el servidor:', error);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Method not allowed' }),
+      { 
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    console.error('Function error:', error);
+    
+    return new Response(
+      JSON.stringify({ error: error.message || 'Internal server error' }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
   }
 });

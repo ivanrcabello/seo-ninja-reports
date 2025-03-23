@@ -741,12 +741,23 @@ export type Database = {
       seo_crawl_pages: {
         Row: {
           canonical_url: string | null
+          content_length: number | null
           crawl_id: string | null
+          external_links_count: number | null
           h1: string | null
+          h2_count: number | null
+          h3_count: number | null
+          has_schema_markup: boolean | null
           id: string
+          image_count: number | null
+          images_without_alt: number | null
+          internal_links_count: number | null
           is_indexable: boolean | null
           load_time_ms: number | null
           meta_description: string | null
+          meta_robots: string | null
+          mobile_friendly: boolean | null
+          page_size_kb: number | null
           robots_directives: string | null
           status_code: number | null
           title: string | null
@@ -755,12 +766,23 @@ export type Database = {
         }
         Insert: {
           canonical_url?: string | null
+          content_length?: number | null
           crawl_id?: string | null
+          external_links_count?: number | null
           h1?: string | null
+          h2_count?: number | null
+          h3_count?: number | null
+          has_schema_markup?: boolean | null
           id?: string
+          image_count?: number | null
+          images_without_alt?: number | null
+          internal_links_count?: number | null
           is_indexable?: boolean | null
           load_time_ms?: number | null
           meta_description?: string | null
+          meta_robots?: string | null
+          mobile_friendly?: boolean | null
+          page_size_kb?: number | null
           robots_directives?: string | null
           status_code?: number | null
           title?: string | null
@@ -769,12 +791,23 @@ export type Database = {
         }
         Update: {
           canonical_url?: string | null
+          content_length?: number | null
           crawl_id?: string | null
+          external_links_count?: number | null
           h1?: string | null
+          h2_count?: number | null
+          h3_count?: number | null
+          has_schema_markup?: boolean | null
           id?: string
+          image_count?: number | null
+          images_without_alt?: number | null
+          internal_links_count?: number | null
           is_indexable?: boolean | null
           load_time_ms?: number | null
           meta_description?: string | null
+          meta_robots?: string | null
+          mobile_friendly?: boolean | null
+          page_size_kb?: number | null
           robots_directives?: string | null
           status_code?: number | null
           title?: string | null

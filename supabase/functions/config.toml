@@ -1,0 +1,5 @@
+
+project_id = "ctidzqynewvqxguhhknp"
+name = "seo-crawler"
+entrypoint = "index.ts"
+verify_jwt = false
