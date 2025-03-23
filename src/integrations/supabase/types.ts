@@ -662,6 +662,220 @@ export type Database = {
           },
         ]
       }
+      seo_crawl_issues: {
+        Row: {
+          description: string
+          id: string
+          issue_type: string
+          page_id: string | null
+          recommended_fix: string | null
+          severity: string
+        }
+        Insert: {
+          description: string
+          id?: string
+          issue_type: string
+          page_id?: string | null
+          recommended_fix?: string | null
+          severity: string
+        }
+        Update: {
+          description?: string
+          id?: string
+          issue_type?: string
+          page_id?: string | null
+          recommended_fix?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawl_issues_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawl_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawl_links: {
+        Row: {
+          anchor_text: string | null
+          follow: boolean | null
+          id: string
+          is_broken: boolean | null
+          is_internal: boolean | null
+          page_id: string | null
+          status_code: number | null
+          url: string
+        }
+        Insert: {
+          anchor_text?: string | null
+          follow?: boolean | null
+          id?: string
+          is_broken?: boolean | null
+          is_internal?: boolean | null
+          page_id?: string | null
+          status_code?: number | null
+          url: string
+        }
+        Update: {
+          anchor_text?: string | null
+          follow?: boolean | null
+          id?: string
+          is_broken?: boolean | null
+          is_internal?: boolean | null
+          page_id?: string | null
+          status_code?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawl_links_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawl_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawl_pages: {
+        Row: {
+          canonical_url: string | null
+          crawl_id: string | null
+          h1: string | null
+          id: string
+          is_indexable: boolean | null
+          load_time_ms: number | null
+          meta_description: string | null
+          robots_directives: string | null
+          status_code: number | null
+          title: string | null
+          url: string
+          word_count: number | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          crawl_id?: string | null
+          h1?: string | null
+          id?: string
+          is_indexable?: boolean | null
+          load_time_ms?: number | null
+          meta_description?: string | null
+          robots_directives?: string | null
+          status_code?: number | null
+          title?: string | null
+          url: string
+          word_count?: number | null
+        }
+        Update: {
+          canonical_url?: string | null
+          crawl_id?: string | null
+          h1?: string | null
+          id?: string
+          is_indexable?: boolean | null
+          load_time_ms?: number | null
+          meta_description?: string | null
+          robots_directives?: string | null
+          status_code?: number | null
+          title?: string | null
+          url?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawl_pages_crawl_id_fkey"
+            columns: ["crawl_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawl_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawl_results: {
+        Row: {
+          client_id: string | null
+          crawl_date: string | null
+          domain: string
+          id: string
+          issues_count: number | null
+          pages_crawled: number | null
+          status: string | null
+          total_time_seconds: number | null
+        }
+        Insert: {
+          client_id?: string | null
+          crawl_date?: string | null
+          domain: string
+          id?: string
+          issues_count?: number | null
+          pages_crawled?: number | null
+          status?: string | null
+          total_time_seconds?: number | null
+        }
+        Update: {
+          client_id?: string | null
+          crawl_date?: string | null
+          domain?: string
+          id?: string
+          issues_count?: number | null
+          pages_crawled?: number | null
+          status?: string | null
+          total_time_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawl_results_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawl_settings: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          domain: string
+          exclude_patterns: string[] | null
+          follow_external_links: boolean | null
+          id: string
+          include_patterns: string[] | null
+          max_pages: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          domain: string
+          exclude_patterns?: string[] | null
+          follow_external_links?: boolean | null
+          id?: string
+          include_patterns?: string[] | null
+          max_pages?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string
+          exclude_patterns?: string[] | null
+          follow_external_links?: boolean | null
+          id?: string
+          include_patterns?: string[] | null
+          max_pages?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawl_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seo_keywords: {
         Row: {
           created_at: string | null

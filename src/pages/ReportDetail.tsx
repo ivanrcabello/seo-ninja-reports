@@ -8,9 +8,10 @@ import ReportDetailContent from '@/components/reports/detail/ReportDetailContent
 import usePersistentState from '@/hooks/usePersistentState';
 import Layout from '@/components/layout/Layout';
 import { toast } from 'sonner';
+import CrawlerDetail from '@/components/clients/seo-crawler/CrawlerDetail';
 
 const ReportDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, clientId, crawlId } = useParams<{ id: string; clientId: string; crawlId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
@@ -185,6 +186,19 @@ const ReportDetail = () => {
   // Redirect if not logged in
   if (!user && !authLoading) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Handle Crawler Detail Page
+  if (clientId && crawlId) {
+    return (
+      <Layout>
+        <main className="flex-1 pt-24 pb-16">
+          <div className="container px-4 sm:px-6 mx-auto">
+            <CrawlerDetail />
+          </div>
+        </main>
+      </Layout>
+    );
   }
 
   if (!id) {
