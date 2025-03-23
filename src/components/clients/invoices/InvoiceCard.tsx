@@ -58,10 +58,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
 }) => {
   const { title, amount, status, created_at, due_date } = invoice;
   
-  // Usar useCallback para los manejadores de eventos
   const handleCardClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
     onClick();
   }, [onClick]);
 
@@ -105,8 +102,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8"
+                  className="h-8 w-8 relative z-20"
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                   }}
                 >
@@ -114,7 +112,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                   <span className="sr-only">Abrir menú</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-popover border">
                 <DropdownMenuItem onClick={handleViewInvoice}>
                   <Eye className="mr-2 h-4 w-4" />
                   Ver factura

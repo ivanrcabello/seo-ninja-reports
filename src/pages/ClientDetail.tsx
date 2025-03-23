@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
 import Layout from '@/components/layout/Layout';
+import { toast } from 'sonner';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,7 @@ const ClientDetail = () => {
   const [didMount, setDidMount] = useState(false);
   const isMounted = useRef(true);
   const previousPathRef = useRef('');
+  const navigatingBackRef = useRef(false);
 
   // Set mount state and cleanup on unmount
   useEffect(() => {
@@ -30,11 +32,9 @@ const ClientDetail = () => {
     isMounted.current = true;
     previousPathRef.current = location.pathname;
     
-    // Abortar cualquier solicitud de red pendiente al desmontar
-    const controller = new AbortController();
-    
     // Función mejorada para limpiar recursos y cerrar modales
     const cleanupResources = () => {
+      console.log("Cleaning up resources in ClientDetail");
       // Force document body click to close any stuck modals or popovers
       document.body.click();
       
@@ -53,6 +53,16 @@ const ClientDetail = () => {
           document.body.click(); // Esto suele cerrar menús desplegables
         }
       });
+      
+      // Asegurarse de que no haya overlays o modales abiertos
+      document.querySelectorAll('[role="dialog"]').forEach(dialog => {
+        if (dialog.parentElement && dialog.parentElement.parentElement) {
+          const backdrop = dialog.parentElement.parentElement;
+          if (backdrop.parentElement) {
+            backdrop.parentElement.removeChild(backdrop);
+          }
+        }
+      });
     };
     
     // Cleanup event listeners and state when component unmounts
@@ -60,7 +70,6 @@ const ClientDetail = () => {
       console.log("ClientDetail unmounting");
       setDidMount(false);
       isMounted.current = false;
-      controller.abort();
       
       // Limpiar antes de desmontar
       cleanupResources();
@@ -92,6 +101,7 @@ const ClientDetail = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Error deleting client:', error);
+      toast.error('Error al eliminar el cliente');
     } finally {
       if (isMounted.current) {
         setIsDeleting(false);
@@ -158,25 +168,48 @@ const ClientDetail = () => {
     };
   }, [location]);
 
-  // Manejar eventos de navegación del navegador
+  // Mejorar manejo de eventos de navegación del navegador
   useEffect(() => {
     const handleBeforeUnload = () => {
-      console.log("beforeunload event triggered");
+      console.log("beforeunload event triggered in ClientDetail");
       // Clean up any open modals before navigating away
       document.body.click();
     };
     
     const handlePopState = (event: PopStateEvent) => {
-      console.log("popstate event triggered", event);
-      // Limpiar modales y procesar el evento back/forward
+      console.log("popstate event triggered in ClientDetail", event);
+      navigatingBackRef.current = true;
+      
+      // Limpiar modales antes de navegar
       document.body.click();
       
+      // Cerrar cualquier diálogo abierto
       const closeButtons = document.querySelectorAll('[data-state="open"] button[aria-label="Close"]');
       closeButtons.forEach(button => {
         if (button instanceof HTMLElement) {
           button.click();
         }
       });
+      
+      // Prevenir interacción mientras se procesa la navegación
+      const overlay = document.createElement('div');
+      overlay.id = 'navigation-overlay';
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.backgroundColor = 'transparent';
+      overlay.style.zIndex = '9999';
+      document.body.appendChild(overlay);
+      
+      // Eliminar overlay después de navegar
+      setTimeout(() => {
+        if (document.getElementById('navigation-overlay')) {
+          document.body.removeChild(overlay);
+        }
+        navigatingBackRef.current = false;
+      }, 500);
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);

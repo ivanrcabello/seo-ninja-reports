@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale'; 
@@ -23,11 +23,11 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
   reports, 
   onCreateReport 
 }) => {
-  const handleCreateReport = (e: React.MouseEvent) => {
+  const handleCreateReport = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onCreateReport();
-  };
+  }, [onCreateReport]);
 
   return (
     <BlurredCard>
@@ -80,7 +80,10 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
             <p className="text-muted-foreground mb-6">
               Genera tu primer informe SEO para {client.name} para comenzar.
             </p>
-            <Button onClick={handleCreateReport}>
+            <Button 
+              onClick={handleCreateReport}
+              className="focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            >
               Generar Informe
             </Button>
           </div>

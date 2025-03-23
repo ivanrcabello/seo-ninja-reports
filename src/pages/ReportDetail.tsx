@@ -7,6 +7,7 @@ import useReports from '@/hooks/useReports';
 import ReportDetailContent from '@/components/reports/detail/ReportDetailContent';
 import usePersistentState from '@/hooks/usePersistentState';
 import Layout from '@/components/layout/Layout';
+import { toast } from 'sonner';
 
 const ReportDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ const ReportDetail = () => {
   const searchParams = new URLSearchParams(location.search);
   const initialIsEditing = searchParams.get('mode') === 'edit';
   const isMounted = useRef(true);
+  const navigatingBackRef = useRef(false);
   
   // Use persistent state to maintain editing state across tab changes
   const [isEditing, setIsEditing] = usePersistentState<boolean>(
@@ -33,6 +35,7 @@ const ReportDetail = () => {
     
     // Función mejorada para limpiar recursos y cerrar modales
     const cleanupResources = () => {
+      console.log("Cleaning up resources in ReportDetail");
       // Force document body click to close any stuck modals or popovers
       document.body.click();
       
@@ -49,6 +52,24 @@ const ReportDetail = () => {
       dropdownMenus.forEach(menu => {
         if (menu.parentElement) {
           document.body.click(); // Esto suele cerrar menús desplegables
+        }
+      });
+      
+      // Eliminar cualquier overlay que pudiera haber quedado
+      const overlays = document.querySelectorAll('[id="navigation-overlay"]');
+      overlays.forEach(overlay => {
+        if (overlay.parentElement) {
+          overlay.parentElement.removeChild(overlay);
+        }
+      });
+      
+      // Asegurarse de que no haya overlays o modales abiertos
+      document.querySelectorAll('[role="dialog"]').forEach(dialog => {
+        if (dialog.parentElement && dialog.parentElement.parentElement) {
+          const backdrop = dialog.parentElement.parentElement;
+          if (backdrop.parentElement) {
+            backdrop.parentElement.removeChild(backdrop);
+          }
         }
       });
     };
@@ -108,7 +129,7 @@ const ReportDetail = () => {
     };
   }, [id, isEditing, setIsEditing]);
   
-  // Manejar eventos de navegación del navegador
+  // Mejorar manejo de eventos de navegación del navegador
   useEffect(() => {
     const handleBeforeUnload = () => {
       console.log("beforeunload event triggered in ReportDetail");
@@ -118,15 +139,38 @@ const ReportDetail = () => {
     
     const handlePopState = (event: PopStateEvent) => {
       console.log("popstate event triggered in ReportDetail", event);
-      // Limpiar modales y procesar el evento back/forward
+      navigatingBackRef.current = true;
+      
+      // Limpiar modales antes de navegar
       document.body.click();
       
+      // Cerrar cualquier diálogo abierto
       const closeButtons = document.querySelectorAll('[data-state="open"] button[aria-label="Close"]');
       closeButtons.forEach(button => {
         if (button instanceof HTMLElement) {
           button.click();
         }
       });
+      
+      // Prevenir interacción mientras se procesa la navegación
+      const overlay = document.createElement('div');
+      overlay.id = 'navigation-overlay';
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.backgroundColor = 'transparent';
+      overlay.style.zIndex = '9999';
+      document.body.appendChild(overlay);
+      
+      // Eliminar overlay después de navegar
+      setTimeout(() => {
+        if (document.getElementById('navigation-overlay')) {
+          document.body.removeChild(overlay);
+        }
+        navigatingBackRef.current = false;
+      }, 500);
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -157,10 +201,14 @@ const ReportDetail = () => {
     try {
       await deleteReport(report.id);
       if (isMounted.current) {
-        window.location.href = client ? `/clients/${client.id}` : '/dashboard';
+        toast.success('Informe eliminado correctamente');
+        setTimeout(() => {
+          window.location.href = client ? `/clients/${client.id}` : '/dashboard';
+        }, 300);
       }
     } catch (error) {
       console.error("Error deleting report:", error);
+      toast.error('Error al eliminar el informe');
     }
   };
 
