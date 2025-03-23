@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,48 +24,73 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
   const [shareUrl, setShareUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const isMounted = useRef(true);
+  
+  // Set up the mounted ref
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
       setIsCopied(false);
     }
+    
+    return () => {
+      // Clean up when component unmounts or dialog closes
+      if (!open) {
+        setShareUrl('');
+        setIsLoading(false);
+        setIsCopied(false);
+      }
+    };
   }, [open]);
   
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      setShareUrl('');
-      setIsLoading(false);
-      setIsCopied(false);
-    };
-  }, []);
-  
   const handleGenerateUrl = async () => {
+    if (!isMounted.current) return;
+    
     setIsLoading(true);
     try {
       const url = await onGenerateShareUrl();
-      setShareUrl(url);
+      if (isMounted.current) {
+        setShareUrl(url);
+      }
     } catch (error) {
       console.error('Error generating share URL:', error);
-      toast.error('No se pudo generar el enlace para compartir');
+      if (isMounted.current) {
+        toast.error('No se pudo generar el enlace para compartir');
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
   
   const handleCopyToClipboard = () => {
-    if (!shareUrl) return;
+    if (!shareUrl || !isMounted.current) return;
     
     navigator.clipboard.writeText(shareUrl)
       .then(() => {
-        setIsCopied(true);
-        toast.success('Enlace copiado al portapapeles');
-        setTimeout(() => setIsCopied(false), 2000);
+        if (isMounted.current) {
+          setIsCopied(true);
+          toast.success('Enlace copiado al portapapeles');
+          setTimeout(() => {
+            if (isMounted.current) {
+              setIsCopied(false);
+            }
+          }, 2000);
+        }
       })
       .catch(err => {
         console.error('Error copying to clipboard:', err);
-        toast.error('No se pudo copiar el enlace');
+        if (isMounted.current) {
+          toast.error('No se pudo copiar el enlace');
+        }
       });
   };
   

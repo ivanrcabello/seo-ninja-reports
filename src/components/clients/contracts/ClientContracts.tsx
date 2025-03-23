@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useClientContracts } from '@/hooks/useClientContracts';
 import { ClientContract } from '@/types/client.types';
 import { Button } from '@/components/ui/button';
@@ -21,24 +21,48 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   const [editingContract, setEditingContract] = useState<ClientContract | null>(null);
   const [viewingContract, setViewingContract] = useState<ClientContract | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const isMounted = useRef(true);
+
+  // Set up the mounted ref
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Clean up state on component unmount or when clientId changes
   useEffect(() => {
     const cleanup = () => {
-      setIsContractDialogOpen(false);
-      setEditingContract(null);
-      setViewingContract(null);
+      if (isMounted.current) {
+        setIsContractDialogOpen(false);
+        setEditingContract(null);
+        setViewingContract(null);
+      }
     };
     
+    // Initial data fetch
+    const loadData = async () => {
+      try {
+        await fetchContracts();
+      } catch (error) {
+        console.error('Error loading contracts:', error);
+      }
+    };
+    
+    loadData();
+    
     return cleanup;
-  }, [clientId]);
+  }, [clientId, fetchContracts]);
 
   // Handle browser back button with popstate event
   useEffect(() => {
     const handlePopState = () => {
-      setIsContractDialogOpen(false);
-      setEditingContract(null);
-      setViewingContract(null);
+      if (isMounted.current) {
+        setIsContractDialogOpen(false);
+        setEditingContract(null);
+        setViewingContract(null);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -49,32 +73,43 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   }, []);
 
   const handleRefresh = async () => {
+    if (!isMounted.current) return;
+    
     try {
       setIsRefreshing(true);
       await fetchContracts();
-      toast.success('Contratos actualizados');
+      if (isMounted.current) {
+        toast.success('Contratos actualizados');
+      }
     } catch (error) {
       console.error('Error refreshing contracts:', error);
     } finally {
-      setIsRefreshing(false);
+      if (isMounted.current) {
+        setIsRefreshing(false);
+      }
     }
   };
 
   const handleCreateContract = useCallback(() => {
+    if (!isMounted.current) return;
     setEditingContract(null);
     setIsContractDialogOpen(true);
   }, []);
 
   const handleEditContract = useCallback((contract: ClientContract) => {
+    if (!isMounted.current) return;
     setEditingContract(contract);
     setIsContractDialogOpen(true);
   }, []);
 
   const handleViewContract = useCallback((contract: ClientContract) => {
+    if (!isMounted.current) return;
     setViewingContract(contract);
   }, []);
 
   const handleDeleteContract = useCallback(async (id: string) => {
+    if (!isMounted.current) return;
+    
     if (window.confirm('¿Estás seguro de que quieres eliminar este contrato? Esta acción no se puede deshacer.')) {
       try {
         await deleteContract(id);
@@ -86,11 +121,13 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
 
   // Handler for closing the contract viewer
   const handleCloseViewer = useCallback(() => {
+    if (!isMounted.current) return;
     setViewingContract(null);
   }, []);
 
   // Handler for closing the contract dialog
   const handleCloseDialog = useCallback((open: boolean) => {
+    if (!isMounted.current) return;
     setIsContractDialogOpen(open);
     if (!open) {
       setEditingContract(null);

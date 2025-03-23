@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Navigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -20,6 +20,7 @@ const ClientDetail = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts'>('overview');
   const [didMount, setDidMount] = useState(false);
+  const prevTabRef = useRef<string | null>(null);
 
   // Set mount state
   useEffect(() => {
@@ -56,33 +57,44 @@ const ClientDetail = () => {
     }
   };
 
-  // Handle tab changes
+  // Handle tab changes with improved state handling
   const handleTabChange = useCallback((tab: 'overview' | 'reports' | 'new-report' | 'proposals' | 'contracts') => {
-    setActiveTab(tab);
-    // Update URL hash without triggering full page reload
-    if (didMount) {
-      const newUrl = tab === 'overview' 
-        ? `${window.location.pathname}` 
-        : `${window.location.pathname}#${tab}`;
+    // Only update if the tab is actually changing
+    if (tab !== activeTab) {
+      prevTabRef.current = activeTab;
+      setActiveTab(tab);
       
-      window.history.pushState({}, '', newUrl);
+      // Update URL hash without triggering full page reload
+      if (didMount) {
+        const newUrl = tab === 'overview' 
+          ? `${window.location.pathname}` 
+          : `${window.location.pathname}#${tab}`;
+        
+        window.history.pushState({ tab }, '', newUrl);
+      }
     }
-  }, [didMount]);
+  }, [didMount, activeTab]);
 
-  // Handle anchor navigation to tabs (for direct links)
+  // Handle anchor navigation to tabs (for direct links) with improved error handling
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      
-      if (hash === 'reports') {
-        setActiveTab('reports');
-      } else if (hash === 'new-report') {
-        setActiveTab('new-report');
-      } else if (hash === 'proposals') {
-        setActiveTab('proposals');
-      } else if (hash === 'contracts') {
-        setActiveTab('contracts');
-      } else if (!hash) {
+      try {
+        const hash = window.location.hash.replace('#', '');
+        
+        if (hash === 'reports') {
+          setActiveTab('reports');
+        } else if (hash === 'new-report') {
+          setActiveTab('new-report');
+        } else if (hash === 'proposals') {
+          setActiveTab('proposals');
+        } else if (hash === 'contracts') {
+          setActiveTab('contracts');
+        } else if (!hash) {
+          setActiveTab('overview');
+        }
+      } catch (error) {
+        console.error('Error handling hash change:', error);
+        // Default to overview tab if there's an error
         setActiveTab('overview');
       }
     };
@@ -119,6 +131,7 @@ const ClientDetail = () => {
                 activeTab={activeTab}
                 setActiveTab={handleTabChange}
                 clientId={id}
+                key={`content-${activeTab}`} // Force re-render when tab changes
               />
             </>
           )}

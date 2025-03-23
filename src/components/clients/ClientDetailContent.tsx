@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ReportGenerator from '@/components/reports/ReportGenerator';
 import ClientOverview from './ClientOverview';
@@ -25,6 +25,22 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
   setActiveTab,
   clientId
 }) => {
+  // Force cleanup of any popovers or dialogs when tab changes
+  useEffect(() => {
+    // Close any open popups or dialogs when tab changes
+    const closeAnyModals = () => {
+      // This helps force the UI to release any stuck dialogs
+      document.body.click();
+    };
+    
+    closeAnyModals();
+    
+    // Cleanup function
+    return () => {
+      closeAnyModals();
+    };
+  }, [activeTab]);
+
   return (
     <AnimatedContainer animation="slide-up">
       <Tabs
@@ -66,7 +82,11 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         </TabsContent>
         
         <TabsContent value="contracts" className="mt-6">
-          <ClientContracts clientId={clientId} clientName={client.name} />
+          <ClientContracts 
+            key={`contracts-${clientId}`} 
+            clientId={clientId} 
+            clientName={client.name} 
+          />
         </TabsContent>
       </Tabs>
     </AnimatedContainer>
