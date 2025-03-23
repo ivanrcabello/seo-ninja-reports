@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { SignatureSection } from './';
 import { PublicContract } from './types';
-import SignatureSection from './SignatureSection';
-import ContractActions from './ContractActions';
+import { ContractActions } from './';
 
 interface ContractContentProps {
   loading: boolean;
@@ -14,16 +13,16 @@ interface ContractContentProps {
   onPrint: () => void;
 }
 
-const ContractContent: React.FC<ContractContentProps> = ({ 
-  loading, 
-  error, 
+const ContractContent: React.FC<ContractContentProps> = ({
+  loading,
+  error,
   contract,
   onOpenSignDialog,
   onPrint
 }) => {
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
+      <div className="flex justify-center items-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -31,41 +30,36 @@ const ContractContent: React.FC<ContractContentProps> = ({
 
   if (error || !contract) {
     return (
-      <Card className="mb-8 overflow-hidden border-t-4 border-t-red-500 shadow-md">
-        <CardHeader className="bg-muted/30">
-          <CardTitle>Error</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <p className="text-center text-muted-foreground">
-            {error || 'No se pudo cargar el contrato'}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="bg-destructive/10 text-destructive p-6 rounded-lg my-8">
+        <h2 className="text-lg font-medium mb-2">Error</h2>
+        <p>{error || "No se pudo cargar el contrato"}</p>
+      </div>
     );
   }
 
   return (
-    <Card className="mb-8 overflow-hidden border-t-4 border-t-primary shadow-md">
-      <CardHeader className="bg-muted/30">
-        <CardTitle>Detalles del Contrato</CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div 
-          className="prose prose-sm max-w-none dark:prose-invert"
-          dangerouslySetInnerHTML={{ __html: contract.content }}
-        />
-      </CardContent>
-      <CardFooter className="p-6 flex-col items-start bg-muted/10 border-t">
-        {/* Sección de firmas si hay alguna */}
-        <SignatureSection contract={contract} />
-        
+    <div className="my-8">
+      {/* Contract document */}
+      <div className="bg-white shadow-md rounded-lg p-8 mb-6">
+        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: contract.content }} />
+      </div>
+      
+      {/* Signature section */}
+      <SignatureSection 
+        contract={contract}
+        onOpenSignDialog={onOpenSignDialog}
+        onPrint={onPrint}
+      />
+      
+      {/* Contract Actions for mobile display */}
+      <div className="mt-6 md:hidden">
         <ContractActions 
-          contract={contract} 
-          onOpenSignDialog={onOpenSignDialog} 
-          onPrint={onPrint} 
+          contract={contract}
+          onOpenSignDialog={onOpenSignDialog}
+          onPrint={onPrint}
         />
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 };
 
