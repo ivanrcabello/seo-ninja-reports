@@ -197,11 +197,17 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
                   {dueDate ? format(dueDate, 'PPP', { locale: es }) : "Seleccionar fecha"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent 
+                className="w-auto p-0 z-50 bg-background" 
+                align="start"
+              >
                 <Calendar
                   mode="single"
                   selected={dueDate}
-                  onSelect={setDueDate}
+                  onSelect={(date) => {
+                    console.log("Date selected:", date);
+                    setDueDate(date);
+                  }}
                   initialFocus
                   locale={es}
                 />
