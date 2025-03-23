@@ -1,7 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCrawlResult, getCrawlPages, getCrawlIssues, CrawlResult, CrawlPage, CrawlIssue } from '@/services/seoCrawlerService';
+import { 
+  fetchCrawlResult, 
+  fetchCrawlPages, 
+  fetchCrawlIssues, 
+  CrawlResult, 
+  CrawlPage, 
+  CrawlIssue 
+} from '@/services/seo-crawler';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -41,11 +47,11 @@ const CrawlerDetail: React.FC = () => {
         }
         
         // Obtener resultado principal
-        const result = await getCrawlResult(crawlId);
+        const result = await fetchCrawlResult(crawlId);
         setCrawlResult(result);
         
         // Obtener páginas analizadas
-        const pagesData = await getCrawlPages(crawlId);
+        const pagesData = await fetchCrawlPages(crawlId);
         setPages(pagesData || []);
         
         // Obtener todos los problemas por tipo y severidad
@@ -54,7 +60,7 @@ const CrawlerDetail: React.FC = () => {
         
         // Para cada página, obtener sus problemas
         for (const page of pagesData) {
-          const issues = await getCrawlIssues(page.id);
+          const issues = await fetchCrawlIssues(page.id);
           
           // Agrupar por tipo
           issues.forEach(issue => {
@@ -94,7 +100,7 @@ const CrawlerDetail: React.FC = () => {
   const handlePageSelect = async (page: CrawlPage) => {
     try {
       setSelectedPage(page);
-      const issues = await getCrawlIssues(page.id);
+      const issues = await fetchCrawlIssues(page.id);
       setPageIssues(issues || []);
     } catch (error) {
       toast.error('Error al cargar los problemas de la página');
