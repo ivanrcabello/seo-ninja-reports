@@ -59,7 +59,7 @@ const SharedContract = () => {
         
         console.log('Fetching contract with shared_url:', id);
         
-        // Use the SECURITY DEFINER function to get contract data without RLS issues
+        // Call the SECURITY DEFINER function with the shared_url parameter
         const { data, error: fetchError } = await supabase
           .rpc('get_public_contract_by_shared_url', {
             shared_url_param: id
@@ -70,7 +70,7 @@ const SharedContract = () => {
           throw new Error(`Error al cargar contrato: ${fetchError.message}`);
         }
         
-        if (!data || data.length === 0) {
+        if (!data || !Array.isArray(data) || data.length === 0) {
           console.error('No contract found with shared_url:', id);
           throw new Error(`Contrato no encontrado`);
         }
@@ -78,10 +78,7 @@ const SharedContract = () => {
         console.log('Successfully fetched contract:', data[0]);
         
         // Type the data as PublicContract
-        const typedContract: PublicContract = {
-          ...data[0],
-          status: data[0].status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
-        };
+        const typedContract: PublicContract = data[0];
         
         setContract(typedContract);
         

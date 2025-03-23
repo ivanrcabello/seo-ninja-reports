@@ -779,6 +779,38 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_public_contract_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          content: string
+          client_name: string
+          client_website: string
+          status: string
+          created_at: string
+          updated_at: string
+          client_signed: boolean
+          client_signed_at: string
+          client_signature: string
+          admin_signed: boolean
+          admin_signed_at: string
+          admin_signature: string
+          shared_url: string
+        }[]
+      }
+      update_contract_by_shared_url: {
+        Args: {
+          shared_url_param: string
+          client_signed_param: boolean
+          client_signed_at_param: string
+          client_signature_param: string
+          status_param?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
