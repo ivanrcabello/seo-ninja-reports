@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
@@ -263,7 +262,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Extraer datos de la solicitud
-    const { url, clientId, maxPages = 100, excludePatterns = [], includePatterns = [], followExternalLinks = false } = await req.json();
+    const { url, clientId, crawlId, maxPages = 100, excludePatterns = [], includePatterns = [], followExternalLinks = false } = await req.json();
     
     if (!url) {
       return new Response(
@@ -276,25 +275,6 @@ serve(async (req) => {
     console.log(`Configuración: maxPages=${maxPages}, followExternalLinks=${followExternalLinks}`);
     console.log(`Patrones de exclusión: ${JSON.stringify(excludePatterns)}`);
     console.log(`Patrones de inclusión: ${JSON.stringify(includePatterns)}`);
-    
-    // Crear un nuevo registro de resultado en la base de datos
-    const { data: crawlResult, error: insertError } = await supabase
-      .from('seo_crawl_results')
-      .insert({
-        client_id: clientId,
-        domain: url,
-        status: 'processing',
-        crawl_date: new Date().toISOString()
-      })
-      .select()
-      .single();
-      
-    if (insertError) {
-      throw new Error(`Error al crear registro de análisis: ${insertError.message}`);
-    }
-    
-    // Iniciar el proceso de rastreo en segundo plano
-    const crawlId = crawlResult.id;
     
     // Iniciar temporizador
     const startTime = new Date().getTime();

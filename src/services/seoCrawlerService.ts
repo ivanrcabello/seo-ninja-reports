@@ -60,8 +60,28 @@ export interface CrawlLink {
 
 export const startCrawl = async (settings: CrawlSettings) => {
   try {
+    // Primero, crear un registro inicial en la base de datos directamente
+    const { data: crawlResult, error: insertError } = await supabase
+      .from('seo_crawl_results')
+      .insert({
+        client_id: settings.clientId,
+        domain: settings.url,
+        status: 'processing',
+        crawl_date: new Date().toISOString()
+      })
+      .select()
+      .single();
+      
+    if (insertError) {
+      throw new Error(`Error al crear registro de análisis: ${insertError.message}`);
+    }
+    
+    // Luego, llamar a la función Edge con el ID del registro recién creado
     const response = await supabase.functions.invoke('seo-crawler', {
-      body: settings
+      body: {
+        ...settings,
+        crawlId: crawlResult.id
+      }
     });
     
     if (response.error) {
@@ -69,7 +89,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
     }
     
     toast.success('Análisis SEO iniciado correctamente');
-    return response.data;
+    return { ...response.data, crawlId: crawlResult.id };
   } catch (error: any) {
     return handleServiceError(error, 'Error al iniciar el análisis SEO');
   }
