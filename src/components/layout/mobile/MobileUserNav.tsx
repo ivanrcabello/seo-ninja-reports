@@ -3,8 +3,16 @@ import React from 'react';
 import { LogOut, LayoutDashboard, Newspaper, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import MobileNavLink from './MobileNavLink';
+
+// Define the User interface that matches what's used in AuthContext
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  avatar_url?: string;
+}
 
 interface MobileUserNavProps {
   user: User;
