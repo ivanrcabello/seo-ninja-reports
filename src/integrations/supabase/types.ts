@@ -185,6 +185,7 @@ export type Database = {
           due_date: string | null
           id: string
           payment_date: string | null
+          payment_instructions: string | null
           payment_method: string | null
           shared_url: string | null
           status: string
@@ -199,6 +200,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           payment_date?: string | null
+          payment_instructions?: string | null
           payment_method?: string | null
           shared_url?: string | null
           status?: string
@@ -213,6 +215,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           payment_date?: string | null
+          payment_instructions?: string | null
           payment_method?: string | null
           shared_url?: string | null
           status?: string
@@ -885,6 +888,7 @@ export type Database = {
           due_date: string
           payment_method: string
           payment_date: string
+          payment_instructions: string
           shared_url: string
           created_at: string
           updated_at: string

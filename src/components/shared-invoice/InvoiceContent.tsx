@@ -54,6 +54,13 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
               </div>
             </div>
             
+            {invoice.payment_instructions && (
+              <div className="bg-blue-50 border border-blue-100 p-4 rounded-md mb-4">
+                <h4 className="font-medium text-blue-800 mb-2">Instrucciones de pago</h4>
+                <p className="text-blue-700 whitespace-pre-line">{invoice.payment_instructions}</p>
+              </div>
+            )}
+            
             {invoice.status === 'paid' && (
               <div className="bg-green-50 border border-green-100 p-4 rounded-md">
                 <h4 className="font-medium text-green-800 mb-2">Información de pago</h4>

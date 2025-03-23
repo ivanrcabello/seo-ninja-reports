@@ -223,6 +223,13 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                 </p>
               </div>
               
+              {invoice.payment_instructions && (
+                <div className="bg-blue-50 border border-blue-100 p-4 rounded-md">
+                  <p className="font-medium text-blue-800 mb-2">Instrucciones de pago:</p>
+                  <p className="text-blue-700 whitespace-pre-line">{invoice.payment_instructions}</p>
+                </div>
+              )}
+              
               {invoice.payment_method && (
                 <div>
                   <p className="text-sm text-muted-foreground">Método de pago:</p>

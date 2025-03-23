@@ -8,6 +8,7 @@ export interface SharedInvoice {
   due_date?: string;
   payment_method?: string;
   payment_date?: string;
+  payment_instructions?: string;
   shared_url: string;
   created_at: string;
   updated_at: string;

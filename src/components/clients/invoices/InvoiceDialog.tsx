@@ -36,6 +36,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<'pending' | 'paid' | 'cancelled' | 'overdue'>('pending');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [paymentInstructions, setPaymentInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -47,6 +48,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setAmount(editingInvoice.amount.toString());
       setStatus(editingInvoice.status as any);
       setDueDate(editingInvoice.due_date ? new Date(editingInvoice.due_date) : undefined);
+      setPaymentInstructions(editingInvoice.payment_instructions || '');
     } else if (open) {
       // Clear form for new invoice
       setTitle('');
@@ -54,6 +56,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setAmount('');
       setStatus('pending');
       setDueDate(undefined);
+      setPaymentInstructions('');
     }
 
     // Clear errors
@@ -89,6 +92,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         amount: Number(amount),
         status,
         due_date: dueDate ? dueDate.toISOString() : null,
+        payment_instructions: paymentInstructions.trim() || null,
         client_id: clientId
       };
 
@@ -213,6 +217,17 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="payment-instructions">Instrucciones de pago (opcional)</Label>
+            <Textarea 
+              id="payment-instructions"
+              value={paymentInstructions}
+              onChange={(e) => setPaymentInstructions(e.target.value)}
+              placeholder="Ej: Transferencia a la cuenta ES12 1234 5678 9012 3456 7890"
+              rows={3}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

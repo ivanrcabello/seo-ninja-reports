@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Mail, FileText, Building, Calendar } from 'lucide-react';
+import { Mail, FileText, Building, Calendar, CreditCard } from 'lucide-react';
 import { SharedInvoice } from './types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -29,9 +29,16 @@ const InvoiceActions: React.FC<InvoiceActionsProps> = ({ invoice, onPrint }) => 
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Para realizar el pago de esta factura, por favor contacta con nosotros a través del formulario de contacto.
-            </p>
+            {invoice.payment_instructions ? (
+              <div className="p-4 bg-blue-50 rounded-md">
+                <p className="text-blue-800 mb-2 font-medium">Instrucciones de pago:</p>
+                <p className="text-blue-700 whitespace-pre-line">{invoice.payment_instructions}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Para realizar el pago de esta factura, por favor contacta con nosotros a través del formulario de contacto.
+              </p>
+            )}
             
             <div className="grid grid-cols-1 gap-2">
               <Button className="w-full" onClick={handleContactClick}>
@@ -54,6 +61,12 @@ const InvoiceActions: React.FC<InvoiceActionsProps> = ({ invoice, onPrint }) => 
                 <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground/70" />
                 <p>Fecha de vencimiento: {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('es-ES') : 'No especificada'}</p>
               </div>
+              {invoice.payment_method && (
+                <div className="flex items-start gap-2">
+                  <CreditCard className="h-4 w-4 mt-0.5 text-muted-foreground/70" />
+                  <p>Método de pago: {invoice.payment_method}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
