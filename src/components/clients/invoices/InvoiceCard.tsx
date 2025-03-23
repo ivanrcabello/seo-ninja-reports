@@ -96,13 +96,13 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <h3 className="font-medium text-lg line-clamp-1">{title}</h3>
             <p className="text-2xl font-bold">{amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
           </div>
-          <div className="dropdown-area z-10">
+          <div className="dropdown-area">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 relative z-20"
+                  className="h-8 w-8"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -112,7 +112,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                   <span className="sr-only">Abrir menú</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover border">
+              <DropdownMenuContent align="end" className="bg-white border z-50">
                 <DropdownMenuItem onClick={handleViewInvoice}>
                   <Eye className="mr-2 h-4 w-4" />
                   Ver factura
