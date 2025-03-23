@@ -23,6 +23,8 @@ const ContractsList: React.FC<ContractsListProps> = ({
   onDeleteContract,
   onViewContract
 }) => {
+  console.log("ContractsList rendering with contracts:", contracts);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -31,7 +33,7 @@ const ContractsList: React.FC<ContractsListProps> = ({
     );
   }
 
-  if (contracts.length === 0) {
+  if (!contracts || contracts.length === 0) {
     return (
       <motion.div 
         initial={{ opacity: 0, y: 10 }}

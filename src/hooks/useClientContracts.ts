@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientContract } from '@/types/client.types';
 import { toast } from 'sonner';
@@ -26,23 +27,31 @@ export const useClientContracts = (clientId?: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchContracts = async () => {
+  const fetchContracts = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      const query = supabase.from('client_contracts').select('*');
-      
-      if (clientId) {
-        query.eq('client_id', clientId);
+      if (!clientId) {
+        console.warn('No clientId provided to useClientContracts');
+        setContracts([]);
+        return;
       }
       
+      console.log('Fetching contracts for client:', clientId);
+      
+      const query = supabase.from('client_contracts').select('*');
+      query.eq('client_id', clientId);
       query.order('created_at', { ascending: false });
       
-      const { data, error } = await query;
+      const { data, error: fetchError } = await query;
       
-      if (error) throw error;
+      if (fetchError) {
+        console.error('Supabase error fetching contracts:', fetchError);
+        throw fetchError;
+      }
       
+      console.log('Contracts fetched successfully:', data);
       setContracts(data as ClientContract[]);
     } catch (err: any) {
       console.error('Error fetching contracts:', err);
@@ -51,11 +60,13 @@ export const useClientContracts = (clientId?: string) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [clientId]);
 
   useEffect(() => {
-    fetchContracts();
-  }, [clientId]);
+    if (clientId) {
+      fetchContracts();
+    }
+  }, [clientId, fetchContracts]);
 
   const getContract = async (id: string) => {
     try {
@@ -87,7 +98,9 @@ export const useClientContracts = (clientId?: string) => {
           client_id: clientId,
           title: contractData.title,
           content: contractData.content,
-          status: contractData.status || 'draft'
+          status: contractData.status || 'draft',
+          client_signed: false,
+          admin_signed: false
         })
         .select()
         .single();

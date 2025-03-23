@@ -23,27 +23,17 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isMounted = useRef(true);
 
+  console.log("ClientContracts rendered with clientId:", clientId);
+  console.log("Contracts data:", contracts);
+
   // Set up the mounted ref
   useEffect(() => {
     isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Clean up state on component unmount or when clientId changes
-  useEffect(() => {
-    const cleanup = () => {
-      if (isMounted.current) {
-        setIsContractDialogOpen(false);
-        setEditingContract(null);
-        setViewingContract(null);
-      }
-    };
     
     // Initial data fetch
     const loadData = async () => {
       try {
+        console.log("Fetching contracts for clientId:", clientId);
         await fetchContracts();
       } catch (error) {
         console.error('Error loading contracts:', error);
@@ -52,7 +42,9 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     
     loadData();
     
-    return cleanup;
+    return () => {
+      isMounted.current = false;
+    };
   }, [clientId, fetchContracts]);
 
   // Handle browser back button with popstate event
@@ -77,6 +69,7 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     
     try {
       setIsRefreshing(true);
+      console.log("Manually refreshing contracts for clientId:", clientId);
       await fetchContracts();
       if (isMounted.current) {
         toast.success('Contratos actualizados');
@@ -131,8 +124,10 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     setIsContractDialogOpen(open);
     if (!open) {
       setEditingContract(null);
+      // Refresh contracts list when dialog closes
+      handleRefresh();
     }
-  }, []);
+  }, [handleRefresh]);
 
   if (error) {
     return (

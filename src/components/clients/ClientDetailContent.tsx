@@ -83,7 +83,7 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         
         <TabsContent value="contracts" className="mt-6">
           <ClientContracts 
-            key={`contracts-${clientId}`} 
+            key={`contracts-${clientId}-${activeTab}`} 
             clientId={clientId} 
             clientName={client.name} 
           />
