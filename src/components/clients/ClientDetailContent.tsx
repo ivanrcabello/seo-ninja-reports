@@ -26,19 +26,27 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
   setActiveTab,
   clientId
 }) => {
-  // Force cleanup of any popovers or dialogs when tab changes
+  // Improved cleanup that forces any popovers or dialogs to close
   useEffect(() => {
     console.log("Tab changed to:", activeTab);
     
     // Close any open popups or dialogs when tab changes
     const closeAnyModals = () => {
-      // This helps force the UI to release any stuck dialogs
+      // Click on document body to close any open popovers
       document.body.click();
+      
+      // Find and click any open dialogs' close buttons
+      const closeButtons = document.querySelectorAll('[data-state="open"] button[aria-label="Close"]');
+      closeButtons.forEach(button => {
+        if (button instanceof HTMLElement) {
+          button.click();
+        }
+      });
     };
     
     closeAnyModals();
     
-    // Cleanup function
+    // Make sure to clean up properly when component unmounts
     return () => {
       closeAnyModals();
     };
@@ -56,12 +64,11 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl mx-auto mb-6 bg-muted/80 rounded-lg p-1">
+        <TabsList className="grid grid-cols-4 w-full max-w-3xl mx-auto mb-6 bg-muted/80 rounded-lg p-1">
           <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Resumen</TabsTrigger>
           <TabsTrigger value="reports" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Informes</TabsTrigger>
           <TabsTrigger value="proposals" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Propuestas</TabsTrigger>
           <TabsTrigger value="contracts" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Contratos</TabsTrigger>
-          <TabsTrigger value="invoices" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Facturas</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="mt-6">

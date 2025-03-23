@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Navigate, useLocation } from 'react-router-dom';
+import { useParams, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ClientHeader from '@/components/clients/ClientHeader';
@@ -10,23 +10,40 @@ import ClientNotFound from '@/components/clients/ClientNotFound';
 import { useAuth } from '@/context/AuthContext';
 import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
+import Layout from '@/components/layout/Layout';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { getClient, isLoading: clientsLoading, deleteClient } = useClients();
   const { getClientReports, isLoading: reportsLoading } = useReports();
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices'>('overview');
   const [didMount, setDidMount] = useState(false);
-  const prevTabRef = useRef<string | null>(null);
+  const isMounted = useRef(true);
 
-  // Set mount state
+  // Set mount state and cleanup on unmount
   useEffect(() => {
     setDidMount(true);
+    isMounted.current = true;
+    
+    // Cleanup event listeners and state when component unmounts
     return () => {
       setDidMount(false);
+      isMounted.current = false;
+      
+      // Force document body click to close any stuck modals or popovers
+      document.body.click();
+      
+      // Find and click any open dialogs' close buttons
+      const closeButtons = document.querySelectorAll('[data-state="open"] button[aria-label="Close"]');
+      closeButtons.forEach(button => {
+        if (button instanceof HTMLElement) {
+          button.click();
+        }
+      });
     };
   }, []);
 
@@ -49,19 +66,20 @@ const ClientDetail = () => {
     setIsDeleting(true);
     try {
       await deleteClient(client.id);
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error deleting client:', error);
     } finally {
-      setIsDeleting(false);
+      if (isMounted.current) {
+        setIsDeleting(false);
+      }
     }
   };
 
   // Handle tab changes with improved state handling
   const handleTabChange = useCallback((tab: 'overview' | 'reports' | 'proposals' | 'contracts' | 'invoices') => {
-    // Only update if the tab is actually changing
-    if (tab !== activeTab) {
-      prevTabRef.current = activeTab;
+    // Only update if the component is still mounted
+    if (isMounted.current && tab !== activeTab) {
       setActiveTab(tab);
       
       // Update URL hash without triggering full page reload
@@ -78,6 +96,8 @@ const ClientDetail = () => {
   // Handle anchor navigation to tabs (for direct links) with improved error handling
   useEffect(() => {
     const handleHashChange = () => {
+      if (!isMounted.current) return;
+      
       try {
         const hash = window.location.hash.replace('#', '');
         
@@ -104,13 +124,26 @@ const ClientDetail = () => {
     
     // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
   }, [location]);
 
+  // Add event listener for page navigation
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clean up any open modals before navigating away
+      document.body.click();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
+    <Layout>
       <main className="flex-1 pt-24 pb-16">
         <div className="container px-4 sm:px-6 mx-auto">
           {isLoading ? (
@@ -131,15 +164,13 @@ const ClientDetail = () => {
                 activeTab={activeTab}
                 setActiveTab={handleTabChange}
                 clientId={id}
-                key={`content-${activeTab}`} // Force re-render when tab changes
+                key={`content-${id}-${activeTab}`} // Force re-render when tab or client changes
               />
             </>
           )}
         </div>
       </main>
-      
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 
