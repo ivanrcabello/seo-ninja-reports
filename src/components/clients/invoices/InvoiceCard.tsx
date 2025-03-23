@@ -1,16 +1,10 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ClientInvoice } from '@/types/client.types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MoreHorizontal, Edit2, Trash2, ExternalLink, Eye } from 'lucide-react';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
 interface InvoiceCardProps {
@@ -57,37 +51,64 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   onClick 
 }) => {
   const { title, amount, status, created_at, due_date } = invoice;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  
+  // Close the menu if user clicks outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
   
   const handleCardClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+    // Don't trigger card click if clicking on the menu area
+    if ((e.target as HTMLElement).closest('.dropdown-area')) {
+      e.stopPropagation();
+      return;
+    }
     onClick();
   }, [onClick]);
 
   const handleEdit = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
+    setIsMenuOpen(false);
     onEdit();
   }, [onEdit]);
 
   const handleDelete = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
+    setIsMenuOpen(false);
     onDelete();
   }, [onDelete]);
 
   const handleViewInvoice = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
+    setIsMenuOpen(false);
     onClick();
   }, [onClick]);
 
   const handleExternalLink = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     if (invoice.shared_url) {
       window.open(`/shared/invoices/${invoice.shared_url}`, '_blank');
     }
   }, [invoice.shared_url]);
+  
+  const toggleMenu = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMenuOpen(prev => !prev);
+  }, []);
   
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleCardClick}>
@@ -97,53 +118,44 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <h3 className="font-medium text-lg line-clamp-1">{title}</h3>
             <p className="text-2xl font-bold">{amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
           </div>
-          <div className="dropdown-area">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Abrir menú</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border z-50">
-                <DropdownMenuItem 
-                  onClick={handleViewInvoice}
-                  onSelect={(e) => {
-                    e.preventDefault();
-                  }}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Ver factura
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={handleEdit}
-                  onSelect={(e) => {
-                    e.preventDefault();
-                  }}
-                >
-                  <Edit2 className="mr-2 h-4 w-4" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={handleDelete}
-                  onSelect={(e) => {
-                    e.preventDefault();
-                  }}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="dropdown-area relative" ref={menuRef}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={toggleMenu}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Abrir menú</span>
+            </Button>
+            
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white border rounded-md shadow-lg z-50">
+                <div className="py-1">
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm flex items-center hover:bg-gray-100"
+                    onClick={handleViewInvoice}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    Ver factura
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm flex items-center hover:bg-gray-100"
+                    onClick={handleEdit}
+                  >
+                    <Edit2 className="mr-2 h-4 w-4" />
+                    Editar
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm flex items-center text-red-600 hover:bg-gray-100"
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
