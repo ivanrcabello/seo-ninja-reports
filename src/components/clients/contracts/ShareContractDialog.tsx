@@ -25,6 +25,7 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
+  // Generate share link when dialog opens
   React.useEffect(() => {
     if (open) {
       generateShareLink();
@@ -34,10 +35,17 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
   const generateShareLink = async () => {
     try {
       setIsGenerating(true);
+      
+      // Log for debugging
+      console.log('Generating share URL for contract:', contractId);
+      
       const url = await onGenerateShareUrl();
+      console.log('Generated share URL:', url);
+      
       setShareUrl(url);
     } catch (error) {
       console.error('Error generating share URL:', error);
+      toast.error('Error al generar enlace para compartir');
     } finally {
       setIsGenerating(false);
     }

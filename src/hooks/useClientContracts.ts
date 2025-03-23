@@ -153,16 +153,26 @@ export const useClientContracts = (clientId?: string) => {
 
   const generateShareUrl = async (id: string) => {
     try {
+      console.log('Generating share URL for contract ID:', id);
+      
       // Generar un UUID único para compartir
       const shareId = crypto.randomUUID();
+      console.log('Generated UUID:', shareId);
       
       // Actualizar el contrato con el UUID de compartir
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('client_contracts')
         .update({ shared_url: shareId })
-        .eq('id', id);
+        .eq('id', id)
+        .select()
+        .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating contract with shared_url:', error);
+        throw error;
+      }
+      
+      console.log('Updated contract data:', data);
       
       // Actualizar la lista local de contratos
       setContracts(prev => 
@@ -173,7 +183,10 @@ export const useClientContracts = (clientId?: string) => {
         )
       );
       
-      return `${window.location.origin}/shared/contracts/${shareId}`;
+      const fullShareUrl = `${window.location.origin}/shared/contracts/${shareId}`;
+      console.log('Full share URL:', fullShareUrl);
+      
+      return fullShareUrl;
     } catch (err: any) {
       console.error('Error generating share URL:', err);
       toast.error('Error al generar enlace para compartir');

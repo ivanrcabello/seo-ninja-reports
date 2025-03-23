@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,10 +60,16 @@ const SharedContract = () => {
         
         console.log('Fetching contract with shared_url:', id);
         
-        // Use the public_contracts view
+        // Use the client_contracts table directly with a view that includes client name
         const { data, error: fetchError } = await supabase
-          .from('public_contracts')
-          .select('*')
+          .from('client_contracts')
+          .select(`
+            *,
+            clients:client_id (
+              name,
+              website
+            )
+          `)
           .eq('shared_url', id)
           .single();
         
@@ -76,13 +83,16 @@ const SharedContract = () => {
           throw new Error(`Contrato no encontrado`);
         }
         
-        // Type the data as PublicContract
+        console.log('Successfully fetched contract:', data);
+        
+        // Type the data as PublicContract with client info
         const typedContract: PublicContract = {
           ...data,
+          client_name: data.clients?.name,
+          client_website: data.clients?.website,
           status: data.status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
         };
         
-        console.log('Successfully fetched contract:', typedContract);
         setContract(typedContract);
         
       } catch (err: any) {
@@ -217,9 +227,9 @@ const SharedContract = () => {
             </div>
             <div className="text-sm text-muted-foreground flex items-center justify-center">
               <Clock className="h-3.5 w-3.5 mr-1.5" />
-              Última actualización: {formatDate(contract.updated_at)}
+              Última actualización: {formatDate(contract?.updated_at)}
             </div>
-            {contract.client_name && (
+            {contract?.client_name && (
               <div className="text-sm text-muted-foreground mt-1">
                 Contrato para: <span className="font-medium">{contract.client_name}</span>
               </div>

@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ClientContract } from '@/types/client.types';
 import { Badge } from '@/components/ui/badge';
@@ -92,6 +91,7 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
   };
   
   const handleShare = () => {
+    console.log('Opening share dialog for contract:', contract.id);
     setIsShareDialogOpen(true);
   };
   
@@ -140,7 +140,6 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
     printWindow.document.close();
     printWindow.focus();
     
-    // Imprimir después de que todo el contenido esté cargado
     setTimeout(() => {
       printWindow.print();
       //printWindow.close();
@@ -216,7 +215,6 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
             </div>
           </div>
           
-          {/* Sección de firmas si hay alguna */}
           {(contract.admin_signature || contract.client_signature) && (
             <div className="mt-6 pt-4 border-t">
               <h4 className="text-sm font-medium mb-4">Firmas</h4>
@@ -287,7 +285,10 @@ const ContractViewer: React.FC<ContractViewerProps> = ({ contract, open, onOpenC
         onOpenChange={setIsShareDialogOpen}
         contractId={contract.id}
         contractTitle={contract.title}
-        onGenerateShareUrl={() => generateShareUrl(contract.id)}
+        onGenerateShareUrl={() => {
+          console.log('Generating share URL from ContractViewer for contract:', contract.id);
+          return generateShareUrl(contract.id);
+        }}
       />
     </>
   );
