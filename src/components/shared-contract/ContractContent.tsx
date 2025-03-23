@@ -11,6 +11,9 @@ interface ContractContentProps {
   contract: PublicContract | null;
   onOpenSignDialog: () => void;
   onPrint: () => void;
+  onSign: (signature: string) => void;
+  isSignDialogOpen: boolean;
+  setIsSignDialogOpen: (open: boolean) => void;
 }
 
 const ContractContent: React.FC<ContractContentProps> = ({
@@ -18,7 +21,10 @@ const ContractContent: React.FC<ContractContentProps> = ({
   error,
   contract,
   onOpenSignDialog,
-  onPrint
+  onPrint,
+  onSign,
+  isSignDialogOpen,
+  setIsSignDialogOpen
 }) => {
   if (loading) {
     return (
@@ -49,6 +55,9 @@ const ContractContent: React.FC<ContractContentProps> = ({
         contract={contract}
         onOpenSignDialog={onOpenSignDialog}
         onPrint={onPrint}
+        onSign={onSign}
+        isSignDialogOpen={isSignDialogOpen}
+        setIsSignDialogOpen={setIsSignDialogOpen}
       />
       
       {/* Contract Actions for mobile display */}

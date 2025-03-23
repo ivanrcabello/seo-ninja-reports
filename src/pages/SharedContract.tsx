@@ -34,19 +34,15 @@ const SharedContract = () => {
             contract={contract} 
             onOpenSignDialog={() => setIsSignDialogOpen(true)} 
             onPrint={handlePrint}
+            onSign={handleSignContract}
+            isSignDialogOpen={isSignDialogOpen}
+            setIsSignDialogOpen={setIsSignDialogOpen}
           />
           
           {/* Información de contacto */}
           <ContactInfo />
         </div>
       </div>
-      
-      <SignatureDialog 
-        open={isSignDialogOpen}
-        onOpenChange={setIsSignDialogOpen}
-        onSign={handleSignContract}
-        isAdmin={false}
-      />
     </>
   );
 };
