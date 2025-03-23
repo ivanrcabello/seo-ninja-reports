@@ -24,18 +24,18 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
   onPageSelect
 }) => {
   return (
-    <Tabs defaultValue="issues">
-      <TabsList className="grid grid-cols-3 w-full md:w-[600px]">
+    <Tabs defaultValue="issues" className="w-full">
+      <TabsList className="grid grid-cols-3 w-full md:w-[600px] mb-4">
         <TabsTrigger value="issues">Problemas</TabsTrigger>
         <TabsTrigger value="pages">Páginas</TabsTrigger>
         <TabsTrigger value="links">Enlaces</TabsTrigger>
       </TabsList>
       
-      <TabsContent value="issues" className="mt-6">
+      <TabsContent value="issues" className="mt-2">
         <IssuesTabContent issuesByType={issuesByType} />
       </TabsContent>
       
-      <TabsContent value="pages" className="mt-6">
+      <TabsContent value="pages" className="mt-2">
         <PagesTabContent 
           pages={pages}
           selectedPage={selectedPage}
@@ -45,7 +45,7 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
         />
       </TabsContent>
       
-      <TabsContent value="links" className="mt-6">
+      <TabsContent value="links" className="mt-2">
         <LinksTabContent 
           pages={pages}
           pageLinks={pageLinks}
