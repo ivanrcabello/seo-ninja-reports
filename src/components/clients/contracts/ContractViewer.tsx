@@ -183,6 +183,7 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
           open={isSignDialogOpen}
           onOpenChange={setIsSignDialogOpen}
           onSign={handleSignContract}
+          isAdmin={true}
         />
       )}
       
