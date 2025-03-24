@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CrawlerDialogProps {
   client: Client;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void; // Added missing prop
+  onCrawlCompleted?: () => void;
   onSuccess?: () => void;
 }
 
@@ -23,7 +26,9 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   client, 
   open, 
   onOpenChange,
-  onSuccess
+  onClose,
+  onSuccess,
+  onCrawlCompleted
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
@@ -98,7 +103,9 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       
       await startCrawlService(url, client.id);
       
-      onOpenChange(false);
+      if (onOpenChange) onOpenChange(false);
+      if (onClose) onClose();
+      if (onCrawlCompleted) onCrawlCompleted();
       if (onSuccess) onSuccess();
       
     } catch (error: any) {
@@ -253,7 +260,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onClose ? onClose() : onOpenChange && onOpenChange(false)}>
             Cancelar
           </Button>
           <Button onClick={handleStartCrawl} disabled={isLoading}>

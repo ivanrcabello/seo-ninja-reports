@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SavedCrawlSettings } from './types';
 
-// Define CrawlSettings type locally to avoid conflict with the one from types.ts
+// Define CrawlSettingsConfig type locally to avoid conflict with the one from types.ts
 interface CrawlSettingsConfig {
   clientId: string;
   url: string;
@@ -97,5 +97,5 @@ export const saveSettings = async (settings: CrawlSettingsConfig): Promise<Saved
   }
 };
 
-// Export the CrawlSettingsConfig type as CrawlSettings to maintain backwards compatibility
-export type { CrawlSettingsConfig as CrawlSettings };
+// Export the CrawlSettingsConfig type
+export type { CrawlSettingsConfig };

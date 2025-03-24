@@ -52,8 +52,8 @@ export interface CrawlIssue {
   issue_type: string;
   severity: 'low' | 'medium' | 'high' | string; // Adding string to handle other values
   description: string;
-  element: string;
-  fix_suggestion: string;
+  element: string; // Added missing property
+  fix_suggestion: string; // Added missing property
   recommended_fix: string;
 }
 
@@ -65,7 +65,7 @@ export interface CrawlLink {
   anchor_text: string;
   is_internal: boolean;
   is_followed: boolean;
-  rel_attributes: string;
+  rel_attributes: string; // Added missing property
   
   // Additional properties 
   is_broken: boolean;
