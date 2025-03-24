@@ -11,5 +11,8 @@ export * from './settingsService';
 // Re-export main crawler service functions
 export * from './crawlerService';
 
+// Re-export additional API functions
+export * from './additionalApi';
+
 // Re-export constants
 export * from './constants';

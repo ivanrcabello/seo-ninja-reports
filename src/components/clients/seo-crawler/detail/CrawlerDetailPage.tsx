@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -6,6 +5,7 @@ import {
   fetchCrawlPages, 
   fetchCrawlIssues,
   fetchCrawlLinks,
+  getCrawlPages,
   CrawlResult, 
   CrawlPage, 
   CrawlIssue,
@@ -32,7 +32,6 @@ const CrawlerDetailPage: React.FC = () => {
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
   const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
   
-  // Cargar datos del análisis
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -50,33 +49,27 @@ const CrawlerDetailPage: React.FC = () => {
         
         console.log(`Loading crawl result for ID: ${crawlId}`);
         
-        // Obtener resultado principal
         const result = await fetchCrawlResult(crawlId);
         setCrawlResult(result);
         
-        // Obtener páginas analizadas
-        const pagesData = await fetchCrawlPages(crawlId);
+        const pagesData = await getCrawlPages(crawlId);
         setPages(pagesData || []);
         
-        // Obtener todos los problemas por tipo y severidad
         const issuesByType: Record<string, CrawlIssue[]> = {};
         const issuesBySeverity: Record<string, CrawlIssue[]> = {};
         
-        // Para cada página, obtener sus problemas
         for (const page of pagesData) {
           const issues = await fetchCrawlIssues(page.id);
           
-          // Agrupar por tipo
           issues.forEach(issue => {
             if (!issuesByType[issue.issue_type]) {
               issuesByType[issue.issue_type] = [];
             }
             issuesByType[issue.issue_type].push({
               ...issue,
-              page_url: page.url // Añadir URL de la página para referencia
+              page_url: page.url
             } as any);
             
-            // Agrupar por severidad
             if (!issuesBySeverity[issue.severity]) {
               issuesBySeverity[issue.severity] = [];
             }
@@ -89,7 +82,6 @@ const CrawlerDetailPage: React.FC = () => {
         
         setIssuesByType(issuesByType);
         setIssuesBySeverity(issuesBySeverity);
-        
       } catch (error) {
         console.error('Error loading crawl data:', error);
         toast.error('Error al cargar los datos del análisis SEO');
@@ -101,14 +93,12 @@ const CrawlerDetailPage: React.FC = () => {
     loadData();
   }, [crawlId, clientId, navigate]);
   
-  // Cargar problemas y enlaces de una página específica
   const handlePageSelect = async (page: CrawlPage) => {
     try {
       setSelectedPage(page);
       const issues = await fetchCrawlIssues(page.id);
       setPageIssues(issues || []);
       
-      // Cargar también los enlaces de la página
       const links = await fetchCrawlLinks(page.id);
       setPageLinks(links || []);
     } catch (error) {

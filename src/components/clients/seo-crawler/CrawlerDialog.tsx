@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Client } from '@/types/client.types';
-import { startCrawl, getSettings } from '@/services/seo-crawler';
+import { startCrawlService, getSettings } from '@/services/seo-crawler';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -37,7 +36,6 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   const [patternType, setPatternType] = useState<'include' | 'exclude'>('exclude');
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar configuraciones guardadas cuando se abre el diálogo
   useEffect(() => {
     if (open && url) {
       loadSavedSettings(url);
@@ -64,7 +62,6 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
     }
   };
 
-  // Cuando cambia la URL, intentar cargar configuraciones guardadas
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setUrl(newUrl);
@@ -99,14 +96,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       setIsLoading(true);
       setError(null);
       
-      await startCrawl({
-        url,
-        clientId: client.id,
-        maxPages,
-        excludePatterns,
-        includePatterns,
-        followExternalLinks
-      });
+      await startCrawlService(url, client.id);
       
       onOpenChange(false);
       if (onSuccess) onSuccess();
