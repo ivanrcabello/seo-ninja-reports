@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  getCrawlResults, 
+  fetchCrawlResult, 
   getCrawlPages, 
   fetchCrawlIssues,
   fetchCrawlLinks,
@@ -49,7 +49,7 @@ const CrawlerDetailPage: React.FC = () => {
         
         console.log(`Loading crawl result for ID: ${crawlId}`);
         
-        const result = await getCrawlResults(crawlId);
+        const result = await fetchCrawlResult(crawlId);
         setCrawlResult(result);
         
         const pagesData = await getCrawlPages(crawlId);
