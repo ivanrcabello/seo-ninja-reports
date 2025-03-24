@@ -4,4 +4,4 @@ name = "seo-crawler"
 entrypoint = "index.ts"
 verify_jwt = false
 version = 1
-max_execution_time = 60
+max_execution_time = 300

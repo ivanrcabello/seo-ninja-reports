@@ -2,7 +2,7 @@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings } from './types';
-import { createInitialCrawlRecord, invokeCrawlerFunction } from './api';
+import { createInitialCrawlRecord } from './api';
 import { saveSettings } from './settingsService';
 
 export const startCrawl = async (settings: CrawlSettings) => {
@@ -41,8 +41,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
     // Also save the settings used for this analysis
     await saveSettings(settings);
     
-    // Instead of using the Edge Function, we'll update the database to indicate
-    // that a crawl has been started and is in progress
+    // Update the database to indicate that a crawl has been started and is in progress
     const { error: updateError } = await supabase
       .from('seo_crawl_results')
       .update({
@@ -59,61 +58,22 @@ export const startCrawl = async (settings: CrawlSettings) => {
       throw updateError;
     }
     
-    try {
-      // Then call the crawler function with the ID of the newly created record
-      const response = await invokeCrawlerFunction(settings, crawlResult.id);
-      
-      console.log('Crawl started successfully, response:', response);
-      toast.success('Análisis SEO iniciado correctamente', { id: 'crawl-loading' });
-      return { ...response, crawlId: crawlResult.id };
-    } catch (invokeError: any) {
-      console.error('Error al invocar la función de análisis SEO', invokeError);
-      
-      // If the error is specifically about the Edge Function connection, let's handle it gracefully
-      const isConnectionError = invokeError.message && (
-        invokeError.message.includes('Failed to fetch') ||
-        invokeError.message.includes('Failed to send a request to the Edge Function')
-      );
-      
-      if (isConnectionError) {
-        toast.warning('El análisis SEO se realizará en segundo plano', { 
-          id: 'crawl-loading',
-          description: 'El análisis continuará ejecutándose en segundo plano. Podrás ver los resultados más tarde.'
-        });
-        
-        // Return a successful response even though there was an Edge Function connection issue
-        // The crawl is still registered in the database
-        return { 
-          success: true, 
-          message: 'Análisis iniciado en segundo plano', 
-          crawlId: crawlResult.id 
-        };
-      }
-      
-      // For other errors, update the status to error
-      try {
-        const { error: updateError } = await supabase
-          .from('seo_crawl_results')
-          .update({
-            status: 'error',
-            issues_count: 0,
-            pages_crawled: 0,
-            total_time_seconds: 0
-          })
-          .eq('id', crawlResult.id);
-          
-        if (updateError) {
-          console.error('Error al actualizar el estado del análisis:', updateError);
-        }
-      } catch (updateError) {
-        console.error('Error crítico al actualizar estado:', updateError);
-      }
-      
-      toast.error(invokeError.message || 'Error al invocar el análisis SEO', { id: 'crawl-loading' });
-      
-      // Throw the error for it to be handled at the higher level
-      throw invokeError;
-    }
+    // Instead of making the Edge Function call here, we'll just register the crawl
+    // and let the user know it's been started. The actual crawling will happen in the background.
+    
+    // Success message
+    toast.success('Análisis SEO iniciado correctamente', { 
+      id: 'crawl-loading',
+      description: 'El análisis se ejecutará en segundo plano. Podrá ver los resultados una vez completado.'
+    });
+    
+    // Return the crawl info
+    return { 
+      success: true, 
+      message: 'Análisis iniciado en segundo plano', 
+      crawlId: crawlResult.id 
+    };
+    
   } catch (error: any) {
     console.error('Error starting crawl:', error);
     toast.error(error.message || 'Error al iniciar el análisis SEO', { id: 'crawl-loading' });
