@@ -58,8 +58,11 @@ export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]
       
     if (error) throw error;
     
-    // Ensure data conforms to CrawlResult type
-    return data as CrawlResult[];
+    // Ensure data conforms to CrawlResult type by explicitly casting status
+    return data.map(result => ({
+      ...result,
+      status: (result.status as "pending" | "processing" | "completed" | "error" | string)
+    })) as CrawlResult[];
   } catch (error) {
     console.error("Error retrieving crawl results:", error);
     throw error;
@@ -77,7 +80,11 @@ export const getCrawlResults = async (crawlId: string): Promise<CrawlResult> => 
       
     if (error) throw error;
     
-    return data as CrawlResult;
+    // Cast the status field to ensure it matches the type
+    return {
+      ...data,
+      status: (data.status as "pending" | "processing" | "completed" | "error" | string)
+    } as CrawlResult;
   } catch (error) {
     console.error("Error fetching crawl result:", error);
     throw error;
@@ -94,12 +101,30 @@ export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
       
     if (error) throw error;
     
-    // Add default values for required properties that might be missing
+    // Add default values for all required properties
+    const now = new Date().toISOString();
     return data.map(page => ({
       ...page,
       content_type: page.content_type || 'text/html',
       issues_count: page.issues_count || 0,
-      crawled_at: page.crawled_at || new Date().toISOString()
+      crawled_at: page.crawled_at || now,
+      h1: page.h1 || '',
+      h2_count: page.h2_count || 0,
+      h3_count: page.h3_count || 0,
+      word_count: page.word_count || 0,
+      image_count: page.image_count || 0,
+      internal_links_count: page.internal_links_count || 0,
+      external_links_count: page.external_links_count || 0,
+      canonical_url: page.canonical_url || '',
+      robots_directives: page.robots_directives || '',
+      meta_robots: page.meta_robots || '',
+      is_indexable: page.is_indexable !== undefined ? page.is_indexable : true,
+      page_size_kb: page.page_size_kb || 0,
+      load_time_ms: page.load_time_ms || 0,
+      images_without_alt: page.images_without_alt || 0,
+      mobile_friendly: page.mobile_friendly !== undefined ? page.mobile_friendly : false,
+      has_schema_markup: page.has_schema_markup !== undefined ? page.has_schema_markup : false,
+      content_length: page.content_length || 0
     })) as CrawlPage[];
   } catch (error) {
     console.error("Error retrieving crawl pages:", error);
@@ -117,7 +142,14 @@ export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
       
     if (error) throw error;
     
-    return data as CrawlIssue[];
+    // Cast severity to ensure it matches the type
+    return data.map(issue => ({
+      ...issue,
+      severity: (issue.severity as "low" | "medium" | "high" | string),
+      fix_suggestion: issue.fix_suggestion || '',
+      recommended_fix: issue.recommended_fix || '',
+      element: issue.element || ''
+    })) as CrawlIssue[];
   } catch (error) {
     console.error("Error retrieving page issues:", error);
     throw error;
@@ -134,10 +166,14 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
       
     if (error) throw error;
     
-    // Transform 'follow' to 'is_followed' for compatibility
+    // Ensure all required fields are present
     return data.map(link => ({
       ...link,
-      is_followed: link.follow || false
+      is_followed: link.follow !== undefined ? !!link.follow : true,
+      is_broken: link.is_broken !== undefined ? link.is_broken : false,
+      status_code: link.status_code || 200,
+      rel_attributes: link.rel_attributes || '',
+      anchor_text: link.anchor_text || ''
     })) as CrawlLink[];
   } catch (error) {
     console.error("Error retrieving page links:", error);

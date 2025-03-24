@@ -25,24 +25,24 @@ export interface CrawlPage {
   issues_count: number;
   crawled_at: string;
   
-  // Optional properties used in components
-  h1?: string;
-  h2_count?: number;
-  h3_count?: number;
-  word_count?: number;
-  image_count?: number;
-  internal_links_count?: number;
-  external_links_count?: number;
-  canonical_url?: string;
-  robots_directives?: string;
-  meta_robots?: string;
-  is_indexable?: boolean;
-  page_size_kb?: number;
-  load_time_ms?: number;
-  images_without_alt?: number;
-  mobile_friendly?: boolean;
-  has_schema_markup?: boolean;
-  content_length?: number;
+  // Properties that are commonly used in components
+  h1: string;
+  h2_count: number;
+  h3_count: number;
+  word_count: number;
+  image_count: number;
+  internal_links_count: number;
+  external_links_count: number;
+  canonical_url: string;
+  robots_directives: string;
+  meta_robots: string;
+  is_indexable: boolean;
+  page_size_kb: number;
+  load_time_ms: number;
+  images_without_alt: number;
+  mobile_friendly: boolean;
+  has_schema_markup: boolean;
+  content_length: number;
 }
 
 // Crawl Issue
@@ -54,7 +54,7 @@ export interface CrawlIssue {
   description: string;
   element?: string;
   fix_suggestion?: string;
-  recommended_fix?: string;
+  recommended_fix: string;
 }
 
 // Crawl Link
@@ -65,12 +65,12 @@ export interface CrawlLink {
   anchor_text: string;
   is_internal: boolean;
   is_followed: boolean;
-  rel_attributes?: string;
+  rel_attributes: string;
   
   // Additional properties 
-  is_broken?: boolean;
-  status_code?: number;
-  follow?: boolean; // Added to handle API response
+  is_broken: boolean;
+  status_code: number;
+  follow?: boolean; // Keep this to handle API response format
 }
 
 // Crawl Settings

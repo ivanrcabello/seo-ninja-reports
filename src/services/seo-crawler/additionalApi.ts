@@ -13,7 +13,11 @@ export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]
       
     if (error) throw error;
     
-    return data as CrawlResult[];
+    // Cast the status field to ensure type safety
+    return data.map(result => ({
+      ...result,
+      status: (result.status as "pending" | "processing" | "completed" | "error" | string)
+    })) as CrawlResult[];
   } catch (error) {
     console.error("Error retrieving crawl results:", error);
     throw error;
@@ -84,7 +88,10 @@ export const fetchCrawlResult = async (crawlId: string): Promise<CrawlResult> =>
       
     if (error) throw error;
     
-    return data as CrawlResult;
+    return {
+      ...data,
+      status: (data.status as "pending" | "processing" | "completed" | "error" | string)
+    } as CrawlResult;
   } catch (error) {
     console.error("Error retrieving crawl result:", error);
     throw error;
@@ -101,7 +108,14 @@ export const fetchCrawlIssues = async (pageId: string): Promise<CrawlIssue[]> =>
       
     if (error) throw error;
     
-    return data as CrawlIssue[];
+    // Cast severity to ensure it matches the type and add recommended_fix if missing
+    return data.map(issue => ({
+      ...issue,
+      severity: (issue.severity as "low" | "medium" | "high" | string),
+      recommended_fix: issue.recommended_fix || '',
+      element: issue.element || '',
+      fix_suggestion: issue.fix_suggestion || ''
+    })) as CrawlIssue[];
   } catch (error) {
     console.error("Error retrieving page issues:", error);
     throw error;
@@ -118,11 +132,15 @@ export const fetchCrawlLinks = async (pageId: string): Promise<CrawlLink[]> => {
       
     if (error) throw error;
     
-    // Convert to CrawlLink type with proper is_followed property
+    // Convert to CrawlLink type with all required properties
     return data.map(link => ({
       ...link,
-      is_followed: link.follow || false
-    })) as unknown as CrawlLink[];
+      is_followed: link.follow !== undefined ? !!link.follow : true,
+      is_broken: link.is_broken !== undefined ? link.is_broken : false,
+      status_code: link.status_code || 200,
+      rel_attributes: link.rel_attributes || '',
+      anchor_text: link.anchor_text || ''
+    })) as CrawlLink[];
   } catch (error) {
     console.error("Error retrieving page links:", error);
     throw error;

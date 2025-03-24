@@ -3,22 +3,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings, SavedCrawlSettings } from './types';
 
 // Get saved crawl settings for a client
-export const getSettings = async (clientId: string): Promise<SavedCrawlSettings | null> => {
+export const getSettings = async (clientId: string, domain?: string): Promise<SavedCrawlSettings | null> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('seo_crawl_settings')
       .select('*')
       .eq('client_id', clientId)
       .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
+      
+    // Add domain filter if provided
+    if (domain) {
+      query = query.eq('domain', domain);
+    }
+    
+    const { data, error } = await query.maybeSingle();
       
     if (error) {
-      // If no settings found, return null instead of throwing error
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      throw error;
+      console.error("Error retrieving crawl settings:", error);
+      return null;
     }
     
     return data as SavedCrawlSettings;

@@ -1,6 +1,8 @@
 
-// Export all crawler API functions and types
+// Export types
 export * from './types';
+
+// Export primary API functions
 export { 
   startCrawl, 
   getCrawlPages, 
@@ -9,18 +11,21 @@ export {
   getPageLinks 
 } from './api';
 
-// Export functions from additionalApi with renamed exports to avoid conflicts
+// Export renamed functions from additionalApi to avoid conflicts
 export {
   fetchCrawlResult,
   fetchCrawlIssues,
   fetchCrawlLinks
 } from './additionalApi';
 
-// Export with specific names to avoid conflicts
-export { fetchCrawlResults as getAllCrawlResults, deleteCrawlRecord as removeCrawlRecord } from './additionalApi';
+// Rename exports to avoid conflicts
+export { fetchCrawlResults as getAllCrawlResults } from './additionalApi';
+export { deleteCrawlRecord as removeCrawlRecord } from './additionalApi';
+
+// Export from API with original names
 export { fetchCrawlResults, deleteCrawlRecord } from './api';
 
-// Export startCrawl with a specific name
+// Export startCrawlService for use in CrawlerDialog
 export { startCrawl as startCrawlService } from './api';
 
 // Export settings service
