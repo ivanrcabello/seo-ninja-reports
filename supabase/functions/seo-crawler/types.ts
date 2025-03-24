@@ -31,3 +31,9 @@ export interface CrawlPageData {
   status_code: number;
   is_indexable: boolean;
 }
+
+// Bright Data credentials
+export interface BrightDataCredentials {
+  username?: string;
+  password?: string;
+}

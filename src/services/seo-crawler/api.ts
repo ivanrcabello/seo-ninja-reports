@@ -1,159 +1,112 @@
-import { supabase } from '@/integrations/supabase/client';
-import { handleServiceError } from '@/services/api/baseService';
-import { toast } from 'sonner';
-import { 
-  CrawlResult, 
-  CrawlPage, 
-  CrawlIssue, 
-  CrawlLink, 
-  CrawlSettings, 
-  SavedCrawlSettings 
-} from './types';
 
-export const createInitialCrawlRecord = async (settings: CrawlSettings): Promise<CrawlResult> => {
+import { supabase } from '@/integrations/supabase/client';
+
+// Start a new crawl session
+export const startCrawl = async (
+  domain: string, 
+  clientId: string,
+  brightDataUsername?: string,
+  brightDataPassword?: string
+) => {
   try {
-    const { data: crawlResult, error: insertError } = await supabase
+    // First create a new crawl record
+    const { data: crawl, error } = await supabase
       .from('seo_crawl_results')
       .insert({
-        client_id: settings.clientId,
-        domain: settings.url,
+        domain,
+        client_id: clientId,
         status: 'processing',
-        crawl_date: new Date().toISOString()
+        crawl_date: new Date().toISOString(),
       })
       .select()
       .single();
       
-    if (insertError) {
-      throw new Error(`Error al crear registro de análisis: ${insertError.message}`);
-    }
+    if (error) throw error;
     
-    return crawlResult as CrawlResult;
-  } catch (error: any) {
-    return handleServiceError(error, 'Error al crear registro inicial del análisis SEO');
+    // Then call the edge function to start the crawl
+    const { data, error: fnError } = await supabase.functions.invoke('seo-crawler', {
+      body: { 
+        url: domain, 
+        crawlId: crawl.id,
+        brightDataUsername,
+        brightDataPassword
+      }
+    });
+    
+    if (fnError) throw fnError;
+    
+    return data;
+  } catch (error) {
+    console.error("Error starting SEO crawl:", error);
+    throw error;
   }
 };
 
-export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
+// Get crawl results
+export const getCrawlResults = async (crawlId: string) => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_results')
       .select('*')
-      .eq('client_id', clientId)
-      .order('crawl_date', { ascending: false });
-      
-    if (error) {
-      throw error;
-    }
-    
-    return data as CrawlResult[];
-  } catch (error: any) {
-    return handleServiceError(error, 'Error al obtener resultados de análisis SEO');
-  }
-};
-
-export const fetchCrawlResult = async (id: string): Promise<CrawlResult> => {
-  try {
-    const { data, error } = await supabase
-      .from('seo_crawl_results')
-      .select('*')
-      .eq('id', id)
+      .eq('id', crawlId)
       .single();
       
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     
-    return data as CrawlResult;
-  } catch (error: any) {
-    return handleServiceError(error, 'Error al obtener resultado de análisis SEO');
+    return data;
+  } catch (error) {
+    console.error("Error retrieving crawl results:", error);
+    throw error;
   }
 };
 
-export const fetchCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
+// Get crawl pages
+export const getCrawlPages = async (crawlId: string) => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_pages')
       .select('*')
       .eq('crawl_id', crawlId);
       
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     
-    return data as CrawlPage[];
-  } catch (error: any) {
-    return handleServiceError(error, 'Error al obtener páginas analizadas');
+    return data;
+  } catch (error) {
+    console.error("Error retrieving crawl pages:", error);
+    throw error;
   }
 };
 
-export const fetchCrawlIssues = async (pageId: string): Promise<CrawlIssue[]> => {
+// Get issues for a specific page
+export const getPageIssues = async (pageId: string) => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_issues')
       .select('*')
       .eq('page_id', pageId);
       
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     
-    return data as CrawlIssue[];
-  } catch (error: any) {
-    return handleServiceError(error, 'Error al obtener problemas SEO');
+    return data;
+  } catch (error) {
+    console.error("Error retrieving page issues:", error);
+    throw error;
   }
 };
 
-export const fetchCrawlLinks = async (pageId: string): Promise<CrawlLink[]> => {
+// Get links for a specific page
+export const getPageLinks = async (pageId: string) => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_links')
       .select('*')
       .eq('page_id', pageId);
       
-    if (error) {
-      throw error;
-    }
-    
-    return data as CrawlLink[];
-  } catch (error: any) {
-    return handleServiceError(error, 'Error al obtener enlaces');
-  }
-};
-
-export const fetchAllIssuesForCrawl = async (crawlId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('seo_crawl_pages')
-      .select(`
-        id,
-        url,
-        seo_crawl_issues (*)
-      `)
-      .eq('crawl_id', crawlId);
-      
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     
     return data;
-  } catch (error: any) {
-    return handleServiceError(error, 'Error al obtener todos los problemas SEO');
-  }
-};
-
-export const deleteCrawlRecord = async (id: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('seo_crawl_results')
-      .delete()
-      .eq('id', id);
-      
-    if (error) {
-      throw error;
-    }
-    
-    toast.success('Análisis SEO eliminado correctamente');
-  } catch (error: any) {
-    return handleServiceError(error, 'Error al eliminar análisis SEO');
+  } catch (error) {
+    console.error("Error retrieving page links:", error);
+    throw error;
   }
 };

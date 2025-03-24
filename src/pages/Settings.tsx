@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -10,9 +10,19 @@ import { useAuth } from '@/context/AuthContext';
 import { Loader2, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { usePersistentState } from '@/hooks/usePersistentState';
+import { BRIGHT_DATA_CONFIG } from '../../../supabase/functions/seo-crawler/constants';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
+  const [brightDataUsername, setBrightDataUsername] = usePersistentState(
+    'brightDataUsername', 
+    BRIGHT_DATA_CONFIG.DEFAULT_USER
+  );
+  const [brightDataPassword, setBrightDataPassword] = usePersistentState(
+    'brightDataPassword',
+    BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD
+  );
 
   // Handle visibility changes to ensure page state is preserved
   useEffect(() => {
@@ -97,7 +107,12 @@ const Settings = () => {
             <AnimatedContainer animation="fade" delay={200}>
               <div className="grid grid-cols-1 gap-8">
                 <LogoUpload />
-                <ApiSettings />
+                <ApiSettings 
+                  brightDataUsername={brightDataUsername}
+                  setBrightDataUsername={setBrightDataUsername}
+                  brightDataPassword={brightDataPassword}
+                  setBrightDataPassword={setBrightDataPassword}
+                />
               </div>
             </AnimatedContainer>
           )}

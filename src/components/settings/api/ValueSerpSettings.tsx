@@ -9,12 +9,20 @@ interface ValueSerpSettingsProps {
   valueSerpApiKey: string;
   setValueSerpApiKey: (key: string) => void;
   hasConfiguredValueSerpKey: boolean;
+  brightDataUsername: string;
+  setBrightDataUsername: (username: string) => void;
+  brightDataPassword: string;
+  setBrightDataPassword: (password: string) => void;
 }
 
 const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   valueSerpApiKey,
   setValueSerpApiKey,
   hasConfiguredValueSerpKey,
+  brightDataUsername,
+  setBrightDataUsername,
+  brightDataPassword,
+  setBrightDataPassword,
 }) => {
   return (
     <div className="space-y-6">
@@ -41,6 +49,42 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         <p className="text-xs text-muted-foreground">
           Tu clave API de Value SERP para análisis de perfiles de negocio. Obtén una clave en <a href="https://www.valueserp.com/signup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">valueserp.com</a>
         </p>
+      </div>
+
+      <div className="pt-4 border-t border-border">
+        <h3 className="text-lg font-medium mb-4">Configuración de Bright Data</h3>
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="brightDataUsername">Usuario de Bright Data</Label>
+            <Input
+              id="brightDataUsername"
+              type="text"
+              value={brightDataUsername}
+              onChange={(e) => setBrightDataUsername(e.target.value)}
+              className="glass-input"
+              placeholder="brd-customer-..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Tu nombre de usuario de Bright Data para el Web Unlocker. Por defecto: brd-customer-hl_cbc2d791-zone-web_unlocker1
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="brightDataPassword">Contraseña de Bright Data</Label>
+            <Input
+              id="brightDataPassword"
+              type="password"
+              value={brightDataPassword}
+              onChange={(e) => setBrightDataPassword(e.target.value)}
+              className="glass-input"
+              placeholder="Contraseña de Bright Data"
+            />
+            <p className="text-xs text-muted-foreground">
+              Tu contraseña de Bright Data para el Web Unlocker. Por defecto: 5d024usr515b
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

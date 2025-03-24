@@ -32,7 +32,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
-      const { url, crawlId } = requestData;
+      const { url, crawlId, brightDataUsername, brightDataPassword } = requestData;
       
       console.log(`Parámetros recibidos - URL: ${url}, CrawlID: ${crawlId}`);
       
@@ -45,9 +45,11 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       }
       
       // Verificar que las credenciales estén configuradas
-      // Priorizar las variables de entorno, pero si no están, usar los valores predeterminados
+      // Priorizar las variables de entorno, luego los parámetros de la solicitud, y finalmente los valores predeterminados
       const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
       const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID');
+      const username = brightDataUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || '';
+      const password = brightDataPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
       
       // Normalize the URL
       const normalizedUrl = normalizeUrl(url);
@@ -58,7 +60,9 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       
       // Analyze main page first
       console.log('Iniciando análisis de página principal con Bright Data...');
-      const mainPage = await crawlPage(supabase, normalizedUrl, crawlId);
+      console.log(`Usando credenciales: ${username ? 'Usuario configurado' : 'Usuario por defecto'}, ${password ? 'Contraseña configurada' : 'Contraseña por defecto'}`);
+      
+      const mainPage = await crawlPage(supabase, normalizedUrl, crawlId, username, password);
       
       if (!mainPage) {
         console.error('No se pudo analizar la página principal');

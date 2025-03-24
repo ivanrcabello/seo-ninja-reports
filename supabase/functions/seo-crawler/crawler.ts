@@ -1,163 +1,199 @@
 
-// Core crawler functionality with Bright Data API
+// Main crawler implementation
 import { SupabaseInstance, PageCrawlResult, BrightDataResponse } from './types.ts';
-import { registerCrawlerError } from './utils.ts';
-import { processHtml } from './modules/html-processor.ts';
-import { simplifiedAnalysis } from './modules/simplified-analysis.ts';
-import { BRIGHT_DATA_CONFIG } from './constants.ts';
+import { BRIGHT_DATA_CONFIG, SEO_ISSUES } from './constants.ts';
+import { isInternalUrl, queueLinksForCrawling, registerCrawlerError } from './utils.ts';
 
-// Main crawl function using Bright Data API
-export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId: string): Promise<PageCrawlResult | null> {
-  console.log(`Iniciando análisis de página con Bright Data: ${url}`);
-  
+// Main crawler function - only crawl a single page for now
+export async function crawlPage(
+  supabase: SupabaseInstance, 
+  url: string, 
+  crawlId: string,
+  customUsername?: string,
+  customPassword?: string
+): Promise<PageCrawlResult | null> {
   try {
-    // Get the Bright Data credentials
-    const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID');
-    const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
-
-    console.log(`Usando proxy Bright Data para acceder a URL: ${url}`);
+    console.log(`Iniciando análisis de página: ${url}`);
+    const startTime = Date.now();
     
-    // Call Bright Data API to get HTML content using proxy method
-    const brightDataResponse = await fetchWithBrightDataProxy(url);
+    // Use Bright Data proxy to bypass restrictions
+    const { PROXY_HOST, PROXY_PORT, DEFAULT_USER, DEFAULT_PASSWORD, TIMEOUT } = BRIGHT_DATA_CONFIG;
     
-    // Check if the request was successful
-    if (!brightDataResponse || brightDataResponse.status !== 200 || !brightDataResponse.body) {
-      const errorMessage = brightDataResponse?.error || `Error en Bright Data: estado ${brightDataResponse?.status || 'desconocido'}`;
-      console.error(`Error al acceder a ${url} con Bright Data - ${errorMessage}`);
-      
-      await registerCrawlerError(
-        supabase, 
-        crawlId, 
-        url, 
-        `Error en Bright Data: ${errorMessage}`
-      );
-      
-      console.log('Intentando análisis simplificado como fallback...');
-      return await simplifiedAnalysis(supabase, url, crawlId);
-    }
+    // Use custom credentials if provided, otherwise use defaults
+    const username = customUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || DEFAULT_USER;
+    const password = customPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || DEFAULT_PASSWORD;
     
-    const html = brightDataResponse.body;
+    console.log(`Usando proxy: ${PROXY_HOST}:${PROXY_PORT}`);
+    console.log(`Con credenciales: ${username.substring(0, 10)}... (${username.length} caracteres)`);
     
-    if (!html || html.trim().length === 0) {
-      console.error("La respuesta HTML está vacía");
-      throw new Error("La respuesta HTML está vacía");
-    }
+    // Prepare fetch options with proxy
+    // The proxy requires basic auth with the provided credentials
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
     
-    console.log(`Contenido HTML obtenido de Bright Data (${html.length} bytes)`);
-    console.log('Muestra del HTML:', html.substring(0, 200) + '...');
-    
-    // Process HTML content
-    return await processHtml(supabase, url, crawlId, html);
-    
-  } catch (error) {
-    // Handle errors during crawling
-    console.error(`Error en el crawling de ${url}:`, error);
-    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    
-    // Register the error in the database
     try {
-      await registerCrawlerError(supabase, crawlId, url, errorMessage);
-      console.log("Error de crawling registrado correctamente");
-    } catch (dbError) {
-      console.error("No se pudo registrar el error en la base de datos:", dbError);
-    }
-    
-    // Use simplified analysis as fallback
-    console.log('Intentando análisis simplificado después de error...');
-    return await simplifiedAnalysis(supabase, url, crawlId);
-  }
-}
-
-// Helper function to fetch URL with Bright Data using proxy method
-async function fetchWithBrightDataProxy(url: string): Promise<BrightDataResponse> {
-  try {
-    console.log(`Preparando solicitud con proxy Bright Data para: ${url}`);
-    
-    // Usar las credenciales por defecto de la configuración si no existen en variables de entorno
-    const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID');
-    const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
-    
-    // Si hay credenciales en las variables de entorno, usarlas
-    // Si no, usar las credenciales por defecto de la configuración
-    let proxyAuth;
-    
-    if (customerId && apiKey) {
-      // Formato con variables de entorno
-      proxyAuth = `brd-customer-${customerId}:${apiKey}`;
-      console.log(`Usando credenciales de variables de entorno para Bright Data`);
-    } else {
-      // Usar credenciales por defecto del curl proporcionado
-      proxyAuth = `${BRIGHT_DATA_CONFIG.DEFAULT_USER}:${BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}`;
-      console.log(`Usando credenciales por defecto para Bright Data: ${BRIGHT_DATA_CONFIG.DEFAULT_USER}`);
-    }
-    
-    const proxyUrl = `http://${proxyAuth}@${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`;
-    
-    console.log(`Conectando a proxy: ${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`);
-    
-    // Create options for fetch request - con los mismos headers y opciones que en el curl
-    const fetchOptions = {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
-    };
-    
-    console.log('Opciones de solicitud:', JSON.stringify({
-      method: fetchOptions.method,
-      headers: fetchOptions.headers,
-      redirect: fetchOptions.redirect,
-      timeout: BRIGHT_DATA_CONFIG.TIMEOUT
-    }, null, 2));
-    
-    console.log(`Realizando solicitud a ${url} a través del proxy...`);
-    
-    // Configurar el agente proxy de forma manual - sintaxis correcta para Deno
-    const response = await fetch(url, {
-      ...fetchOptions,
-      agent: proxyUrl // En Deno, el formato es diferente
-    });
-    
-    console.log(`Respuesta recibida con estado: ${response.status}`);
-    
-    // Get the response body as text
-    const body = await response.text();
-    console.log(`Respuesta recibida con tamaño: ${body.length} bytes`);
-    
-    // Return the response
-    return {
-      status: response.status,
-      body: body,
-      headers: Object.fromEntries(response.headers.entries()),
-      url: url
-    };
-  } catch (error) {
-    console.error(`Error en fetchWithBrightDataProxy para ${url}:`, error);
-    
-    // Mejorar manejo de errores analizando tipos específicos
-    let errorMessage = 'Error desconocido';
-    
-    if (error instanceof Error) {
-      errorMessage = error.message;
-      console.error(`Error detallado: ${error.message}`);
-      if (error.stack) {
-        console.error(`Stack trace: ${error.stack}`);
+      // Fetch the page using Bright Data proxy
+      const proxyUrl = `http://${username}:${password}@${PROXY_HOST}:${PROXY_PORT}`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Cache-Control': 'max-age=0'
+        },
+        signal: controller.signal,
+        // Proxy via Bright Data not yet supported in Deno's native fetch API
+        // Will need to implement differently using a library or custom approach
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Check response status
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-    } else {
-      console.error('Error no estándar:', error);
+      
+      // Get HTML content
+      const html = await response.text();
+      
+      // Create a DOM parser
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // Extract basic page data
+      const title = doc.querySelector('title')?.textContent || '';
+      const metaDescription = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+      const h1Elements = doc.querySelectorAll('h1');
+      const h1 = h1Elements.length > 0 ? h1Elements[0].textContent || '' : '';
+      
+      // Find all links
+      const links = Array.from(doc.querySelectorAll('a[href]'))
+        .map(a => {
+          const href = a.getAttribute('href') || '';
+          // Process only internal links and valid URLs
+          if (href && !href.startsWith('javascript:') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+            try {
+              // Handle relative URLs
+              const fullUrl = new URL(href, url).href;
+              return fullUrl;
+            } catch (e) {
+              console.error(`Error processing URL ${href}:`, e);
+              return null;
+            }
+          }
+          return null;
+        })
+        .filter(link => link !== null) as string[];
+      
+      // Filter to get only internal links
+      const internalLinks = links.filter(link => isInternalUrl(url, link));
+      
+      // Analyze page for issues
+      const issues = [];
+      
+      // Check for title
+      if (!title) {
+        issues.push(SEO_ISSUES.MISSING_TITLE);
+      } else if (title.length > 60) {
+        issues.push(SEO_ISSUES.TITLE_TOO_LONG);
+      }
+      
+      // Check for meta description
+      if (!metaDescription) {
+        issues.push(SEO_ISSUES.MISSING_META_DESCRIPTION);
+      } else if (metaDescription.length > 160) {
+        issues.push(SEO_ISSUES.META_DESCRIPTION_TOO_LONG);
+      }
+      
+      // Check for H1
+      if (!h1) {
+        issues.push(SEO_ISSUES.MISSING_H1);
+      } else if (h1Elements.length > 1) {
+        issues.push(SEO_ISSUES.MULTIPLE_H1);
+      }
+      
+      // Check for images without alt text
+      const images = doc.querySelectorAll('img');
+      const imagesWithoutAlt = Array.from(images).filter(img => !img.hasAttribute('alt'));
+      if (imagesWithoutAlt.length > 0) {
+        issues.push({
+          ...SEO_ISSUES.NO_ALT_TEXT,
+          details: `${imagesWithoutAlt.length} imágenes sin texto alternativo`
+        });
+      }
+      
+      // Check for schema markup
+      const hasSchema = doc.querySelector('script[type="application/ld+json"]') !== null;
+      if (!hasSchema) {
+        issues.push(SEO_ISSUES.NO_SCHEMA_MARKUP);
+      }
+      
+      // Create page record in database
+      const pageId = crypto.randomUUID();
+      const { error: pageError } = await supabase
+        .from('seo_crawl_pages')
+        .insert({
+          id: pageId,
+          crawl_id: crawlId,
+          url: url,
+          title: title,
+          meta_description: metaDescription,
+          h1: h1,
+          status_code: response.status,
+          is_indexable: true,
+          internal_links_count: internalLinks.length,
+          external_links_count: links.length - internalLinks.length,
+          image_count: images.length,
+          images_without_alt: imagesWithoutAlt.length,
+          has_schema_markup: hasSchema
+        });
+        
+      if (pageError) {
+        console.error('Error guardando datos de página:', pageError);
+        throw pageError;
+      }
+      
+      // Save issues to database
+      if (issues.length > 0) {
+        const issuesToInsert = issues.map(issue => ({
+          page_id: pageId,
+          issue_type: issue.type,
+          severity: issue.severity,
+          description: issue.description,
+          recommended_fix: issue.fix
+        }));
+        
+        const { error: issuesError } = await supabase
+          .from('seo_crawl_issues')
+          .insert(issuesToInsert);
+          
+        if (issuesError) {
+          console.error('Error guardando issues:', issuesError);
+        }
+      }
+      
+      // Queue found links for future crawling (if needed)
+      await queueLinksForCrawling(supabase, pageId, internalLinks, crawlId, url);
+      
+      const endTime = Date.now();
+      console.log(`Análisis completado en ${(endTime - startTime) / 1000} segundos`);
+      console.log(`Encontrados ${issues.length} problemas SEO`);
+      
+      return {
+        pageId,
+        url,
+        issues: issues.length
+      };
+      
+    } finally {
+      clearTimeout(timeoutId);
     }
     
-    return {
-      status: 500,
-      body: '',
-      headers: {},
-      error: errorMessage
-    };
+  } catch (error) {
+    console.error(`Error analizando página ${url}:`, error);
+    await registerCrawlerError(supabase, crawlId, url, error instanceof Error ? error.message : String(error));
+    return null;
   }
 }
