@@ -4,4 +4,3 @@ name = "seo-crawler"
 entrypoint = "index.ts"
 verify_jwt = false
 version = 1
-

@@ -616,9 +616,13 @@ serve(async (req) => {
   
   try {
     if (req.method === 'POST') {
+      console.log("Received crawl request");
+      
       const settings: CrawlSettings = await req.json();
+      console.log("Request body parsed:", settings);
       
       if (!settings.url || !settings.clientId || !settings.crawlId) {
+        console.error("Missing required fields:", settings);
         return new Response(
           JSON.stringify({ 
             error: 'Missing required fields: url, clientId, and crawlId are required' 
@@ -630,8 +634,10 @@ serve(async (req) => {
         );
       }
       
-      // Start the crawl process asynchronously
+      // Start the crawl process
+      console.log("Starting crawl process for:", settings.url);
       const result = await crawlSite(settings);
+      console.log("Crawl completed with result:", result);
       
       return new Response(
         JSON.stringify(result),

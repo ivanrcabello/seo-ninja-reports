@@ -33,6 +33,8 @@ export const startCrawl = async (settings: CrawlSettings) => {
       }
     }
     
+    toast.loading('Iniciando análisis SEO...', { id: 'crawl-loading' });
+    
     // Primero, crear un registro inicial en la base de datos
     const crawlResult = await createInitialCrawlRecord(settings);
     
@@ -44,7 +46,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
       const response = await invokeCrawlerFunction(settings, crawlResult.id);
       
       console.log('Crawl started successfully, response:', response);
-      toast.success('Análisis SEO iniciado correctamente');
+      toast.success('Análisis SEO iniciado correctamente', { id: 'crawl-loading' });
       return { ...response, crawlId: crawlResult.id };
     } catch (invokeError: any) {
       console.error('Error al invocar la función de análisis SEO', invokeError);
@@ -68,13 +70,14 @@ export const startCrawl = async (settings: CrawlSettings) => {
         console.error('Error crítico al actualizar estado:', updateError);
       }
       
+      toast.error(invokeError.message || 'Error al invocar el análisis SEO', { id: 'crawl-loading' });
+      
       // Lanzar el error para que se maneje en el nivel superior
       throw invokeError;
     }
   } catch (error: any) {
     console.error('Error starting crawl:', error);
-    toast.error(error.message || 'Error al iniciar el análisis SEO');
+    toast.error(error.message || 'Error al iniciar el análisis SEO', { id: 'crawl-loading' });
     throw error;
   }
 };
-

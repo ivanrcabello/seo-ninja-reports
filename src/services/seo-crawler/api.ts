@@ -46,12 +46,27 @@ export const invokeCrawlerFunction = async (settings: CrawlSettings, crawlId: st
       throw new Error('URL is required');
     }
 
-    // Try to validate URL format
+    // Validate URL format
+    let validUrl: string;
     try {
-      new URL(settings.url);
+      const url = new URL(settings.url);
+      validUrl = url.toString();
     } catch (e) {
-      throw new Error('Invalid URL format');
+      // Try to fix URL by adding https:// if needed
+      if (!settings.url.startsWith('http://') && !settings.url.startsWith('https://')) {
+        try {
+          const url = new URL(`https://${settings.url}`);
+          validUrl = url.toString();
+        } catch (e) {
+          throw new Error('Invalid URL format');
+        }
+      } else {
+        throw new Error('Invalid URL format');
+      }
     }
+
+    // Update settings with valid URL
+    settings.url = validUrl;
 
     // Define the type for the function response
     type EdgeFunctionResponse = {
@@ -59,35 +74,60 @@ export const invokeCrawlerFunction = async (settings: CrawlSettings, crawlId: st
       error: null | { message: string };
     };
 
-    // Make the function call with explicit timeout
-    const response = await Promise.race([
-      supabase.functions.invoke('seo-crawler', {
-        body: {
-          ...settings,
-          crawlId
-        },
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }) as Promise<EdgeFunctionResponse>,
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out')), 30000)
-      )
-    ]);
+    console.log(`Sending request to seo-crawler function with validated URL: ${validUrl}`);
 
-    // Check for response error - now TypeScript knows the structure
-    if (response && 'error' in response && response.error) {
-      console.error('Edge function error response:', response.error);
-      throw new Error(response.error.message || 'Error al iniciar el análisis SEO');
-    }
+    // Make the function call with explicit timeout and better error handling
+    try {
+      const response = await Promise.race([
+        supabase.functions.invoke('seo-crawler', {
+          body: {
+            ...settings,
+            crawlId
+          },
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }) as Promise<EdgeFunctionResponse>,
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Request timed out')), 60000) // Increased timeout to 60 seconds
+        )
+      ]);
 
-    // Validate response data
-    if (!response || !('data' in response) || !response.data) {
-      throw new Error('No se recibió respuesta del servidor');
+      // Check for response error
+      if (response && 'error' in response && response.error) {
+        console.error('Edge function error response:', response.error);
+        throw new Error(response.error.message || 'Error al iniciar el análisis SEO');
+      }
+
+      // Validate response data
+      if (!response || !('data' in response) || !response.data) {
+        throw new Error('No se recibió respuesta del servidor');
+      }
+      
+      return response.data;
+    } catch (err: any) {
+      console.error('Edge function invocation error:', err);
+      
+      if (err.message === 'Failed to fetch') {
+        throw new Error('No se pudo conectar con el servidor de análisis. Por favor, verifique su conexión a internet e inténtelo de nuevo.');
+      } else if (err.message.includes('Failed to send a request to the Edge Function')) {
+        // Update status to error in the database
+        await supabase
+          .from('seo_crawl_results')
+          .update({
+            status: 'error',
+            issues_count: 0,
+            pages_crawled: 0,
+            total_time_seconds: 0
+          })
+          .eq('id', crawlId);
+          
+        throw new Error('Error de conexión con el servicio de análisis SEO. Por favor, inténtelo más tarde.');
+      }
+      
+      throw err;
     }
-    
-    return response.data;
   } catch (error: any) {
     console.error('Error in invokeCrawlerFunction:', error);
     
@@ -97,6 +137,8 @@ export const invokeCrawlerFunction = async (settings: CrawlSettings, crawlId: st
       errorMessage = 'No se pudo conectar con el servidor. Por favor, inténtelo de nuevo.';
     } else if (error.message === 'Request timed out') {
       errorMessage = 'La solicitud ha tardado demasiado. Por favor, inténtelo de nuevo.';
+    } else if (error.message) {
+      errorMessage = error.message;
     }
 
     toast.error(errorMessage);
