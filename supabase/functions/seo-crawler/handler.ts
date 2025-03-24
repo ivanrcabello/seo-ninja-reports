@@ -35,6 +35,10 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
       if (!apiKey) {
         console.error('BRIGHT_DATA_API_KEY no está configurada en las variables de entorno');
+        
+        // Actualizar el estado del crawl a error
+        await updateCrawlStatus(supabase, crawlId, 'error', 0, 0, 0);
+        
         return new Response(
           JSON.stringify({ 
             error: 'BRIGHT_DATA_API_KEY no está configurada. Por favor, configure la API key de Bright Data en la configuración de Supabase.' 
@@ -43,9 +47,14 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
+      console.log('API key de Bright Data verificada correctamente');
+      
       // Normalize the URL
       const normalizedUrl = normalizeUrl(url);
       console.log(`URL normalizada: ${normalizedUrl}`);
+      
+      // Actualizar el estado del crawl a processing (por si acaso)
+      await updateCrawlStatus(supabase, crawlId, 'processing', 0, 0, 0);
       
       // Analyze main page first
       console.log('Iniciando análisis de página principal con Bright Data...');
@@ -66,10 +75,11 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
-      console.log('Análisis de página principal completado');
+      console.log('Análisis de página principal completado con éxito');
+      console.log(`Resultados - pageId: ${mainPage.pageId}, issues: ${mainPage.issues}`);
       
       // Update crawl status
-      console.log('Actualizando estado del crawl...');
+      console.log('Actualizando estado del crawl a completado...');
       await updateCrawlStatus(supabase, crawlId, 'completed', 1, mainPage.issues, 1);
       
       console.log('Enviando respuesta exitosa');

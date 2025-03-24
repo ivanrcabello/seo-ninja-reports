@@ -59,6 +59,6 @@ export const SEO_ISSUES = {
 export const BRIGHT_DATA_CONFIG = {
   API_URL: 'https://api.brightdata.com/request',
   DEFAULT_ZONE: 'web_unlocker1',
-  FORMAT: 'raw'
+  FORMAT: 'raw',
+  TIMEOUT: 60000 // 60 segundos de timeout para las peticiones
 };
-

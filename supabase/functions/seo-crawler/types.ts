@@ -41,3 +41,13 @@ export interface BrightDataResponse {
   error?: string;
 }
 
+export interface BrightDataRequestOptions {
+  zone: string;
+  url: string;
+  format: string;
+  timeout?: number;
+  javascript?: boolean;
+  render?: boolean;
+  wait_for?: string;
+  headers?: Record<string, string>;
+}

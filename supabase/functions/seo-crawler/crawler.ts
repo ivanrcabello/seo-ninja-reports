@@ -1,6 +1,6 @@
 
 // Core crawler functionality with Bright Data API
-import { SupabaseInstance, PageCrawlResult, BrightDataResponse } from './types.ts';
+import { SupabaseInstance, PageCrawlResult, BrightDataResponse, BrightDataRequestOptions } from './types.ts';
 import { registerCrawlerError } from './utils.ts';
 import { processHtml } from './modules/html-processor.ts';
 import { simplifiedAnalysis } from './modules/simplified-analysis.ts';
@@ -34,16 +34,19 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
         `Error en Bright Data: ${errorMessage}`
       );
       
+      console.log('Intentando análisis simplificado como fallback...');
       return await simplifiedAnalysis(supabase, url, crawlId);
     }
     
     const html = brightDataResponse.body;
     
     if (!html || html.trim().length === 0) {
+      console.error("La respuesta HTML está vacía");
       throw new Error("La respuesta HTML está vacía");
     }
     
     console.log(`Contenido HTML obtenido de Bright Data (${html.length} bytes)`);
+    console.log('Muestra del HTML:', html.substring(0, 200) + '...');
     
     // Process HTML content
     return await processHtml(supabase, url, crawlId, html);
@@ -62,6 +65,7 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
     }
     
     // Use simplified analysis as fallback
+    console.log('Intentando análisis simplificado después de error...');
     return await simplifiedAnalysis(supabase, url, crawlId);
   }
 }
@@ -69,23 +73,41 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
 // Helper function to fetch URL with Bright Data
 async function fetchWithBrightData(url: string, apiKey: string): Promise<BrightDataResponse> {
   try {
+    console.log(`Preparando solicitud a Bright Data para: ${url}`);
+    
+    // Preparar opciones de la solicitud según la documentación de Bright Data
+    const requestOptions: BrightDataRequestOptions = {
+      zone: BRIGHT_DATA_CONFIG.DEFAULT_ZONE,
+      url: url,
+      format: BRIGHT_DATA_CONFIG.FORMAT,
+      javascript: true, // Habilitar JavaScript para sitios SPA o React
+      render: true,     // Renderizar completamente la página
+      timeout: BRIGHT_DATA_CONFIG.TIMEOUT,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+      }
+    };
+    
+    console.log('Opciones de solicitud a Bright Data:', JSON.stringify(requestOptions, null, 2));
+    
     const response = await fetch(BRIGHT_DATA_CONFIG.API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify({
-        zone: BRIGHT_DATA_CONFIG.DEFAULT_ZONE,
-        url: url,
-        format: BRIGHT_DATA_CONFIG.FORMAT
-      })
+      body: JSON.stringify(requestOptions)
     });
     
-    // If response is not ok, throw an error
+    console.log(`Respuesta de Bright Data recibida con estado: ${response.status}`);
+    
+    // Si response no es ok, intentar obtener detalles del error
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error en Bright Data API: ${response.status} ${response.statusText}`, errorText);
+      
       return {
         status: response.status,
         body: '',
@@ -96,6 +118,7 @@ async function fetchWithBrightData(url: string, apiKey: string): Promise<BrightD
     
     // Get the response body as text
     const body = await response.text();
+    console.log(`Respuesta de Bright Data recibida con tamaño: ${body.length} bytes`);
     
     // Return the response
     return {
@@ -110,8 +133,7 @@ async function fetchWithBrightData(url: string, apiKey: string): Promise<BrightD
       status: 500,
       body: '',
       headers: {},
-      error: error instanceof Error ? error.message : 'Error desconocido'
+      error: error instanceof Error ? error.message : 'Error desconocido en la comunicación con Bright Data'
     };
   }
 }
-
