@@ -129,4 +129,3 @@ export const startCrawl = async (settings: CrawlSettings) => {
     throw error;
   }
 };
-

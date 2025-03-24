@@ -118,4 +118,3 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
     );
   }
 }
-
