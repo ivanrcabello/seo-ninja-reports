@@ -14,10 +14,11 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
   let page = null;
   
   try {
-    // Initialize Playwright browser with error handling
+    // Initialize Playwright browser with robust error handling
     try {
       browser = await PlaywrightBrowser.launch();
-      page = await browser.newPage();
+      // Use our custom method to create a new page with default settings
+      page = await PlaywrightBrowser.newPage(browser);
     } catch (browserError) {
       console.error(`Error inicializando Playwright: ${browserError.message}`);
       await registerCrawlerError(

@@ -17,9 +17,14 @@ export class PlaywrightBrowser {
           '--disable-setuid-sandbox',
           '--no-sandbox',
         ],
-        // Use direct imports to avoid issues with JSON imports
-        // Explicitly disable device descriptors to avoid JSON import errors
-        ignoreDefaultArgs: ['--enable-automation'],
+        // Completely avoid device descriptors and other problematic imports
+        ignoreDefaultArgs: [
+          '--enable-automation',
+          '--use-mock-keychain',
+          // Add any other args that might be causing issues
+        ],
+        // Disable all extensions and other features that might cause problems
+        ignoreAllDefaultArgs: false,
         timeout: 30000,
       });
       
@@ -27,6 +32,28 @@ export class PlaywrightBrowser {
       return browser;
     } catch (error) {
       console.error('Error launching browser:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to create a new page with default viewport settings
+  static async newPage(browser: Browser): Promise<Page> {
+    try {
+      const page = await browser.newPage({
+        viewport: {
+          width: 1280,
+          height: 800
+        },
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        // Bypass common browser detection mechanisms
+        bypassCSP: true,
+        // Avoid other JSON imports that might be problematic
+        deviceScaleFactor: 1,
+      });
+      console.log('New page created successfully');
+      return page;
+    } catch (error) {
+      console.error('Error creating new page:', error);
       throw error;
     }
   }
