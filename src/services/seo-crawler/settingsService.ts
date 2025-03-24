@@ -2,8 +2,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SavedCrawlSettings } from './types';
 
-// Define CrawlSettings type
-interface CrawlSettings {
+// Define CrawlSettings type locally to avoid conflict with the one from types.ts
+interface CrawlSettingsConfig {
   clientId: string;
   url: string;
   maxPages?: number;
@@ -42,7 +42,7 @@ export const getSettings = async (clientId: string, domain?: string): Promise<Sa
 };
 
 // Save crawl settings for a client
-export const saveSettings = async (settings: CrawlSettings): Promise<SavedCrawlSettings | null> => {
+export const saveSettings = async (settings: CrawlSettingsConfig): Promise<SavedCrawlSettings | null> => {
   try {
     // First check if settings already exist
     const { data: existingSettings, error: checkError } = await supabase
@@ -97,5 +97,5 @@ export const saveSettings = async (settings: CrawlSettings): Promise<SavedCrawlS
   }
 };
 
-// Export the CrawlSettings type
-export type { CrawlSettings };
+// Export the CrawlSettingsConfig type as CrawlSettings to maintain backwards compatibility
+export type { CrawlSettingsConfig as CrawlSettings };

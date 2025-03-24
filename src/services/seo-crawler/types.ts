@@ -52,8 +52,8 @@ export interface CrawlIssue {
   issue_type: string;
   severity: 'low' | 'medium' | 'high' | string; // Adding string to handle other values
   description: string;
-  element?: string;
-  fix_suggestion?: string;
+  element: string;
+  fix_suggestion: string;
   recommended_fix: string;
 }
 

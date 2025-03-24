@@ -7,7 +7,8 @@ export {
   startCrawl, 
   getCrawlPages, 
   getPageIssues, 
-  getPageLinks 
+  getPageLinks,
+  getCrawlResult
 } from './api';
 
 // Export renamed functions from additionalApi to avoid conflicts
