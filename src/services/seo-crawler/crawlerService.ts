@@ -61,9 +61,17 @@ export const startCrawl = async (settings: CrawlSettings) => {
     // Now call the edge function to start the crawl in background
     try {
       console.log('Llamando al edge function para iniciar el análisis');
+      
+      // Timeout más largo para la llamada
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+      
       const response = await supabase.functions.invoke('seo-crawler', {
-        body: { url: settings.url, crawlId: crawlResult.id }
+        body: { url: settings.url, crawlId: crawlResult.id },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.error) {
         console.error('Error del edge function:', response.error);
@@ -74,14 +82,32 @@ export const startCrawl = async (settings: CrawlSettings) => {
         });
       } else {
         console.log('Respuesta del edge function:', response.data);
+        
+        // Si no hay pageId en la respuesta, también mostramos una advertencia
+        if (!response.data?.pageId) {
+          toast.warning('El análisis se ha iniciado pero puede haber problemas. El resultado podría estar incompleto.', {
+            id: 'crawl-loading',
+            duration: 5000
+          });
+        }
       }
     } catch (edgeFunctionError) {
       console.error('Error al invocar edge function:', edgeFunctionError);
-      // Don't throw, just log - we've already created the record
-      toast.warning('El análisis se ha iniciado, pero puede haber problemas de conexión con el servicio de análisis. Se registrará pero es posible que esté incompleto.', { 
-        id: 'crawl-loading',
-        duration: 5000
-      });
+      
+      // Si es un error de timeout/abort, lo manejamos específicamente
+      if (edgeFunctionError.name === 'AbortError') {
+        console.error('La llamada al edge function tardó demasiado tiempo y fue abortada');
+        toast.warning('El análisis se ha iniciado pero está tardando más de lo esperado. Se continuará en segundo plano.', {
+          id: 'crawl-loading',
+          duration: 5000
+        });
+      } else {
+        // Otro tipo de error de conexión
+        toast.warning('El análisis se ha iniciado, pero puede haber problemas de conexión con el servicio de análisis. Se registrará pero es posible que esté incompleto.', { 
+          id: 'crawl-loading',
+          duration: 5000
+        });
+      }
     }
     
     // Success message - we're always "successful" here because we've at least created a record

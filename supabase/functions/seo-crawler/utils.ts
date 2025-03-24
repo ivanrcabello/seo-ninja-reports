@@ -58,7 +58,11 @@ export async function queueLinksForCrawling(
   
   try {
     // First, save them as links associated with the current page
-    const linkEntries = links.map(url => ({
+    // Limitamos a máximo 100 enlaces para no sobrecargar
+    const limitedLinks = links.slice(0, 100);
+    console.log(`Guardando ${limitedLinks.length} enlaces (limitado a 100 máximo)`);
+    
+    const linkEntries = limitedLinks.map(url => ({
       id: crypto.randomUUID(),
       page_id: pageId,
       url: url,
@@ -96,23 +100,29 @@ export async function updateCrawlStatus(
   totalTimeSeconds: number = 0
 ) {
   console.log(`Actualizando estado del crawl a "${status}"`);
-  const { error } = await supabase
-    .from('seo_crawl_results')
-    .update({
-      status,
-      pages_crawled: pagesCrawled,
-      issues_count: issuesCount,
-      total_time_seconds: totalTimeSeconds
-    })
-    .eq('id', crawlId);
+  
+  try {
+    const { error } = await supabase
+      .from('seo_crawl_results')
+      .update({
+        status,
+        pages_crawled: pagesCrawled,
+        issues_count: issuesCount,
+        total_time_seconds: totalTimeSeconds
+      })
+      .eq('id', crawlId);
+      
+    if (error) {
+      console.error('Error actualizando estado del crawl:', error);
+      return false;
+    }
     
-  if (error) {
-    console.error('Error actualizando estado del crawl:', error);
+    console.log('Estado del crawl actualizado correctamente');
+    return true;
+  } catch (updateError) {
+    console.error('Error inesperado actualizando estado del crawl:', updateError);
     return false;
   }
-  
-  console.log('Estado del crawl actualizado correctamente');
-  return true;
 }
 
 // Register crawler error
