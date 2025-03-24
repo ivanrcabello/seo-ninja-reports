@@ -14,9 +14,20 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
   let page = null;
   
   try {
-    // Initialize Playwright browser
-    browser = await PlaywrightBrowser.launch();
-    page = await browser.newPage();
+    // Initialize Playwright browser with error handling
+    try {
+      browser = await PlaywrightBrowser.launch();
+      page = await browser.newPage();
+    } catch (browserError) {
+      console.error(`Error inicializando Playwright: ${browserError.message}`);
+      await registerCrawlerError(
+        supabase, 
+        crawlId, 
+        url, 
+        `Error inicializando navegador: ${browserError.message}`
+      );
+      return await simplifiedAnalysis(supabase, url, crawlId);
+    }
     
     console.log(`Navegando a: ${url}`);
     
@@ -100,10 +111,18 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
   } finally {
     // Close browser resources
     if (page) {
-      await page.close();
+      try {
+        await page.close();
+      } catch (e) {
+        console.error("Error cerrando la página:", e);
+      }
     }
     if (browser) {
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (e) {
+        console.error("Error cerrando el navegador:", e);
+      }
     }
   }
 }

@@ -17,6 +17,9 @@ export class PlaywrightBrowser {
           '--disable-setuid-sandbox',
           '--no-sandbox',
         ],
+        // Use direct imports to avoid issues with JSON imports
+        // Explicitly disable device descriptors to avoid JSON import errors
+        ignoreDefaultArgs: ['--enable-automation'],
         timeout: 30000,
       });
       
