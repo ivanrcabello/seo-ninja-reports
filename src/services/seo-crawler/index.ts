@@ -1,8 +1,8 @@
 
-// Exportar tipos
+// Export types
 export * from './types';
 
-// Exportar funciones principales de la API
+// Export main API functions
 export {
   startCrawl,
   getCrawlResults,
@@ -15,7 +15,7 @@ export {
   getSettings
 } from './api';
 
-// Para mantener compatibilidad con código existente
+// For backward compatibility with existing code
 export {
   getCrawlResults as getAllCrawlResults,
   getCrawlResult as fetchCrawlResult,

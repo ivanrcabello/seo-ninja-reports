@@ -1,7 +1,7 @@
 
 // SEO Crawler Types
 
-// Tipos básicos
+// Basic types
 export interface CrawlResult {
   id: string;
   client_id: string;
@@ -24,7 +24,7 @@ export interface CrawlPage {
   issues_count: number;
   crawled_at: string;
   
-  // Propiedades adicionales
+  // Additional properties
   h1: string | null;
   h2_count: number;
   h3_count: number;
@@ -53,7 +53,7 @@ export interface CrawlIssue {
   element: string;
   fix_suggestion: string;
   recommended_fix: string;
-  page_url?: string; // Campo opcional para mostrar en la UI
+  page_url?: string; // Optional field for UI display
 }
 
 export interface CrawlLink {
@@ -66,10 +66,10 @@ export interface CrawlLink {
   rel_attributes: string;
   is_broken: boolean;
   status_code: number;
-  follow?: boolean; // Para mantener compatibilidad con la API
+  follow?: boolean; // For compatibility with API
 }
 
-// Configuración del crawler
+// Crawler configuration
 export interface CrawlSettings {
   clientId: string;
   url: string;
@@ -79,7 +79,7 @@ export interface CrawlSettings {
   includePatterns?: string[];
 }
 
-// Configuración guardada del crawler
+// Saved crawler configuration
 export interface SavedCrawlSettings {
   id: string;
   client_id: string;

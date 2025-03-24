@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlSettings, SavedCrawlSettings } from './types';
 
-// Iniciar un nuevo análisis SEO
+// Start a new SEO analysis
 export const startCrawl = async (
   url: string, 
   clientId: string,
@@ -16,7 +16,7 @@ export const startCrawl = async (
   }
 ): Promise<{success: boolean, message: string, crawlId?: string}> => {
   try {
-    // Primero creamos un nuevo registro de análisis
+    // First create a new analysis record
     const { data: crawl, error } = await supabase
       .from('seo_crawl_results')
       .insert({
@@ -30,7 +30,7 @@ export const startCrawl = async (
       
     if (error) throw error;
     
-    // Luego llamamos a la edge function para iniciar el análisis
+    // Then call the edge function to start the analysis
     const { data, error: fnError } = await supabase.functions.invoke('seo-crawler', {
       body: { 
         url, 
@@ -40,8 +40,8 @@ export const startCrawl = async (
     });
     
     if (fnError) {
-      console.error('Error al llamar a la función seo-crawler:', fnError);
-      // Actualizar el estado a error
+      console.error('Error calling seo-crawler function:', fnError);
+      // Update status to error
       await supabase
         .from('seo_crawl_results')
         .update({ status: 'error' })
@@ -52,19 +52,19 @@ export const startCrawl = async (
     
     return {
       success: true,
-      message: 'Análisis SEO iniciado correctamente',
+      message: 'SEO analysis started successfully',
       crawlId: crawl.id
     };
   } catch (error) {
-    console.error("Error al iniciar el análisis SEO:", error);
+    console.error("Error starting SEO analysis:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Error desconocido al iniciar análisis'
+      message: error instanceof Error ? error.message : 'Unknown error starting analysis'
     };
   }
 };
 
-// Obtener todos los resultados de análisis para un cliente
+// Get all analysis results for a client
 export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
   try {
     const { data, error } = await supabase
@@ -77,12 +77,12 @@ export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> 
     
     return data as CrawlResult[];
   } catch (error) {
-    console.error("Error al obtener resultados de análisis:", error);
+    console.error("Error getting analysis results:", error);
     throw error;
   }
 };
 
-// Obtener un resultado de análisis específico
+// Get a specific analysis result
 export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
   try {
     const { data, error } = await supabase
@@ -95,12 +95,12 @@ export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
     
     return data as CrawlResult;
   } catch (error) {
-    console.error("Error al obtener resultado de análisis:", error);
+    console.error("Error getting analysis result:", error);
     throw error;
   }
 };
 
-// Obtener páginas de un análisis
+// Get pages for an analysis
 export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
   try {
     const { data, error } = await supabase
@@ -110,7 +110,7 @@ export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
       
     if (error) throw error;
     
-    // Asegurar que todas las propiedades necesarias estén presentes
+    // Ensure all required properties are present
     return data.map(page => ({
       ...page,
       content_type: page.content_type || 'text/html',
@@ -137,12 +137,12 @@ export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
       content_length: page.content_length || 0
     })) as CrawlPage[];
   } catch (error) {
-    console.error("Error al obtener páginas del análisis:", error);
+    console.error("Error getting analysis pages:", error);
     throw error;
   }
 };
 
-// Obtener problemas de una página específica
+// Get issues for a specific page
 export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
   try {
     const { data, error } = await supabase
@@ -152,7 +152,7 @@ export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
       
     if (error) throw error;
     
-    // Asegurar que todas las propiedades necesarias estén presentes
+    // Ensure all required properties are present
     return data.map(issue => ({
       ...issue,
       severity: issue.severity as "low" | "medium" | "high" | string,
@@ -161,12 +161,12 @@ export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
       element: issue.element || ''
     })) as CrawlIssue[];
   } catch (error) {
-    console.error("Error al obtener problemas de la página:", error);
+    console.error("Error getting page issues:", error);
     throw error;
   }
 };
 
-// Obtener enlaces de una página específica
+// Get links for a specific page
 export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
   try {
     const { data, error } = await supabase
@@ -176,7 +176,7 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
       
     if (error) throw error;
     
-    // Asegurar que todas las propiedades necesarias estén presentes
+    // Ensure all required properties are present
     return data.map(link => ({
       ...link,
       is_followed: link.follow !== undefined ? !!link.follow : true,
@@ -186,15 +186,15 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
       anchor_text: link.anchor_text || ''
     })) as CrawlLink[];
   } catch (error) {
-    console.error("Error al obtener enlaces de la página:", error);
+    console.error("Error getting page links:", error);
     throw error;
   }
 };
 
-// Eliminar un registro de análisis y sus datos asociados
+// Delete an analysis record and its associated data
 export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
   try {
-    // Primero buscar todas las páginas asociadas a este análisis
+    // First find all pages associated with this analysis
     const { data: pages, error: pagesError } = await supabase
       .from('seo_crawl_pages')
       .select('id')
@@ -202,11 +202,11 @@ export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
       
     if (pagesError) throw pagesError;
     
-    // Eliminar problemas y enlaces para cada página
+    // Delete issues and links for each page
     if (pages && pages.length > 0) {
       const pageIds = pages.map(page => page.id);
       
-      // Eliminar problemas
+      // Delete issues
       const { error: issuesError } = await supabase
         .from('seo_crawl_issues')
         .delete()
@@ -214,7 +214,7 @@ export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
         
       if (issuesError) throw issuesError;
       
-      // Eliminar enlaces
+      // Delete links
       const { error: linksError } = await supabase
         .from('seo_crawl_links')
         .delete()
@@ -223,7 +223,7 @@ export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
       if (linksError) throw linksError;
     }
     
-    // Eliminar todas las páginas de este análisis
+    // Delete all pages for this analysis
     const { error: deletePageError } = await supabase
       .from('seo_crawl_pages')
       .delete()
@@ -231,7 +231,7 @@ export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
       
     if (deletePageError) throw deletePageError;
     
-    // Finalmente eliminar el registro de análisis
+    // Finally delete the analysis record
     const { error: deleteCrawlError } = await supabase
       .from('seo_crawl_results')
       .delete()
@@ -239,12 +239,12 @@ export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
       
     if (deleteCrawlError) throw deleteCrawlError;
   } catch (error) {
-    console.error("Error al eliminar registro de análisis:", error);
+    console.error("Error deleting analysis record:", error);
     throw error;
   }
 };
 
-// Guardar configuración de análisis para un cliente y dominio
+// Save crawler settings for a client and domain
 export const saveSettings = async (settings: CrawlSettings): Promise<SavedCrawlSettings> => {
   try {
     const { data, error } = await supabase
@@ -264,12 +264,12 @@ export const saveSettings = async (settings: CrawlSettings): Promise<SavedCrawlS
     
     return data as SavedCrawlSettings;
   } catch (error) {
-    console.error("Error al guardar configuración:", error);
+    console.error("Error saving settings:", error);
     throw error;
   }
 };
 
-// Obtener configuración guardada para un cliente y dominio
+// Get saved settings for a client and domain
 export const getSettings = async (clientId: string, domain: string): Promise<SavedCrawlSettings | null> => {
   try {
     const { data, error } = await supabase
@@ -283,7 +283,7 @@ export const getSettings = async (clientId: string, domain: string): Promise<Sav
     
     return data as SavedCrawlSettings;
   } catch (error) {
-    console.error("Error al obtener configuración:", error);
+    console.error("Error getting settings:", error);
     return null;
   }
 };

@@ -4,9 +4,9 @@ import { Client } from '@/types/client.types';
 import { toast } from 'sonner';
 import { 
   getCrawlResults, 
-  deleteCrawlRecord, 
-  CrawlResult 
+  deleteCrawlRecord
 } from '@/services/seo-crawler/api';
+import { CrawlResult } from '@/services/seo-crawler/types';
 import CrawlerDialog from './CrawlerDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

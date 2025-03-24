@@ -4,12 +4,14 @@ import {
   getCrawlResult, 
   getCrawlPages, 
   getPageIssues,
-  getPageLinks,
+  getPageLinks
+} from '@/services/seo-crawler/api';
+import { 
   CrawlResult, 
   CrawlPage, 
   CrawlIssue,
   CrawlLink
-} from '@/services/seo-crawler/api';
+} from '@/services/seo-crawler/types';
 import { toast } from 'sonner';
 
 import CrawlerHeader from './CrawlerHeader';

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CrawlPage, CrawlLink } from '@/services/seo-crawler/types';
@@ -37,7 +36,6 @@ const LinksTab: React.FC<LinksTabProps> = ({
   const [linkType, setLinkType] = useState<'all' | 'internal' | 'external' | 'broken'>('all');
   const [loading, setLoading] = useState(false);
 
-  // Cargar todos los enlaces si no hay página seleccionada
   useEffect(() => {
     const loadAllLinks = async () => {
       if (!selectedPage && pages.length > 0) {
@@ -45,7 +43,6 @@ const LinksTab: React.FC<LinksTabProps> = ({
         try {
           const allLinksData: CrawlLink[] = [];
           
-          // Obtener solo los primeros 10 páginas para no sobrecargar
           const pagesToLoad = pages.slice(0, 10);
           
           for (const page of pagesToLoad) {
@@ -67,7 +64,6 @@ const LinksTab: React.FC<LinksTabProps> = ({
     loadAllLinks();
   }, [selectedPage, pages, pageLinks]);
 
-  // Filtrar enlaces según el tipo y búsqueda
   useEffect(() => {
     let filtered = [...allLinks];
     
@@ -91,7 +87,7 @@ const LinksTab: React.FC<LinksTabProps> = ({
 
   if (pages.length === 0) {
     return (
-      <Alert variant="warning">
+      <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>No se encontraron páginas</AlertTitle>
         <AlertDescription>

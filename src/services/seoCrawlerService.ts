@@ -1,4 +1,4 @@
 
-// Este archivo solo existe para mantener compatibilidad con código existente
-// Redirige todas las llamadas al nuevo módulo estructurado
+// This file only exists for compatibility with existing code
+// Redirects all calls to the new structured module
 export * from './seo-crawler';
