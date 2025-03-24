@@ -13,6 +13,7 @@ interface MetricsVisualizerProps {
   defaultValue?: number;
   description?: string;
   showProgress?: boolean;
+  isInverted?: boolean; // Added isInverted property
 }
 
 export const MetricsVisualizer: React.FC<MetricsVisualizerProps> = ({ 
@@ -23,7 +24,8 @@ export const MetricsVisualizer: React.FC<MetricsVisualizerProps> = ({
   maxValue = 100,
   defaultValue = 50,
   description,
-  showProgress = true
+  showProgress = true,
+  isInverted = false // Initialize with default false
 }) => {
   const [value, setValue] = useState<number>(defaultValue);
 
@@ -31,22 +33,30 @@ export const MetricsVisualizer: React.FC<MetricsVisualizerProps> = ({
     if (text && searchTerm) {
       const extractedValue = extractNumericValue(text, searchTerm, maxValue);
       if (extractedValue !== null) {
-        setValue(extractedValue);
+        // If isInverted is true, invert the value (e.g., 90 becomes 10)
+        setValue(isInverted ? (maxValue - extractedValue) : extractedValue);
       }
     }
-  }, [text, searchTerm, maxValue]);
+  }, [text, searchTerm, maxValue, isInverted]);
 
   const getColorClass = () => {
-    if (value >= 80) return 'text-green-500';
-    if (value >= 60) return 'text-blue-500';
-    if (value >= 40) return 'text-amber-500';
+    // For inverted metrics, we need to invert the color logic too
+    // (since high numbers are now bad and low numbers are good)
+    const valueToEvaluate = isInverted ? (maxValue - value) : value;
+    
+    if (valueToEvaluate >= 80) return 'text-green-500';
+    if (valueToEvaluate >= 60) return 'text-blue-500';
+    if (valueToEvaluate >= 40) return 'text-amber-500';
     return 'text-red-500';
   };
 
   const getProgressClass = () => {
-    if (value >= 80) return 'bg-green-500';
-    if (value >= 60) return 'bg-blue-500';
-    if (value >= 40) return 'bg-amber-500';
+    // Same for progress colors
+    const valueToEvaluate = isInverted ? (maxValue - value) : value;
+    
+    if (valueToEvaluate >= 80) return 'bg-green-500';
+    if (valueToEvaluate >= 60) return 'bg-blue-500';
+    if (valueToEvaluate >= 40) return 'bg-amber-500';
     return 'bg-red-500';
   };
 
