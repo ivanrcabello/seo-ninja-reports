@@ -1,59 +1,87 @@
 
-// SEO Crawler Types
-
-// Basic types
 export interface CrawlResult {
   id: string;
   client_id: string;
-  domain: string;
-  crawl_date: string;
+  url: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  started_at: string;
+  completed_at: string | null;
+  error_message: string | null;
+  total_pages: number;
+  total_issues: number;
+  total_links: number;
+  total_internal_links: number;
+  total_external_links: number;
+  total_broken_links: number;
   pages_crawled: number;
-  issues_count: number;
-  status: 'pending' | 'processing' | 'completed' | 'error' | string;
-  total_time_seconds: number;
+  settings: CrawlSettings;
+  summary?: CrawlSummary;
+  inserted_at: string;
+  updated_at: string;
+}
+
+export interface CrawlSettings {
+  max_pages: number;
+  exclude_urls: string[];
+  include_urls: string[];
+  respect_robots_txt: boolean;
+  user_agent: string;
+  custom_headers?: Record<string, string>;
+  max_depth?: number;
+  crawl_sitemap?: boolean;
+  follow_links?: boolean;
+}
+
+export interface CrawlSummary {
+  total_pages: number;
+  total_issues: number;
+  total_links: number;
+  broken_links: number;
+  redirects: number;
+  critical_issues: number;
+  major_issues: number;
+  minor_issues: number;
+  internal_links: number;
+  external_links: number;
 }
 
 export interface CrawlPage {
   id: string;
   crawl_id: string;
   url: string;
-  title: string | null;
-  meta_description: string | null;
   status_code: number;
+  title: string;
+  meta_description: string;
+  h1: string;
+  canonical_url: string;
+  is_indexable: boolean;
+  redirect_url: string | null;
+  level: number;
+  internal_links_count: number;
+  external_links_count: number;
+  word_count: number;
+  content_length: number;
+  text_ratio: number;
+  load_time_ms: number;
+  image_count: number;
+  h2_count: number;
+  h3_count: number;
+  has_schema_markup: boolean;
+  hreflang_count: number;
   content_type: string;
   issues_count: number;
   crawled_at: string;
-  
-  // Additional properties
-  h1: string | null;
-  h2_count: number;
-  h3_count: number;
-  word_count: number;
-  image_count: number;
-  internal_links_count: number;
-  external_links_count: number;
-  canonical_url: string | null;
-  robots_directives: string | null;
-  meta_robots: string | null;
-  is_indexable: boolean;
-  page_size_kb: number;
-  load_time_ms: number;
-  images_without_alt: number;
-  mobile_friendly: boolean;
-  has_schema_markup: boolean;
-  content_length: number;
 }
 
 export interface CrawlIssue {
   id: string;
   page_id: string;
   issue_type: string;
-  severity: 'low' | 'medium' | 'high' | string;
   description: string;
-  element: string;
-  fix_suggestion: string;
+  severity: string;
   recommended_fix: string;
-  page_url?: string; // Optional field for UI display
+  element: string | null;
+  fix_suggestion: string | null;
 }
 
 export interface CrawlLink {
@@ -62,32 +90,8 @@ export interface CrawlLink {
   url: string;
   anchor_text: string;
   is_internal: boolean;
-  is_followed: boolean;
-  rel_attributes: string;
   is_broken: boolean;
   status_code: number;
-  follow?: boolean; // For compatibility with API
-}
-
-// Crawler configuration
-export interface CrawlSettings {
-  clientId: string;
-  url: string;
-  maxPages?: number;
-  followExternalLinks?: boolean;
-  excludePatterns?: string[];
-  includePatterns?: string[];
-}
-
-// Saved crawler configuration
-export interface SavedCrawlSettings {
-  id: string;
-  client_id: string;
-  domain: string;
-  max_pages: number;
-  exclude_patterns: string[];
-  include_patterns: string[];
-  follow_external_links: boolean;
-  created_at: string;
-  updated_at: string;
+  follow: boolean;
+  rel_attributes: string[] | null;
 }

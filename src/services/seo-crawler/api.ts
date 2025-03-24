@@ -1,289 +1,269 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlSettings, SavedCrawlSettings } from './types';
+import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlSettings } from './types';
 
-// Start a new SEO analysis
-export const startCrawl = async (
+/**
+ * Start a new crawl for a given client
+ */
+export async function startCrawl(
+  clientId: string, 
   url: string, 
-  clientId: string,
-  options?: {
-    maxPages?: number;
-    followExternalLinks?: boolean;
-    excludePatterns?: string[];
-    includePatterns?: string[];
-    brightDataUsername?: string;
-    brightDataPassword?: string;
-  }
-): Promise<{success: boolean, message: string, crawlId?: string}> => {
+  settings: Partial<CrawlSettings> = {}
+): Promise<CrawlResult> {
   try {
-    // First create a new analysis record
-    const { data: crawl, error } = await supabase
-      .from('seo_crawl_results')
-      .insert({
-        domain: url,
-        client_id: clientId,
-        status: 'processing',
-        crawl_date: new Date().toISOString(),
-      })
-      .select()
-      .single();
-      
-    if (error) throw error;
-    
-    // Then call the edge function to start the analysis
-    const { data, error: fnError } = await supabase.functions.invoke('seo-crawler', {
+    // Merge default settings with custom settings
+    const defaultSettings: CrawlSettings = {
+      max_pages: 100,
+      exclude_urls: [],
+      include_urls: [],
+      respect_robots_txt: true,
+      user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+      crawl_sitemap: true,
+      follow_links: true,
+      max_depth: 5
+    };
+
+    const mergedSettings = { ...defaultSettings, ...settings };
+
+    // Call the Edge Function
+    const { data, error } = await supabase.functions.invoke('seo-crawler', {
       body: { 
+        client_id: clientId, 
         url, 
-        crawlId: crawl.id,
-        ...options
+        settings: mergedSettings 
       }
     });
-    
-    if (fnError) {
-      console.error('Error calling seo-crawler function:', fnError);
-      // Update status to error
-      await supabase
-        .from('seo_crawl_results')
-        .update({ status: 'error' })
-        .eq('id', crawl.id);
-        
-      throw fnError;
-    }
-    
-    return {
-      success: true,
-      message: 'SEO analysis started successfully',
-      crawlId: crawl.id
-    };
-  } catch (error) {
-    console.error("Error starting SEO analysis:", error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : 'Unknown error starting analysis'
-    };
-  }
-};
 
-// Get all analysis results for a client
-export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
+    if (error) throw new Error(error.message);
+    if (!data || !data.id) throw new Error('Failed to start crawl');
+    
+    return data;
+  } catch (error) {
+    console.error('Error starting crawl:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all crawl results for a given client
+ */
+export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_results')
+      .from('seo_crawler_crawls')
       .select('*')
       .eq('client_id', clientId)
-      .order('crawl_date', { ascending: false });
-      
+      .order('inserted_at', { ascending: false });
+
     if (error) throw error;
     
     return data as CrawlResult[];
   } catch (error) {
-    console.error("Error getting analysis results:", error);
-    throw error;
+    console.error('Error fetching crawl results:', error);
+    return [];
   }
-};
+}
 
-// Get a specific analysis result
-export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
+/**
+ * Get a specific crawl result by ID
+ */
+export async function getCrawlResult(crawlId: string): Promise<CrawlResult | null> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_results')
+      .from('seo_crawler_crawls')
       .select('*')
       .eq('id', crawlId)
       .single();
-      
+
     if (error) throw error;
     
     return data as CrawlResult;
   } catch (error) {
-    console.error("Error getting analysis result:", error);
-    throw error;
+    console.error('Error fetching crawl result:', error);
+    return null;
   }
-};
+}
 
-// Get pages for an analysis
-export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
+/**
+ * Get all pages for a specific crawl
+ */
+export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_pages')
+      .from('seo_crawler_pages')
       .select('*')
-      .eq('crawl_id', crawlId);
-      
+      .eq('crawl_id', crawlId)
+      .order('level', { ascending: true });
+
     if (error) throw error;
     
-    // Ensure all required properties are present
-    return data.map(page => ({
-      ...page,
-      content_type: page.content_type || 'text/html',
-      issues_count: page.issues_count || 0,
-      crawled_at: page.crawled_at || new Date().toISOString(),
+    return data.map((page: any) => ({
+      id: page.id,
+      crawl_id: page.crawl_id,
+      url: page.url,
+      status_code: page.status_code,
       title: page.title || '',
       meta_description: page.meta_description || '',
       h1: page.h1 || '',
-      h2_count: page.h2_count || 0,
-      h3_count: page.h3_count || 0,
-      word_count: page.word_count || 0,
-      image_count: page.image_count || 0,
-      internal_links_count: page.internal_links_count || 0,
-      external_links_count: page.external_links_count || 0,
       canonical_url: page.canonical_url || '',
-      robots_directives: page.robots_directives || '',
-      meta_robots: page.meta_robots || '',
-      is_indexable: page.is_indexable !== undefined ? page.is_indexable : true,
-      page_size_kb: page.page_size_kb || 0,
-      load_time_ms: page.load_time_ms || 0,
-      images_without_alt: page.images_without_alt || 0,
-      mobile_friendly: page.mobile_friendly !== undefined ? page.mobile_friendly : false,
-      has_schema_markup: page.has_schema_markup !== undefined ? page.has_schema_markup : false,
-      content_length: page.content_length || 0
-    })) as CrawlPage[];
+      is_indexable: page.is_indexable,
+      redirect_url: page.redirect_url,
+      level: page.level,
+      internal_links_count: page.internal_links_count,
+      external_links_count: page.external_links_count,
+      word_count: page.word_count,
+      content_length: page.content_length,
+      text_ratio: page.text_ratio,
+      load_time_ms: page.load_time_ms,
+      image_count: page.image_count,
+      h2_count: page.h2_count,
+      h3_count: page.h3_count,
+      has_schema_markup: page.has_schema_markup,
+      hreflang_count: page.hreflang_count || 0,
+      content_type: page.content_type || '',
+      issues_count: page.issues_count || 0,
+      crawled_at: page.crawled_at || page.inserted_at
+    }));
   } catch (error) {
-    console.error("Error getting analysis pages:", error);
-    throw error;
+    console.error('Error fetching crawl pages:', error);
+    return [];
   }
-};
+}
 
-// Get issues for a specific page
-export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
+/**
+ * Get issues for a specific page
+ */
+export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_issues')
+      .from('seo_crawler_issues')
       .select('*')
       .eq('page_id', pageId);
-      
+
     if (error) throw error;
     
-    // Ensure all required properties are present
-    return data.map(issue => ({
-      ...issue,
-      severity: issue.severity as "low" | "medium" | "high" | string,
-      fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
-      recommended_fix: issue.recommended_fix || '',
-      element: issue.element || ''
-    })) as CrawlIssue[];
+    return data.map((issue: any) => ({
+      id: issue.id,
+      page_id: issue.page_id,
+      issue_type: issue.issue_type,
+      description: issue.description,
+      severity: issue.severity,
+      recommended_fix: issue.recommended_fix,
+      fix_suggestion: issue.fix_suggestion || null,
+      element: issue.element || null
+    }));
   } catch (error) {
-    console.error("Error getting page issues:", error);
-    throw error;
+    console.error('Error fetching page issues:', error);
+    return [];
   }
-};
+}
 
-// Get links for a specific page
-export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
+/**
+ * Get links for a specific page
+ */
+export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_links')
+      .from('seo_crawler_links')
       .select('*')
       .eq('page_id', pageId);
-      
+
     if (error) throw error;
     
-    // Ensure all required properties are present
-    return data.map(link => ({
-      ...link,
-      is_followed: link.follow !== undefined ? !!link.follow : true,
-      is_broken: link.is_broken !== undefined ? link.is_broken : false,
-      status_code: link.status_code || 200,
-      rel_attributes: link.rel_attributes || '',
-      anchor_text: link.anchor_text || ''
-    })) as CrawlLink[];
+    return data.map((link: any) => ({
+      id: link.id,
+      page_id: link.page_id,
+      url: link.url,
+      anchor_text: link.anchor_text || '',
+      is_internal: link.is_internal,
+      is_broken: link.is_broken,
+      status_code: link.status_code,
+      follow: link.follow,
+      rel_attributes: link.rel_attributes || null
+    }));
   } catch (error) {
-    console.error("Error getting page links:", error);
-    throw error;
+    console.error('Error fetching page links:', error);
+    return [];
   }
-};
+}
 
-// Delete an analysis record and its associated data
-export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
+/**
+ * Delete a crawl record
+ */
+export async function deleteCrawlRecord(crawlId: string): Promise<boolean> {
   try {
-    // First find all pages associated with this analysis
-    const { data: pages, error: pagesError } = await supabase
-      .from('seo_crawl_pages')
-      .select('id')
-      .eq('crawl_id', crawlId);
-      
-    if (pagesError) throw pagesError;
-    
-    // Delete issues and links for each page
-    if (pages && pages.length > 0) {
-      const pageIds = pages.map(page => page.id);
-      
-      // Delete issues
-      const { error: issuesError } = await supabase
-        .from('seo_crawl_issues')
-        .delete()
-        .in('page_id', pageIds);
-        
-      if (issuesError) throw issuesError;
-      
-      // Delete links
-      const { error: linksError } = await supabase
-        .from('seo_crawl_links')
-        .delete()
-        .in('page_id', pageIds);
-        
-      if (linksError) throw linksError;
-    }
-    
-    // Delete all pages for this analysis
-    const { error: deletePageError } = await supabase
-      .from('seo_crawl_pages')
-      .delete()
-      .eq('crawl_id', crawlId);
-      
-    if (deletePageError) throw deletePageError;
-    
-    // Finally delete the analysis record
-    const { error: deleteCrawlError } = await supabase
-      .from('seo_crawl_results')
+    const { error } = await supabase
+      .from('seo_crawler_crawls')
       .delete()
       .eq('id', crawlId);
-      
-    if (deleteCrawlError) throw deleteCrawlError;
-  } catch (error) {
-    console.error("Error deleting analysis record:", error);
-    throw error;
-  }
-};
 
-// Save crawler settings for a client and domain
-export const saveSettings = async (settings: CrawlSettings): Promise<SavedCrawlSettings> => {
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting crawl record:', error);
+    return false;
+  }
+}
+
+/**
+ * Save crawler settings
+ */
+export async function saveSettings(
+  clientId: string, 
+  settings: Partial<CrawlSettings>
+): Promise<boolean> {
   try {
-    const { data, error } = await supabase
-      .from('seo_crawl_settings')
+    const { error } = await supabase
+      .from('seo_crawler_settings')
       .upsert({
-        client_id: settings.clientId,
-        domain: settings.url,
-        max_pages: settings.maxPages || 100,
-        follow_external_links: settings.followExternalLinks || false,
-        exclude_patterns: settings.excludePatterns || [],
-        include_patterns: settings.includePatterns || []
-      })
-      .select()
-      .single();
-      
+        client_id: clientId,
+        settings,
+        updated_at: new Date().toISOString()
+      });
+
     if (error) throw error;
     
-    return data as SavedCrawlSettings;
+    return true;
   } catch (error) {
-    console.error("Error saving settings:", error);
-    throw error;
+    console.error('Error saving crawler settings:', error);
+    return false;
   }
-};
+}
 
-// Get saved settings for a client and domain
-export const getSettings = async (clientId: string, domain: string): Promise<SavedCrawlSettings | null> => {
+/**
+ * Get crawler settings for a client
+ */
+export async function getSettings(
+  clientId: string
+): Promise<CrawlSettings | null> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_settings')
-      .select('*')
+      .from('seo_crawler_settings')
+      .select('settings')
       .eq('client_id', clientId)
-      .eq('domain', domain)
-      .maybeSingle();
-      
-    if (error) throw error;
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No settings found, return default settings
+        return {
+          max_pages: 100,
+          exclude_urls: [],
+          include_urls: [],
+          respect_robots_txt: true,
+          user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+          crawl_sitemap: true,
+          follow_links: true,
+          max_depth: 5
+        };
+      }
+      throw error;
+    }
     
-    return data as SavedCrawlSettings;
+    return data.settings;
   } catch (error) {
-    console.error("Error getting settings:", error);
+    console.error('Error fetching crawler settings:', error);
     return null;
   }
-};
+}

@@ -1,148 +1,131 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
+import { CrawlIssue, CrawlLink, CrawlPage } from './types';
 
-// Fetch all crawl results for a client
-export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
+/**
+ * Fetch issue types distribution for a crawl
+ */
+export async function fetchIssueTypesDistribution(crawlId: string) {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_results')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('crawl_date', { ascending: false });
-      
-    if (error) throw error;
-    
-    // Cast the status field to ensure type safety
-    return data.map(result => ({
-      ...result,
-      status: (result.status as "pending" | "processing" | "completed" | "error" | string)
-    })) as CrawlResult[];
-  } catch (error) {
-    console.error("Error retrieving crawl results:", error);
-    throw error;
-  }
-};
-
-// Delete a crawl record and its associated data
-export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
-  try {
-    // First find all pages associated with this crawl
-    const { data: pages, error: pagesError } = await supabase
-      .from('seo_crawl_pages')
-      .select('id')
+      .from('seo_crawler_issues')
+      .select('issue_type, severity')
       .eq('crawl_id', crawlId);
-      
-    if (pagesError) throw pagesError;
+
+    if (error) throw error;
+
+    // Count issues by type and severity
+    const issueTypes: Record<string, { count: number, severity: string }> = {};
     
-    // Delete issues and links for each page
-    if (pages && pages.length > 0) {
-      const pageIds = pages.map(page => page.id);
-      
-      // Delete issues
-      const { error: issuesError } = await supabase
-        .from('seo_crawl_issues')
-        .delete()
-        .in('page_id', pageIds);
-        
-      if (issuesError) throw issuesError;
-      
-      // Delete links
-      const { error: linksError } = await supabase
-        .from('seo_crawl_links')
-        .delete()
-        .in('page_id', pageIds);
-        
-      if (linksError) throw linksError;
-    }
+    data.forEach((issue: any) => {
+      if (!issueTypes[issue.issue_type]) {
+        issueTypes[issue.issue_type] = { count: 0, severity: issue.severity };
+      }
+      issueTypes[issue.issue_type].count++;
+    });
     
-    // Delete all pages for this crawl
-    const { error: deletePageError } = await supabase
-      .from('seo_crawl_pages')
-      .delete()
+    return Object.entries(issueTypes).map(([type, data]) => ({
+      type,
+      count: data.count,
+      severity: data.severity,
+    }));
+  } catch (error) {
+    console.error('Error fetching issue types distribution:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch severity distribution for a crawl
+ */
+export async function fetchSeverityDistribution(crawlId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('seo_crawler_issues')
+      .select('severity')
       .eq('crawl_id', crawlId);
-      
-    if (deletePageError) throw deletePageError;
-    
-    // Finally delete the crawl record
-    const { error: deleteCrawlError } = await supabase
-      .from('seo_crawl_results')
-      .delete()
-      .eq('id', crawlId);
-      
-    if (deleteCrawlError) throw deleteCrawlError;
-  } catch (error) {
-    console.error("Error deleting crawl record:", error);
-    throw error;
-  }
-};
 
-// Fetch a specific crawl result
-export const fetchCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
+    if (error) throw error;
+
+    // Count issues by severity
+    const counts = {
+      critical: 0,
+      major: 0,
+      minor: 0,
+      info: 0,
+    };
+    
+    data.forEach((issue: any) => {
+      if (counts[issue.severity as keyof typeof counts] !== undefined) {
+        counts[issue.severity as keyof typeof counts]++;
+      }
+    });
+    
+    return [
+      { severity: 'critical', count: counts.critical },
+      { severity: 'major', count: counts.major },
+      { severity: 'minor', count: counts.minor },
+      { severity: 'info', count: counts.info },
+    ];
+  } catch (error) {
+    console.error('Error fetching severity distribution:', error);
+    return [];
+  }
+}
+
+/**
+ * Enhanced issue fetching with additional data
+ */
+export async function fetchIssuesWithDetails(crawlId: string): Promise<CrawlIssue[]> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_results')
+      .from('seo_crawler_issues')
       .select('*')
-      .eq('id', crawlId)
-      .single();
-      
-    if (error) throw error;
-    
-    return {
-      ...data,
-      status: (data.status as "pending" | "processing" | "completed" | "error" | string)
-    } as CrawlResult;
-  } catch (error) {
-    console.error("Error retrieving crawl result:", error);
-    throw error;
-  }
-};
+      .eq('crawl_id', crawlId);
 
-// Fetch issues for a specific page
-export const fetchCrawlIssues = async (pageId: string): Promise<CrawlIssue[]> => {
+    if (error) throw error;
+
+    return data.map((issue: any) => ({
+      id: issue.id,
+      page_id: issue.page_id,
+      issue_type: issue.issue_type,
+      description: issue.description,
+      severity: issue.severity,
+      recommended_fix: issue.recommended_fix,
+      element: issue.element || null,
+      fix_suggestion: issue.fix_suggestion || null
+    }));
+  } catch (error) {
+    console.error('Error fetching issues with details:', error);
+    return [];
+  }
+}
+
+/**
+ * Enhanced link fetching with additional data
+ */
+export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[]> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawl_issues')
+      .from('seo_crawler_links')
       .select('*')
-      .eq('page_id', pageId);
-      
-    if (error) throw error;
-    
-    // Cast severity to ensure it matches the type and add missing properties if needed
-    return data.map(issue => ({
-      ...issue,
-      severity: (issue.severity as "low" | "medium" | "high" | string),
-      element: issue.element || '',
-      fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
-      recommended_fix: issue.recommended_fix || ''
-    })) as CrawlIssue[];
-  } catch (error) {
-    console.error("Error retrieving page issues:", error);
-    throw error;
-  }
-};
+      .eq('crawl_id', crawlId);
 
-// Fetch links for a specific page
-export const fetchCrawlLinks = async (pageId: string): Promise<CrawlLink[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('seo_crawl_links')
-      .select('*')
-      .eq('page_id', pageId);
-      
     if (error) throw error;
-    
-    // Convert to CrawlLink type with all required properties
-    return data.map(link => ({
-      ...link,
-      is_followed: link.follow !== undefined ? !!link.follow : true,
-      is_broken: link.is_broken !== undefined ? link.is_broken : false,
-      status_code: link.status_code || 200,
-      rel_attributes: link.rel_attributes || '',
-      anchor_text: link.anchor_text || ''
-    })) as CrawlLink[];
+
+    return data.map((link: any) => ({
+      id: link.id,
+      page_id: link.page_id,
+      url: link.url,
+      anchor_text: link.anchor_text || '',
+      is_internal: link.is_internal,
+      is_broken: link.is_broken,
+      status_code: link.status_code,
+      follow: link.follow,
+      rel_attributes: link.rel_attributes || null
+    }));
   } catch (error) {
-    console.error("Error retrieving page links:", error);
-    throw error;
+    console.error('Error fetching links with details:', error);
+    return [];
   }
-};
+}
