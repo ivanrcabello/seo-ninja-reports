@@ -909,6 +909,357 @@ export type Database = {
           },
         ]
       }
+      seo_crawler_crawls: {
+        Row: {
+          client_id: string | null
+          completed_at: string | null
+          domain: string
+          error_message: string | null
+          id: string
+          inserted_at: string | null
+          pages_crawled: number | null
+          settings: Json
+          started_at: string | null
+          status: string
+          summary: Json | null
+          total_broken_links: number | null
+          total_external_links: number | null
+          total_internal_links: number | null
+          total_issues: number | null
+          total_links: number | null
+          total_pages: number | null
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          client_id?: string | null
+          completed_at?: string | null
+          domain: string
+          error_message?: string | null
+          id?: string
+          inserted_at?: string | null
+          pages_crawled?: number | null
+          settings: Json
+          started_at?: string | null
+          status?: string
+          summary?: Json | null
+          total_broken_links?: number | null
+          total_external_links?: number | null
+          total_internal_links?: number | null
+          total_issues?: number | null
+          total_links?: number | null
+          total_pages?: number | null
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          client_id?: string | null
+          completed_at?: string | null
+          domain?: string
+          error_message?: string | null
+          id?: string
+          inserted_at?: string | null
+          pages_crawled?: number | null
+          settings?: Json
+          started_at?: string | null
+          status?: string
+          summary?: Json | null
+          total_broken_links?: number | null
+          total_external_links?: number | null
+          total_internal_links?: number | null
+          total_issues?: number | null
+          total_links?: number | null
+          total_pages?: number | null
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawler_crawls_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawler_issues: {
+        Row: {
+          crawl_id: string | null
+          description: string
+          element: string | null
+          fix_suggestion: string | null
+          id: string
+          issue_type: string
+          page_id: string | null
+          page_url: string | null
+          recommended_fix: string | null
+          severity: string
+        }
+        Insert: {
+          crawl_id?: string | null
+          description: string
+          element?: string | null
+          fix_suggestion?: string | null
+          id?: string
+          issue_type: string
+          page_id?: string | null
+          page_url?: string | null
+          recommended_fix?: string | null
+          severity: string
+        }
+        Update: {
+          crawl_id?: string | null
+          description?: string
+          element?: string | null
+          fix_suggestion?: string | null
+          id?: string
+          issue_type?: string
+          page_id?: string | null
+          page_url?: string | null
+          recommended_fix?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawler_issues_crawl_id_fkey"
+            columns: ["crawl_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_crawls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_issues_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawler_links: {
+        Row: {
+          anchor_text: string | null
+          crawl_id: string | null
+          follow: boolean | null
+          id: string
+          is_broken: boolean | null
+          is_internal: boolean | null
+          page_id: string | null
+          rel_attributes: string[] | null
+          status_code: number | null
+          url: string
+        }
+        Insert: {
+          anchor_text?: string | null
+          crawl_id?: string | null
+          follow?: boolean | null
+          id?: string
+          is_broken?: boolean | null
+          is_internal?: boolean | null
+          page_id?: string | null
+          rel_attributes?: string[] | null
+          status_code?: number | null
+          url: string
+        }
+        Update: {
+          anchor_text?: string | null
+          crawl_id?: string | null
+          follow?: boolean | null
+          id?: string
+          is_broken?: boolean | null
+          is_internal?: boolean | null
+          page_id?: string | null
+          rel_attributes?: string[] | null
+          status_code?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawler_links_crawl_id_fkey"
+            columns: ["crawl_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_crawls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_links_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawler_pages: {
+        Row: {
+          canonical_url: string | null
+          content_length: number | null
+          content_type: string | null
+          crawl_id: string | null
+          crawled_at: string | null
+          external_links_count: number | null
+          h1: string | null
+          h2_count: number | null
+          h3_count: number | null
+          has_schema_markup: boolean | null
+          hreflang_count: number | null
+          id: string
+          image_count: number | null
+          images_without_alt: number | null
+          internal_links_count: number | null
+          is_indexable: boolean | null
+          issues_count: number | null
+          level: number | null
+          load_time_ms: number | null
+          meta_description: string | null
+          meta_robots: string | null
+          mobile_friendly: boolean | null
+          page_size_kb: number | null
+          redirect_url: string | null
+          robots_directives: string | null
+          status_code: number | null
+          text_ratio: number | null
+          title: string | null
+          url: string
+          word_count: number | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          content_length?: number | null
+          content_type?: string | null
+          crawl_id?: string | null
+          crawled_at?: string | null
+          external_links_count?: number | null
+          h1?: string | null
+          h2_count?: number | null
+          h3_count?: number | null
+          has_schema_markup?: boolean | null
+          hreflang_count?: number | null
+          id?: string
+          image_count?: number | null
+          images_without_alt?: number | null
+          internal_links_count?: number | null
+          is_indexable?: boolean | null
+          issues_count?: number | null
+          level?: number | null
+          load_time_ms?: number | null
+          meta_description?: string | null
+          meta_robots?: string | null
+          mobile_friendly?: boolean | null
+          page_size_kb?: number | null
+          redirect_url?: string | null
+          robots_directives?: string | null
+          status_code?: number | null
+          text_ratio?: number | null
+          title?: string | null
+          url: string
+          word_count?: number | null
+        }
+        Update: {
+          canonical_url?: string | null
+          content_length?: number | null
+          content_type?: string | null
+          crawl_id?: string | null
+          crawled_at?: string | null
+          external_links_count?: number | null
+          h1?: string | null
+          h2_count?: number | null
+          h3_count?: number | null
+          has_schema_markup?: boolean | null
+          hreflang_count?: number | null
+          id?: string
+          image_count?: number | null
+          images_without_alt?: number | null
+          internal_links_count?: number | null
+          is_indexable?: boolean | null
+          issues_count?: number | null
+          level?: number | null
+          load_time_ms?: number | null
+          meta_description?: string | null
+          meta_robots?: string | null
+          mobile_friendly?: boolean | null
+          page_size_kb?: number | null
+          redirect_url?: string | null
+          robots_directives?: string | null
+          status_code?: number | null
+          text_ratio?: number | null
+          title?: string | null
+          url?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawler_pages_crawl_id_fkey"
+            columns: ["crawl_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_crawls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawler_settings: {
+        Row: {
+          client_id: string | null
+          crawl_sitemap: boolean | null
+          created_at: string | null
+          custom_headers: Json | null
+          domain: string
+          exclude_patterns: string[] | null
+          follow_external_links: boolean | null
+          follow_links: boolean | null
+          id: string
+          include_patterns: string[] | null
+          max_depth: number | null
+          max_pages: number | null
+          respect_robots_txt: boolean | null
+          updated_at: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          crawl_sitemap?: boolean | null
+          created_at?: string | null
+          custom_headers?: Json | null
+          domain: string
+          exclude_patterns?: string[] | null
+          follow_external_links?: boolean | null
+          follow_links?: boolean | null
+          id?: string
+          include_patterns?: string[] | null
+          max_depth?: number | null
+          max_pages?: number | null
+          respect_robots_txt?: boolean | null
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          crawl_sitemap?: boolean | null
+          created_at?: string | null
+          custom_headers?: Json | null
+          domain?: string
+          exclude_patterns?: string[] | null
+          follow_external_links?: boolean | null
+          follow_links?: boolean | null
+          id?: string
+          include_patterns?: string[] | null
+          max_depth?: number | null
+          max_pages?: number | null
+          respect_robots_txt?: boolean | null
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawler_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seo_keywords: {
         Row: {
           created_at: string | null

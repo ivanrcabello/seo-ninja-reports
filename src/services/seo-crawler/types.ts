@@ -18,6 +18,7 @@ export interface CrawlResult {
   summary?: CrawlSummary;
   inserted_at: string;
   updated_at: string;
+  domain: string;
 }
 
 export interface CrawlSettings {
@@ -82,6 +83,7 @@ export interface CrawlIssue {
   recommended_fix: string;
   element: string | null;
   fix_suggestion: string | null;
+  page_url?: string;
 }
 
 export interface CrawlLink {
@@ -94,4 +96,22 @@ export interface CrawlLink {
   status_code: number;
   follow: boolean;
   rel_attributes: string[] | null;
+}
+
+export interface SavedCrawlSettings {
+  id: string;
+  client_id: string;
+  domain: string;
+  max_pages: number;
+  exclude_patterns: string[];
+  include_patterns: string[];
+  follow_external_links: boolean;
+  respect_robots_txt: boolean;
+  user_agent: string;
+  max_depth: number;
+  crawl_sitemap: boolean;
+  follow_links: boolean;
+  custom_headers?: Record<string, string>;
+  created_at: string;
+  updated_at: string;
 }

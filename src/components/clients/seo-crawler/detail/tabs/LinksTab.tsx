@@ -34,7 +34,7 @@ const LinksTab: React.FC<LinksTabProps> = ({
   if (!selectedPage) {
     return (
       <div className="space-y-4">
-        <Alert variant="default">
+        <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Selecciona una página</AlertTitle>
           <AlertDescription>

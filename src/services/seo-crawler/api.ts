@@ -24,20 +24,43 @@ export async function startCrawl(
     };
 
     const mergedSettings = { ...defaultSettings, ...settings };
+    
+    // First, create a crawl record
+    const { data: crawlRecord, error: insertError } = await supabase
+      .from('seo_crawler_crawls')
+      .insert({
+        client_id: clientId,
+        url: url,
+        domain: new URL(url.startsWith('http') ? url : `https://${url}`).hostname,
+        status: 'queued',
+        settings: mergedSettings
+      })
+      .select()
+      .single();
+    
+    if (insertError) throw new Error(`Failed to create crawl record: ${insertError.message}`);
+    if (!crawlRecord) throw new Error('Failed to create crawl record: No data returned');
 
-    // Call the Edge Function
+    // Call the Edge Function to start the crawl
     const { data, error } = await supabase.functions.invoke('seo-crawler', {
       body: { 
-        client_id: clientId, 
+        crawlId: crawlRecord.id,
         url, 
         settings: mergedSettings 
       }
     });
 
-    if (error) throw new Error(error.message);
-    if (!data || !data.id) throw new Error('Failed to start crawl');
+    if (error) throw new Error(`Edge function error: ${error.message}`);
     
-    return data;
+    // Update the crawl record with processing status
+    const { error: updateError } = await supabase
+      .from('seo_crawler_crawls')
+      .update({ status: 'processing' })
+      .eq('id', crawlRecord.id);
+    
+    if (updateError) console.error('Error updating crawl status:', updateError);
+    
+    return crawlRecord as CrawlResult;
   } catch (error) {
     console.error('Error starting crawl:', error);
     throw error;
@@ -214,11 +237,24 @@ export async function saveSettings(
   settings: Partial<CrawlSettings>
 ): Promise<boolean> {
   try {
+    // Extract domain from settings or use a default
+    const domain = settings.include_urls && settings.include_urls.length > 0 
+      ? new URL(settings.include_urls[0]).hostname 
+      : 'default-domain.com';
+      
     const { error } = await supabase
       .from('seo_crawler_settings')
       .upsert({
         client_id: clientId,
-        settings,
+        domain: domain,
+        max_pages: settings.max_pages || 100,
+        exclude_patterns: settings.exclude_urls || [],
+        include_patterns: settings.include_urls || [],
+        follow_external_links: settings.follow_links || false,
+        respect_robots_txt: settings.respect_robots_txt || true,
+        user_agent: settings.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+        max_depth: settings.max_depth || 5,
+        crawl_sitemap: settings.crawl_sitemap || true,
         updated_at: new Date().toISOString()
       });
 
@@ -240,28 +276,39 @@ export async function getSettings(
   try {
     const { data, error } = await supabase
       .from('seo_crawler_settings')
-      .select('settings')
+      .select('*')
       .eq('client_id', clientId)
-      .single();
+      .order('updated_at', { ascending: false })
+      .limit(1);
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No settings found, return default settings
-        return {
-          max_pages: 100,
-          exclude_urls: [],
-          include_urls: [],
-          respect_robots_txt: true,
-          user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-          crawl_sitemap: true,
-          follow_links: true,
-          max_depth: 5
-        };
-      }
-      throw error;
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      // No settings found, return default settings
+      return {
+        max_pages: 100,
+        exclude_urls: [],
+        include_urls: [],
+        respect_robots_txt: true,
+        user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+        crawl_sitemap: true,
+        follow_links: true,
+        max_depth: 5
+      };
     }
     
-    return data.settings;
+    // Convert from DB format to the CrawlSettings format
+    return {
+      max_pages: data[0].max_pages,
+      exclude_urls: data[0].exclude_patterns || [],
+      include_urls: data[0].include_patterns || [],
+      respect_robots_txt: data[0].respect_robots_txt,
+      user_agent: data[0].user_agent,
+      crawl_sitemap: data[0].crawl_sitemap,
+      follow_links: data[0].follow_external_links,
+      max_depth: data[0].max_depth,
+      custom_headers: data[0].custom_headers
+    };
   } catch (error) {
     console.error('Error fetching crawler settings:', error);
     return null;

@@ -24,7 +24,7 @@ const PagesTab: React.FC<PagesTabProps> = ({
 }) => {
   if (!pages || pages.length === 0) {
     return (
-      <Alert variant="default">
+      <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>No se encontraron páginas</AlertTitle>
         <AlertDescription>
