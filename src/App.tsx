@@ -33,14 +33,12 @@ function App() {
               <Route path="/auth" element={<Auth />} />
               
               {/* Protected routes */}
-              <Route element={<AuthGuard />}>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/clients/:id" element={<ClientDetail />} />
-                <Route path="/clients/:clientId/crawl/:crawlId" element={<CrawlerDetailPage />} />
-                <Route path="/clients/:clientId/reports/:id" element={<ReportDetail />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
+              <Route path="/" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
+              <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+              <Route path="/clients/:id" element={<AuthGuard><ClientDetail /></AuthGuard>} />
+              <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
+              <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
+              <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
 
               {/* Default route - redirects to dashboard */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

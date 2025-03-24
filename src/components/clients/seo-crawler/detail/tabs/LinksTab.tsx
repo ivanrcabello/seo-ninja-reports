@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { CrawlPage, CrawlLink } from '@/services/seo-crawler/types';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, ExternalLink, Link, Info } from 'lucide-react';
-import { 
-  Select, 
-  SelectContent, 
-  SelectGroup, 
-  SelectItem, 
-  SelectLabel, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+import { AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { getPageLinks } from '@/services/seo-crawler/api';
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ExternalLink, Link as LinkIcon, Check, X } from 'lucide-react';
 
 interface LinksTabProps {
   pages: CrawlPage[];
@@ -30,180 +29,151 @@ const LinksTab: React.FC<LinksTabProps> = ({
   selectedPage,
   onPageSelect
 }) => {
-  const [allLinks, setAllLinks] = useState<CrawlLink[]>([]);
-  const [filteredLinks, setFilteredLinks] = useState<CrawlLink[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [linkType, setLinkType] = useState<'all' | 'internal' | 'external' | 'broken'>('all');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const loadAllLinks = async () => {
-      if (!selectedPage && pages.length > 0) {
-        setLoading(true);
-        try {
-          const allLinksData: CrawlLink[] = [];
-          
-          const pagesToLoad = pages.slice(0, 10);
-          
-          for (const page of pagesToLoad) {
-            const links = await getPageLinks(page.id);
-            allLinksData.push(...links);
-          }
-          
-          setAllLinks(allLinksData);
-        } catch (error) {
-          console.error('Error loading all links:', error);
-        } finally {
-          setLoading(false);
-        }
-      } else if (selectedPage && pageLinks) {
-        setAllLinks(pageLinks);
-      }
-    };
-    
-    loadAllLinks();
-  }, [selectedPage, pages, pageLinks]);
-
-  useEffect(() => {
-    let filtered = [...allLinks];
-    
-    if (linkType === 'internal') {
-      filtered = filtered.filter(link => link.is_internal);
-    } else if (linkType === 'external') {
-      filtered = filtered.filter(link => !link.is_internal);
-    } else if (linkType === 'broken') {
-      filtered = filtered.filter(link => link.is_broken);
-    }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(link => 
-        link.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        link.anchor_text?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setFilteredLinks(filtered);
-  }, [allLinks, linkType, searchTerm]);
-
-  if (pages.length === 0) {
+  
+  if (!selectedPage) {
     return (
-      <Alert>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>No se encontraron páginas</AlertTitle>
-        <AlertDescription>
-          No se pudieron encontrar páginas para analizar. Esto puede deberse a problemas de acceso al sitio web 
-          o a errores durante el análisis.
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-4">
+        <Alert variant="default">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Selecciona una página</AlertTitle>
+          <AlertDescription>
+            Para ver los enlaces, primero selecciona una página de la lista.
+          </AlertDescription>
+        </Alert>
+        
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold mb-4">Páginas analizadas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {pages.slice(0, 9).map(page => (
+                <Card 
+                  key={page.id}
+                  className="hover:bg-muted cursor-pointer"
+                  onClick={() => onPageSelect(page)}
+                >
+                  <CardContent className="p-3">
+                    <p className="text-sm truncate">{page.url}</p>
+                  </CardContent>
+                </Card>
+              ))}
+              {pages.length > 9 && (
+                <Card className="border border-dashed hover:bg-muted cursor-pointer">
+                  <CardContent className="p-3 flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground">+{pages.length - 9} más</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
+  
+  const filteredLinks = pageLinks.filter(link => 
+    link.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    link.anchor_text.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <span>Enlaces {selectedPage ? `de ${selectedPage.url}` : 'del sitio'}</span>
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <h3 className="text-lg font-semibold">
+              Enlaces de <span className="opacity-75 text-sm ml-1 font-normal">{selectedPage.url}</span>
+            </h3>
+            
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-gray-100">
+                {pageLinks.length} enlaces
+              </Badge>
+              
+              <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                {pageLinks.filter(l => l.is_internal).length} internos
+              </Badge>
+              
+              <Badge variant="outline" className="bg-amber-100 text-amber-800">
+                {pageLinks.filter(l => !l.is_internal).length} externos
+              </Badge>
+            </div>
+          </div>
           
-          <Select value={linkType} onValueChange={(value) => setLinkType(value as any)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filtrar por tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Tipo de enlace</SelectLabel>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="internal">Internos</SelectItem>
-                <SelectItem value="external">Externos</SelectItem>
-                <SelectItem value="broken">Rotos</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </CardTitle>
-        
-        <div className="relative mt-2">
           <Input
-            type="search"
             placeholder="Buscar enlaces..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
+            className="mb-4"
           />
-          <Info className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        </div>
-      </CardHeader>
-      
-      <CardContent>
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : filteredLinks.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>URL</TableHead>
-                <TableHead>Texto de ancla</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLinks.map(link => (
-                <TableRow key={link.id}>
-                  <TableCell className="max-w-[300px] truncate">
-                    <a 
-                      href={link.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center"
-                    >
-                      {link.url}
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </TableCell>
-                  <TableCell>{link.anchor_text || 'N/A'}</TableCell>
-                  <TableCell>
-                    {link.is_internal ? (
-                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                        <Link className="h-3 w-3 mr-1" /> Interno
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                        <ExternalLink className="h-3 w-3 mr-1" /> Externo
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {link.is_broken ? (
-                      <Badge variant="destructive">
-                        Roto
-                      </Badge>
-                    ) : link.status_code >= 200 && link.status_code < 300 ? (
-                      <Badge variant="outline" className="bg-green-100 text-green-800">
-                        {link.status_code}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-amber-100 text-amber-800">
-                        {link.status_code || 'Desconocido'}
-                      </Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="py-12 text-center">
-            <p className="text-muted-foreground">
-              {searchTerm || linkType !== 'all' 
-                ? "No se encontraron enlaces con los filtros aplicados" 
-                : "No hay enlaces disponibles"
-              }
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          
+          {filteredLinks.length > 0 ? (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>URL</TableHead>
+                    <TableHead>Texto</TableHead>
+                    <TableHead className="hidden md:table-cell">Tipo</TableHead>
+                    <TableHead className="hidden md:table-cell">Estado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLinks.map(link => (
+                    <TableRow key={link.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                          <a 
+                            href={link.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm truncate hover:underline max-w-[200px]"
+                          >
+                            {link.url}
+                          </a>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm opacity-90 truncate max-w-[150px] block">
+                          {link.anchor_text || <em className="opacity-50">Sin texto</em>}
+                        </span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {link.is_internal ? (
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                            Interno
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-100 text-amber-800">
+                            <ExternalLink className="h-3 w-3 mr-1" /> Externo
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {link.is_broken ? (
+                          <Badge variant="destructive">
+                            <X className="h-3 w-3 mr-1" /> Error {link.status_code}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-green-100 text-green-800">
+                            <Check className="h-3 w-3 mr-1" /> {link.status_code}
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 border rounded-md">
+              <p className="text-muted-foreground">No se encontraron enlaces que coincidan con la búsqueda</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
