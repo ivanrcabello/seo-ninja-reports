@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { handleServiceError } from '@/services/api/baseService';
 import { toast } from 'sonner';
@@ -41,23 +40,60 @@ export const invokeCrawlerFunction = async (settings: CrawlSettings, crawlId: st
       crawlId 
     });
     
-    const response = await supabase.functions.invoke('seo-crawler', {
-      body: {
-        ...settings,
-        crawlId
-      },
-      method: 'POST'
-    });
-    
+    // Ensure we have a valid URL
+    if (!settings.url) {
+      throw new Error('URL is required');
+    }
+
+    // Try to validate URL format
+    try {
+      new URL(settings.url);
+    } catch (e) {
+      throw new Error('Invalid URL format');
+    }
+
+    // Make the function call with explicit timeout
+    const response = await Promise.race([
+      supabase.functions.invoke('seo-crawler', {
+        body: {
+          ...settings,
+          crawlId
+        },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), 30000)
+      )
+    ]);
+
+    // Check for response error
     if (response.error) {
       console.error('Edge function error response:', response.error);
       throw new Error(response.error.message || 'Error al iniciar el análisis SEO');
+    }
+
+    // Validate response data
+    if (!response.data) {
+      throw new Error('No se recibió respuesta del servidor');
     }
     
     return response.data;
   } catch (error: any) {
     console.error('Error in invokeCrawlerFunction:', error);
-    return handleServiceError(error, 'Error al invocar la función de análisis SEO');
+    
+    // Format error message based on error type
+    let errorMessage = 'Error al invocar la función de análisis SEO';
+    if (error.message === 'Failed to fetch') {
+      errorMessage = 'No se pudo conectar con el servidor. Por favor, inténtelo de nuevo.';
+    } else if (error.message === 'Request timed out') {
+      errorMessage = 'La solicitud ha tardado demasiado. Por favor, inténtelo de nuevo.';
+    }
+
+    toast.error(errorMessage);
+    return handleServiceError(error, errorMessage);
   }
 };
 

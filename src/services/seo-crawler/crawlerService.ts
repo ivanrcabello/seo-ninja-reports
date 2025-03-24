@@ -33,13 +33,6 @@ export const startCrawl = async (settings: CrawlSettings) => {
       }
     }
     
-    // Verificar que la URL termine con una barra si no tiene ruta
-    const urlObj = new URL(settings.url);
-    if (urlObj.pathname === "" || urlObj.pathname === "/") {
-      urlObj.pathname = "/";
-      settings.url = urlObj.toString();
-    }
-    
     // Primero, crear un registro inicial en la base de datos
     const crawlResult = await createInitialCrawlRecord(settings);
     
@@ -76,11 +69,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
       }
       
       // Lanzar el error para que se maneje en el nivel superior
-      if (invokeError.message && invokeError.message.includes('WORKER_LIMIT')) {
-        throw new Error('El servidor está ocupado. Por favor, inténtelo de nuevo en unos minutos.');
-      } else {
-        throw invokeError;
-      }
+      throw invokeError;
     }
   } catch (error: any) {
     console.error('Error starting crawl:', error);
@@ -88,3 +77,4 @@ export const startCrawl = async (settings: CrawlSettings) => {
     throw error;
   }
 };
+
