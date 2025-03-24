@@ -62,13 +62,13 @@ export const startCrawl = async (settings: CrawlSettings) => {
     try {
       console.log('Llamando al edge function para iniciar el análisis');
       
-      // Timeout más largo para la llamada
+      // Create timeout for the function call - we'll handle this client-side instead of passing it to the function
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
       
+      // Modified to remove the signal from the options object, as it's not supported
       const response = await supabase.functions.invoke('seo-crawler', {
-        body: { url: settings.url, crawlId: crawlResult.id },
-        signal: controller.signal
+        body: { url: settings.url, crawlId: crawlResult.id }
       });
       
       clearTimeout(timeoutId);
