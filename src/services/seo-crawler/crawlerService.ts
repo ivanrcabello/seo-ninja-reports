@@ -66,7 +66,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
       
-      // Modified to remove the signal from the options object, as it's not supported
+      // Edge function invocation (without the signal parameter)
       const response = await supabase.functions.invoke('seo-crawler', {
         body: { url: settings.url, crawlId: crawlResult.id }
       });
