@@ -10,7 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { Client } from '@/types/client.types';
 import { startCrawl, getSettings } from '@/services/seo-crawler';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash } from 'lucide-react';
+import { Loader2, Plus, Trash, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CrawlerDialogProps {
   client: Client;
@@ -34,6 +35,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   const [includePatterns, setIncludePatterns] = useState<string[]>([]);
   const [newPattern, setNewPattern] = useState('');
   const [patternType, setPatternType] = useState<'include' | 'exclude'>('exclude');
+  const [error, setError] = useState<string | null>(null);
 
   // Cargar configuraciones guardadas cuando se abre el diálogo
   useEffect(() => {
@@ -45,6 +47,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   const loadSavedSettings = async (domain: string) => {
     try {
       setIsLoadingSettings(true);
+      setError(null);
       const savedSettings = await getSettings(client.id, domain);
       
       if (savedSettings) {
@@ -94,6 +97,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   const handleStartCrawl = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
       await startCrawl({
         url,
@@ -108,6 +112,8 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       if (onSuccess) onSuccess();
       
     } catch (error: any) {
+      console.error('Error starting crawl:', error);
+      setError(error.message || 'Error al iniciar el análisis');
       toast.error(error.message || 'Error al iniciar el análisis');
     } finally {
       setIsLoading(false);
@@ -123,6 +129,13 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
             Analizar el sitio web {client.name} en busca de problemas técnicos SEO
           </DialogDescription>
         </DialogHeader>
+        
+        {error && (
+          <Alert variant="destructive" className="my-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         
         <div className="space-y-6 py-4">
           <div className="space-y-2">

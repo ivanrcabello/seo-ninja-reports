@@ -36,19 +36,27 @@ export const createInitialCrawlRecord = async (settings: CrawlSettings): Promise
 
 export const invokeCrawlerFunction = async (settings: CrawlSettings, crawlId: string) => {
   try {
+    console.log('Invoking SEO crawler function with settings:', { 
+      ...settings, 
+      crawlId 
+    });
+    
     const response = await supabase.functions.invoke('seo-crawler', {
       body: {
         ...settings,
         crawlId
-      }
+      },
+      method: 'POST'
     });
     
     if (response.error) {
+      console.error('Edge function error response:', response.error);
       throw new Error(response.error.message || 'Error al iniciar el análisis SEO');
     }
     
     return response.data;
   } catch (error: any) {
+    console.error('Error in invokeCrawlerFunction:', error);
     return handleServiceError(error, 'Error al invocar la función de análisis SEO');
   }
 };
