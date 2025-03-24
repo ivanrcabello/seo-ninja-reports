@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  fetchCrawlResult, 
-  fetchCrawlPages, 
+  getCrawlResult, 
+  getCrawlPages, 
   fetchCrawlIssues,
   fetchCrawlLinks,
-  getCrawlPages,
   CrawlResult, 
   CrawlPage, 
   CrawlIssue,
@@ -49,7 +49,7 @@ const CrawlerDetailPage: React.FC = () => {
         
         console.log(`Loading crawl result for ID: ${crawlId}`);
         
-        const result = await fetchCrawlResult(crawlId);
+        const result = await getCrawlResult(crawlId);
         setCrawlResult(result);
         
         const pagesData = await getCrawlPages(crawlId);
