@@ -4,6 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
+import { Separator } from '@/components/ui/separator';
 
 interface ValueSerpSettingsProps {
   valueSerpApiKey: string;
@@ -35,35 +38,42 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         </Alert>
       )}
       
-      <div className="space-y-2">
-        <Label htmlFor="valueSerpApiKey">API Key de Value SERP</Label>
-        <Input
-          id="valueSerpApiKey"
-          type="password"
-          value={valueSerpApiKey}
-          onChange={(e) => setValueSerpApiKey(e.target.value)}
-          className="glass-input"
-          placeholder="vsrp_..."
-          required
-        />
-        <p className="text-xs text-muted-foreground">
-          Tu clave API de Value SERP para análisis de perfiles de negocio. Obtén una clave en <a href="https://www.valueserp.com/signup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">valueserp.com</a>
-        </p>
-      </div>
-
-      <div className="pt-4 border-t border-border">
-        <h3 className="text-lg font-medium mb-4">Configuración de Bright Data</h3>
-        
-        <div className="space-y-4">
+      <Card className="bg-background/50 border border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-medium">Value SERP</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="brightDataUsername">Usuario de Bright Data</Label>
+            <Label htmlFor="valueSerpApiKey">API Key de Value SERP</Label>
+            <Input
+              id="valueSerpApiKey"
+              type="password"
+              value={valueSerpApiKey}
+              onChange={(e) => setValueSerpApiKey(e.target.value)}
+              className="glass-input"
+              placeholder="vsrp_..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Tu clave API de Value SERP para análisis de perfiles de negocio. Obtén una clave en <a href="https://www.valueserp.com/signup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">valueserp.com</a>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-background/50 border border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-medium">Configuración de Bright Data</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="brightDataUsername">Usuario de Bright Data (zone)</Label>
             <Input
               id="brightDataUsername"
               type="text"
               value={brightDataUsername}
               onChange={(e) => setBrightDataUsername(e.target.value)}
               className="glass-input"
-              placeholder="brd-customer-..."
+              placeholder="brd-customer-hl_cbc2d791-zone-web_unlocker1"
             />
             <p className="text-xs text-muted-foreground">
               Tu nombre de usuario de Bright Data para el Web Unlocker. Por defecto: brd-customer-hl_cbc2d791-zone-web_unlocker1
@@ -84,8 +94,8 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               Tu contraseña de Bright Data para el Web Unlocker. Por defecto: 5d024usr515b
             </p>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

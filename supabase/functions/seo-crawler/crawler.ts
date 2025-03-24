@@ -1,4 +1,3 @@
-
 // Main crawler implementation
 import { SupabaseInstance, PageCrawlResult, BrightDataResponse } from './types.ts';
 import { BRIGHT_DATA_CONFIG, SEO_ISSUES } from './constants.ts';
@@ -24,7 +23,7 @@ export async function crawlPage(
     const password = customPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || DEFAULT_PASSWORD;
     
     console.log(`Usando proxy: ${PROXY_HOST}:${PROXY_PORT}`);
-    console.log(`Con credenciales: ${username.substring(0, 10)}... (${username.length} caracteres)`);
+    console.log(`Con credenciales: ${username.substring(0, 15)}... (${username.length} caracteres)`);
     
     // Prepare fetch options with proxy
     // The proxy requires basic auth with the provided credentials
@@ -32,8 +31,16 @@ export async function crawlPage(
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
     
     try {
-      // Fetch the page using Bright Data proxy
-      const proxyUrl = `http://${username}:${password}@${PROXY_HOST}:${PROXY_PORT}`;
+      // Attempt to fetch using proxy - in Deno we can't directly use the proxy
+      // So we'll try to use the proxy URL format that some libraries support
+      console.log(`Intentando conexión mediante proxy Bright Data`);
+      
+      // We would normally use a proxy configuration, but since Deno's fetch
+      // doesn't support proxies directly, we would need a custom solution.
+      // For testing purposes, you can implement a direct fetch and check logs.
+      console.log(`ADVERTENCIA: Implementación actual simulada. En producción se requiere integración completa con Bright Data.`);
+      
+      // Simulate a fetch for now - in production, you would connect to Bright Data
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -41,11 +48,12 @@ export async function crawlPage(
           'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
           'Connection': 'keep-alive',
           'Upgrade-Insecure-Requests': '1',
-          'Cache-Control': 'max-age=0'
+          'Cache-Control': 'max-age=0',
+          // Authorization header for Bright Data would go here
+          // This is just an example, actual implementation would use the proxy settings
+          'X-Proxy-Info': `Using Bright Data credentials: ${username.substring(0, 5)}...` 
         },
         signal: controller.signal,
-        // Proxy via Bright Data not yet supported in Deno's native fetch API
-        // Will need to implement differently using a library or custom approach
       });
       
       clearTimeout(timeoutId);

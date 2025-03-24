@@ -10,6 +10,12 @@ export const startCrawlService = async (url: string, clientId: string) => {
     const brightDataUsername = localStorage.getItem('brightDataUsername') || undefined;
     const brightDataPassword = localStorage.getItem('brightDataPassword') || undefined;
     
+    if (brightDataUsername && brightDataPassword) {
+      console.log(`Using custom Bright Data credentials: ${brightDataUsername.substring(0, 10)}...`);
+    } else {
+      console.log('Using default Bright Data credentials');
+    }
+    
     toast.info('Iniciando análisis SEO...');
     
     // Process URL - remove protocol if exists

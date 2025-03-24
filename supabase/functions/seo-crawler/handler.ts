@@ -35,6 +35,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       const { url, crawlId, brightDataUsername, brightDataPassword } = requestData;
       
       console.log(`Parámetros recibidos - URL: ${url}, CrawlID: ${crawlId}`);
+      console.log(`Credenciales de Bright Data recibidas: ${brightDataUsername ? 'Sí' : 'No'}, ${brightDataPassword ? 'Sí' : 'No'}`);
       
       if (!url || !crawlId) {
         console.error('URL y crawlId son obligatorios');
@@ -46,8 +47,6 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       
       // Verificar que las credenciales estén configuradas
       // Priorizar las variables de entorno, luego los parámetros de la solicitud, y finalmente los valores predeterminados
-      const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
-      const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID');
       const username = brightDataUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || '';
       const password = brightDataPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
       

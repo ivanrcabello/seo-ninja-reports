@@ -10,3 +10,6 @@ export * from './settingsService';
 
 // Re-export main crawler service functions
 export * from './crawlerService';
+
+// Re-export constants
+export * from './constants';

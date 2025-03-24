@@ -104,10 +104,10 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
       title="Configuración de APIs"
       description="Configura las claves de API necesarias para las funcionalidades de la plataforma."
       onSave={saveSettings}
-      saving={saving}
+      isSaving={saving}
     >
       <Tabs defaultValue="openai" className="w-full">
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 w-full justify-start">
           <TabsTrigger value="openai">OpenAI</TabsTrigger>
           <TabsTrigger value="google">Google</TabsTrigger>
           <TabsTrigger value="valueserp">Value SERP</TabsTrigger>
@@ -123,7 +123,7 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
         
         <TabsContent value="google">
           <GoogleSettings
-            googleKey={googleKey}
+            googleApiKey={googleKey}
             setGoogleKey={setGoogleKey}
             hasConfiguredGoogle={hasConfiguredGoogle}
           />

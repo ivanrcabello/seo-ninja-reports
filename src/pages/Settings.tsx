@@ -11,7 +11,7 @@ import { Loader2, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { usePersistentState } from '@/hooks/usePersistentState';
-import { BRIGHT_DATA_CONFIG } from '../../../supabase/functions/seo-crawler/constants';
+import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
