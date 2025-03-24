@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { TabsContent } from "@/components/ui/tabs";
@@ -34,7 +33,6 @@ const TabContent: React.FC<TabContentProps> = ({
 }) => {
   const { content } = report;
   
-  // Query to fetch keywords for the report
   const { data: keywords, isLoading: isLoadingKeywords } = useQuery({
     queryKey: ['keywords', report.id],
     queryFn: () => getKeywords(report.id),
@@ -53,27 +51,22 @@ const TabContent: React.FC<TabContentProps> = ({
   
   console.log('TabContent rendering with content:', content);
   
-  // Use pageSpeed data from the passed props or from the report content
   const pageSpeedDataToUse = pageSpeedData || content?.pageSpeedData;
   
-  // Use business profile data from the passed props or from the report content
   const businessProfileToUse = businessProfile || content?.businessProfile;
   
-  // Function to determine if content has visual metrics data
   const hasMetricsData = (text: string) => {
     if (!text) return false;
     return text.includes('score:') || text.includes('rating:') || text.includes('puntuación:') || 
            text.includes('valor:') || text.includes('evaluación:');
   };
   
-  // Extract section-specific content from recommendations if needed
   const extractSectionFromContent = (sectionType: string, text: string): string => {
     if (!text) return '';
     
     const lowerText = text.toLowerCase();
     let sectionContent = '';
     
-    // Look for section markers in the text
     const markers = {
       technicalAnalysis: ['seo técnico', 'análisis técnico', 'technical analysis'],
       contentAnalysis: ['análisis de contenido', 'content analysis', 'contenido'],
@@ -83,13 +76,11 @@ const TabContent: React.FC<TabContentProps> = ({
     
     const currentMarkers = markers[sectionType as keyof typeof markers] || [];
     
-    // Try to find the section in the text
     for (const marker of currentMarkers) {
       if (lowerText.includes(marker)) {
         const startIndex = lowerText.indexOf(marker);
         let endIndex = lowerText.length;
         
-        // Find the next section marker, if any
         for (const key of Object.keys(markers)) {
           if (key !== sectionType) {
             const nextMarkers = markers[key as keyof typeof markers];
@@ -102,7 +93,6 @@ const TabContent: React.FC<TabContentProps> = ({
           }
         }
         
-        // Extract the content between the markers
         sectionContent = text.substring(startIndex, endIndex).trim();
         break;
       }
@@ -113,7 +103,6 @@ const TabContent: React.FC<TabContentProps> = ({
   
   return (
     <div className="p-4 mt-4">
-      {/* Executive Summary Tab */}
       <TabsContent value="executiveSummary" className="focus-visible:outline-none">
         <ReportSection 
           title="Resumen Ejecutivo" 
@@ -123,7 +112,6 @@ const TabContent: React.FC<TabContentProps> = ({
           onEdit={onEdit}
         />
         
-        {/* Visual summary metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
           <MetricsVisualizer 
             title="Salud SEO General" 
@@ -146,7 +134,6 @@ const TabContent: React.FC<TabContentProps> = ({
         </div>
       </TabsContent>
       
-      {/* Technical Analysis Tab */}
       <TabsContent value="technicalAnalysis" className="focus-visible:outline-none">
         <ReportSection 
           title="Análisis Técnico SEO" 
@@ -156,17 +143,69 @@ const TabContent: React.FC<TabContentProps> = ({
           onEdit={onEdit}
         />
         
-        {/* Technical health visualization */}
-        {hasMetricsData(content.technicalAnalysis) && (
-          <HeatMapSection 
-            title="Mapa de Salud Técnica" 
-            data={content.technicalAnalysis}
-            categories={["Velocidad", "Indexación", "Mobile", "Estructura", "URLs"]}
-          />
-        )}
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4">Salud Técnica</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <MetricsVisualizer 
+              title="Velocidad de Carga" 
+              text={content.technicalAnalysis} 
+              searchTerm="velocidad|speed|load time"
+              maxValue={100} 
+              defaultValue={70} 
+              icon={<TrendingUp className="h-5 w-5 text-blue-500" />}
+            />
+            <MetricsVisualizer 
+              title="Optimización Móvil" 
+              text={content.technicalAnalysis} 
+              searchTerm="móvil|mobile"
+              maxValue={100} 
+              defaultValue={75} 
+              icon={<CheckCircle2 className="h-5 w-5 text-green-500" />}
+            />
+            <MetricsVisualizer 
+              title="Problemas Técnicos" 
+              text={content.technicalAnalysis} 
+              searchTerm="problemas técnicos|technical issues"
+              maxValue={100} 
+              defaultValue={65} 
+              isInverted={true}
+              icon={<AlertTriangle className="h-5 w-5 text-amber-500" />}
+            />
+            <MetricsVisualizer 
+              title="Estructura HTML" 
+              text={content.technicalAnalysis} 
+              searchTerm="estructura|structure|html"
+              maxValue={100} 
+              defaultValue={80} 
+              icon={<CheckCircle2 className="h-5 w-5 text-green-500" />}
+            />
+            <MetricsVisualizer 
+              title="Seguridad" 
+              text={content.technicalAnalysis} 
+              searchTerm="seguridad|security|https"
+              maxValue={100} 
+              defaultValue={85} 
+              icon={<CheckCircle2 className="h-5 w-5 text-green-500" />}
+            />
+            <MetricsVisualizer 
+              title="Errores" 
+              text={content.technicalAnalysis} 
+              searchTerm="errores|errors"
+              maxValue={100} 
+              defaultValue={90} 
+              isInverted={true}
+              icon={<XCircle className="h-5 w-5 text-red-500" />}
+            />
+          </div>
+        </div>
+        
+        <HeatMapSection 
+          title="Mapa de Salud Técnica" 
+          data={content.technicalAnalysis}
+          categories={["Velocidad", "Indexación", "Mobile", "Estructura", "URLs", "Seguridad"]}
+        />
       </TabsContent>
       
-      {/* Keywords Tab */}
       <TabsContent value="keywords" className="focus-visible:outline-none">
         {isLoadingKeywords ? (
           <div className="py-12 flex justify-center">
@@ -182,7 +221,6 @@ const TabContent: React.FC<TabContentProps> = ({
           />
         )}
         
-        {/* Keywords visualization */}
         {keywords && keywords.length > 0 && (
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4">Distribución de Palabras Clave</h3>
@@ -198,7 +236,6 @@ const TabContent: React.FC<TabContentProps> = ({
         )}
       </TabsContent>
       
-      {/* Content Analysis Tab */}
       <TabsContent value="contentAnalysis" className="focus-visible:outline-none">
         <ReportSection 
           title="Análisis de Contenido" 
@@ -208,7 +245,6 @@ const TabContent: React.FC<TabContentProps> = ({
           onEdit={onEdit}
         />
         
-        {/* Content quality visualization */}
         {hasMetricsData(content.contentAnalysis) && (
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4">Calidad de Contenido</h3>
@@ -222,7 +258,6 @@ const TabContent: React.FC<TabContentProps> = ({
         )}
       </TabsContent>
       
-      {/* Backlinks Analysis Tab */}
       <TabsContent value="backlinksAnalysis" className="focus-visible:outline-none">
         <ReportSection 
           title="Análisis de Backlinks" 
@@ -232,7 +267,6 @@ const TabContent: React.FC<TabContentProps> = ({
           onEdit={onEdit}
         />
         
-        {/* Backlinks visualization */}
         {hasMetricsData(content.backlinksAnalysis) && (
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4">Perfil de Backlinks</h3>
@@ -245,7 +279,6 @@ const TabContent: React.FC<TabContentProps> = ({
         )}
       </TabsContent>
       
-      {/* Local SEO Tab */}
       <TabsContent value="localSeo" className="focus-visible:outline-none">
         <ReportSection 
           title="SEO Local" 
@@ -256,7 +289,6 @@ const TabContent: React.FC<TabContentProps> = ({
         />
       </TabsContent>
       
-      {/* Business Profile Tab */}
       <TabsContent value="businessProfile" className="focus-visible:outline-none">
         {isLoadingBusinessProfile ? (
           <div className="py-12 flex justify-center">
@@ -269,7 +301,6 @@ const TabContent: React.FC<TabContentProps> = ({
         )}
       </TabsContent>
       
-      {/* PageSpeed Tab */}
       <TabsContent value="pageSpeedData" className="focus-visible:outline-none">
         {isLoadingPageSpeed ? (
           <div className="py-12 flex justify-center">
@@ -280,7 +311,6 @@ const TabContent: React.FC<TabContentProps> = ({
         )}
       </TabsContent>
       
-      {/* Recommendations Tab */}
       <TabsContent value="recommendations" className="focus-visible:outline-none">
         <ReportSection 
           title="Recomendaciones" 
@@ -292,7 +322,6 @@ const TabContent: React.FC<TabContentProps> = ({
         />
       </TabsContent>
       
-      {/* Service Proposal Tab */}
       <TabsContent value="serviceProposal" className="focus-visible:outline-none">
         <ReportSection 
           title="Propuesta de Servicios" 

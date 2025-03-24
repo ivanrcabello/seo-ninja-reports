@@ -28,26 +28,24 @@ export async function crawlPage(
     console.log(`URL normalizada: ${normalizedUrl}`);
     
     try {
-      // Use Bright Data's Web Scraper API to fetch the page
+      // Use Bright Data's API to fetch the page
       console.log(`Llamando a la API de Bright Data para analizar: ${normalizedUrl}`);
       
-      // Bright Data Web Scraper API configuration
-      const apiEndpoint = BRIGHT_DATA_CONFIG.WEB_SCRAPER_API_URL;
+      // Bright Data API endpoint
+      const apiEndpoint = 'https://api.brightdata.com/request';
       
       const apiRequestBody = {
+        zone: 'web_unlocker1',
         url: normalizedUrl,
-        parse: false, // We want the raw HTML
-        render: false, // No need for JavaScript rendering for basic SEO analysis
-        residential: true, // Use residential IP for better crawling results
-        country: 'es'
+        format: 'json'
       };
       
       const apiRequestHeaders = {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(`${username}:${password}`)}`
+        'Authorization': `Bearer ${password}` // Using password as API key
       };
       
-      console.log('Enviando solicitud a Bright Data Web Scraper API...');
+      console.log('Enviando solicitud a Bright Data API...');
       console.log(`Endpoint: ${apiEndpoint}`);
       console.log(`Body: ${JSON.stringify(apiRequestBody)}`);
       
@@ -72,15 +70,17 @@ export async function crawlPage(
       console.log(`Respuesta JSON recibida: ${JSON.stringify(responseData).substring(0, 200)}...`);
       
       // Check if response contains HTML content
-      if (!responseData.body || typeof responseData.body !== 'string') {
-        console.error('Respuesta de Bright Data no contiene HTML válido:', responseData);
-        throw new Error('No se recibió contenido HTML válido de Bright Data');
+      let html = '';
+      if (responseData.body) {
+        html = typeof responseData.body === 'string' ? responseData.body : JSON.stringify(responseData.body);
+      } else if (typeof responseData === 'string') {
+        html = responseData;
+      } else {
+        html = JSON.stringify(responseData);
       }
       
-      const html = responseData.body;
-      
       if (!html || html.length === 0) {
-        throw new Error('No se recibió contenido HTML');
+        throw new Error('No se recibió contenido HTML válido');
       }
       
       console.log(`Contenido HTML recibido: ${html.length} caracteres`);

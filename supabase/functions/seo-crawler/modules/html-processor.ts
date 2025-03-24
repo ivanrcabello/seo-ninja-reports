@@ -66,6 +66,10 @@ export async function processHtml(supabase: SupabaseInstance, url: string, crawl
     const imageAnalysisResult = analyzeImages($);
     console.log(`Total imágenes: ${imageAnalysisResult.imageCount}, Imágenes sin alt: ${imageAnalysisResult.imagesWithoutAlt}`);
     
+    // Analyze technical aspects
+    const technicalData = analyzeTechnicalAspects($, url);
+    console.log('Datos técnicos analizados:', technicalData);
+    
     // Indexability check
     console.log('Verificando indexabilidad...');
     const robotsMeta = $('meta[name="robots"]').attr('content') || '';
@@ -96,11 +100,12 @@ export async function processHtml(supabase: SupabaseInstance, url: string, crawl
       canonical_url: canonical,
       image_count: imageAnalysisResult.imageCount,
       images_without_alt: imageAnalysisResult.imagesWithoutAlt,
-      meta_robots: robotsMeta
+      meta_robots: robotsMeta,
+      technical_data: JSON.stringify(technicalData) // Store technical data
     };
     
     // Store page in database and check for SEO issues
-    return await savePageAndAnalyzeIssues(supabase, pageEntry, internalLinks, crawlId, url);
+    return await savePageAndAnalyzeIssues(supabase, pageEntry, internalLinks, crawlId, url, technicalData);
   } catch (error) {
     console.error(`Error procesando HTML de ${url}:`, error);
     await registerCrawlerError(supabase, crawlId, url, error instanceof Error ? error.message : "Error desconocido");
@@ -125,13 +130,66 @@ function analyzeImages($: cheerio.CheerioAPI) {
   return { imageCount, imagesWithoutAlt };
 }
 
+// Helper function to analyze technical aspects of the page
+function analyzeTechnicalAspects($: cheerio.CheerioAPI, url: string) {
+  const technicalData: Record<string, any> = {
+    pageSize: 0,
+    httpStatus: 200,
+    loadTime: 0,
+    scripts: 0,
+    styles: 0,
+    iframes: 0,
+    securityHeaders: {},
+    schemaMarkup: false,
+    hreflangTags: 0,
+    viewportMeta: false,
+    mobileFriendly: false,
+    amp: false,
+    favicon: false
+  };
+  
+  // Count scripts, styles, and iframes
+  technicalData.scripts = $('script').length;
+  technicalData.styles = $('link[rel="stylesheet"]').length + $('style').length;
+  technicalData.iframes = $('iframe').length;
+  
+  // Check for schema markup
+  const hasSchema = $('script[type="application/ld+json"]').length > 0;
+  technicalData.schemaMarkup = hasSchema;
+  
+  // Check for hreflang tags
+  technicalData.hreflangTags = $('link[rel="alternate"][hreflang]').length;
+  
+  // Check for viewport meta
+  const viewportMeta = $('meta[name="viewport"]').attr('content');
+  technicalData.viewportMeta = !!viewportMeta;
+  
+  // Check for mobile-friendly indicators
+  if (viewportMeta && viewportMeta.includes('width=device-width')) {
+    technicalData.mobileFriendly = true;
+  }
+  
+  // Check for AMP
+  technicalData.amp = $('link[rel="amphtml"]').length > 0;
+  
+  // Check for favicon
+  technicalData.favicon = $('link[rel="icon"], link[rel="shortcut icon"]').length > 0;
+  
+  // Page size estimation (rough approximation since we don't have the actual network request)
+  const htmlSize = $.html().length;
+  technicalData.pageSize = Math.round(htmlSize / 1024); // size in KB
+  
+  return technicalData;
+}
+
 // Helper function to save page and analyze issues
 async function savePageAndAnalyzeIssues(
   supabase: SupabaseInstance, 
   pageEntry: any, 
   internalLinks: string[], 
   crawlId: string, 
-  url: string
+  url: string,
+  technicalData: Record<string, any>
 ): Promise<PageCrawlResult | null> {
   // Store page in database
   console.log('Guardando datos de página en la base de datos...');
@@ -181,6 +239,57 @@ async function savePageAndAnalyzeIssues(
       description: SEO_ISSUES.MISSING_H1.description,
       recommended_fix: SEO_ISSUES.MISSING_H1.fix
     });
+  }
+  
+  // Check for technical issues
+  if (technicalData) {
+    // Schema markup check
+    if (!technicalData.schemaMarkup) {
+      issues.push({
+        id: crypto.randomUUID(),
+        page_id: pageEntry.id,
+        issue_type: 'missing_schema',
+        severity: 'medium',
+        description: 'La página no tiene marcado de esquema (Schema.org)',
+        recommended_fix: 'Implementar marcado de esquema para mejorar la visibilidad en los resultados de búsqueda'
+      });
+    }
+    
+    // Mobile-friendly check
+    if (!technicalData.mobileFriendly) {
+      issues.push({
+        id: crypto.randomUUID(),
+        page_id: pageEntry.id,
+        issue_type: 'not_mobile_friendly',
+        severity: 'high',
+        description: 'La página no parece estar optimizada para dispositivos móviles',
+        recommended_fix: 'Asegúrate de que tu sitio utilice un diseño responsive con meta viewport adecuado'
+      });
+    }
+    
+    // Page size warning
+    if (technicalData.pageSize > 1000) { // More than 1MB
+      issues.push({
+        id: crypto.randomUUID(),
+        page_id: pageEntry.id,
+        issue_type: 'large_page_size',
+        severity: 'medium',
+        description: `La página es demasiado grande (${technicalData.pageSize}KB)`,
+        recommended_fix: 'Optimiza imágenes y recursos para reducir el tamaño de la página y mejorar la velocidad de carga'
+      });
+    }
+    
+    // Too many scripts
+    if (technicalData.scripts > 30) {
+      issues.push({
+        id: crypto.randomUUID(),
+        page_id: pageEntry.id,
+        issue_type: 'excessive_scripts',
+        severity: 'medium',
+        description: `La página utiliza demasiados scripts (${technicalData.scripts})`,
+        recommended_fix: 'Reduce y combina los scripts para mejorar el rendimiento de la página'
+      });
+    }
   }
   
   console.log(`Problemas SEO encontrados: ${issues.length}`);
