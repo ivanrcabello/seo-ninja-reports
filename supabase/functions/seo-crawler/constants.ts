@@ -5,30 +5,53 @@ export const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Simplified SEO issues for basic analysis
 export const SEO_ISSUES = {
   MISSING_TITLE: {
-    type: 'missing_title',
+    type: 'MISSING_TITLE',
     severity: 'high',
-    description: 'La página no tiene título',
-    fix: 'Añadir un título descriptivo y relevante a la página'
+    description: 'La página no tiene un título definido',
+    fix: 'Agregar una etiqueta title con un título descriptivo'
   },
   MISSING_META_DESCRIPTION: {
-    type: 'missing_meta_description',
+    type: 'MISSING_META_DESCRIPTION',
     severity: 'medium',
-    description: 'La página no tiene meta descripción',
-    fix: 'Añadir una meta descripción concisa y relevante'
+    description: 'La página no tiene una meta descripción',
+    fix: 'Agregar una meta etiqueta description con una descripción concisa de la página'
   },
   MISSING_H1: {
-    type: 'missing_h1',
-    severity: 'high',
+    type: 'MISSING_H1',
+    severity: 'medium',
     description: 'La página no tiene un encabezado H1',
-    fix: 'Añadir un encabezado H1 que refleje el contenido principal de la página'
+    fix: 'Agregar un encabezado H1 que describa el contenido principal de la página'
   },
-  CRAWLER_ERROR: {
-    type: 'crawler_error',
-    severity: 'high',
-    description: 'Error al analizar la página',
-    fix: 'Verificar que la URL es accesible y no está bloqueada'
+  TITLE_TOO_LONG: {
+    type: 'TITLE_TOO_LONG',
+    severity: 'low',
+    description: 'El título de la página es demasiado largo (más de 60 caracteres)',
+    fix: 'Acortar el título a 50-60 caracteres'
+  },
+  MULTIPLE_H1: {
+    type: 'MULTIPLE_H1',
+    severity: 'medium',
+    description: 'La página tiene múltiples encabezados H1',
+    fix: 'Usar solo un encabezado H1 por página'
+  },
+  META_DESCRIPTION_TOO_LONG: {
+    type: 'META_DESCRIPTION_TOO_LONG',
+    severity: 'low',
+    description: 'La meta descripción es demasiado larga (más de 160 caracteres)',
+    fix: 'Acortar la meta descripción a menos de 160 caracteres'
+  },
+  NO_ALT_TEXT: {
+    type: 'NO_ALT_TEXT',
+    severity: 'medium',
+    description: 'Imágenes sin texto alternativo',
+    fix: 'Agregar texto alt descriptivo a todas las imágenes'
+  },
+  NO_SCHEMA_MARKUP: {
+    type: 'NO_SCHEMA_MARKUP',
+    severity: 'low',
+    description: 'La página no tiene marcado de esquema estructurado',
+    fix: 'Implementar marcado de esquema JSON-LD para mejorar el entendimiento de la página por los motores de búsqueda'
   }
 };

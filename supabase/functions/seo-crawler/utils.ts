@@ -1,111 +1,172 @@
-// Utility functions for SEO Crawler
-import { SupabaseInstance } from './types.ts';
-import { SEO_ISSUES } from './constants.ts';
 
-// Helper function to detect if a URL is internal
-export function isInternalUrl(baseUrl: string, url: string): boolean {
-  console.log(`Verificando si URL es interna: ${url}`);
-  if (!url || url.startsWith('#') || url.startsWith('javascript:')) {
-    return false;
-  }
-  
+// Utility functions for SEO crawler
+import { SupabaseInstance } from './types.ts';
+
+// Constants
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Normalize URL to ensure consistency
+export function normalizeUrl(url: string): string {
   try {
-    const parsedBaseUrl = new URL(baseUrl);
-    const baseDomain = parsedBaseUrl.hostname;
+    // If URL doesn't have a protocol, add https://
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
     
+    // Parse and normalize the URL
+    const parsedUrl = new URL(url);
+    
+    // Remove trailing slash for consistency
+    let normalizedUrl = parsedUrl.origin + parsedUrl.pathname;
+    if (normalizedUrl.endsWith('/') && normalizedUrl.length > 1) {
+      normalizedUrl = normalizedUrl.slice(0, -1);
+    }
+    
+    // Add search params if any
+    if (parsedUrl.search) {
+      normalizedUrl += parsedUrl.search;
+    }
+    
+    return normalizedUrl;
+  } catch (error) {
+    console.error('Error normalizing URL:', error);
+    return url; // Return original if something goes wrong
+  }
+}
+
+// Check if a URL is internal to the domain
+export function isInternalUrl(baseUrl: string, url: string): boolean {
+  try {
     // Handle relative URLs
     if (url.startsWith('/')) {
-      console.log(`URL relativa detectada: ${url}`);
+      console.log(`URL ${url} es interna: true`);
       return true;
     }
     
-    const parsedUrl = new URL(url, baseUrl);
-    const isInternal = parsedUrl.hostname === baseDomain;
+    // Handle absolute URLs
+    const baseHostname = new URL(baseUrl).hostname;
+    const urlHostname = new URL(url, baseUrl).hostname;
+    
+    const isInternal = baseHostname === urlHostname;
     console.log(`URL ${url} es interna: ${isInternal}`);
     return isInternal;
-  } catch (e) {
-    console.error(`Error checking if URL is internal: ${url}`, e);
+  } catch (error) {
+    console.error(`Error al verificar si la URL es interna ${url}:`, error);
     return false;
   }
 }
 
-// Normalize URL to avoid duplicates
-export function normalizeUrl(url: string): string {
+// Register crawler errors in the database
+export async function registerCrawlerError(
+  supabase: SupabaseInstance,
+  crawlId: string,
+  url: string,
+  errorMessage: string
+): Promise<void> {
   try {
-    const parsedUrl = new URL(url);
-    // Remove trailing slash
-    let normalized = parsedUrl.origin + parsedUrl.pathname.replace(/\/$/, '');
-    // Keep search params
-    if (parsedUrl.search) {
-      normalized += parsedUrl.search;
+    console.log(`Registrando error para URL ${url}: ${errorMessage}`);
+    
+    // Try to insert the error into the issues table
+    // First we need to check if there's a page entry for this URL
+    const { data: pages, error: pageError } = await supabase
+      .from('seo_crawl_pages')
+      .select('id')
+      .eq('crawl_id', crawlId)
+      .eq('url', url)
+      .limit(1);
+      
+    if (pageError) {
+      console.error('Error buscando página para registrar error:', pageError);
+      return;
     }
-    return normalized;
-  } catch (e) {
-    console.error(`Error normalizando URL: ${url}`, e);
-    return url;
+    
+    if (pages && pages.length > 0) {
+      // Page exists, add the issue
+      const { error } = await supabase
+        .from('seo_crawl_issues')
+        .insert({
+          page_id: pages[0].id,
+          issue_type: 'ERROR_CRAWL',
+          severity: 'high',
+          description: `Error durante el crawling: ${errorMessage}`,
+          recommended_fix: 'Verificar que la página sea accesible y no tenga restricciones'
+        });
+        
+      if (error) {
+        console.error('Error al registrar error en base de datos:', error);
+      }
+    } else {
+      console.log(`No se encontró página para la URL ${url}, no se pudo registrar el error`);
+    }
+  } catch (error) {
+    console.error('Error en registerCrawlerError:', error);
   }
 }
 
-// Queue links for future crawling
+// Queue links for crawling
 export async function queueLinksForCrawling(
-  supabase: SupabaseInstance, 
-  pageId: string, 
-  links: string[], 
-  crawlId: string, 
-  baseUrl: string
-) {
-  console.log(`Guardando ${links.length} enlaces para análisis futuro`);
-  
+  supabase: SupabaseInstance,
+  pageId: string,
+  links: string[],
+  crawlId: string,
+  sourceUrl: string
+): Promise<void> {
   try {
-    // First, save them as links associated with the current page
-    // Limitamos a máximo 100 enlaces para no sobrecargar
-    const limitedLinks = links.slice(0, 100);
-    console.log(`Guardando ${limitedLinks.length} enlaces (limitado a 100 máximo)`);
+    if (!links || links.length === 0) {
+      console.log('No hay enlaces para procesar');
+      return;
+    }
     
-    const linkEntries = limitedLinks.map(url => ({
+    console.log(`Guardando ${links.length} enlaces para la página ${pageId}`);
+    
+    // Insert links into the links table
+    const linksToInsert = links.map(url => ({
       id: crypto.randomUUID(),
       page_id: pageId,
       url: url,
-      is_internal: isInternalUrl(baseUrl, url),
-      anchor_text: '', // Not capturing anchor text for simplicity
+      is_internal: true,
+      is_broken: false,
       follow: true
     }));
     
-    if (linkEntries.length > 0) {
-      const { error: linksError } = await supabase
+    if (linksToInsert.length > 0) {
+      const { error } = await supabase
         .from('seo_crawl_links')
-        .insert(linkEntries);
+        .insert(linksToInsert);
         
-      if (linksError) {
-        console.error('Error guardando enlaces:', linksError);
+      if (error) {
+        console.error('Error guardando enlaces:', error);
       } else {
-        console.log(`${linkEntries.length} enlaces guardados con éxito`);
+        console.log(`${linksToInsert.length} enlaces guardados correctamente`);
       }
     }
     
-    // In the future, we could create a queue table to process these links
-    // For now, we're just analyzing the main page
+    // We're not implementing full recursive crawling in this version
+    // as it would exceed the function execution time limits
   } catch (error) {
-    console.error('Error guardando enlaces para análisis futuro:', error);
+    console.error(`Error procesando enlaces de ${sourceUrl}:`, error);
   }
 }
 
 // Update crawl status
 export async function updateCrawlStatus(
-  supabase: SupabaseInstance, 
-  crawlId: string, 
-  status: 'processing' | 'completed' | 'error', 
-  pagesCrawled: number, 
-  issuesCount: number, 
-  totalTimeSeconds: number = 0
-) {
-  console.log(`Actualizando estado del crawl a "${status}"`);
-  
+  supabase: SupabaseInstance,
+  crawlId: string,
+  status: 'processing' | 'completed' | 'error',
+  pagesCrawled: number,
+  issuesCount: number,
+  totalTimeSeconds: number
+): Promise<void> {
   try {
+    console.log(`Actualizando estado del crawl ${crawlId} a ${status}`);
+    
     const { error } = await supabase
       .from('seo_crawl_results')
       .update({
-        status,
+        status: status,
         pages_crawled: pagesCrawled,
         issues_count: issuesCount,
         total_time_seconds: totalTimeSeconds
@@ -114,64 +175,10 @@ export async function updateCrawlStatus(
       
     if (error) {
       console.error('Error actualizando estado del crawl:', error);
-      return false;
+    } else {
+      console.log('Estado del crawl actualizado correctamente');
     }
-    
-    console.log('Estado del crawl actualizado correctamente');
-    return true;
-  } catch (updateError) {
-    console.error('Error inesperado actualizando estado del crawl:', updateError);
-    return false;
-  }
-}
-
-// Register crawler error
-export async function registerCrawlerError(supabase: SupabaseInstance, crawlId: string, url: string, errorMessage: string) {
-  try {
-    console.log('Registrando error como problema SEO...');
-    const errorPageId = crypto.randomUUID();
-    
-    // First register a minimal page entry
-    const { error: pageError } = await supabase
-      .from('seo_crawl_pages')
-      .insert({
-        id: errorPageId,
-        crawl_id: crawlId,
-        url: url,
-        status_code: 0, // Indicates error
-        title: '',
-        meta_description: '',
-        h1: '',
-        word_count: 0,
-        is_indexable: false
-      });
-      
-    if (pageError) {
-      console.error('Error registrando página con error:', pageError);
-      return null;
-    }
-    
-    // Register the error as an issue
-    const { error: issueError } = await supabase
-      .from('seo_crawl_issues')
-      .insert({
-        id: crypto.randomUUID(),
-        page_id: errorPageId,
-        issue_type: SEO_ISSUES.CRAWLER_ERROR.type,
-        severity: SEO_ISSUES.CRAWLER_ERROR.severity,
-        description: `${SEO_ISSUES.CRAWLER_ERROR.description}: ${errorMessage}`,
-        recommended_fix: SEO_ISSUES.CRAWLER_ERROR.fix
-      });
-      
-    if (issueError) {
-      console.error('Error registrando problema de crawler:', issueError);
-      return null;
-    }
-    
-    console.log('Error de crawling registrado correctamente como problema SEO');
-    return errorPageId;
-  } catch (dbError) {
-    console.error('Error registrando el error de crawling en la base de datos:', dbError);
-    return null;
+  } catch (error) {
+    console.error('Error en updateCrawlStatus:', error);
   }
 }

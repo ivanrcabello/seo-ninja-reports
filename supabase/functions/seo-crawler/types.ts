@@ -1,17 +1,8 @@
 
-// Types for SEO Crawler
+// Type definitions for SEO Crawler
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
-export interface SeoIssue {
-  type: string;
-  severity: 'low' | 'medium' | 'high';
-  description: string;
-  fix: string;
-}
-
-export interface SeoIssues {
-  [key: string]: SeoIssue;
-}
+export type SupabaseInstance = SupabaseClient;
 
 export interface PageCrawlResult {
   pageId: string;
@@ -19,9 +10,20 @@ export interface PageCrawlResult {
   issues: number;
 }
 
-export interface CrawlLink {
+export interface CrawlOptions {
+  maxDepth: number;
+  maxPages: number;
+  followExternalLinks: boolean;
+}
+
+export interface LinkInfo {
   url: string;
+  text: string;
   isInternal: boolean;
 }
 
-export type SupabaseInstance = SupabaseClient;
+export interface ImageInfo {
+  url: string;
+  alt: string | null;
+  hasAlt: boolean;
+}
