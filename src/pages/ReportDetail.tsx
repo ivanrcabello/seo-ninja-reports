@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -9,6 +8,7 @@ import usePersistentState from '@/hooks/usePersistentState';
 import Layout from '@/components/layout/Layout';
 import { toast } from 'sonner';
 import CrawlerDetail from '@/components/clients/seo-crawler/CrawlerDetail';
+import { fetchCrawlResult } from '@/services/seo-crawler';
 
 const ReportDetail = () => {
   const { id, clientId, crawlId } = useParams<{ id: string; clientId: string; crawlId: string }>();
@@ -18,6 +18,8 @@ const ReportDetail = () => {
   const initialIsEditing = searchParams.get('mode') === 'edit';
   const isMounted = useRef(true);
   const navigatingBackRef = useRef(false);
+  const [crawlData, setCrawlData] = useState(null);
+  const [isLoadingCrawl, setIsLoadingCrawl] = useState(false);
   
   // Use persistent state to maintain editing state across tab changes
   const [isEditing, setIsEditing] = usePersistentState<boolean>(
@@ -28,6 +30,26 @@ const ReportDetail = () => {
   const { user, loading: authLoading } = useAuth();
   const { getClient } = useClients();
   const { getReport, isLoading: reportsLoading, deleteReport } = useReports();
+  
+  // Load crawl data if needed
+  useEffect(() => {
+    if (clientId && crawlId) {
+      const loadCrawlData = async () => {
+        try {
+          setIsLoadingCrawl(true);
+          const result = await fetchCrawlResult(crawlId);
+          setCrawlData(result);
+        } catch (error) {
+          console.error('Error loading crawl data:', error);
+          toast.error('Error al cargar los datos del análisis SEO');
+        } finally {
+          setIsLoadingCrawl(false);
+        }
+      };
+      
+      loadCrawlData();
+    }
+  }, [clientId, crawlId]);
   
   // Set up mounting and cleanup
   useEffect(() => {
@@ -190,15 +212,35 @@ const ReportDetail = () => {
 
   // Handle Crawler Detail Page
   if (clientId && crawlId) {
-    return (
-      <Layout>
-        <main className="flex-1 pt-24 pb-16">
-          <div className="container px-4 sm:px-6 mx-auto">
-            <CrawlerDetail />
-          </div>
-        </main>
-      </Layout>
-    );
+    if (isLoadingCrawl) {
+      return (
+        <Layout>
+          <main className="flex-1 pt-24 pb-16">
+            <div className="container px-4 sm:px-6 mx-auto">
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+              </div>
+            </div>
+          </main>
+        </Layout>
+      );
+    }
+    
+    if (crawlData) {
+      return (
+        <Layout>
+          <main className="flex-1 pt-24 pb-16">
+            <div className="container px-4 sm:px-6 mx-auto">
+              <CrawlerDetail 
+                clientId={clientId} 
+                crawl={crawlData} 
+                onBack={() => navigate(`/clients/${clientId}`)}
+              />
+            </div>
+          </main>
+        </Layout>
+      );
+    }
   }
 
   if (!id) {
@@ -245,3 +287,4 @@ const ReportDetail = () => {
 };
 
 export default ReportDetail;
+
