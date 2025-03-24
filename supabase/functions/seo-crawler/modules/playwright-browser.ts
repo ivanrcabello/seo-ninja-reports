@@ -1,30 +1,25 @@
 
 // Playwright for Deno integration
 import { Browser, Page } from 'https://esm.sh/playwright@1.39.0';
-import { chromium } from 'https://esm.sh/playwright@1.39.0/chromium';
+import { getChromium, getCustomArgs } from './chromium.ts';
 
 // Class to manage Playwright browser instance
 export class PlaywrightBrowser {
   static async launch(): Promise<Browser> {
     console.log('Launching Playwright browser in headless mode...');
     try {
+      // Get chromium instance and custom arguments
+      const chromium = getChromium();
+      const customArgs = getCustomArgs();
+      
       // Launch browser with optimized settings for Deno edge functions
       const browser = await chromium.launch({
         headless: true,
-        args: [
-          '--disable-gpu',
-          '--disable-dev-shm-usage',
-          '--disable-setuid-sandbox',
-          '--no-sandbox',
-        ],
-        // Completely avoid device descriptors and other problematic imports
-        ignoreDefaultArgs: [
-          '--enable-automation',
-          '--use-mock-keychain',
-          // Add any other args that might be causing issues
-        ],
-        // Disable all extensions and other features that might cause problems
-        ignoreAllDefaultArgs: false,
+        args: customArgs,
+        // Explicitly ignore all default arguments to avoid JSON imports
+        ignoreAllDefaultArgs: true,
+        // Add minimum required args manually
+        executablePath: undefined, // Let Playwright find the executable
         timeout: 30000,
       });
       
@@ -36,7 +31,7 @@ export class PlaywrightBrowser {
     }
   }
 
-  // Helper method to create a new page with default viewport settings
+  // Helper method to create a new page with basic settings
   static async newPage(browser: Browser): Promise<Page> {
     try {
       const page = await browser.newPage({
@@ -45,9 +40,7 @@ export class PlaywrightBrowser {
           height: 800
         },
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        // Bypass common browser detection mechanisms
         bypassCSP: true,
-        // Avoid other JSON imports that might be problematic
         deviceScaleFactor: 1,
       });
       console.log('New page created successfully');
