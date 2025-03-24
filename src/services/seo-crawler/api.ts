@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
 
 // Start a new crawl session
 export const startCrawl = async (
@@ -47,13 +47,13 @@ export const startCrawl = async (
 };
 
 // Get all crawl results for a client
-export const getCrawlResults = async (crawlId: string) => {
+export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_results')
       .select('*')
-      .eq('id', crawlId)
-      .single();
+      .eq('client_id', clientId)
+      .order('crawl_date', { ascending: false });
       
     if (error) throw error;
     
@@ -65,7 +65,7 @@ export const getCrawlResults = async (crawlId: string) => {
 };
 
 // Get a single crawl result by ID
-export const fetchCrawlResult = async (crawlId: string) => {
+export const getCrawlResults = async (crawlId: string) => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_results')
@@ -100,7 +100,7 @@ export const getCrawlPages = async (crawlId: string) => {
 };
 
 // Get issues for a specific page
-export const fetchCrawlIssues = async (pageId: string) => {
+export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_issues')
@@ -117,7 +117,7 @@ export const fetchCrawlIssues = async (pageId: string) => {
 };
 
 // Get links for a specific page
-export const fetchCrawlLinks = async (pageId: string) => {
+export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_links')
@@ -126,9 +126,53 @@ export const fetchCrawlLinks = async (pageId: string) => {
       
     if (error) throw error;
     
-    return data;
+    // Convert 'follow' to 'is_followed' for compatibility
+    return data.map(link => ({
+      ...link,
+      is_followed: link.follow,
+    })) as CrawlLink[];
   } catch (error) {
     console.error("Error retrieving page links:", error);
+    throw error;
+  }
+};
+
+// Delete a crawl record and its associated data
+export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
+  try {
+    // Delete the crawl record
+    const { error } = await supabase
+      .from('seo_crawl_results')
+      .delete()
+      .eq('id', crawlId);
+      
+    if (error) throw error;
+    
+    // Delete associated crawl pages
+    const { error: pagesError } = await supabase
+      .from('seo_crawl_pages')
+      .delete()
+      .eq('crawl_id', crawlId);
+      
+    if (pagesError) throw pagesError;
+    
+    // Delete associated crawl issues
+    const { error: issuesError } = await supabase
+      .from('seo_crawl_issues')
+      .delete()
+      .eq('page_id', crawlId);
+      
+    if (issuesError) throw issuesError;
+    
+    // Delete associated crawl links
+    const { error: linksError } = await supabase
+      .from('seo_crawl_links')
+      .delete()
+      .eq('page_id', crawlId);
+      
+    if (linksError) throw linksError;
+  } catch (error) {
+    console.error("Error deleting crawl record:", error);
     throw error;
   }
 };
