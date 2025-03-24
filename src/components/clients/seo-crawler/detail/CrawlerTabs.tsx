@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler';
-import IssuesTabContent from './tabs/IssuesTabContent';
-import PagesTabContent from './tabs/PagesTabContent';
-import LinksTabContent from './tabs/LinksTabContent';
+import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
+import IssuesTab from './tabs/IssuesTab';
+import PagesTab from './tabs/PagesTab';
+import LinksTab from './tabs/LinksTab';
 
 interface CrawlerTabsProps {
   pages: CrawlPage[];
@@ -32,11 +32,15 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
       </TabsList>
       
       <TabsContent value="issues" className="mt-2">
-        <IssuesTabContent issuesByType={issuesByType} />
+        <IssuesTab 
+          issuesByType={issuesByType} 
+          pages={pages}
+          onPageSelect={onPageSelect}
+        />
       </TabsContent>
       
       <TabsContent value="pages" className="mt-2">
-        <PagesTabContent 
+        <PagesTab 
           pages={pages}
           selectedPage={selectedPage}
           pageIssues={pageIssues}
@@ -46,7 +50,7 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="links" className="mt-2">
-        <LinksTabContent 
+        <LinksTab 
           pages={pages}
           pageLinks={pageLinks}
           selectedPage={selectedPage}

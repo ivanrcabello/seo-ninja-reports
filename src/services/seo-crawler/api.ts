@@ -1,20 +1,26 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
+import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlSettings, SavedCrawlSettings } from './types';
 
-// Start a new crawl session
+// Iniciar un nuevo análisis SEO
 export const startCrawl = async (
-  domain: string, 
+  url: string, 
   clientId: string,
-  brightDataUsername?: string,
-  brightDataPassword?: string
-) => {
+  options?: {
+    maxPages?: number;
+    followExternalLinks?: boolean;
+    excludePatterns?: string[];
+    includePatterns?: string[];
+    brightDataUsername?: string;
+    brightDataPassword?: string;
+  }
+): Promise<{success: boolean, message: string, crawlId?: string}> => {
   try {
-    // First create a new crawl record
+    // Primero creamos un nuevo registro de análisis
     const { data: crawl, error } = await supabase
       .from('seo_crawl_results')
       .insert({
-        domain,
+        domain: url,
         client_id: clientId,
         status: 'processing',
         crawl_date: new Date().toISOString(),
@@ -24,31 +30,42 @@ export const startCrawl = async (
       
     if (error) throw error;
     
-    // Then call the edge function to start the crawl
+    // Luego llamamos a la edge function para iniciar el análisis
     const { data, error: fnError } = await supabase.functions.invoke('seo-crawler', {
       body: { 
-        url: domain, 
+        url, 
         crawlId: crawl.id,
-        brightDataUsername,
-        brightDataPassword
+        ...options
       }
     });
     
     if (fnError) {
-      console.error('Error calling seo-crawler function:', fnError);
+      console.error('Error al llamar a la función seo-crawler:', fnError);
+      // Actualizar el estado a error
+      await supabase
+        .from('seo_crawl_results')
+        .update({ status: 'error' })
+        .eq('id', crawl.id);
+        
       throw fnError;
     }
     
-    console.log('Response from seo-crawler function:', data);
-    return data;
+    return {
+      success: true,
+      message: 'Análisis SEO iniciado correctamente',
+      crawlId: crawl.id
+    };
   } catch (error) {
-    console.error("Error starting SEO crawl:", error);
-    throw error;
+    console.error("Error al iniciar el análisis SEO:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Error desconocido al iniciar análisis'
+    };
   }
 };
 
-// Get all crawl results for a client
-export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
+// Obtener todos los resultados de análisis para un cliente
+export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_results')
@@ -58,18 +75,14 @@ export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]
       
     if (error) throw error;
     
-    // Ensure data conforms to CrawlResult type by explicitly casting status
-    return data.map(result => ({
-      ...result,
-      status: (result.status as "pending" | "processing" | "completed" | "error" | string)
-    })) as CrawlResult[];
+    return data as CrawlResult[];
   } catch (error) {
-    console.error("Error retrieving crawl results:", error);
+    console.error("Error al obtener resultados de análisis:", error);
     throw error;
   }
 };
 
-// Get a single crawl result by ID
+// Obtener un resultado de análisis específico
 export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
   try {
     const { data, error } = await supabase
@@ -80,18 +93,14 @@ export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
       
     if (error) throw error;
     
-    // Cast the status field to ensure it matches the type
-    return {
-      ...data,
-      status: (data.status as "pending" | "processing" | "completed" | "error" | string)
-    } as CrawlResult;
+    return data as CrawlResult;
   } catch (error) {
-    console.error("Error fetching crawl result:", error);
+    console.error("Error al obtener resultado de análisis:", error);
     throw error;
   }
 };
 
-// Get crawl pages
+// Obtener páginas de un análisis
 export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
   try {
     const { data, error } = await supabase
@@ -101,13 +110,14 @@ export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
       
     if (error) throw error;
     
-    // Add default values for all required properties
-    const now = new Date().toISOString();
+    // Asegurar que todas las propiedades necesarias estén presentes
     return data.map(page => ({
       ...page,
       content_type: page.content_type || 'text/html',
       issues_count: page.issues_count || 0,
-      crawled_at: page.crawled_at || now,
+      crawled_at: page.crawled_at || new Date().toISOString(),
+      title: page.title || '',
+      meta_description: page.meta_description || '',
       h1: page.h1 || '',
       h2_count: page.h2_count || 0,
       h3_count: page.h3_count || 0,
@@ -127,12 +137,12 @@ export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
       content_length: page.content_length || 0
     })) as CrawlPage[];
   } catch (error) {
-    console.error("Error retrieving crawl pages:", error);
+    console.error("Error al obtener páginas del análisis:", error);
     throw error;
   }
 };
 
-// Get issues for a specific page
+// Obtener problemas de una página específica
 export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
   try {
     const { data, error } = await supabase
@@ -142,21 +152,21 @@ export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
       
     if (error) throw error;
     
-    // Cast severity to ensure it matches the type and add missing properties
+    // Asegurar que todas las propiedades necesarias estén presentes
     return data.map(issue => ({
       ...issue,
-      severity: (issue.severity as "low" | "medium" | "high" | string),
+      severity: issue.severity as "low" | "medium" | "high" | string,
       fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
       recommended_fix: issue.recommended_fix || '',
       element: issue.element || ''
     })) as CrawlIssue[];
   } catch (error) {
-    console.error("Error retrieving page issues:", error);
+    console.error("Error al obtener problemas de la página:", error);
     throw error;
   }
 };
 
-// Get links for a specific page
+// Obtener enlaces de una página específica
 export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
   try {
     const { data, error } = await supabase
@@ -166,7 +176,7 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
       
     if (error) throw error;
     
-    // Ensure all required fields are present
+    // Asegurar que todas las propiedades necesarias estén presentes
     return data.map(link => ({
       ...link,
       is_followed: link.follow !== undefined ? !!link.follow : true,
@@ -176,47 +186,104 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
       anchor_text: link.anchor_text || ''
     })) as CrawlLink[];
   } catch (error) {
-    console.error("Error retrieving page links:", error);
+    console.error("Error al obtener enlaces de la página:", error);
     throw error;
   }
 };
 
-// Delete a crawl record and its associated data
+// Eliminar un registro de análisis y sus datos asociados
 export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
   try {
-    // Delete the crawl record
-    const { error } = await supabase
-      .from('seo_crawl_results')
-      .delete()
-      .eq('id', crawlId);
-      
-    if (error) throw error;
-    
-    // Delete associated crawl pages
-    const { error: pagesError } = await supabase
+    // Primero buscar todas las páginas asociadas a este análisis
+    const { data: pages, error: pagesError } = await supabase
       .from('seo_crawl_pages')
-      .delete()
+      .select('id')
       .eq('crawl_id', crawlId);
       
     if (pagesError) throw pagesError;
     
-    // Delete associated crawl issues
-    const { error: issuesError } = await supabase
-      .from('seo_crawl_issues')
-      .delete()
-      .eq('page_id', crawlId);
+    // Eliminar problemas y enlaces para cada página
+    if (pages && pages.length > 0) {
+      const pageIds = pages.map(page => page.id);
       
-    if (issuesError) throw issuesError;
+      // Eliminar problemas
+      const { error: issuesError } = await supabase
+        .from('seo_crawl_issues')
+        .delete()
+        .in('page_id', pageIds);
+        
+      if (issuesError) throw issuesError;
+      
+      // Eliminar enlaces
+      const { error: linksError } = await supabase
+        .from('seo_crawl_links')
+        .delete()
+        .in('page_id', pageIds);
+        
+      if (linksError) throw linksError;
+    }
     
-    // Delete associated crawl links
-    const { error: linksError } = await supabase
-      .from('seo_crawl_links')
+    // Eliminar todas las páginas de este análisis
+    const { error: deletePageError } = await supabase
+      .from('seo_crawl_pages')
       .delete()
-      .eq('page_id', crawlId);
+      .eq('crawl_id', crawlId);
       
-    if (linksError) throw linksError;
+    if (deletePageError) throw deletePageError;
+    
+    // Finalmente eliminar el registro de análisis
+    const { error: deleteCrawlError } = await supabase
+      .from('seo_crawl_results')
+      .delete()
+      .eq('id', crawlId);
+      
+    if (deleteCrawlError) throw deleteCrawlError;
   } catch (error) {
-    console.error("Error deleting crawl record:", error);
+    console.error("Error al eliminar registro de análisis:", error);
     throw error;
+  }
+};
+
+// Guardar configuración de análisis para un cliente y dominio
+export const saveSettings = async (settings: CrawlSettings): Promise<SavedCrawlSettings> => {
+  try {
+    const { data, error } = await supabase
+      .from('seo_crawl_settings')
+      .upsert({
+        client_id: settings.clientId,
+        domain: settings.url,
+        max_pages: settings.maxPages || 100,
+        follow_external_links: settings.followExternalLinks || false,
+        exclude_patterns: settings.excludePatterns || [],
+        include_patterns: settings.includePatterns || []
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return data as SavedCrawlSettings;
+  } catch (error) {
+    console.error("Error al guardar configuración:", error);
+    throw error;
+  }
+};
+
+// Obtener configuración guardada para un cliente y dominio
+export const getSettings = async (clientId: string, domain: string): Promise<SavedCrawlSettings | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('seo_crawl_settings')
+      .select('*')
+      .eq('client_id', clientId)
+      .eq('domain', domain)
+      .maybeSingle();
+      
+    if (error) throw error;
+    
+    return data as SavedCrawlSettings;
+  } catch (error) {
+    console.error("Error al obtener configuración:", error);
+    return null;
   }
 };

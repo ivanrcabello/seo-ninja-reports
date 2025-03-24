@@ -3,12 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { Client } from '@/types/client.types';
 import { toast } from 'sonner';
 import { 
-  getAllCrawlResults, 
-  removeCrawlRecord, 
+  getCrawlResults, 
+  deleteCrawlRecord, 
   CrawlResult 
-} from '@/services/seo-crawler';
+} from '@/services/seo-crawler/api';
 import CrawlerDialog from './CrawlerDialog';
-import CrawlerDetail from './CrawlerDetail';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Loader2, Trash2, ChevronRight } from 'lucide-react';
@@ -25,18 +24,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useNavigate } from 'react-router-dom';
 
 interface CrawlerListProps {
   client: Client;
 }
 
 const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [crawls, setCrawls] = useState<CrawlResult[]>([]);
   const [filteredCrawls, setFilteredCrawls] = useState<CrawlResult[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCrawlerDialog, setShowCrawlerDialog] = useState(false);
-  const [selectedCrawl, setSelectedCrawl] = useState<CrawlResult | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [crawlToDelete, setCrawlToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -48,7 +48,7 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
   const loadCrawls = async () => {
     try {
       setLoading(true);
-      const results = await getAllCrawlResults(client.id);
+      const results = await getCrawlResults(client.id);
       setCrawls(results);
       setFilteredCrawls(results);
     } catch (error) {
@@ -75,11 +75,8 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
   };
 
   const handleOpenCrawl = (crawl: CrawlResult) => {
-    setSelectedCrawl(crawl);
-  };
-
-  const handleCloseCrawl = () => {
-    setSelectedCrawl(null);
+    // Navegamos a la ruta del detalle
+    navigate(`/clients/${client.id}/crawl/${crawl.id}`);
   };
 
   const handleDeleteCrawl = (crawlId: string, e: React.MouseEvent) => {
@@ -93,7 +90,7 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
     
     try {
       setDeleting(true);
-      await removeCrawlRecord(crawlToDelete);
+      await deleteCrawlRecord(crawlToDelete);
       setCrawls(prevCrawls => prevCrawls.filter(crawl => crawl.id !== crawlToDelete));
       toast.success("Análisis eliminado correctamente");
     } catch (error) {
@@ -122,16 +119,6 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
     }
     return <Badge>{status}</Badge>;
   };
-
-  if (selectedCrawl) {
-    return (
-      <CrawlerDetail 
-        clientId={client.id} 
-        crawl={selectedCrawl} 
-        onBack={handleCloseCrawl} 
-      />
-    );
-  }
 
   return (
     <div className="space-y-4">
@@ -207,6 +194,8 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
       {showCrawlerDialog && (
         <CrawlerDialog
           client={client}
+          open={showCrawlerDialog}
+          onOpenChange={setShowCrawlerDialog}
           onClose={() => setShowCrawlerDialog(false)}
           onCrawlCompleted={handleCrawlCompleted}
         />

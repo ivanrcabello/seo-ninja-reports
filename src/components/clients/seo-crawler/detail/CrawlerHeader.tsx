@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CrawlResult } from '@/services/seo-crawler';
+import { CrawlResult } from '@/services/seo-crawler/types';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 
 interface CrawlerHeaderProps {
@@ -14,8 +13,6 @@ interface CrawlerHeaderProps {
 }
 
 const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({ clientId, crawlResult, onBack }) => {
-  const navigate = useNavigate();
-  
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
@@ -39,19 +36,11 @@ const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({ clientId, crawlResult, on
     }
   };
   
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      navigate(`/clients/${clientId}`);
-    }
-  };
-  
   return (
     <div className="flex items-center">
       <Button 
         variant="ghost" 
-        onClick={handleBack}
+        onClick={() => onBack && onBack()}
         className="mr-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />

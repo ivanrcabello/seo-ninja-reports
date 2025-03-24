@@ -1,22 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  fetchCrawlResult, 
+  getCrawlResult, 
   getCrawlPages, 
-  fetchCrawlIssues,
-  fetchCrawlLinks,
+  getPageIssues,
+  getPageLinks,
   CrawlResult, 
   CrawlPage, 
   CrawlIssue,
   CrawlLink
-} from '@/services/seo-crawler';
+} from '@/services/seo-crawler/api';
 import { toast } from 'sonner';
 
 import CrawlerHeader from './CrawlerHeader';
 import CrawlerSummary from './CrawlerSummary';
 import CrawlerTabs from './CrawlerTabs';
-import LoadingState from './LoadingState';
-import NotFoundState from './NotFoundState';
+import { Loader2 } from 'lucide-react';
 
 interface CrawlerDetailPageProps {
   clientId: string;
@@ -50,27 +49,18 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         
         console.log(`Loading crawl result for ID: ${crawlId}`);
         
-        const result = await fetchCrawlResult(crawlId);
+        const result = await getCrawlResult(crawlId);
         setCrawlResult(result);
         
         // Fetch pages and ensure they have all required properties
         const pagesData = await getCrawlPages(crawlId);
-        
-        // Transform pages to ensure all required properties are present
-        const completePages: CrawlPage[] = pagesData.map(page => ({
-          ...page,
-          content_type: page.content_type || 'text/html',
-          issues_count: page.issues_count || 0,
-          crawled_at: page.crawled_at || new Date().toISOString()
-        }));
-        
-        setPages(completePages);
+        setPages(pagesData);
         
         const issuesByType: Record<string, CrawlIssue[]> = {};
         const issuesBySeverity: Record<string, CrawlIssue[]> = {};
         
-        for (const page of completePages) {
-          const issues = await fetchCrawlIssues(page.id);
+        for (const page of pagesData) {
+          const issues = await getPageIssues(page.id);
           
           issues.forEach(issue => {
             if (!issuesByType[issue.issue_type]) {
@@ -107,17 +97,11 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const handlePageSelect = async (page: CrawlPage) => {
     try {
       setSelectedPage(page);
-      const issues = await fetchCrawlIssues(page.id);
+      const issues = await getPageIssues(page.id);
       setPageIssues(issues || []);
       
-      const links = await fetchCrawlLinks(page.id);
-      // Ensure links have the is_followed property
-      const processedLinks = links.map(link => ({
-        ...link,
-        is_followed: 'follow' in link ? !!link.follow : link.is_followed
-      }));
-      
-      setPageLinks(processedLinks);
+      const links = await getPageLinks(page.id);
+      setPageLinks(links);
     } catch (error) {
       console.error('Error loading page data:', error);
       toast.error('Error al cargar los datos de la página');
@@ -125,11 +109,26 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   };
   
   if (isLoading) {
-    return <LoadingState />;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
   
   if (!crawlResult) {
-    return <NotFoundState clientId={clientId} />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <h2 className="text-xl font-semibold mb-4">Análisis no encontrado</h2>
+        <p className="text-muted-foreground mb-6">No se ha podido encontrar el análisis solicitado</p>
+        <button 
+          className="text-primary hover:underline" 
+          onClick={() => onBack && onBack()}
+        >
+          Volver a la lista de análisis
+        </button>
+      </div>
+    );
   }
   
   return (

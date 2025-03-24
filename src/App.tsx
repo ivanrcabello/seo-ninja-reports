@@ -1,96 +1,74 @@
 
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from './components/ui/theme-provider';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import AuthProvider from './context/AuthContext';
+import PersistentStateProvider from './context/PersistentStateContext';
+import { ReportsProvider } from './context/ReportsContext';
+import { ClientsProvider } from './context/ClientsContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'sonner';
+import AuthGuard from './components/auth/AuthGuard';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
-import Index from './pages/Index';
-import Dashboard from './pages/Dashboard';
-import Auth from './pages/Auth';
-import AllReports from './pages/AllReports';
-import Activity from './pages/Activity';
-import Settings from './pages/Settings';
-import ClientDetail from './pages/ClientDetail';
-import ReportDetail from './pages/ReportDetail';
-import PublicReport from './pages/PublicReport';
-import SharedProposal from './pages/SharedProposal';
-import SharedContract from './pages/SharedContract';
-import SharedInvoice from './pages/SharedInvoice';
-import Contacto from './pages/Contacto';
-import Blog from './pages/Blog';
-import BlogDetail from './pages/BlogDetail';
-import Caracteristicas from './pages/Caracteristicas';
-import Precios from './pages/Precios';
-import Paquetes from './pages/Paquetes';
-import PackStarter from './pages/packs/PackStarter';
-import PackMaster from './pages/packs/PackMaster';
-import PackAscenso from './pages/packs/PackAscenso';
-import Documentacion from './pages/Documentacion';
-import Servicios from './pages/Servicios';
-import SeoLocal from './pages/servicios/SeoLocal';
-import SeoTecnico from './pages/servicios/SeoTecnico';
-import ContenidoSeo from './pages/servicios/ContenidoSeo';
-import SeoIA from './pages/servicios/SeoIA';
-import Guias from './pages/Guias';
-import Privacidad from './pages/Privacidad';
-import NotFoundPage from './pages/NotFoundPage';
-import BlogAdmin from './pages/BlogAdmin';
-import { AnimationProvider } from './context/AnimationContext';
-import { AuthProvider } from './context/AuthContext';
-import { ClientsProvider } from './hooks/useClients';
-
-const queryClient = new QueryClient();
+// Importación lazy de componentes
+const Auth = lazy(() => import('./pages/Auth'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ClientList = lazy(() => import('./pages/ClientList'));
+const ClientDetail = lazy(() => import('./pages/ClientDetail'));
+const ReportDetail = lazy(() => import('./pages/ReportDetail'));
+const ContractDetail = lazy(() => import('./pages/ContractDetail'));
+const ProposalDetail = lazy(() => import('./pages/ProposalDetail'));
+const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'));
+const Settings = lazy(() => import('./pages/Settings'));
+const PublicContract = lazy(() => import('./pages/public/PublicContract'));
+const PublicInvoice = lazy(() => import('./pages/public/PublicInvoice'));
+const PublicProposal = lazy(() => import('./pages/public/PublicProposal'));
+const PublicReport = lazy(() => import('./pages/public/PublicReport'));
+const CrawlerDetailPage = lazy(() => import('./pages/CrawlerDetailPage'));
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AnimationProvider>
-        <AuthProvider>
+    <ThemeProvider defaultTheme="light" storageKey="ui-theme">
+      <AuthProvider>
+        <PersistentStateProvider>
           <ClientsProvider>
-            <BrowserRouter>
-              <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/all-reports" element={<AllReports />} />
-                  <Route path="/activity" element={<Activity />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/clients/:id" element={<ClientDetail />} />
-                  <Route path="/clients/:clientId/seo-crawler/:crawlId" element={<ReportDetail />} />
-                  <Route path="/reports/:id" element={<ReportDetail />} />
-                  <Route path="/shared/reports/:id" element={<PublicReport />} />
-                  <Route path="/shared/proposals/:id" element={<SharedProposal />} />
-                  <Route path="/shared/contracts/:id" element={<SharedContract />} />
-                  <Route path="/shared/invoices/:id" element={<SharedInvoice />} />
-                  <Route path="/contacto" element={<Contacto />} />
-                  <Route path="/blog" element={<Blog />} />
-                  <Route path="/blog/:slug" element={<BlogDetail />} />
-                  <Route path="/caracteristicas" element={<Caracteristicas />} />
-                  <Route path="/precios" element={<Precios />} />
-                  <Route path="/paquetes" element={<Paquetes />} />
-                  <Route path="/paquetes/starter" element={<PackStarter />} />
-                  <Route path="/paquetes/master" element={<PackMaster />} />
-                  <Route path="/paquetes/ascenso" element={<PackAscenso />} />
-                  <Route path="/documentacion" element={<Documentacion />} />
-                  <Route path="/servicios" element={<Servicios />} />
-                  <Route path="/servicios/seo-local" element={<SeoLocal />} />
-                  <Route path="/servicios/seo-tecnico" element={<SeoTecnico />} />
-                  <Route path="/servicios/contenido-seo" element={<ContenidoSeo />} />
-                  <Route path="/servicios/seo-ia" element={<SeoIA />} />
-                  <Route path="/guias" element={<Guias />} />
-                  <Route path="/privacidad" element={<Privacidad />} />
-                  <Route path="/blog-admin" element={<BlogAdmin />} />
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-                <Toaster />
-              </ThemeProvider>
-            </BrowserRouter>
+            <ReportsProvider>
+              <Router>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    {/* Rutas públicas */}
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/public/contract/:sharedUrl" element={<PublicContract />} />
+                    <Route path="/public/invoice/:sharedUrl" element={<PublicInvoice />} />
+                    <Route path="/public/proposal/:sharedUrl" element={<PublicProposal />} />
+                    <Route path="/public/report/:sharedUrl" element={<PublicReport />} />
+
+                    {/* Rutas protegidas */}
+                    <Route element={<AuthGuard />}>
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/clients" element={<ClientList />} />
+                      <Route path="/clients/:id" element={<ClientDetail />} />
+                      <Route path="/clients/:clientId/crawl/:crawlId" element={<CrawlerDetailPage />} />
+                      <Route path="/clients/:clientId/reports/:id" element={<ReportDetail />} />
+                      <Route path="/clients/:clientId/crawl/:crawlId" element={<CrawlerDetailPage />} />
+                      <Route path="/clients/:clientId/contracts/:id" element={<ContractDetail />} />
+                      <Route path="/clients/:clientId/proposals/:id" element={<ProposalDetail />} />
+                      <Route path="/clients/:clientId/invoices/:id" element={<InvoiceDetail />} />
+                      <Route path="/settings" element={<Settings />} />
+                    </Route>
+
+                    {/* Ruta por defecto - redirige al dashboard */}
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                </Suspense>
+              </Router>
+              <Toaster position="top-right" richColors closeButton />
+            </ReportsProvider>
           </ClientsProvider>
-        </AuthProvider>
-      </AnimationProvider>
-    </QueryClientProvider>
+        </PersistentStateProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

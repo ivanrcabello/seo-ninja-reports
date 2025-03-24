@@ -1,13 +1,11 @@
 
 import React from 'react';
-import { ExternalLink, CheckCircle, XCircle, FileText, Image, Link, Link2, Code } from 'lucide-react';
-import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler';
-import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { getIssueTypeIcon, getSeverityColor } from '../utils/crawlerUtils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { ExternalLink, CheckCircle, XCircle, AlertTriangle, FileText, Image, Link, Link2 } from 'lucide-react';
 
 interface PageDetailProps {
   page: CrawlPage;
@@ -16,387 +14,373 @@ interface PageDetailProps {
 }
 
 const PageDetail: React.FC<PageDetailProps> = ({ page, issues, links = [] }) => {
+  // Agrupar enlaces
   const internalLinks = links.filter(link => link.is_internal);
   const externalLinks = links.filter(link => !link.is_internal);
   const brokenLinks = links.filter(link => link.is_broken);
 
   return (
-    <>
-      <CardHeader>
-        <CardTitle>Detalles de la página</CardTitle>
-        <CardDescription>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">{page.title || 'Sin título'}</h2>
           <a 
             href={page.url} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-primary hover:underline flex items-center"
+            className="text-primary hover:underline flex items-center text-sm mt-1"
           >
             {page.url}
-            <ExternalLink className="h-4 w-4 ml-1" />
+            <ExternalLink className="h-3 w-3 ml-1" />
           </a>
-        </CardDescription>
-      </CardHeader>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <Badge 
+            variant="outline" 
+            className={
+              page.status_code >= 200 && page.status_code < 300
+                ? 'bg-green-100 text-green-800'
+                : page.status_code >= 300 && page.status_code < 400
+                ? 'bg-yellow-100 text-yellow-800'
+                : page.status_code >= 400
+                ? 'bg-red-100 text-red-800'
+                : 'bg-gray-100 text-gray-800'
+            }
+          >
+            {page.status_code}
+          </Badge>
+          
+          {page.is_indexable ? (
+            <Badge variant="outline" className="bg-green-100 text-green-800">
+              <CheckCircle className="h-3 w-3 mr-1" /> Indexable
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-red-100 text-red-800">
+              <XCircle className="h-3 w-3 mr-1" /> No indexable
+            </Badge>
+          )}
+          
+          {issues.length > 0 && (
+            <Badge variant="outline" className="bg-amber-100 text-amber-800">
+              <AlertTriangle className="h-3 w-3 mr-1" /> {issues.length} {issues.length === 1 ? 'problema' : 'problemas'}
+            </Badge>
+          )}
+        </div>
+      </div>
+      
       <Separator />
-      <CardContent className="p-6">
-        <Tabs defaultValue="general">
-          <TabsList className="mb-4">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="content">Contenido</TabsTrigger>
-            <TabsTrigger value="technical">Técnico</TabsTrigger>
-            <TabsTrigger value="issues">Problemas ({issues.length})</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="general">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <PageDetailItem 
-                  title="Título" 
-                  content={page.title} 
-                />
-                
-                <PageDetailItem 
-                  title="Meta descripción" 
-                  content={page.meta_description} 
-                />
-                
-                <PageDetailItem 
-                  title="H1" 
-                  content={page.h1}
-                />
-
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Estadísticas</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <StatBadge 
-                      icon={<FileText className="h-4 w-4" />} 
-                      label="Palabras" 
-                      value={page.word_count || 0} 
-                    />
-                    <StatBadge 
-                      icon={<Image className="h-4 w-4" />} 
-                      label="Imágenes" 
-                      value={page.image_count || 0} 
-                    />
-                    <StatBadge 
-                      icon={<Link className="h-4 w-4" />} 
-                      label="Links internos" 
-                      value={page.internal_links_count || internalLinks.length} 
-                    />
-                    <StatBadge 
-                      icon={<Link2 className="h-4 w-4" />} 
-                      label="Links externos" 
-                      value={page.external_links_count || externalLinks.length} 
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Código de estado</h3>
-                  <div className="p-3 bg-muted rounded-md">
-                    <Badge 
-                      variant="outline" 
-                      className={
-                        page.status_code >= 200 && page.status_code < 300
-                          ? 'bg-green-100 text-green-800'
-                          : page.status_code >= 300 && page.status_code < 400
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : page.status_code >= 400
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }
-                    >
-                      {page.status_code}
-                    </Badge>
-                  </div>
-                </div>
-                
-                <CanonicalUrlItem url={page.canonical_url} />
-                
-                <PageDetailItem 
-                  title="Directivas robots" 
-                  content={page.robots_directives} 
-                />
-                
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Indexable</h3>
-                  <div className="p-3 bg-muted rounded-md">
-                    {page.is_indexable ? (
-                      <Badge variant="outline" className="bg-green-100 text-green-800">
-                        <CheckCircle className="h-3 w-3 mr-1" /> Sí
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-red-100 text-red-800">
-                        <XCircle className="h-3 w-3 mr-1" /> No
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Tamaño de página</h3>
-                  <div className="p-3 bg-muted rounded-md">
-                    {page.page_size_kb ? `${page.page_size_kb} KB` : "No disponible"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="content">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <h3 className="font-medium">Estructura del contenido</h3>
-                  <StatItem label="H1" value={page.h1 ? "1" : "0"} />
-                  <StatItem label="H2" value={page.h2_count?.toString() || "0"} />
-                  <StatItem label="H3" value={page.h3_count?.toString() || "0"} />
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="font-medium">Elementos multimedia</h3>
-                  <StatItem 
-                    label="Imágenes" 
-                    value={page.image_count?.toString() || "0"} 
-                  />
-                  <StatItem 
-                    label="Imágenes sin texto alt" 
-                    value={page.images_without_alt?.toString() || "0"} 
-                    warning={page.images_without_alt && page.images_without_alt > 0}
-                  />
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-4">
-                <h3 className="font-medium">Estadísticas de contenido</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <StatCard 
-                    title="Palabras" 
-                    value={page.word_count || 0} 
-                    icon={<FileText className="h-5 w-5 text-blue-500" />}
-                    warning={page.word_count < 300}
-                  />
-                  <StatCard 
-                    title="Tiempo de carga" 
-                    value={`${Math.round((page.load_time_ms || 0) / 100) / 10}s`} 
-                    icon={<FileText className="h-5 w-5 text-green-500" />}
-                    warning={(page.load_time_ms || 0) > 2000}
-                  />
-                  <StatCard 
-                    title="Tamaño" 
-                    value={page.page_size_kb ? `${page.page_size_kb} KB` : "N/A"} 
-                    icon={<FileText className="h-5 w-5 text-purple-500" />}
-                    warning={page.page_size_kb && page.page_size_kb > 500}
-                  />
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="technical">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="font-medium">Metadatos</h3>
-                  <StatItem 
-                    label="Meta robots" 
-                    value={page.meta_robots || page.robots_directives || "No definido"} 
-                  />
-                  <StatItem 
-                    label="Canonical URL" 
-                    value={page.canonical_url || "No definido"} 
-                    warning={!page.canonical_url}
-                  />
-                  <StatItem 
-                    label="Mobile friendly" 
-                    value={page.mobile_friendly ? "Sí" : "No"} 
-                    warning={page.mobile_friendly === false}
-                  />
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="font-medium">Marcado estructurado</h3>
-                  <StatItem 
-                    label="Schema.org markup" 
-                    value={page.has_schema_markup ? "Presente" : "No presente"} 
-                    warning={!page.has_schema_markup}
-                  />
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-4">
-                <h3 className="font-medium">Enlaces</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <StatCard 
-                    title="Enlaces internos" 
-                    value={page.internal_links_count || internalLinks.length} 
-                    icon={<Link className="h-5 w-5 text-blue-500" />}
-                  />
-                  <StatCard 
-                    title="Enlaces externos" 
-                    value={page.external_links_count || externalLinks.length} 
-                    icon={<Link2 className="h-5 w-5 text-green-500" />}
-                  />
-                  <StatCard 
-                    title="Enlaces rotos" 
-                    value={brokenLinks.length} 
-                    icon={<XCircle className="h-5 w-5 text-red-500" />}
-                    warning={brokenLinks.length > 0}
-                  />
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="issues">
+      
+      <Tabs defaultValue="general">
+        <TabsList>
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="technical">Técnico</TabsTrigger>
+          <TabsTrigger value="issues">Problemas</TabsTrigger>
+          <TabsTrigger value="links">Enlaces</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="general" className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              {issues.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Problema</TableHead>
-                      <TableHead>Severidad</TableHead>
-                      <TableHead>Solución recomendada</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {issues.map(issue => (
-                      <TableRow key={issue.id}>
-                        <TableCell>
-                          <div className="flex items-center">
-                            {getIssueTypeIcon(issue.issue_type)}
-                            <span className="ml-2">
-                              {issue.description}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant="outline" 
-                            className={getSeverityColor(issue.severity)}
-                          >
-                            {issue.severity}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{issue.recommended_fix}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-6">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    No se encontraron problemas en esta página.
-                  </p>
-                </div>
+              <MetadataItem 
+                label="Título"
+                value={page.title || 'No definido'}
+                warning={!page.title}
+              />
+              
+              <MetadataItem 
+                label="Meta descripción"
+                value={page.meta_description || 'No definida'}
+                warning={!page.meta_description}
+              />
+              
+              <MetadataItem 
+                label="Encabezado H1"
+                value={page.h1 || 'No definido'}
+                warning={!page.h1}
+              />
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="font-medium mb-2">Estadísticas</h3>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard 
+                  icon={<FileText className="h-4 w-4 text-blue-500" />}
+                  label="Palabras"
+                  value={page.word_count.toString()}
+                />
+                
+                <StatCard 
+                  icon={<Image className="h-4 w-4 text-purple-500" />}
+                  label="Imágenes"
+                  value={page.image_count.toString()}
+                />
+                
+                <StatCard 
+                  icon={<Link className="h-4 w-4 text-green-500" />}
+                  label="Enlaces internos"
+                  value={page.internal_links_count.toString()}
+                />
+                
+                <StatCard 
+                  icon={<Link2 className="h-4 w-4 text-amber-500" />}
+                  label="Enlaces externos"
+                  value={page.external_links_count.toString()}
+                />
+              </div>
+              
+              {page.canonical_url && (
+                <MetadataItem 
+                  label="URL canónica"
+                  value={page.canonical_url}
+                  isLink
+                />
               )}
             </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </>
-  );
-};
-
-interface PageDetailItemProps {
-  title: string;
-  content: string | null;
-}
-
-const PageDetailItem: React.FC<PageDetailItemProps> = ({ title, content }) => {
-  return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium">{title}</h3>
-      <div className="p-3 bg-muted rounded-md">
-        {content || <span className="text-muted-foreground">No definido</span>}
-      </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="technical" className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="font-medium mb-2">Metadatos técnicos</h3>
+              
+              <MetadataItem 
+                label="Meta robots"
+                value={page.meta_robots || 'No definido'}
+              />
+              
+              <MetadataItem 
+                label="Directivas de robots"
+                value={page.robots_directives || 'No definido'}
+              />
+              
+              <div className="flex justify-between items-center border-b pb-2">
+                <span>Mobile friendly</span>
+                <Badge variant={page.mobile_friendly ? 'outline' : 'destructive'}>
+                  {page.mobile_friendly ? 'Sí' : 'No'}
+                </Badge>
+              </div>
+              
+              <div className="flex justify-between items-center border-b pb-2">
+                <span>Marcado de esquema</span>
+                <Badge variant={page.has_schema_markup ? 'outline' : 'destructive'}>
+                  {page.has_schema_markup ? 'Sí' : 'No'}
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="font-medium mb-2">Rendimiento</h3>
+              
+              <div className="flex justify-between items-center border-b pb-2">
+                <span>Tamaño de página</span>
+                <Badge variant="outline">
+                  {page.page_size_kb ? `${page.page_size_kb} KB` : 'N/A'}
+                </Badge>
+              </div>
+              
+              <div className="flex justify-between items-center border-b pb-2">
+                <span>Tiempo de carga</span>
+                <Badge 
+                  variant="outline"
+                  className={
+                    page.load_time_ms < 1000
+                      ? 'bg-green-100 text-green-800'
+                      : page.load_time_ms < 3000
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                  }
+                >
+                  {page.load_time_ms ? `${(page.load_time_ms / 1000).toFixed(2)}s` : 'N/A'}
+                </Badge>
+              </div>
+              
+              <div className="flex justify-between items-center border-b pb-2">
+                <span>Imágenes sin alt</span>
+                <Badge 
+                  variant={page.images_without_alt > 0 ? 'destructive' : 'outline'}
+                >
+                  {page.images_without_alt}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="issues" className="pt-4">
+          {issues.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Problema</TableHead>
+                  <TableHead>Severidad</TableHead>
+                  <TableHead>Solución recomendada</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {issues.map(issue => (
+                  <TableRow key={issue.id}>
+                    <TableCell>
+                      <div className="flex items-center">
+                        {issue.severity === 'high' ? (
+                          <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
+                        ) : issue.severity === 'medium' ? (
+                          <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-blue-500 mr-2" />
+                        )}
+                        {issue.description}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          issue.severity === 'high'
+                            ? 'bg-red-100 text-red-800'
+                            : issue.severity === 'medium'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }
+                      >
+                        {issue.severity}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{issue.recommended_fix}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="py-12 text-center">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                No se encontraron problemas en esta página.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="links" className="pt-4">
+          {links.length > 0 ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap gap-3">
+                <Badge className="bg-blue-100 text-blue-800">
+                  {internalLinks.length} enlaces internos
+                </Badge>
+                <Badge className="bg-purple-100 text-purple-800">
+                  {externalLinks.length} enlaces externos
+                </Badge>
+                {brokenLinks.length > 0 && (
+                  <Badge variant="destructive">
+                    {brokenLinks.length} enlaces rotos
+                  </Badge>
+                )}
+              </div>
+              
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>URL</TableHead>
+                    <TableHead>Texto de ancla</TableHead>
+                    <TableHead>Tipo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {links.map(link => (
+                    <TableRow key={link.id}>
+                      <TableCell className="max-w-[300px] truncate">
+                        <a 
+                          href={link.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={`flex items-center ${link.is_broken ? 'text-red-500' : 'text-primary'} hover:underline`}
+                        >
+                          {link.url}
+                          <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      </TableCell>
+                      <TableCell>{link.anchor_text || 'N/A'}</TableCell>
+                      <TableCell>
+                        {link.is_internal ? (
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                            Interno
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                            Externo
+                          </Badge>
+                        )}
+                        {link.is_broken && (
+                          <Badge variant="destructive" className="ml-2">
+                            Roto
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground">
+                No se encontraron enlaces en esta página.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
 
-interface CanonicalUrlItemProps {
-  url: string | null;
+interface MetadataItemProps {
+  label: string;
+  value: string;
+  warning?: boolean;
+  isLink?: boolean;
 }
 
-const CanonicalUrlItem: React.FC<CanonicalUrlItemProps> = ({ url }) => {
+const MetadataItem: React.FC<MetadataItemProps> = ({ label, value, warning = false, isLink = false }) => {
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium">URL canónica</h3>
-      <div className="p-3 bg-muted rounded-md">
-        {url ? (
+    <div className="space-y-1">
+      <h4 className="text-sm font-medium">{label}</h4>
+      <div className={`p-3 rounded-md ${warning ? 'bg-red-50' : 'bg-muted'}`}>
+        {isLink ? (
           <a 
-            href={url} 
+            href={value} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-primary hover:underline flex items-center"
+            className="text-primary hover:underline flex items-center text-sm"
           >
-            {url}
+            {value}
             <ExternalLink className="h-3 w-3 ml-1" />
           </a>
         ) : (
-          <span className="text-muted-foreground">No definida</span>
+          <span className={warning ? 'text-red-600' : ''}>{value}</span>
         )}
       </div>
     </div>
   );
 };
 
-interface StatBadgeProps {
+interface StatCardProps {
   icon: React.ReactNode;
   label: string;
-  value: number | string;
+  value: string;
 }
 
-const StatBadge: React.FC<StatBadgeProps> = ({ icon, label, value }) => {
+const StatCard: React.FC<StatCardProps> = ({ icon, label, value }) => {
   return (
-    <div className="bg-muted p-2 rounded-md flex items-center justify-between">
+    <div className="flex items-center justify-between bg-muted p-3 rounded-md">
       <div className="flex items-center">
         {icon}
-        <span className="ml-1 text-sm">{label}</span>
+        <span className="ml-2 text-sm">{label}</span>
       </div>
       <Badge variant="secondary">{value}</Badge>
-    </div>
-  );
-};
-
-interface StatItemProps {
-  label: string;
-  value: string | number;
-  warning?: boolean;
-}
-
-const StatItem: React.FC<StatItemProps> = ({ label, value, warning = false }) => {
-  return (
-    <div className="flex justify-between items-center border-b pb-2">
-      <span>{label}</span>
-      <Badge variant={warning ? "destructive" : "outline"}>{value}</Badge>
-    </div>
-  );
-};
-
-interface StatCardProps {
-  title: string;
-  value: number | string;
-  icon: React.ReactNode;
-  warning?: boolean;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, warning = false }) => {
-  return (
-    <div className={`border p-4 rounded-lg ${warning ? 'border-yellow-300' : ''}`}>
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className={`text-2xl font-semibold mt-1 ${warning ? 'text-yellow-600' : ''}`}>{value}</p>
-        </div>
-        {icon}
-      </div>
     </div>
   );
 };

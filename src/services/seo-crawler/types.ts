@@ -1,7 +1,7 @@
 
 // SEO Crawler Types
 
-// Crawl Result
+// Tipos básicos
 export interface CrawlResult {
   id: string;
   client_id: string;
@@ -9,33 +9,32 @@ export interface CrawlResult {
   crawl_date: string;
   pages_crawled: number;
   issues_count: number;
-  status: 'pending' | 'processing' | 'completed' | 'error' | string; // Adding string to handle other potential values
+  status: 'pending' | 'processing' | 'completed' | 'error' | string;
   total_time_seconds: number;
 }
 
-// Crawl Page
 export interface CrawlPage {
   id: string;
   crawl_id: string;
   url: string;
-  title: string;
-  meta_description: string;
+  title: string | null;
+  meta_description: string | null;
   status_code: number;
   content_type: string;
   issues_count: number;
   crawled_at: string;
   
-  // Properties that are commonly used in components
-  h1: string;
+  // Propiedades adicionales
+  h1: string | null;
   h2_count: number;
   h3_count: number;
   word_count: number;
   image_count: number;
   internal_links_count: number;
   external_links_count: number;
-  canonical_url: string;
-  robots_directives: string;
-  meta_robots: string;
+  canonical_url: string | null;
+  robots_directives: string | null;
+  meta_robots: string | null;
   is_indexable: boolean;
   page_size_kb: number;
   load_time_ms: number;
@@ -45,19 +44,18 @@ export interface CrawlPage {
   content_length: number;
 }
 
-// Crawl Issue
 export interface CrawlIssue {
   id: string;
   page_id: string;
   issue_type: string;
-  severity: 'low' | 'medium' | 'high' | string; // Adding string to handle other values
+  severity: 'low' | 'medium' | 'high' | string;
   description: string;
-  element: string; // This property was missing
-  fix_suggestion: string; // This property was missing
+  element: string;
+  fix_suggestion: string;
   recommended_fix: string;
+  page_url?: string; // Campo opcional para mostrar en la UI
 }
 
-// Crawl Link
 export interface CrawlLink {
   id: string;
   page_id: string;
@@ -65,15 +63,13 @@ export interface CrawlLink {
   anchor_text: string;
   is_internal: boolean;
   is_followed: boolean;
-  rel_attributes: string; // This property was missing
-  
-  // Additional properties 
+  rel_attributes: string;
   is_broken: boolean;
   status_code: number;
-  follow?: boolean; // Keep this to handle API response format
+  follow?: boolean; // Para mantener compatibilidad con la API
 }
 
-// Crawl Settings
+// Configuración del crawler
 export interface CrawlSettings {
   clientId: string;
   url: string;
@@ -83,7 +79,7 @@ export interface CrawlSettings {
   includePatterns?: string[];
 }
 
-// Saved Crawl Settings from database
+// Configuración guardada del crawler
 export interface SavedCrawlSettings {
   id: string;
   client_id: string;

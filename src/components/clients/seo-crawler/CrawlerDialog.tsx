@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Client } from '@/types/client.types';
-import { startCrawlService, getSettings } from '@/services/seo-crawler';
+import { startCrawl, getSettings, saveSettings } from '@/services/seo-crawler/api';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -17,9 +17,8 @@ interface CrawlerDialogProps {
   client: Client;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onClose?: () => void; // Added missing prop
+  onClose?: () => void;
   onCrawlCompleted?: () => void;
-  onSuccess?: () => void;
 }
 
 const CrawlerDialog: React.FC<CrawlerDialogProps> = ({ 
@@ -27,12 +26,11 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   open, 
   onOpenChange,
   onClose,
-  onSuccess,
   onCrawlCompleted
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
-  const [url, setUrl] = useState(client.website);
+  const [url, setUrl] = useState(client.website || '');
   const [maxPages, setMaxPages] = useState(100);
   const [followExternalLinks, setFollowExternalLinks] = useState(false);
   const [excludePatterns, setExcludePatterns] = useState<string[]>([]);
@@ -101,15 +99,36 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       setIsLoading(true);
       setError(null);
       
-      await startCrawlService(url, client.id);
+      // Guardar la configuración
+      await saveSettings({
+        clientId: client.id,
+        url,
+        maxPages,
+        followExternalLinks,
+        excludePatterns,
+        includePatterns
+      });
+      
+      // Iniciar el análisis
+      const result = await startCrawl(url, client.id, {
+        maxPages,
+        followExternalLinks,
+        excludePatterns,
+        includePatterns
+      });
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      
+      toast.success('Análisis SEO iniciado correctamente');
       
       if (onOpenChange) onOpenChange(false);
       if (onClose) onClose();
       if (onCrawlCompleted) onCrawlCompleted();
-      if (onSuccess) onSuccess();
       
     } catch (error: any) {
-      console.error('Error starting crawl:', error);
+      console.error('Error al iniciar análisis:', error);
       setError(error.message || 'Error al iniciar el análisis');
       toast.error(error.message || 'Error al iniciar el análisis');
     } finally {
