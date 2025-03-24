@@ -1,4 +1,3 @@
-
 export interface CrawlResult {
   id: string;
   client_id: string;
@@ -19,7 +18,6 @@ export interface CrawlResult {
   inserted_at: string;
   updated_at: string;
   domain: string;
-  // Additional fields used in components
   crawl_date?: string;
   issues_count?: number;
   total_time_seconds?: number;
@@ -37,7 +35,6 @@ export interface CrawlSettings {
   max_depth?: number;
   crawl_sitemap?: boolean;
   follow_links?: boolean;
-  // Additional fields used in components
   exclude_patterns?: string[];
   include_patterns?: string[];
   follow_external_links?: boolean;
@@ -82,7 +79,6 @@ export interface CrawlPage {
   content_type: string;
   issues_count: number;
   crawled_at: string;
-  // Additional fields used in components
   meta_robots?: string;
   robots_directives?: string;
   mobile_friendly?: boolean;
@@ -111,7 +107,7 @@ export interface CrawlLink {
   is_broken: boolean;
   status_code: number;
   follow: boolean;
-  rel_attributes: string[] | null;
+  rel_attributes: string | null;
 }
 
 export interface SavedCrawlSettings {
@@ -131,3 +127,4 @@ export interface SavedCrawlSettings {
   created_at: string;
   updated_at: string;
 }
+

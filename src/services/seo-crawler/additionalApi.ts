@@ -121,7 +121,7 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
       is_broken: link.is_broken,
       status_code: link.status_code,
       follow: link.follow,
-      rel_attributes: link.rel_attributes || null
+      rel_attributes: link.rel_attributes ? JSON.stringify(link.rel_attributes) : null
     }));
   } catch (error) {
     console.error('Error fetching links with details:', error);
@@ -182,10 +182,11 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
       is_broken: link.is_broken,
       status_code: link.status_code,
       follow: link.follow,
-      rel_attributes: link.rel_attributes || null
+      rel_attributes: link.rel_attributes ? JSON.stringify(link.rel_attributes) : null
     }));
   } catch (error) {
     console.error('Error fetching page links:', error);
     return [];
   }
 }
+

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlSettings } from './types';
 
@@ -225,7 +224,7 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
       is_broken: link.is_broken,
       status_code: link.status_code,
       follow: link.follow,
-      rel_attributes: link.rel_attributes || null
+      rel_attributes: link.rel_attributes ? JSON.stringify(link.rel_attributes) : null // Ensure rel_attributes is a string
     }));
   } catch (error) {
     console.error('Error fetching page links:', error);
@@ -278,12 +277,11 @@ export async function saveSettings(
         user_agent: settings.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
         max_depth: settings.max_depth || 5,
         crawl_sitemap: settings.crawl_sitemap || true,
-        // Fix: Ensure custom_headers is correctly typed as Record<string, string>
+        // Fix: Convert custom_headers to the correct type
         custom_headers: settings.custom_headers && typeof settings.custom_headers === 'object' 
-          ? Object.entries(settings.custom_headers).reduce((acc, [key, value]) => {
-              acc[key] = String(value); // Convert all values to strings
-              return acc;
-            }, {} as Record<string, string>)
+          ? Object.fromEntries(
+              Object.entries(settings.custom_headers).map(([key, value]) => [key, String(value)])
+            )
           : {},
         updated_at: new Date().toISOString()
       });
