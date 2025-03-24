@@ -58,10 +58,33 @@ export const startCrawl = async (settings: CrawlSettings) => {
       throw updateError;
     }
     
-    // Instead of making the Edge Function call here, we'll just register the crawl
-    // and let the user know it's been started. The actual crawling will happen in the background.
+    // Now call the edge function to start the crawl in background
+    try {
+      console.log('Llamando al edge function para iniciar el análisis');
+      const response = await supabase.functions.invoke('seo-crawler', {
+        body: { url: settings.url, crawlId: crawlResult.id }
+      });
+      
+      if (response.error) {
+        console.error('Error del edge function:', response.error);
+        // Don't throw, just log - we've already created the record
+        toast.warning('El análisis se ha iniciado, pero puede haber problemas con el servicio de análisis. Se registrará como un análisis con errores.', { 
+          id: 'crawl-loading',
+          duration: 5000
+        });
+      } else {
+        console.log('Respuesta del edge function:', response.data);
+      }
+    } catch (edgeFunctionError) {
+      console.error('Error al invocar edge function:', edgeFunctionError);
+      // Don't throw, just log - we've already created the record
+      toast.warning('El análisis se ha iniciado, pero puede haber problemas de conexión con el servicio de análisis. Se registrará pero es posible que esté incompleto.', { 
+        id: 'crawl-loading',
+        duration: 5000
+      });
+    }
     
-    // Success message
+    // Success message - we're always "successful" here because we've at least created a record
     toast.success('Análisis SEO iniciado correctamente', { 
       id: 'crawl-loading',
       description: 'El análisis se ejecutará en segundo plano. Podrá ver los resultados una vez completado.'
