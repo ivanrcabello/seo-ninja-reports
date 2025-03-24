@@ -45,8 +45,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
-      // Verificar que las credenciales estén configuradas
-      // Priorizar las variables de entorno, luego los parámetros de la solicitud, y finalmente los valores predeterminados
+      // Priorizar las variables de entorno, luego los parámetros de la solicitud
       const username = brightDataUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || '';
       const password = brightDataPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
       
