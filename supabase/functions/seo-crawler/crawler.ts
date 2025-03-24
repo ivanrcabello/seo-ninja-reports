@@ -10,18 +10,30 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
   console.log(`Iniciando análisis de página: ${url}`);
   
   try {
-    // Logging pre-fetch para depuración
+    // More detailed logging to help diagnose issues
     console.log(`Realizando fetch de: ${url}`);
     
     try {
+      // Add more request metadata and a longer timeout
       const response = await fetch(url, {
-        headers: { 'User-Agent': 'SEO-Crawler/1.0' },
+        headers: { 
+          'User-Agent': 'SEO-Crawler/1.0',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5'
+        },
         redirect: 'follow',
-        // Añadir timeout para evitar bloqueos
-        signal: AbortSignal.timeout(30000) // 30 segundos máximo
+        // Add explicit timeout to avoid hanging requests
+        signal: AbortSignal.timeout(30000) // 30 second timeout
       });
       
-      console.log(`Respuesta recibida. Status code: ${response.status}`);
+      console.log(`Respuesta recibida. Status code: ${response.status}, Status text: ${response.statusText}`);
+      
+      // Log response headers for debugging
+      const headers = {};
+      response.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+      console.log('Response headers:', JSON.stringify(headers, null, 2));
       
       if (!response.ok) {
         throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
@@ -55,6 +67,9 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
       }
       
       console.log(`Contenido HTML obtenido (${html.length} bytes)`);
+      
+      // Add a sample of the HTML for debugging
+      console.log('Primeros 500 caracteres del HTML:', html.substring(0, 500));
       
       const $ = cheerio.load(html);
       console.log('HTML parseado con cheerio');
@@ -235,9 +250,24 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
       };
       
     } catch (fetchError) {
-      // Capturar específicamente errores de fetch
+      // Capturar específicamente errores de fetch con más detalles
       console.error(`Error en la solicitud HTTP para ${url}:`, fetchError);
-      throw new Error(`Error al obtener la página: ${fetchError.message}`);
+      
+      // Log more specific error information
+      let errorMessage = "Error desconocido en fetch";
+      
+      if (fetchError instanceof TypeError && fetchError.message.includes('abort')) {
+        errorMessage = "La solicitud se abortó por timeout";
+      } else if (fetchError instanceof TypeError && fetchError.message.includes('failed')) {
+        errorMessage = "Fallo de red en la conexión";
+      } else if (fetchError instanceof Error) {
+        errorMessage = fetchError.message;
+      }
+      
+      // Register the specific error
+      await registerCrawlerError(supabase, crawlId, url, errorMessage);
+      
+      throw new Error(`Error al obtener la página: ${errorMessage}`);
     }
     
   } catch (error) {
