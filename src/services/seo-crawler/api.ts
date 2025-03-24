@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
 
@@ -57,7 +58,8 @@ export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]
       
     if (error) throw error;
     
-    return data;
+    // Ensure data conforms to CrawlResult type
+    return data as CrawlResult[];
   } catch (error) {
     console.error("Error retrieving crawl results:", error);
     throw error;
@@ -65,7 +67,7 @@ export const fetchCrawlResults = async (clientId: string): Promise<CrawlResult[]
 };
 
 // Get a single crawl result by ID
-export const getCrawlResults = async (crawlId: string) => {
+export const getCrawlResults = async (crawlId: string): Promise<CrawlResult> => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_results')
@@ -75,7 +77,7 @@ export const getCrawlResults = async (crawlId: string) => {
       
     if (error) throw error;
     
-    return data;
+    return data as CrawlResult;
   } catch (error) {
     console.error("Error fetching crawl result:", error);
     throw error;
@@ -83,7 +85,7 @@ export const getCrawlResults = async (crawlId: string) => {
 };
 
 // Get crawl pages
-export const getCrawlPages = async (crawlId: string) => {
+export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_pages')
@@ -92,7 +94,13 @@ export const getCrawlPages = async (crawlId: string) => {
       
     if (error) throw error;
     
-    return data;
+    // Add default values for required properties that might be missing
+    return data.map(page => ({
+      ...page,
+      content_type: page.content_type || 'text/html',
+      issues_count: page.issues_count || 0,
+      crawled_at: page.crawled_at || new Date().toISOString()
+    })) as CrawlPage[];
   } catch (error) {
     console.error("Error retrieving crawl pages:", error);
     throw error;
@@ -109,7 +117,7 @@ export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
       
     if (error) throw error;
     
-    return data;
+    return data as CrawlIssue[];
   } catch (error) {
     console.error("Error retrieving page issues:", error);
     throw error;
@@ -126,10 +134,10 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
       
     if (error) throw error;
     
-    // Convert 'follow' to 'is_followed' for compatibility
+    // Transform 'follow' to 'is_followed' for compatibility
     return data.map(link => ({
       ...link,
-      is_followed: link.follow,
+      is_followed: link.follow || false
     })) as CrawlLink[];
   } catch (error) {
     console.error("Error retrieving page links:", error);

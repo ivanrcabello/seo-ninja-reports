@@ -118,7 +118,11 @@ export const fetchCrawlLinks = async (pageId: string): Promise<CrawlLink[]> => {
       
     if (error) throw error;
     
-    return data as CrawlLink[];
+    // Convert to CrawlLink type with proper is_followed property
+    return data.map(link => ({
+      ...link,
+      is_followed: link.follow || false
+    })) as unknown as CrawlLink[];
   } catch (error) {
     console.error("Error retrieving page links:", error);
     throw error;

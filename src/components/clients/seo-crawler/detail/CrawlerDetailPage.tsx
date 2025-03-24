@@ -52,13 +52,23 @@ const CrawlerDetailPage: React.FC = () => {
         const result = await fetchCrawlResult(crawlId);
         setCrawlResult(result);
         
+        // Fetch pages and ensure they have all required properties
         const pagesData = await getCrawlPages(crawlId);
-        setPages(pagesData || []);
+        
+        // Transform pages to ensure all required properties are present
+        const completePages: CrawlPage[] = pagesData.map(page => ({
+          ...page,
+          content_type: page.content_type || 'text/html',
+          issues_count: page.issues_count || 0,
+          crawled_at: page.crawled_at || new Date().toISOString()
+        }));
+        
+        setPages(completePages);
         
         const issuesByType: Record<string, CrawlIssue[]> = {};
         const issuesBySeverity: Record<string, CrawlIssue[]> = {};
         
-        for (const page of pagesData) {
+        for (const page of completePages) {
           const issues = await fetchCrawlIssues(page.id);
           
           issues.forEach(issue => {
@@ -100,7 +110,13 @@ const CrawlerDetailPage: React.FC = () => {
       setPageIssues(issues || []);
       
       const links = await fetchCrawlLinks(page.id);
-      setPageLinks(links || []);
+      // Ensure links have the is_followed property
+      const processedLinks = links.map(link => ({
+        ...link,
+        is_followed: 'follow' in link ? !!link.follow : link.is_followed
+      }));
+      
+      setPageLinks(processedLinks);
     } catch (error) {
       console.error('Error loading page data:', error);
       toast.error('Error al cargar los datos de la página');

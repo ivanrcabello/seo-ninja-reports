@@ -9,7 +9,7 @@ export interface CrawlResult {
   crawl_date: string;
   pages_crawled: number;
   issues_count: number;
-  status: 'pending' | 'processing' | 'completed' | 'error';
+  status: 'pending' | 'processing' | 'completed' | 'error' | string; // Adding string to handle other potential values
   total_time_seconds: number;
 }
 
@@ -25,7 +25,7 @@ export interface CrawlPage {
   issues_count: number;
   crawled_at: string;
   
-  // Additional properties being used in components
+  // Optional properties used in components
   h1?: string;
   h2_count?: number;
   h3_count?: number;
@@ -42,6 +42,7 @@ export interface CrawlPage {
   images_without_alt?: number;
   mobile_friendly?: boolean;
   has_schema_markup?: boolean;
+  content_length?: number;
 }
 
 // Crawl Issue
@@ -49,11 +50,11 @@ export interface CrawlIssue {
   id: string;
   page_id: string;
   issue_type: string;
-  severity: 'low' | 'medium' | 'high';
+  severity: 'low' | 'medium' | 'high' | string; // Adding string to handle other values
   description: string;
   element?: string;
   fix_suggestion?: string;
-  recommended_fix?: string; // Added this property
+  recommended_fix?: string;
 }
 
 // Crawl Link
@@ -66,9 +67,10 @@ export interface CrawlLink {
   is_followed: boolean;
   rel_attributes?: string;
   
-  // Additional properties being used
+  // Additional properties 
   is_broken?: boolean;
   status_code?: number;
+  follow?: boolean; // Added to handle API response
 }
 
 // Crawl Settings

@@ -1,100 +1,91 @@
 
-import { startCrawl, getCrawlResults, getCrawlPages, getPageIssues, getPageLinks } from './api';
-import { saveSettings, getSettings } from './settingsService';
-import { toast } from 'sonner';
+import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
+import { getCrawlResults, getCrawlPages, getPageIssues, getPageLinks } from './api';
 
-// Start a new crawl
-export const startCrawlService = async (url: string, clientId: string) => {
+// Get all data for a specific crawl
+export const getCrawlData = async (crawlId: string): Promise<{
+  result: CrawlResult;
+  pages: CrawlPage[];
+  issues: Record<string, CrawlIssue[]>;
+  links: Record<string, CrawlLink[]>;
+}> => {
   try {
-    // Get Bright Data credentials from localStorage
-    const brightDataUsername = localStorage.getItem('brightDataUsername') || undefined;
-    const brightDataPassword = localStorage.getItem('brightDataPassword') || undefined;
+    // Get crawl result
+    const result = await getCrawlResults(crawlId);
     
-    if (brightDataUsername && brightDataPassword) {
-      console.log(`Using custom Bright Data credentials: ${brightDataUsername.substring(0, 10)}...`);
-    } else {
-      console.log('Using default Bright Data credentials');
-    }
-    
-    toast.info('Iniciando análisis SEO...');
-    
-    // Process URL - remove protocol if exists
-    let processedUrl = url;
-    if (!processedUrl.startsWith('http://') && !processedUrl.startsWith('https://')) {
-      processedUrl = 'https://' + processedUrl;
-    }
-    
-    // First, save the crawl settings
-    await saveSettings({
-      clientId,
-      url: processedUrl,
-      maxPages: 100, // Default value
-      followExternalLinks: false // Default value
-    });
-    
-    // Then, start the crawl
-    const result = await startCrawl(
-      processedUrl, 
-      clientId, 
-      brightDataUsername, 
-      brightDataPassword
-    );
-    
-    return result;
-  } catch (error) {
-    console.error('Error starting SEO crawl:', error);
-    toast.error('Error al iniciar el análisis SEO');
-    throw error;
-  }
-};
-
-// Get crawl data
-export const getCrawlData = async (crawlId: string) => {
-  try {
-    const crawl = await getCrawlResults(crawlId);
+    // Get pages
     const pages = await getCrawlPages(crawlId);
     
-    // Get issues for each page
-    const pagesWithIssues = await Promise.all(
-      pages.map(async (page) => {
-        const issues = await getPageIssues(page.id);
-        return {
-          ...page,
-          issues
-        };
-      })
-    );
+    // Get issues and links for each page
+    const issues: Record<string, CrawlIssue[]> = {};
+    const links: Record<string, CrawlLink[]> = {};
     
-    return {
-      crawl,
-      pages: pagesWithIssues
-    };
-  } catch (error) {
-    console.error('Error retrieving crawl data:', error);
-    throw error;
-  }
-};
-
-// Get a single page with its issues and links
-export const getPageData = async (pageId: string) => {
-  try {
-    const pages = await getCrawlPages('');
-    const page = pages.find(p => p.id === pageId);
-    
-    if (!page) {
-      throw new Error('Page not found');
+    for (const page of pages) {
+      const pageIssues = await getPageIssues(page.id);
+      issues[page.id] = pageIssues;
+      
+      const pageLinks = await getPageLinks(page.id);
+      links[page.id] = pageLinks;
     }
     
-    const issues = await getPageIssues(pageId);
-    const links = await getPageLinks(pageId);
-    
     return {
-      page,
+      result,
+      pages,
       issues,
       links
     };
   } catch (error) {
-    console.error('Error retrieving page data:', error);
+    console.error("Error retrieving crawl data:", error);
+    throw error;
+  }
+};
+
+// Get summary statistics for a crawl
+export const getCrawlSummary = async (crawlId: string): Promise<{
+  pagesCount: number;
+  issuesCount: number;
+  issuesBySeverity: Record<string, number>;
+  issuesByType: Record<string, number>;
+}> => {
+  try {
+    // Get pages
+    const pages = await getCrawlPages(crawlId);
+    
+    // Initialize summary data
+    const summary = {
+      pagesCount: pages.length,
+      issuesCount: 0,
+      issuesBySeverity: {} as Record<string, number>,
+      issuesByType: {} as Record<string, number>
+    };
+    
+    // Process each page
+    for (const page of pages) {
+      const pageIssues = await getPageIssues(page.id);
+      
+      // Update issues count
+      summary.issuesCount += pageIssues.length;
+      
+      // Update issues by severity
+      pageIssues.forEach(issue => {
+        const severity = issue.severity;
+        if (!summary.issuesBySeverity[severity]) {
+          summary.issuesBySeverity[severity] = 0;
+        }
+        summary.issuesBySeverity[severity]++;
+        
+        // Update issues by type
+        const type = issue.issue_type;
+        if (!summary.issuesByType[type]) {
+          summary.issuesByType[type] = 0;
+        }
+        summary.issuesByType[type]++;
+      });
+    }
+    
+    return summary;
+  } catch (error) {
+    console.error("Error calculating crawl summary:", error);
     throw error;
   }
 };

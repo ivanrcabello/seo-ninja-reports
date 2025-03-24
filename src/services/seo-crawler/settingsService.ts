@@ -2,67 +2,84 @@
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings, SavedCrawlSettings } from './types';
 
-export const saveSettings = async (settings: CrawlSettings): Promise<void> => {
-  try {
-    // Comprobar si ya existe una configuración para este dominio y cliente
-    const { data: existingSettings } = await supabase
-      .from('seo_crawl_settings')
-      .select('*')
-      .eq('client_id', settings.clientId)
-      .eq('domain', settings.url)
-      .single();
-      
-    const configToSave = {
-      client_id: settings.clientId,
-      domain: settings.url,
-      max_pages: settings.maxPages || 100,
-      exclude_patterns: settings.excludePatterns || [],
-      include_patterns: settings.includePatterns || [],
-      follow_external_links: settings.followExternalLinks || false
-    };
-    
-    if (existingSettings) {
-      // Actualizar configuración existente
-      const { error } = await supabase
-        .from('seo_crawl_settings')
-        .update(configToSave)
-        .eq('id', existingSettings.id);
-        
-      if (error) throw error;
-    } else {
-      // Crear nueva configuración
-      const { error } = await supabase
-        .from('seo_crawl_settings')
-        .insert(configToSave);
-        
-      if (error) throw error;
-    }
-  } catch (error: any) {
-    console.error('Error al guardar configuración:', error);
-    // No mostramos toast para no interrumpir el flujo principal
-  }
-};
-
-export const getSettings = async (clientId: string, domain: string): Promise<SavedCrawlSettings | null> => {
+// Get saved crawl settings for a client
+export const getSettings = async (clientId: string): Promise<SavedCrawlSettings | null> => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_settings')
       .select('*')
       .eq('client_id', clientId)
-      .eq('domain', domain)
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .single();
       
     if (error) {
+      // If no settings found, return null instead of throwing error
       if (error.code === 'PGRST116') {
-        // No se encontró configuración, es normal
         return null;
       }
       throw error;
     }
     
     return data as SavedCrawlSettings;
-  } catch (error: any) {
-    console.error('Error al obtener configuración guardada:', error);
+  } catch (error) {
+    console.error("Error retrieving crawl settings:", error);
     return null;
+  }
+};
+
+// Save crawl settings for a client
+export const saveSettings = async (settings: CrawlSettings): Promise<SavedCrawlSettings | null> => {
+  try {
+    // First check if settings already exist
+    const { data: existingSettings, error: checkError } = await supabase
+      .from('seo_crawl_settings')
+      .select('id')
+      .eq('client_id', settings.clientId)
+      .eq('domain', settings.url)
+      .limit(1);
+      
+    if (checkError) throw checkError;
+    
+    // Prepare data for insert/update
+    const dataToSave = {
+      client_id: settings.clientId,
+      domain: settings.url,
+      max_pages: settings.maxPages || 100,
+      follow_external_links: settings.followExternalLinks || false,
+      exclude_patterns: settings.excludePatterns || [],
+      include_patterns: settings.includePatterns || [],
+      updated_at: new Date().toISOString()
+    };
+    
+    let result;
+    
+    // Update if exists, insert if not
+    if (existingSettings && existingSettings.length > 0) {
+      const { data, error } = await supabase
+        .from('seo_crawl_settings')
+        .update(dataToSave)
+        .eq('id', existingSettings[0].id)
+        .select();
+        
+      if (error) throw error;
+      result = data;
+    } else {
+      const { data, error } = await supabase
+        .from('seo_crawl_settings')
+        .insert({
+          ...dataToSave,
+          created_at: new Date().toISOString()
+        })
+        .select();
+        
+      if (error) throw error;
+      result = data;
+    }
+    
+    return result[0] as SavedCrawlSettings;
+  } catch (error) {
+    console.error("Error saving crawl settings:", error);
+    throw error;
   }
 };
