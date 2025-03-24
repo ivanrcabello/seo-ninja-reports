@@ -31,15 +31,15 @@ export async function crawlPage(
       // Use Bright Data's Web Scraper API to fetch the page
       console.log(`Llamando a la API de Bright Data para analizar: ${normalizedUrl}`);
       
-      // Two options for implementation:
-      // 1. Use their Web Scraper API (recommended for production)
-      // 2. Do a direct fetch with their proxy configuration for simpler implementation
+      // Bright Data Web Scraper API configuration
+      const apiEndpoint = BRIGHT_DATA_CONFIG.WEB_SCRAPER_API_URL;
       
-      // Option 1: Web Scraper API configuration
       const apiRequestBody = {
         url: normalizedUrl,
         parse: false, // We want the raw HTML
-        render: false // No need for JavaScript rendering for basic SEO analysis
+        render: false, // No need for JavaScript rendering for basic SEO analysis
+        residential: true, // Use residential IP for better crawling results
+        country: 'es'
       };
       
       const apiRequestHeaders = {
@@ -48,23 +48,36 @@ export async function crawlPage(
       };
       
       console.log('Enviando solicitud a Bright Data Web Scraper API...');
+      console.log(`Endpoint: ${apiEndpoint}`);
+      console.log(`Body: ${JSON.stringify(apiRequestBody)}`);
       
-      // For testing, we'll use a direct fetch approach since we don't have actual Bright Data credentials in the environment
-      // In production with actual credentials, use their API
-      const scrapeResponse = await fetch(normalizedUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
-        },
+      // Make the actual request to Bright Data API
+      const scrapeResponse = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: apiRequestHeaders,
+        body: JSON.stringify(apiRequestBody),
         signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
       });
       
+      console.log(`Respuesta recibida: status ${scrapeResponse.status}`);
+      
       if (!scrapeResponse.ok) {
-        throw new Error(`HTTP error! Status: ${scrapeResponse.status}`);
+        const errorText = await scrapeResponse.text();
+        console.error(`Error HTTP: ${scrapeResponse.status}, Respuesta: ${errorText}`);
+        throw new Error(`HTTP error! Status: ${scrapeResponse.status}, Respuesta: ${errorText}`);
       }
       
-      const html = await scrapeResponse.text();
+      // Parse the JSON response from Bright Data
+      const responseData = await scrapeResponse.json();
+      console.log(`Respuesta JSON recibida: ${JSON.stringify(responseData).substring(0, 200)}...`);
+      
+      // Check if response contains HTML content
+      if (!responseData.body || typeof responseData.body !== 'string') {
+        console.error('Respuesta de Bright Data no contiene HTML válido:', responseData);
+        throw new Error('No se recibió contenido HTML válido de Bright Data');
+      }
+      
+      const html = responseData.body;
       
       if (!html || html.length === 0) {
         throw new Error('No se recibió contenido HTML');
@@ -86,6 +99,7 @@ export async function crawlPage(
       
     } catch (fetchError) {
       console.error(`Error al obtener la página desde Bright Data: ${fetchError}`);
+      console.error(`Stack trace: ${fetchError instanceof Error ? fetchError.stack : 'No stack trace'}`);
       await registerCrawlerError(supabase, crawlId, url, fetchError instanceof Error ? fetchError.message : 'Error desconocido en la API de Bright Data');
       return null;
     }

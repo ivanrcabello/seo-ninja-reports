@@ -33,8 +33,12 @@ export const startCrawl = async (
       }
     });
     
-    if (fnError) throw fnError;
+    if (fnError) {
+      console.error('Error calling seo-crawler function:', fnError);
+      throw fnError;
+    }
     
+    console.log('Response from seo-crawler function:', data);
     return data;
   } catch (error) {
     console.error("Error starting SEO crawl:", error);
@@ -42,7 +46,7 @@ export const startCrawl = async (
   }
 };
 
-// Get crawl results
+// Get all crawl results for a client
 export const getCrawlResults = async (crawlId: string) => {
   try {
     const { data, error } = await supabase
@@ -56,6 +60,24 @@ export const getCrawlResults = async (crawlId: string) => {
     return data;
   } catch (error) {
     console.error("Error retrieving crawl results:", error);
+    throw error;
+  }
+};
+
+// Get a single crawl result by ID
+export const fetchCrawlResult = async (crawlId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('seo_crawl_results')
+      .select('*')
+      .eq('id', crawlId)
+      .single();
+      
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error("Error fetching crawl result:", error);
     throw error;
   }
 };
@@ -78,7 +100,7 @@ export const getCrawlPages = async (crawlId: string) => {
 };
 
 // Get issues for a specific page
-export const getPageIssues = async (pageId: string) => {
+export const fetchCrawlIssues = async (pageId: string) => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_issues')
@@ -95,7 +117,7 @@ export const getPageIssues = async (pageId: string) => {
 };
 
 // Get links for a specific page
-export const getPageLinks = async (pageId: string) => {
+export const fetchCrawlLinks = async (pageId: string) => {
   try {
     const { data, error } = await supabase
       .from('seo_crawl_links')

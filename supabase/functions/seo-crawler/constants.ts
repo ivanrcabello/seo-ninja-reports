@@ -1,70 +1,82 @@
 
-// Constants for SEO Crawler
+// SEO Crawler constants
+
+// CORS headers for Edge Function
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
 };
 
-export const SEO_ISSUES = {
-  MISSING_TITLE: {
-    type: 'MISSING_TITLE',
-    severity: 'high',
-    description: 'La página no tiene un título definido',
-    fix: 'Agregar una etiqueta title con un título descriptivo'
-  },
-  MISSING_META_DESCRIPTION: {
-    type: 'MISSING_META_DESCRIPTION',
-    severity: 'medium',
-    description: 'La página no tiene una meta descripción',
-    fix: 'Agregar una meta etiqueta description con una descripción concisa de la página'
-  },
-  MISSING_H1: {
-    type: 'MISSING_H1',
-    severity: 'medium',
-    description: 'La página no tiene un encabezado H1',
-    fix: 'Agregar un encabezado H1 que describa el contenido principal de la página'
-  },
-  TITLE_TOO_LONG: {
-    type: 'TITLE_TOO_LONG',
-    severity: 'low',
-    description: 'El título de la página es demasiado largo (más de 60 caracteres)',
-    fix: 'Acortar el título a 50-60 caracteres'
-  },
-  MULTIPLE_H1: {
-    type: 'MULTIPLE_H1',
-    severity: 'medium',
-    description: 'La página tiene múltiples encabezados H1',
-    fix: 'Usar solo un encabezado H1 por página'
-  },
-  META_DESCRIPTION_TOO_LONG: {
-    type: 'META_DESCRIPTION_TOO_LONG',
-    severity: 'low',
-    description: 'La meta descripción es demasiado larga (más de 160 caracteres)',
-    fix: 'Acortar la meta descripción a menos de 160 caracteres'
-  },
-  NO_ALT_TEXT: {
-    type: 'NO_ALT_TEXT',
-    severity: 'medium',
-    description: 'Imágenes sin texto alternativo',
-    fix: 'Agregar texto alt descriptivo a todas las imágenes'
-  },
-  NO_SCHEMA_MARKUP: {
-    type: 'NO_SCHEMA_MARKUP',
-    severity: 'low',
-    description: 'La página no tiene marcado de esquema estructurado',
-    fix: 'Implementar marcado de esquema JSON-LD para mejorar el entendimiento de la página por los motores de búsqueda'
-  }
-};
-
+// Bright Data API configuration
 export const BRIGHT_DATA_CONFIG = {
-  // Configuración extraída del comando curl proporcionado
-  PROXY_HOST: 'brd.superproxy.io',
-  PROXY_PORT: 33335,
-  
-  // Usuario por defecto del Web Unlocker basado en tu comando curl
+  // Default credentials extracted from PHP example
   DEFAULT_USER: 'brd-customer-hl_cbc2d791-zone-web_unlocker1',
   DEFAULT_PASSWORD: '5d024usr515b',
   
-  // Configuración timeout para evitar colgarse
-  TIMEOUT: 120000 // 120 segundos
+  // Timeout config
+  TIMEOUT: 120000, // 120 seconds
+  
+  // Bright Data API endpoints
+  API_URL: 'https://api.brightdata.com',
+  WEB_SCRAPER_API_URL: 'https://api.brightdata.com/scrape',
+  
+  // Error codes
+  ERROR_CODES: {
+    AUTHENTICATION_FAILED: 'authentication_failed',
+    INVALID_URL: 'invalid_url',
+    SERVER_ERROR: 'server_error'
+  }
+};
+
+// SEO Issues definitions 
+export const SEO_ISSUES = {
+  MISSING_TITLE: {
+    type: 'missing_title',
+    severity: 'high',
+    description: 'La página no tiene un título definido',
+    fix: 'Añadir un título conciso que describa el contenido de la página'
+  },
+  TITLE_TOO_LONG: {
+    type: 'title_too_long',
+    severity: 'medium',
+    description: 'El título de la página es demasiado largo (más de 60 caracteres)',
+    fix: 'Acortar el título a menos de 60 caracteres para optimizar su visibilidad en los resultados de búsqueda'
+  },
+  MISSING_META_DESCRIPTION: {
+    type: 'missing_meta_description',
+    severity: 'high',
+    description: 'La página no tiene meta descripción',
+    fix: 'Añadir una meta descripción concisa y atractiva que describa el contenido de la página'
+  },
+  META_DESCRIPTION_TOO_LONG: {
+    type: 'meta_description_too_long',
+    severity: 'medium',
+    description: 'La meta descripción es demasiado larga (más de 160 caracteres)',
+    fix: 'Acortar la meta descripción a menos de 160 caracteres para optimizar su visibilidad en los resultados de búsqueda'
+  },
+  MISSING_H1: {
+    type: 'missing_h1',
+    severity: 'high',
+    description: 'La página no tiene un encabezado H1',
+    fix: 'Añadir un encabezado H1 que describa el contenido principal de la página'
+  },
+  MULTIPLE_H1: {
+    type: 'multiple_h1',
+    severity: 'medium',
+    description: 'La página tiene múltiples encabezados H1',
+    fix: 'Usar un solo encabezado H1 como título principal de la página'
+  },
+  NO_ALT_TEXT: {
+    type: 'missing_alt_text',
+    severity: 'medium',
+    description: 'Hay imágenes sin texto alternativo (alt)',
+    fix: 'Añadir texto alternativo descriptivo a todas las imágenes para mejorar la accesibilidad y SEO'
+  },
+  NO_SCHEMA_MARKUP: {
+    type: 'no_schema_markup',
+    severity: 'low',
+    description: 'La página no tiene marcado de esquema (schema markup)',
+    fix: 'Añadir marcado de esquema JSON-LD para proporcionar contexto adicional a los motores de búsqueda'
+  }
 };
