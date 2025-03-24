@@ -113,8 +113,8 @@ export const fetchCrawlIssues = async (pageId: string): Promise<CrawlIssue[]> =>
       ...issue,
       severity: (issue.severity as "low" | "medium" | "high" | string),
       recommended_fix: issue.recommended_fix || '',
-      element: issue.element || '',
-      fix_suggestion: issue.fix_suggestion || ''
+      element: issue.element || '',  // Add missing element property
+      fix_suggestion: issue.fix_suggestion || ''  // Add missing fix_suggestion property
     })) as CrawlIssue[];
   } catch (error) {
     console.error("Error retrieving page issues:", error);
@@ -138,7 +138,7 @@ export const fetchCrawlLinks = async (pageId: string): Promise<CrawlLink[]> => {
       is_followed: link.follow !== undefined ? !!link.follow : true,
       is_broken: link.is_broken !== undefined ? link.is_broken : false,
       status_code: link.status_code || 200,
-      rel_attributes: link.rel_attributes || '',
+      rel_attributes: link.rel_attributes || '',  // Add missing rel_attributes property
       anchor_text: link.anchor_text || ''
     })) as CrawlLink[];
   } catch (error) {

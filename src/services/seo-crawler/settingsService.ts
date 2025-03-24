@@ -1,6 +1,16 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlSettings, SavedCrawlSettings } from './types';
+import { SavedCrawlSettings } from './types';
+
+// Define CrawlSettings type
+interface CrawlSettings {
+  clientId: string;
+  url: string;
+  maxPages?: number;
+  followExternalLinks?: boolean;
+  excludePatterns?: string[];
+  includePatterns?: string[];
+}
 
 // Get saved crawl settings for a client
 export const getSettings = async (clientId: string, domain?: string): Promise<SavedCrawlSettings | null> => {
@@ -86,3 +96,6 @@ export const saveSettings = async (settings: CrawlSettings): Promise<SavedCrawlS
     throw error;
   }
 };
+
+// Export the CrawlSettings type
+export type { CrawlSettings };

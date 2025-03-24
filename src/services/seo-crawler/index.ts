@@ -6,7 +6,6 @@ export * from './types';
 export { 
   startCrawl, 
   getCrawlPages, 
-  getCrawlResults, 
   getPageIssues, 
   getPageLinks 
 } from './api';
@@ -18,12 +17,12 @@ export {
   fetchCrawlLinks
 } from './additionalApi';
 
-// Rename exports to avoid conflicts
+// Rename exports from additionalApi to avoid conflicts
 export { fetchCrawlResults as getAllCrawlResults } from './additionalApi';
 export { deleteCrawlRecord as removeCrawlRecord } from './additionalApi';
 
-// Export from API with original names
-export { fetchCrawlResults, deleteCrawlRecord } from './api';
+// Export from API with original names (but add unique aliases to avoid conflicts)
+export { fetchCrawlResults as fetchCrawlResultsList, deleteCrawlRecord as deleteCrawlRecordApi } from './api';
 
 // Export startCrawlService for use in CrawlerDialog
 export { startCrawl as startCrawlService } from './api';

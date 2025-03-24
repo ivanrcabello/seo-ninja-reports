@@ -105,9 +105,9 @@ export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
     const now = new Date().toISOString();
     return data.map(page => ({
       ...page,
-      content_type: page.content_type || 'text/html',
-      issues_count: page.issues_count || 0,
-      crawled_at: page.crawled_at || now,
+      content_type: page.content_type || 'text/html',  // Add missing content_type property
+      issues_count: page.issues_count || 0,            // Add missing issues_count property
+      crawled_at: page.crawled_at || now,              // Add missing crawled_at property
       h1: page.h1 || '',
       h2_count: page.h2_count || 0,
       h3_count: page.h3_count || 0,
@@ -146,9 +146,9 @@ export const getPageIssues = async (pageId: string): Promise<CrawlIssue[]> => {
     return data.map(issue => ({
       ...issue,
       severity: (issue.severity as "low" | "medium" | "high" | string),
-      fix_suggestion: issue.fix_suggestion || '',
+      fix_suggestion: issue.fix_suggestion || '',  // Add missing fix_suggestion property
       recommended_fix: issue.recommended_fix || '',
-      element: issue.element || ''
+      element: issue.element || ''  // Add missing element property
     })) as CrawlIssue[];
   } catch (error) {
     console.error("Error retrieving page issues:", error);
@@ -172,7 +172,7 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
       is_followed: link.follow !== undefined ? !!link.follow : true,
       is_broken: link.is_broken !== undefined ? link.is_broken : false,
       status_code: link.status_code || 200,
-      rel_attributes: link.rel_attributes || '',
+      rel_attributes: link.rel_attributes || '',  // Add missing rel_attributes property
       anchor_text: link.anchor_text || ''
     })) as CrawlLink[];
   } catch (error) {
