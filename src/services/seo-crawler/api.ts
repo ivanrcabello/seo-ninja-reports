@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { handleServiceError } from '@/services/api/baseService';
 import { toast } from 'sonner';
@@ -52,6 +53,12 @@ export const invokeCrawlerFunction = async (settings: CrawlSettings, crawlId: st
       throw new Error('Invalid URL format');
     }
 
+    // Define the type for the function response
+    type EdgeFunctionResponse = {
+      data: any;
+      error: null | { message: string };
+    };
+
     // Make the function call with explicit timeout
     const response = await Promise.race([
       supabase.functions.invoke('seo-crawler', {
@@ -63,20 +70,20 @@ export const invokeCrawlerFunction = async (settings: CrawlSettings, crawlId: st
         headers: {
           'Content-Type': 'application/json'
         }
-      }),
-      new Promise((_, reject) => 
+      }) as Promise<EdgeFunctionResponse>,
+      new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error('Request timed out')), 30000)
       )
     ]);
 
-    // Check for response error
-    if (response.error) {
+    // Check for response error - now TypeScript knows the structure
+    if (response && 'error' in response && response.error) {
       console.error('Edge function error response:', response.error);
       throw new Error(response.error.message || 'Error al iniciar el análisis SEO');
     }
 
     // Validate response data
-    if (!response.data) {
+    if (!response || !('data' in response) || !response.data) {
       throw new Error('No se recibió respuesta del servidor');
     }
     
