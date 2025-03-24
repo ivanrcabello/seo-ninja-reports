@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Client } from '@/types/client.types';
-import { startCrawl, getSettings, saveSettings } from '@/services/seo-crawler/api';
+import { startCrawl, getSettings } from '@/services/seo-crawler/api';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -41,21 +41,21 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
 
   useEffect(() => {
     if (open && url) {
-      loadSavedSettings(url);
+      loadSavedSettings();
     }
   }, [open, url]);
 
-  const loadSavedSettings = async (domain: string) => {
+  const loadSavedSettings = async () => {
     try {
       setIsLoadingSettings(true);
       setError(null);
-      const savedSettings = await getSettings(client.id, domain);
+      const savedSettings = await getSettings(client.id);
       
       if (savedSettings) {
         setMaxPages(savedSettings.max_pages);
-        setExcludePatterns(savedSettings.exclude_patterns || []);
-        setIncludePatterns(savedSettings.include_patterns || []);
-        setFollowExternalLinks(savedSettings.follow_external_links);
+        setExcludePatterns(savedSettings.exclude_urls || []);
+        setIncludePatterns(savedSettings.include_urls || []);
+        setFollowExternalLinks(savedSettings.follow_links || false);
         toast.info('Configuración guardada cargada');
       }
     } catch (error) {
@@ -68,10 +68,6 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setUrl(newUrl);
-    
-    if (newUrl && newUrl.includes('.')) {
-      loadSavedSettings(newUrl);
-    }
   };
 
   const addPattern = () => {
@@ -99,27 +95,13 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       setIsLoading(true);
       setError(null);
       
-      // Guardar la configuración
-      await saveSettings({
-        clientId: client.id,
-        url,
-        maxPages,
-        followExternalLinks,
-        excludePatterns,
-        includePatterns
+      // Start the analysis with the settings
+      const result = await startCrawl(client.id, url, {
+        max_pages: maxPages,
+        follow_links: followExternalLinks,
+        exclude_urls: excludePatterns,
+        include_urls: includePatterns
       });
-      
-      // Iniciar el análisis
-      const result = await startCrawl(url, client.id, {
-        maxPages,
-        followExternalLinks,
-        excludePatterns,
-        includePatterns
-      });
-      
-      if (!result.success) {
-        throw new Error(result.message);
-      }
       
       toast.success('Análisis SEO iniciado correctamente');
       

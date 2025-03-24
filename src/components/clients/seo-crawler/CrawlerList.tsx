@@ -120,6 +120,11 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
     return <Badge>{status}</Badge>;
   };
 
+  const formatCrawlDate = (crawl: CrawlResult) => {
+    const dateStr = crawl.crawl_date || crawl.started_at || crawl.inserted_at;
+    return format(new Date(dateStr), 'd MMM yyyy', { locale: es });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4">
@@ -157,7 +162,7 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
                   {crawl.domain}
                 </div>
                 <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
-                  <span>{format(new Date(crawl.crawl_date), 'd MMM yyyy', { locale: es })}</span>
+                  <span>{formatCrawlDate(crawl)}</span>
                   {getCrawlStatusBadge(crawl.status)}
                 </div>
               </div>

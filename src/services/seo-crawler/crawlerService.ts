@@ -1,7 +1,6 @@
 
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
-import { getCrawlResult, getCrawlPages } from './api';
-import { fetchCrawlIssues, fetchCrawlLinks } from './additionalApi';
+import { getCrawlResult, getCrawlPages, getPageIssues, getPageLinks } from './api';
 
 // Get all data for a specific crawl
 export const getCrawlData = async (crawlId: string): Promise<{
@@ -13,6 +12,9 @@ export const getCrawlData = async (crawlId: string): Promise<{
   try {
     // Get crawl result
     const result = await getCrawlResult(crawlId);
+    if (!result) {
+      throw new Error('Crawl result not found');
+    }
     
     // Get pages
     const pages = await getCrawlPages(crawlId);
@@ -22,10 +24,10 @@ export const getCrawlData = async (crawlId: string): Promise<{
     const links: Record<string, CrawlLink[]> = {};
     
     for (const page of pages) {
-      const pageIssues = await fetchCrawlIssues(page.id);
+      const pageIssues = await getPageIssues(page.id);
       issues[page.id] = pageIssues;
       
-      const pageLinks = await fetchCrawlLinks(page.id);
+      const pageLinks = await getPageLinks(page.id);
       links[page.id] = pageLinks;
     }
     
@@ -62,7 +64,7 @@ export const getCrawlSummary = async (crawlId: string): Promise<{
     
     // Process each page
     for (const page of pages) {
-      const pageIssues = await fetchCrawlIssues(page.id);
+      const pageIssues = await getPageIssues(page.id);
       
       // Update issues count
       summary.issuesCount += pageIssues.length;

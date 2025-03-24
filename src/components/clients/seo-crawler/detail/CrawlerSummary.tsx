@@ -20,12 +20,19 @@ const CrawlerSummary: React.FC<CrawlerSummaryProps> = ({
   const mediumIssues = issuesBySeverity.medium?.length || 0;
   const lowIssues = issuesBySeverity.low?.length || 0;
 
+  // Use appropriate date field
+  const dateFormatted = format(
+    new Date(crawlResult.crawl_date || crawlResult.started_at || crawlResult.inserted_at), 
+    'PPP, HH:mm', 
+    { locale: es }
+  );
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Resumen del Análisis</CardTitle>
         <CardDescription>
-          Análisis realizado el {format(new Date(crawlResult.crawl_date), 'PPP, HH:mm', { locale: es })}
+          Análisis realizado el {dateFormatted}
         </CardDescription>
       </CardHeader>
       <Separator />
@@ -44,7 +51,7 @@ const CrawlerSummary: React.FC<CrawlerSummaryProps> = ({
             <CardContent className="p-6">
               <div className="flex flex-col items-center">
                 <h3 className="text-lg font-semibold mb-2">Problemas detectados</h3>
-                <p className="text-3xl font-bold">{crawlResult.issues_count}</p>
+                <p className="text-3xl font-bold">{crawlResult.issues_count || crawlResult.total_issues}</p>
                 <div className="flex items-center gap-2 mt-2 text-sm">
                   <span className="text-red-500">{highIssues} altos</span>
                   <span>·</span>
@@ -60,7 +67,11 @@ const CrawlerSummary: React.FC<CrawlerSummaryProps> = ({
             <CardContent className="p-6">
               <div className="flex flex-col items-center">
                 <h3 className="text-lg font-semibold mb-2">Tiempo de análisis</h3>
-                <p className="text-3xl font-bold">{crawlResult.total_time_seconds ? `${Math.round(crawlResult.total_time_seconds / 60)} min` : 'N/A'}</p>
+                <p className="text-3xl font-bold">
+                  {crawlResult.total_time_seconds 
+                    ? `${Math.round(crawlResult.total_time_seconds / 60)} min` 
+                    : 'N/A'}
+                </p>
               </div>
             </CardContent>
           </Card>

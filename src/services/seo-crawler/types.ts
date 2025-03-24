@@ -19,6 +19,12 @@ export interface CrawlResult {
   inserted_at: string;
   updated_at: string;
   domain: string;
+  // Additional fields used in components
+  crawl_date?: string;
+  issues_count?: number;
+  total_time_seconds?: number;
+  success?: boolean;
+  message?: string;
 }
 
 export interface CrawlSettings {
@@ -31,6 +37,10 @@ export interface CrawlSettings {
   max_depth?: number;
   crawl_sitemap?: boolean;
   follow_links?: boolean;
+  // Additional fields used in components
+  exclude_patterns?: string[];
+  include_patterns?: string[];
+  follow_external_links?: boolean;
 }
 
 export interface CrawlSummary {
@@ -72,6 +82,12 @@ export interface CrawlPage {
   content_type: string;
   issues_count: number;
   crawled_at: string;
+  // Additional fields used in components
+  meta_robots?: string;
+  robots_directives?: string;
+  mobile_friendly?: boolean;
+  page_size_kb?: number;
+  images_without_alt?: number;
 }
 
 export interface CrawlIssue {

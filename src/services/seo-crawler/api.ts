@@ -60,7 +60,12 @@ export async function startCrawl(
     
     if (updateError) console.error('Error updating crawl status:', updateError);
     
-    return crawlRecord as CrawlResult;
+    // Add success and message properties for the component to use
+    return {
+      ...crawlRecord as unknown as CrawlResult,
+      success: true,
+      message: 'Crawl started successfully'
+    };
   } catch (error) {
     console.error('Error starting crawl:', error);
     throw error;
@@ -80,7 +85,13 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
 
     if (error) throw error;
     
-    return data as CrawlResult[];
+    // Map database crawls to CrawlResult type with the fields needed by components
+    return (data || []).map(crawl => ({
+      ...crawl as unknown as CrawlResult,
+      crawl_date: crawl.started_at,
+      issues_count: crawl.total_issues,
+      total_time_seconds: 0
+    }));
   } catch (error) {
     console.error('Error fetching crawl results:', error);
     return [];
@@ -100,7 +111,13 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult | nul
 
     if (error) throw error;
     
-    return data as CrawlResult;
+    // Convert database crawl to CrawlResult type with fields needed by components
+    return data ? {
+      ...data as unknown as CrawlResult, 
+      crawl_date: data.started_at,
+      issues_count: data.total_issues,
+      total_time_seconds: 0
+    } : null;
   } catch (error) {
     console.error('Error fetching crawl result:', error);
     return null;
@@ -120,7 +137,7 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
 
     if (error) throw error;
     
-    return data.map((page: any) => ({
+    return (data || []).map((page: any) => ({
       id: page.id,
       crawl_id: page.crawl_id,
       url: page.url,
@@ -145,7 +162,13 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
       hreflang_count: page.hreflang_count || 0,
       content_type: page.content_type || '',
       issues_count: page.issues_count || 0,
-      crawled_at: page.crawled_at || page.inserted_at
+      crawled_at: page.crawled_at || page.inserted_at,
+      // Added fields used by the PageDetail component
+      meta_robots: page.meta_robots || '',
+      robots_directives: page.robots_directives || '',
+      mobile_friendly: typeof page.mobile_friendly === 'boolean' ? page.mobile_friendly : true,
+      page_size_kb: page.page_size_kb || 0,
+      images_without_alt: page.images_without_alt || 0
     }));
   } catch (error) {
     console.error('Error fetching crawl pages:', error);
@@ -165,7 +188,7 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
 
     if (error) throw error;
     
-    return data.map((issue: any) => ({
+    return (data || []).map((issue: any) => ({
       id: issue.id,
       page_id: issue.page_id,
       issue_type: issue.issue_type,
@@ -193,7 +216,7 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
 
     if (error) throw error;
     
-    return data.map((link: any) => ({
+    return (data || []).map((link: any) => ({
       id: link.id,
       page_id: link.page_id,
       url: link.url,
@@ -307,7 +330,7 @@ export async function getSettings(
       crawl_sitemap: data[0].crawl_sitemap,
       follow_links: data[0].follow_external_links,
       max_depth: data[0].max_depth,
-      custom_headers: data[0].custom_headers
+      custom_headers: data[0].custom_headers || {}
     };
   } catch (error) {
     console.error('Error fetching crawler settings:', error);
