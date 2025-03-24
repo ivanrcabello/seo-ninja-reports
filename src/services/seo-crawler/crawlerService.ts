@@ -1,4 +1,3 @@
-
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
 import { getCrawlResult, getCrawlPages, getPageIssues, getPageLinks } from './api';
 

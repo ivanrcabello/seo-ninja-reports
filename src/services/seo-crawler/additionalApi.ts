@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlIssue, CrawlLink, CrawlPage } from './types';
 
@@ -131,8 +130,8 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
 }
 
 // Export these functions for compatibility with crawlerService.ts
-export const fetchCrawlIssues = getPageIssues;
-export const fetchCrawlLinks = getPageLinks;
+export { getPageIssues as fetchCrawlIssues } from './api';
+export { getPageLinks as fetchCrawlLinks } from './api';
 
 /**
  * Get issues for a specific page

@@ -278,6 +278,10 @@ export async function saveSettings(
         user_agent: settings.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
         max_depth: settings.max_depth || 5,
         crawl_sitemap: settings.crawl_sitemap || true,
+        // Fix: Ensure custom_headers is the correct type by casting or providing a default empty object
+        custom_headers: settings.custom_headers ? 
+          (typeof settings.custom_headers === 'object' ? settings.custom_headers as Record<string, string> : {}) : 
+          {},
         updated_at: new Date().toISOString()
       });
 
