@@ -66,7 +66,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
       
       // Create timeout for the function call - we'll handle this client-side instead of passing it to the function
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout (aumentado para dar más tiempo)
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout (aumentado para dar más tiempo)
       
       // Edge function invocation
       const response = await supabase.functions.invoke('seo-crawler', {
@@ -90,7 +90,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
             duration: 8000
           });
         } else {
-          toast.warning('El análisis se ha iniciado, pero puede haber problemas con el servicio de análisis. Se registrará como un análisis con errores.', { 
+          toast.warning('El análisis se ha iniciado, pero puede haber problemas con el servicio de análisis. Compruebe que la API key de Bright Data esté correctamente configurada y que la URL sea accesible.', { 
             id: 'crawl-loading',
             duration: 5000
           });
@@ -100,7 +100,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
         
         // Si no hay pageId en la respuesta, también mostramos una advertencia
         if (!response.data?.pageId) {
-          toast.warning('El análisis se ha iniciado pero puede haber problemas. El resultado podría estar incompleto.', {
+          toast.warning('El análisis se ha iniciado pero puede haber problemas. El resultado podría estar incompleto. Verifica la configuración de Bright Data.', {
             id: 'crawl-loading',
             duration: 5000
           });
@@ -124,7 +124,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
         });
       } else {
         // Otro tipo de error de conexión
-        toast.warning('El análisis se ha iniciado, pero puede haber problemas de conexión con el servicio de análisis. Se registrará pero es posible que esté incompleto.', { 
+        toast.warning('El análisis se ha iniciado, pero hay problemas de conexión con el servicio. Verifica la configuración de Bright Data y la URL proporcionada.', { 
           id: 'crawl-loading',
           duration: 5000
         });

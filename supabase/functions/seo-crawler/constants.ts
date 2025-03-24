@@ -60,5 +60,8 @@ export const BRIGHT_DATA_CONFIG = {
   API_URL: 'https://api.brightdata.com/request',
   DEFAULT_ZONE: 'web_unlocker1',
   FORMAT: 'raw',
-  TIMEOUT: 60000 // 60 segundos de timeout para las peticiones
+  TIMEOUT: 120000, // 120 segundos de timeout para las peticiones (aumentado)
+  CUSTOMER_ID: 'customer', // Reemplazado con el valor correcto en tiempo de ejecución
+  PROXY_HOST: 'brd.superproxy.io',
+  PROXY_PORT: 22225 // Puerto estándar para WebUnlocker
 };

@@ -19,7 +19,20 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
   try {
     if (req.method === 'POST') {
       console.log('Procesando solicitud POST');
-      const { url, crawlId } = await req.json();
+      
+      // Parse request body
+      let requestData;
+      try {
+        requestData = await req.json();
+      } catch (e) {
+        console.error('Error al parsear JSON:', e);
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON in request body' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const { url, crawlId } = requestData;
       
       console.log(`Parámetros recibidos - URL: ${url}, CrawlID: ${crawlId}`);
       
