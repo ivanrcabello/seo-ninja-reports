@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { handleServiceError } from '@/services/api/baseService';
 import { toast } from 'sonner';
@@ -10,6 +9,11 @@ import {
   CrawlSettings, 
   SavedCrawlSettings 
 } from './types';
+
+interface EdgeFunctionResponse {
+  data?: any;
+  error?: { message: string };
+}
 
 export const createInitialCrawlRecord = async (settings: CrawlSettings): Promise<CrawlResult> => {
   try {
@@ -68,44 +72,48 @@ export const invokeCrawlerFunction = async (settings: CrawlSettings, crawlId: st
     // Update settings with valid URL
     settings.url = validUrl;
 
-    // Define the type for the function response
-    type EdgeFunctionResponse = {
-      data: any;
-      error: null | { message: string };
-    };
-
     console.log(`Sending request to seo-crawler function with validated URL: ${validUrl}`);
 
     // Make the function call with explicit timeout and better error handling
     try {
-      const response = await Promise.race([
-        supabase.functions.invoke('seo-crawler', {
-          body: {
-            ...settings,
-            crawlId
-          },
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }) as Promise<EdgeFunctionResponse>,
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Request timed out')), 60000) // Increased timeout to 60 seconds
-        )
-      ]);
-
-      // Check for response error
-      if (response && 'error' in response && response.error) {
-        console.error('Edge function error response:', response.error);
-        throw new Error(response.error.message || 'Error al iniciar el análisis SEO');
-      }
-
-      // Validate response data
-      if (!response || !('data' in response) || !response.data) {
-        throw new Error('No se recibió respuesta del servidor');
-      }
+      const functionPromise = supabase.functions.invoke('seo-crawler', {
+        body: {
+          ...settings,
+          crawlId
+        },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
-      return response.data;
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), 30000) // 30-second timeout
+      );
+      
+      // Use Promise.race with proper type checking
+      const response = await Promise.race([
+        functionPromise,
+        timeoutPromise
+      ]);
+      
+      // Type guard to ensure we have a proper response with data or error
+      if (response && typeof response === 'object') {
+        const typedResponse = response as EdgeFunctionResponse;
+        
+        if (typedResponse.error) {
+          console.error('Edge function error response:', typedResponse.error);
+          throw new Error(typedResponse.error.message || 'Error al iniciar el análisis SEO');
+        }
+        
+        if (!typedResponse.data) {
+          throw new Error('No se recibió respuesta del servidor');
+        }
+        
+        return typedResponse.data;
+      } else {
+        throw new Error('Respuesta inesperada del servidor');
+      }
     } catch (err: any) {
       console.error('Edge function invocation error:', err);
       
