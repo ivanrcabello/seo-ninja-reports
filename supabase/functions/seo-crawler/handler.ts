@@ -61,7 +61,23 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
-      console.log('API key de Bright Data verificada correctamente');
+      // Verificar que el CUSTOMER_ID esté configurado
+      const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID');
+      if (!customerId) {
+        console.error('BRIGHT_DATA_CUSTOMER_ID no está configurado en las variables de entorno');
+        
+        await updateCrawlStatus(supabase, crawlId, 'error', 0, 0, 0);
+        
+        return new Response(
+          JSON.stringify({ 
+            error: 'El ID de cliente de Bright Data no está configurado. Por favor, configúrelo en las variables de entorno de Supabase.',
+            code: 'MISSING_CUSTOMER_ID'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('Credenciales de Bright Data verificadas correctamente');
       
       // Normalize the URL
       const normalizedUrl = normalizeUrl(url);

@@ -17,7 +17,7 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
       throw new Error("BRIGHT_DATA_API_KEY no está configurada en las variables de entorno");
     }
     
-    console.log(`Usando método de proxy para acceder a URL: ${url}`);
+    console.log(`Usando proxy Bright Data para acceder a URL: ${url}`);
     
     // Call Bright Data API to get HTML content using proxy method
     const brightDataResponse = await fetchWithBrightDataProxy(url, apiKey);
@@ -75,38 +75,44 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
   try {
     console.log(`Preparando solicitud con proxy Bright Data para: ${url}`);
     
-    // Format: http://brd-customer-<customer_id>:<API_KEY>@brd.superproxy.io:22225
-    // Customer ID is expected to be set in BRIGHT_DATA_CONFIG
-    const proxyAuth = `brd-customer-${BRIGHT_DATA_CONFIG.CUSTOMER_ID}:${apiKey}`;
+    // Crear la cadena de autenticación para el proxy
+    // El formato correcto es: brd-customer-xxxxxx:apikey
+    // Obtener el ID de cliente de una variable de entorno
+    const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID') || 'CUSTOMER_ID_MISSING';
+    const proxyAuth = `brd-customer-${customerId}:${apiKey}`;
     const proxyUrl = `http://${proxyAuth}@${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`;
     
     console.log(`Conectando a proxy: ${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`);
+    console.log(`Usando customer ID: ${customerId.replace(/\w(?=\w{4})/g, '*')}`); // Ocultar parte del ID por seguridad
     
     // Create options for fetch request
     const fetchOptions = {
       method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
         'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },
       redirect: 'follow',
-      signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT),
-      proxy: proxyUrl // Direct proxy configuration
+      signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
     };
     
+    // Log request options (hiding sensitive info)
     console.log('Opciones de solicitud:', JSON.stringify({
       method: fetchOptions.method,
       headers: fetchOptions.headers,
       redirect: fetchOptions.redirect,
-      timeout: BRIGHT_DATA_CONFIG.TIMEOUT,
-      proxy: '***PROXY URL HIDDEN***' // Hide sensitive data in logs
+      timeout: BRIGHT_DATA_CONFIG.TIMEOUT
     }, null, 2));
     
-    // Attempt to fetch the URL using Bright Data's proxy
-    const response = await fetch(url, fetchOptions);
+    // Configurar el agente proxy manualmente
+    // Esto es fundamental para que funcione correctamente con Bright Data
+    const response = await fetch(url, {
+      ...fetchOptions,
+      agent: `http://${proxyAuth}@${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`
+    });
     
     console.log(`Respuesta recibida con estado: ${response.status}`);
     
@@ -123,13 +129,25 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
     };
   } catch (error) {
     console.error(`Error en fetchWithBrightDataProxy para ${url}:`, error);
-    console.log('Error detallado:', JSON.stringify(error, null, 2));
+    
+    // Mejorar manejo de errores analizando tipos específicos
+    let errorMessage = 'Error desconocido';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      console.error(`Error detallado: ${error.message}`);
+      if (error.stack) {
+        console.error(`Stack trace: ${error.stack}`);
+      }
+    } else {
+      console.error('Error no estándar:', error);
+    }
     
     return {
       status: 500,
       body: '',
       headers: {},
-      error: error instanceof Error ? error.message : 'Error desconocido en la comunicación con Bright Data'
+      error: errorMessage
     };
   }
 }
