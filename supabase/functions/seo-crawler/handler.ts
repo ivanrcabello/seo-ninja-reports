@@ -31,12 +31,24 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
+      // Verificar que la API key esté configurada
+      const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
+      if (!apiKey) {
+        console.error('BRIGHT_DATA_API_KEY no está configurada en las variables de entorno');
+        return new Response(
+          JSON.stringify({ 
+            error: 'BRIGHT_DATA_API_KEY no está configurada. Por favor, configure la API key de Bright Data en la configuración de Supabase.' 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       // Normalize the URL
       const normalizedUrl = normalizeUrl(url);
       console.log(`URL normalizada: ${normalizedUrl}`);
       
       // Analyze main page first
-      console.log('Iniciando análisis de página principal...');
+      console.log('Iniciando análisis de página principal con Bright Data...');
       const mainPage = await crawlPage(supabase, normalizedUrl, crawlId);
       
       if (!mainPage) {
@@ -106,3 +118,4 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
     );
   }
 }
+

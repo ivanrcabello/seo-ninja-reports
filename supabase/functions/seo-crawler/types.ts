@@ -27,3 +27,17 @@ export interface ImageInfo {
   alt: string | null;
   hasAlt: boolean;
 }
+
+export interface BrightDataConfig {
+  apiKey: string;
+  zone: string;
+}
+
+export interface BrightDataResponse {
+  status: number;
+  body: string;
+  headers: Record<string, string>;
+  url?: string;
+  error?: string;
+}
+

@@ -1,76 +1,52 @@
 
-// Core crawler functionality with simplified approach (no Playwright)
-import { SupabaseInstance, PageCrawlResult } from './types.ts';
+// Core crawler functionality with Bright Data API
+import { SupabaseInstance, PageCrawlResult, BrightDataResponse } from './types.ts';
 import { registerCrawlerError } from './utils.ts';
 import { processHtml } from './modules/html-processor.ts';
 import { simplifiedAnalysis } from './modules/simplified-analysis.ts';
+import { BRIGHT_DATA_CONFIG } from './constants.ts';
 
-// Main crawl function using simplified fetch approach instead of Playwright
+// Main crawl function using Bright Data API
 export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId: string): Promise<PageCrawlResult | null> {
-  console.log(`Iniciando análisis de página con método simplificado: ${url}`);
+  console.log(`Iniciando análisis de página con Bright Data API: ${url}`);
   
   try {
-    // Use fetch API instead of Playwright
-    console.log(`Navegando a: ${url}`);
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-    
-    try {
-      const response = await fetch(url, { 
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        console.error(`Error al acceder a ${url} - Status code: ${response.status}`);
-        await registerCrawlerError(
-          supabase, 
-          crawlId, 
-          url, 
-          `Error HTTP: ${response.status}`
-        );
-        return await simplifiedAnalysis(supabase, url, crawlId);
-      }
-      
-      // Get content type
-      const contentType = response.headers.get('content-type') || '';
-      console.log(`Content type: ${contentType}`);
-      
-      // Skip non-HTML content
-      if (!contentType.includes('text/html')) {
-        console.log(`Saltando contenido no HTML: ${contentType}`);
-        await registerCrawlerError(
-          supabase, 
-          crawlId, 
-          url, 
-          `Contenido no es HTML: ${contentType}`
-        );
-        return await simplifiedAnalysis(supabase, url, crawlId);
-      }
-      
-      // Extract HTML content
-      console.log('Obteniendo contenido HTML...');
-      const html = await response.text();
-      
-      if (!html || html.trim().length === 0) {
-        throw new Error("La respuesta HTML está vacía");
-      }
-      
-      console.log(`Contenido HTML obtenido (${html.length} bytes)`);
-      
-      // Process HTML content
-      return await processHtml(supabase, url, crawlId, html);
-      
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      console.error(`Error en fetch para ${url}:`, fetchError);
-      throw fetchError;
+    // Get the Bright Data API key from environment variables
+    const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
+    if (!apiKey) {
+      throw new Error("BRIGHT_DATA_API_KEY no está configurada en las variables de entorno");
     }
+    
+    console.log(`Llamando a Bright Data API para URL: ${url}`);
+    
+    // Call Bright Data API to get HTML content
+    const brightDataResponse = await fetchWithBrightData(url, apiKey);
+    
+    // Check if the request was successful
+    if (!brightDataResponse || brightDataResponse.status !== 200 || !brightDataResponse.body) {
+      const errorMessage = brightDataResponse?.error || `Error en Bright Data: estado ${brightDataResponse?.status || 'desconocido'}`;
+      console.error(`Error al acceder a ${url} con Bright Data - ${errorMessage}`);
+      
+      await registerCrawlerError(
+        supabase, 
+        crawlId, 
+        url, 
+        `Error en Bright Data: ${errorMessage}`
+      );
+      
+      return await simplifiedAnalysis(supabase, url, crawlId);
+    }
+    
+    const html = brightDataResponse.body;
+    
+    if (!html || html.trim().length === 0) {
+      throw new Error("La respuesta HTML está vacía");
+    }
+    
+    console.log(`Contenido HTML obtenido de Bright Data (${html.length} bytes)`);
+    
+    // Process HTML content
+    return await processHtml(supabase, url, crawlId, html);
     
   } catch (error) {
     // Handle errors during crawling
@@ -89,3 +65,53 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
     return await simplifiedAnalysis(supabase, url, crawlId);
   }
 }
+
+// Helper function to fetch URL with Bright Data
+async function fetchWithBrightData(url: string, apiKey: string): Promise<BrightDataResponse> {
+  try {
+    const response = await fetch(BRIGHT_DATA_CONFIG.API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        zone: BRIGHT_DATA_CONFIG.DEFAULT_ZONE,
+        url: url,
+        format: BRIGHT_DATA_CONFIG.FORMAT
+      })
+    });
+    
+    // If response is not ok, throw an error
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error en Bright Data API: ${response.status} ${response.statusText}`, errorText);
+      return {
+        status: response.status,
+        body: '',
+        headers: {},
+        error: `${response.status} ${response.statusText}: ${errorText}`
+      };
+    }
+    
+    // Get the response body as text
+    const body = await response.text();
+    
+    // Return the response
+    return {
+      status: response.status,
+      body: body,
+      headers: Object.fromEntries(response.headers.entries()),
+      url: url
+    };
+  } catch (error) {
+    console.error(`Error en fetchWithBrightData para ${url}:`, error);
+    return {
+      status: 500,
+      body: '',
+      headers: {},
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    };
+  }
+}
+

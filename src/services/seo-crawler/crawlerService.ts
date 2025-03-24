@@ -33,7 +33,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
       }
     }
     
-    toast.loading('Iniciando análisis SEO...', { id: 'crawl-loading' });
+    toast.loading('Iniciando análisis SEO con Bright Data...', { id: 'crawl-loading' });
     
     // First, create an initial record in the database
     const crawlResult = await createInitialCrawlRecord(settings);
@@ -60,7 +60,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
     
     // Now call the edge function to start the crawl in background
     try {
-      console.log('Llamando al edge function para iniciar el análisis');
+      console.log('Llamando al edge function para iniciar el análisis con Bright Data');
       
       // Create timeout for the function call - we'll handle this client-side instead of passing it to the function
       const controller = new AbortController();
@@ -111,7 +111,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
     }
     
     // Success message - we're always "successful" here because we've at least created a record
-    toast.success('Análisis SEO iniciado correctamente', { 
+    toast.success('Análisis SEO iniciado correctamente con Bright Data', { 
       id: 'crawl-loading',
       description: 'El análisis se ejecutará en segundo plano. Podrá ver los resultados una vez completado.'
     });
@@ -129,3 +129,4 @@ export const startCrawl = async (settings: CrawlSettings) => {
     throw error;
   }
 };
+

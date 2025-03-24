@@ -55,3 +55,10 @@ export const SEO_ISSUES = {
     fix: 'Implementar marcado de esquema JSON-LD para mejorar el entendimiento de la página por los motores de búsqueda'
   }
 };
+
+export const BRIGHT_DATA_CONFIG = {
+  API_URL: 'https://api.brightdata.com/request',
+  DEFAULT_ZONE: 'web_unlocker1',
+  FORMAT: 'raw'
+};
+
