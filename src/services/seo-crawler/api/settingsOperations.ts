@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings } from '../types';
 
@@ -82,6 +81,37 @@ export async function getSettings(
       };
     }
     
+    // Properly handle custom_headers to ensure it's a Record<string, string>
+    let customHeaders: Record<string, string> = {};
+    
+    // Check if custom_headers exists and is not null
+    if (data[0].custom_headers) {
+      // If it's a string (possibly stringified JSON), try to parse it
+      if (typeof data[0].custom_headers === 'string') {
+        try {
+          const parsed = JSON.parse(data[0].custom_headers);
+          if (typeof parsed === 'object' && parsed !== null) {
+            // Convert all values to strings
+            customHeaders = Object.entries(parsed).reduce((acc, [key, value]) => {
+              acc[key] = String(value);
+              return acc;
+            }, {} as Record<string, string>);
+          }
+        } catch (e) {
+          console.error('Error parsing custom_headers:', e);
+          // If parsing fails, keep empty object
+        }
+      } 
+      // If it's already an object
+      else if (typeof data[0].custom_headers === 'object' && data[0].custom_headers !== null) {
+        // Convert all values to strings
+        customHeaders = Object.entries(data[0].custom_headers).reduce((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {} as Record<string, string>);
+      }
+    }
+    
     // Convert from DB format to the CrawlSettings format
     return {
       max_pages: data[0].max_pages,
@@ -92,7 +122,7 @@ export async function getSettings(
       crawl_sitemap: data[0].crawl_sitemap,
       follow_links: data[0].follow_external_links,
       max_depth: data[0].max_depth,
-      custom_headers: data[0].custom_headers || {}
+      custom_headers: customHeaders
     };
   } catch (error) {
     console.error('Error fetching crawler settings:', error);
