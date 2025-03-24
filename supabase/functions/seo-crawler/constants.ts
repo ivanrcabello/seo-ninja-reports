@@ -57,11 +57,16 @@ export const SEO_ISSUES = {
 };
 
 export const BRIGHT_DATA_CONFIG = {
+  // Bright Data Web Unlocker proxy configuration
+  PROXY_HOST: 'brd.superproxy.io',
+  PROXY_PORT: 22225,
+  CUSTOMER_ID: 'customer', // Will be replaced with the correct value at runtime
+  
+  // For fallback API method
   API_URL: 'https://api.brightdata.com/request',
   DEFAULT_ZONE: 'web_unlocker1',
   FORMAT: 'raw',
-  TIMEOUT: 120000, // 120 segundos de timeout para las peticiones (aumentado)
-  CUSTOMER_ID: 'customer', // Reemplazado con el valor correcto en tiempo de ejecución
-  PROXY_HOST: 'brd.superproxy.io',
-  PROXY_PORT: 22225 // Puerto estándar para WebUnlocker
+  
+  // Increased timeout for reliable crawling
+  TIMEOUT: 120000 // 120 seconds
 };

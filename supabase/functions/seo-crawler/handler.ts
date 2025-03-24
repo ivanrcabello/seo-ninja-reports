@@ -54,7 +54,8 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         
         return new Response(
           JSON.stringify({ 
-            error: 'BRIGHT_DATA_API_KEY no está configurada. Por favor, configure la API key de Bright Data en la configuración de Supabase.' 
+            error: 'La API key de Bright Data no está configurada. Por favor, configúrela en las variables de entorno de Supabase.',
+            code: 'MISSING_API_KEY'
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -82,7 +83,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Failed to analyze main page, please check if the URL is accessible' 
+            message: 'Error al analizar la página principal. Compruebe que la URL es accesible y que la API key de Bright Data es correcta.' 
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -99,7 +100,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Page analyzed successfully',
+          message: 'Página analizada correctamente',
           pageId: mainPage.pageId,
           issuesCount: mainPage.issues
         }),
@@ -114,6 +115,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
     );
   } catch (error) {
     console.error('Error en la función:', error);
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
     
     // Try to update crawl status to error
     try {
@@ -134,8 +136,9 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
     
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        stack: error instanceof Error ? error.stack : undefined
+        error: error instanceof Error ? error.message : 'Error interno del servidor',
+        stack: error instanceof Error ? error.stack : undefined,
+        code: 'INTERNAL_SERVER_ERROR'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

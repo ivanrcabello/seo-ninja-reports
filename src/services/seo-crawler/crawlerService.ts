@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings } from './types';
@@ -33,7 +32,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
       }
     }
     
-    toast.loading('Iniciando análisis SEO con Bright Data...', { id: 'crawl-loading' });
+    toast.loading('Iniciando análisis SEO...', { id: 'crawl-loading' });
     
     // First, create an initial record in the database
     const crawlResult = await createInitialCrawlRecord(settings);
@@ -64,9 +63,9 @@ export const startCrawl = async (settings: CrawlSettings) => {
       console.log('crawlId:', crawlResult.id);
       console.log('URL:', settings.url);
       
-      // Create timeout for the function call - we'll handle this client-side instead of passing it to the function
+      // Create timeout for the function call
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout (aumentado para dar más tiempo)
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes timeout
       
       // Edge function invocation
       const response = await supabase.functions.invoke('seo-crawler', {
@@ -83,14 +82,14 @@ export const startCrawl = async (settings: CrawlSettings) => {
       if (response.error) {
         console.error('Error del edge function:', response.error);
         
-        // Comprobar si el error está relacionado con la API key
+        // Check if the error is related to the API key
         if (response.error.message && response.error.message.includes('BRIGHT_DATA_API_KEY')) {
           toast.error('Error: API key de Bright Data no configurada. Por favor, configure la API key en las variables de entorno de Supabase.', { 
             id: 'crawl-loading',
             duration: 8000
           });
         } else {
-          toast.warning('El análisis se ha iniciado, pero puede haber problemas con el servicio de análisis. Compruebe que la API key de Bright Data esté correctamente configurada y que la URL sea accesible.', { 
+          toast.warning('El análisis se ha iniciado, pero puede haber problemas. Por favor, verifique la configuración y la URL.', { 
             id: 'crawl-loading',
             duration: 5000
           });
@@ -98,15 +97,14 @@ export const startCrawl = async (settings: CrawlSettings) => {
       } else {
         console.log('Respuesta del edge function:', response.data);
         
-        // Si no hay pageId en la respuesta, también mostramos una advertencia
         if (!response.data?.pageId) {
-          toast.warning('El análisis se ha iniciado pero puede haber problemas. El resultado podría estar incompleto. Verifica la configuración de Bright Data.', {
+          toast.warning('El análisis se ha iniciado pero puede haber problemas. Compruebe los registros para más detalles.', {
             id: 'crawl-loading',
             duration: 5000
           });
         } else {
-          // Éxito
-          toast.success('Análisis SEO completado correctamente con Bright Data', { 
+          // Success
+          toast.success('Análisis SEO completado correctamente', { 
             id: 'crawl-loading',
             description: 'Se encontraron ' + (response.data.issuesCount || 0) + ' problemas en la página principal.'
           });
@@ -115,7 +113,7 @@ export const startCrawl = async (settings: CrawlSettings) => {
     } catch (edgeFunctionError) {
       console.error('Error al invocar edge function:', edgeFunctionError);
       
-      // Si es un error de timeout/abort, lo manejamos específicamente
+      // If it's a timeout/abort error, handle it specifically
       if (edgeFunctionError.name === 'AbortError') {
         console.error('La llamada al edge function tardó demasiado tiempo y fue abortada');
         toast.warning('El análisis se ha iniciado pero está tardando más de lo esperado. Se continuará en segundo plano.', {
@@ -123,21 +121,16 @@ export const startCrawl = async (settings: CrawlSettings) => {
           duration: 5000
         });
       } else {
-        // Otro tipo de error de conexión
-        toast.warning('El análisis se ha iniciado, pero hay problemas de conexión con el servicio. Verifica la configuración de Bright Data y la URL proporcionada.', { 
+        // Other connection error type
+        toast.warning('El análisis se ha iniciado, pero hay problemas de conexión. Verifique los registros para más detalles.', { 
           id: 'crawl-loading',
           duration: 5000
         });
       }
     }
     
-    // Success message - we're always "successful" here because we've at least created a record
-    toast.success('Análisis SEO iniciado correctamente', { 
-      id: 'crawl-loading',
-      description: 'El análisis se ejecutará en segundo plano. Podrá ver los resultados una vez completado.'
-    });
-    
-    // Return the crawl info
+    // Return the crawl info even if there were issues with the edge function
+    // as the record has been created and the user can check the status later
     return { 
       success: true, 
       message: 'Análisis iniciado en segundo plano', 

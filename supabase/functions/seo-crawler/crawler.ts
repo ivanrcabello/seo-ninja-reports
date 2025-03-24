@@ -1,6 +1,6 @@
 
 // Core crawler functionality with Bright Data API
-import { SupabaseInstance, PageCrawlResult, BrightDataResponse, BrightDataRequestOptions } from './types.ts';
+import { SupabaseInstance, PageCrawlResult, BrightDataResponse } from './types.ts';
 import { registerCrawlerError } from './utils.ts';
 import { processHtml } from './modules/html-processor.ts';
 import { simplifiedAnalysis } from './modules/simplified-analysis.ts';
@@ -8,7 +8,7 @@ import { BRIGHT_DATA_CONFIG } from './constants.ts';
 
 // Main crawl function using Bright Data API
 export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId: string): Promise<PageCrawlResult | null> {
-  console.log(`Iniciando análisis de página con Bright Data API: ${url}`);
+  console.log(`Iniciando análisis de página con Bright Data: ${url}`);
   
   try {
     // Get the Bright Data API key from environment variables
@@ -17,7 +17,7 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
       throw new Error("BRIGHT_DATA_API_KEY no está configurada en las variables de entorno");
     }
     
-    console.log(`Llamando a Bright Data API para URL: ${url}`);
+    console.log(`Usando método de proxy para acceder a URL: ${url}`);
     
     // Call Bright Data API to get HTML content using proxy method
     const brightDataResponse = await fetchWithBrightDataProxy(url, apiKey);
@@ -76,10 +76,11 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
     console.log(`Preparando solicitud con proxy Bright Data para: ${url}`);
     
     // Build proxy authentication string with API key as password
+    // Format: http://brd-customer-<customer_id>:<API_KEY>@brd.superproxy.io:22225
     const proxyAuth = `brd-customer-${BRIGHT_DATA_CONFIG.CUSTOMER_ID}:${apiKey}`;
     const proxyUrl = `http://${proxyAuth}@${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`;
     
-    console.log(`Usando proxy URL: ${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`);
+    console.log(`Conectando a proxy: ${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`);
     
     // Configuración para la solicitud
     const fetchOptions = {
@@ -93,7 +94,7 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
       },
       redirect: 'follow',
       signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT),
-      proxy: proxyUrl
+      proxy: proxyUrl // Using proxy URL directly
     };
     
     console.log('Opciones de solicitud:', JSON.stringify(fetchOptions, null, 2));
@@ -116,72 +117,8 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
     };
   } catch (error) {
     console.error(`Error en fetchWithBrightDataProxy para ${url}:`, error);
+    console.log('Error detallado:', JSON.stringify(error));
     
-    // Try the API-based approach as fallback
-    console.log('Usando método alternativo de API para Bright Data...');
-    return await fetchWithBrightDataAPI(url, apiKey);
-  }
-}
-
-// Fallback method: API-based access to Bright Data (original implementation)
-async function fetchWithBrightDataAPI(url: string, apiKey: string): Promise<BrightDataResponse> {
-  try {
-    console.log(`Fallback: Usando API de Bright Data para: ${url}`);
-    
-    // Preparar opciones de la solicitud según la documentación de Bright Data
-    const requestOptions: BrightDataRequestOptions = {
-      zone: BRIGHT_DATA_CONFIG.DEFAULT_ZONE,
-      url: url,
-      format: BRIGHT_DATA_CONFIG.FORMAT,
-      javascript: true, // Habilitar JavaScript para sitios SPA o React
-      render: true,     // Renderizar completamente la página
-      timeout: BRIGHT_DATA_CONFIG.TIMEOUT / 1000, // API expects seconds
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-      }
-    };
-    
-    console.log('Opciones de solicitud a Bright Data API:', JSON.stringify(requestOptions, null, 2));
-    
-    const response = await fetch(BRIGHT_DATA_CONFIG.API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(requestOptions)
-    });
-    
-    console.log(`Respuesta de Bright Data API recibida con estado: ${response.status}`);
-    
-    // Si response no es ok, intentar obtener detalles del error
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Error en Bright Data API: ${response.status} ${response.statusText}`, errorText);
-      
-      return {
-        status: response.status,
-        body: '',
-        headers: {},
-        error: `${response.status} ${response.statusText}: ${errorText}`
-      };
-    }
-    
-    // Get the response body as text
-    const body = await response.text();
-    console.log(`Respuesta de Bright Data API recibida con tamaño: ${body.length} bytes`);
-    
-    // Return the response
-    return {
-      status: response.status,
-      body: body,
-      headers: Object.fromEntries(response.headers.entries()),
-      url: url
-    };
-  } catch (error) {
-    console.error(`Error en fetchWithBrightDataAPI para ${url}:`, error);
     return {
       status: 500,
       body: '',
