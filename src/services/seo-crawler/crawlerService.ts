@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings } from './types';
@@ -93,6 +94,23 @@ export const startCrawl = async (settings: CrawlSettings) => {
             id: 'crawl-loading',
             duration: 5000
           });
+          
+          // Mark the crawl as error in the database
+          try {
+            const { error: updateError } = await supabase
+              .from('seo_crawl_results')
+              .update({
+                status: 'error',
+                error_message: 'Error en el edge function: ' + (response.error.message || 'Error desconocido')
+              })
+              .eq('id', crawlResult.id);
+              
+            if (updateError) {
+              console.error('Error al actualizar el estado del análisis a error:', updateError);
+            }
+          } catch (updateError) {
+            console.error('Error al marcar análisis como fallido:', updateError);
+          }
         }
       } else {
         console.log('Respuesta del edge function:', response.data);
@@ -126,6 +144,23 @@ export const startCrawl = async (settings: CrawlSettings) => {
           id: 'crawl-loading',
           duration: 5000
         });
+        
+        // Update crawl status to error in the database
+        try {
+          const { error: updateError } = await supabase
+            .from('seo_crawl_results')
+            .update({
+              status: 'error',
+              error_message: 'Error de conexión: ' + (edgeFunctionError.message || 'Error desconocido')
+            })
+            .eq('id', crawlResult.id);
+            
+          if (updateError) {
+            console.error('Error al actualizar el estado del análisis a error:', updateError);
+          }
+        } catch (updateError) {
+          console.error('Error al marcar análisis como fallido:', updateError);
+        }
       }
     }
     

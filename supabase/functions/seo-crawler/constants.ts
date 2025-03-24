@@ -60,13 +60,8 @@ export const BRIGHT_DATA_CONFIG = {
   // Bright Data Web Unlocker proxy configuration
   PROXY_HOST: 'brd.superproxy.io',
   PROXY_PORT: 22225,
-  CUSTOMER_ID: 'customer', // Will be replaced with the correct value at runtime
-  
-  // For fallback API method
-  API_URL: 'https://api.brightdata.com/request',
-  DEFAULT_ZONE: 'web_unlocker1',
-  FORMAT: 'raw',
+  CUSTOMER_ID: 'brd-customer-YOUR_ID', // Placeholder - will be replaced with the actual value
   
   // Increased timeout for reliable crawling
-  TIMEOUT: 120000 // 120 seconds
+  TIMEOUT: 60000 // 60 seconds
 };

@@ -75,14 +75,14 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
   try {
     console.log(`Preparando solicitud con proxy Bright Data para: ${url}`);
     
-    // Build proxy authentication string with API key as password
     // Format: http://brd-customer-<customer_id>:<API_KEY>@brd.superproxy.io:22225
+    // Customer ID is expected to be set in BRIGHT_DATA_CONFIG
     const proxyAuth = `brd-customer-${BRIGHT_DATA_CONFIG.CUSTOMER_ID}:${apiKey}`;
     const proxyUrl = `http://${proxyAuth}@${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`;
     
     console.log(`Conectando a proxy: ${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`);
     
-    // Configuración para la solicitud
+    // Create options for fetch request
     const fetchOptions = {
       method: 'GET',
       headers: {
@@ -94,10 +94,16 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
       },
       redirect: 'follow',
       signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT),
-      proxy: proxyUrl // Using proxy URL directly
+      proxy: proxyUrl // Direct proxy configuration
     };
     
-    console.log('Opciones de solicitud:', JSON.stringify(fetchOptions, null, 2));
+    console.log('Opciones de solicitud:', JSON.stringify({
+      method: fetchOptions.method,
+      headers: fetchOptions.headers,
+      redirect: fetchOptions.redirect,
+      timeout: BRIGHT_DATA_CONFIG.TIMEOUT,
+      proxy: '***PROXY URL HIDDEN***' // Hide sensitive data in logs
+    }, null, 2));
     
     // Attempt to fetch the URL using Bright Data's proxy
     const response = await fetch(url, fetchOptions);
@@ -117,7 +123,7 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
     };
   } catch (error) {
     console.error(`Error en fetchWithBrightDataProxy para ${url}:`, error);
-    console.log('Error detallado:', JSON.stringify(error));
+    console.log('Error detallado:', JSON.stringify(error, null, 2));
     
     return {
       status: 500,

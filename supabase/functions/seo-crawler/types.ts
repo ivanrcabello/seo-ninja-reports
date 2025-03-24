@@ -13,17 +13,6 @@ export interface BrightDataResponse {
   error?: string;
 }
 
-// Options for Bright Data API request
-export interface BrightDataRequestOptions {
-  zone: string;
-  url: string;
-  format: string;
-  javascript?: boolean;
-  render?: boolean;
-  timeout?: number;
-  headers?: Record<string, string>;
-}
-
 // Result of crawling a page
 export interface PageCrawlResult {
   pageId: string;
