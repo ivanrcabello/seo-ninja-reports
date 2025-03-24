@@ -19,8 +19,9 @@ export async function saveSettings(
     let customHeaders: Record<string, string> = {};
     
     if (settings.custom_headers && typeof settings.custom_headers === 'object') {
+      // Ensure all values are strings by iterating through the object
       customHeaders = Object.entries(settings.custom_headers).reduce((acc, [key, value]) => {
-        acc[key] = String(value); // Ensure all values are strings
+        acc[key] = String(value); // Convert any value to String
         return acc;
       }, {} as Record<string, string>);
     }
