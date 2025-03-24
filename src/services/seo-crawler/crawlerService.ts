@@ -1,6 +1,7 @@
+
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
-import { getCrawlResult, getCrawlPages } from './api';
-import { getPageIssues, getPageLinks } from './additionalApi';
+import { getCrawlResult, getCrawlPages } from './api/crawlQueries';
+import { getPageIssues, getPageLinks } from './api/pageQueries';
 
 // Get all data for a specific crawl
 export const getCrawlData = async (crawlId: string): Promise<{

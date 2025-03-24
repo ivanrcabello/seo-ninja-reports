@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlIssue, CrawlLink, CrawlPage } from './types';
 
@@ -121,7 +122,7 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
       is_broken: link.is_broken,
       status_code: link.status_code,
       follow: link.follow,
-      rel_attributes: link.rel_attributes ? JSON.stringify(link.rel_attributes) : null
+      rel_attributes: typeof link.rel_attributes === 'string' ? link.rel_attributes : null
     }));
   } catch (error) {
     console.error('Error fetching links with details:', error);
@@ -129,9 +130,9 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
   }
 }
 
-// Export these functions for compatibility with crawlerService.ts
-export { getPageIssues as fetchCrawlIssues } from './api';
-export { getPageLinks as fetchCrawlLinks } from './api';
+// Export these functions for compatibility
+import { getPageIssues as fetchCrawlIssues, getPageLinks as fetchCrawlLinks } from './api/pageQueries';
+export { fetchCrawlIssues, fetchCrawlLinks };
 
 /**
  * Get issues for a specific page
@@ -182,11 +183,10 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
       is_broken: link.is_broken,
       status_code: link.status_code,
       follow: link.follow,
-      rel_attributes: link.rel_attributes ? JSON.stringify(link.rel_attributes) : null
+      rel_attributes: typeof link.rel_attributes === 'string' ? link.rel_attributes : null
     }));
   } catch (error) {
     console.error('Error fetching page links:', error);
     return [];
   }
 }
-
