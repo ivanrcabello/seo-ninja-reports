@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { 
   fetchCrawlResult, 
   getCrawlPages, 
@@ -19,10 +18,17 @@ import CrawlerTabs from './CrawlerTabs';
 import LoadingState from './LoadingState';
 import NotFoundState from './NotFoundState';
 
-const CrawlerDetailPage: React.FC = () => {
-  const { clientId, crawlId } = useParams<{ clientId: string; crawlId: string }>();
-  const navigate = useNavigate();
-  
+interface CrawlerDetailPageProps {
+  clientId: string;
+  crawlId: string;
+  onBack?: () => void;
+}
+
+const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({ 
+  clientId, 
+  crawlId,
+  onBack
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [crawlResult, setCrawlResult] = useState<CrawlResult | null>(null);
   const [pages, setPages] = useState<CrawlPage[]>([]);
@@ -39,11 +45,6 @@ const CrawlerDetailPage: React.FC = () => {
         
         if (!crawlId) {
           toast.error('ID de análisis no especificado');
-          if (clientId) {
-            navigate(`/clients/${clientId}`);
-          } else {
-            navigate('/dashboard');
-          }
           return;
         }
         
@@ -101,7 +102,7 @@ const CrawlerDetailPage: React.FC = () => {
     };
     
     loadData();
-  }, [crawlId, clientId, navigate]);
+  }, [crawlId]);
   
   const handlePageSelect = async (page: CrawlPage) => {
     try {
@@ -128,14 +129,15 @@ const CrawlerDetailPage: React.FC = () => {
   }
   
   if (!crawlResult) {
-    return <NotFoundState clientId={clientId || ''} />;
+    return <NotFoundState clientId={clientId} />;
   }
   
   return (
     <div className="space-y-6">
       <CrawlerHeader 
-        clientId={clientId || ''} 
+        clientId={clientId} 
         crawlResult={crawlResult} 
+        onBack={onBack}
       />
       
       <CrawlerSummary 

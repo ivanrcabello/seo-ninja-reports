@@ -10,9 +10,10 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
 interface CrawlerHeaderProps {
   clientId: string;
   crawlResult: CrawlResult;
+  onBack?: () => void;
 }
 
-const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({ clientId, crawlResult }) => {
+const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({ clientId, crawlResult, onBack }) => {
   const navigate = useNavigate();
   
   const getStatusBadge = (status: string) => {
@@ -38,11 +39,19 @@ const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({ clientId, crawlResult }) 
     }
   };
   
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigate(`/clients/${clientId}`);
+    }
+  };
+  
   return (
     <div className="flex items-center">
       <Button 
         variant="ghost" 
-        onClick={() => navigate(`/clients/${clientId}`)}
+        onClick={handleBack}
         className="mr-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />

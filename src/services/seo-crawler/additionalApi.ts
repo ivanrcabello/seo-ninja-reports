@@ -108,13 +108,13 @@ export const fetchCrawlIssues = async (pageId: string): Promise<CrawlIssue[]> =>
       
     if (error) throw error;
     
-    // Cast severity to ensure it matches the type and add recommended_fix if missing
+    // Cast severity to ensure it matches the type and add missing properties if needed
     return data.map(issue => ({
       ...issue,
       severity: (issue.severity as "low" | "medium" | "high" | string),
-      recommended_fix: issue.recommended_fix || '',
       element: issue.element || '',
-      fix_suggestion: issue.fix_suggestion || ''
+      fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
+      recommended_fix: issue.recommended_fix || ''
     })) as CrawlIssue[];
   } catch (error) {
     console.error("Error retrieving page issues:", error);
