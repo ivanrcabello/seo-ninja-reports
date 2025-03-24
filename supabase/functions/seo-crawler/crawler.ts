@@ -11,16 +11,14 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
   console.log(`Iniciando análisis de página con Bright Data: ${url}`);
   
   try {
-    // Get the Bright Data API key from environment variables
+    // Get the Bright Data credentials
+    const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID');
     const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
-    if (!apiKey) {
-      throw new Error("BRIGHT_DATA_API_KEY no está configurada en las variables de entorno");
-    }
-    
+
     console.log(`Usando proxy Bright Data para acceder a URL: ${url}`);
     
     // Call Bright Data API to get HTML content using proxy method
-    const brightDataResponse = await fetchWithBrightDataProxy(url, apiKey);
+    const brightDataResponse = await fetchWithBrightDataProxy(url);
     
     // Check if the request was successful
     if (!brightDataResponse || brightDataResponse.status !== 200 || !brightDataResponse.body) {
@@ -71,21 +69,33 @@ export async function crawlPage(supabase: SupabaseInstance, url: string, crawlId
 }
 
 // Helper function to fetch URL with Bright Data using proxy method
-async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<BrightDataResponse> {
+async function fetchWithBrightDataProxy(url: string): Promise<BrightDataResponse> {
   try {
     console.log(`Preparando solicitud con proxy Bright Data para: ${url}`);
     
-    // Crear la cadena de autenticación para el proxy
-    // El formato correcto es: brd-customer-xxxxxx:apikey
-    // Obtener el ID de cliente de una variable de entorno
-    const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID') || 'CUSTOMER_ID_MISSING';
-    const proxyAuth = `brd-customer-${customerId}:${apiKey}`;
+    // Usar las credenciales por defecto de la configuración si no existen en variables de entorno
+    const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID');
+    const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
+    
+    // Si hay credenciales en las variables de entorno, usarlas
+    // Si no, usar las credenciales por defecto de la configuración
+    let proxyAuth;
+    
+    if (customerId && apiKey) {
+      // Formato con variables de entorno
+      proxyAuth = `brd-customer-${customerId}:${apiKey}`;
+      console.log(`Usando credenciales de variables de entorno para Bright Data`);
+    } else {
+      // Usar credenciales por defecto del curl proporcionado
+      proxyAuth = `${BRIGHT_DATA_CONFIG.DEFAULT_USER}:${BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}`;
+      console.log(`Usando credenciales por defecto para Bright Data: ${BRIGHT_DATA_CONFIG.DEFAULT_USER}`);
+    }
+    
     const proxyUrl = `http://${proxyAuth}@${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`;
     
     console.log(`Conectando a proxy: ${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`);
-    console.log(`Usando customer ID: ${customerId.replace(/\w(?=\w{4})/g, '*')}`); // Ocultar parte del ID por seguridad
     
-    // Create options for fetch request
+    // Create options for fetch request - con los mismos headers y opciones que en el curl
     const fetchOptions = {
       method: 'GET',
       headers: {
@@ -99,7 +109,6 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
       signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
     };
     
-    // Log request options (hiding sensitive info)
     console.log('Opciones de solicitud:', JSON.stringify({
       method: fetchOptions.method,
       headers: fetchOptions.headers,
@@ -107,11 +116,12 @@ async function fetchWithBrightDataProxy(url: string, apiKey: string): Promise<Br
       timeout: BRIGHT_DATA_CONFIG.TIMEOUT
     }, null, 2));
     
-    // Configurar el agente proxy manualmente
-    // Esto es fundamental para que funcione correctamente con Bright Data
+    console.log(`Realizando solicitud a ${url} a través del proxy...`);
+    
+    // Configurar el agente proxy de forma manual - sintaxis correcta para Deno
     const response = await fetch(url, {
       ...fetchOptions,
-      agent: `http://${proxyAuth}@${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`
+      agent: proxyUrl // En Deno, el formato es diferente
     });
     
     console.log(`Respuesta recibida con estado: ${response.status}`);

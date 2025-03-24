@@ -44,40 +44,10 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
-      // Verificar que la API key esté configurada
+      // Verificar que las credenciales estén configuradas
+      // Priorizar las variables de entorno, pero si no están, usar los valores predeterminados
       const apiKey = Deno.env.get('BRIGHT_DATA_API_KEY');
-      if (!apiKey) {
-        console.error('BRIGHT_DATA_API_KEY no está configurada en las variables de entorno');
-        
-        // Actualizar el estado del crawl a error
-        await updateCrawlStatus(supabase, crawlId, 'error', 0, 0, 0);
-        
-        return new Response(
-          JSON.stringify({ 
-            error: 'La API key de Bright Data no está configurada. Por favor, configúrela en las variables de entorno de Supabase.',
-            code: 'MISSING_API_KEY'
-          }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Verificar que el CUSTOMER_ID esté configurado
       const customerId = Deno.env.get('BRIGHT_DATA_CUSTOMER_ID');
-      if (!customerId) {
-        console.error('BRIGHT_DATA_CUSTOMER_ID no está configurado en las variables de entorno');
-        
-        await updateCrawlStatus(supabase, crawlId, 'error', 0, 0, 0);
-        
-        return new Response(
-          JSON.stringify({ 
-            error: 'El ID de cliente de Bright Data no está configurado. Por favor, configúrelo en las variables de entorno de Supabase.',
-            code: 'MISSING_CUSTOMER_ID'
-          }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('Credenciales de Bright Data verificadas correctamente');
       
       // Normalize the URL
       const normalizedUrl = normalizeUrl(url);
@@ -99,7 +69,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Error al analizar la página principal. Compruebe que la URL es accesible y que la API key de Bright Data es correcta.' 
+            message: 'Error al analizar la página principal. Compruebe que la URL es accesible y que la configuración del proxy es correcta.' 
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
