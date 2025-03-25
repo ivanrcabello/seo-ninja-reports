@@ -36,6 +36,9 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     
     if (savedUsername) {
       setBrightDataUsername(savedUsername);
+    } else {
+      // Set default value if not saved
+      setBrightDataUsername('web_unlocker1');
     }
     
     if (savedPassword) {
@@ -47,12 +50,69 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   // Save Bright Data credentials to localStorage when they change
   const handleSaveBrightData = () => {
     if (brightDataPassword) {
-      localStorage.setItem('bright_data_username', brightDataUsername || 'web_unlocker1');
+      // Always ensure we have a username, defaulting to web_unlocker1 if not provided
+      const usernameToSave = brightDataUsername || 'web_unlocker1';
+      localStorage.setItem('bright_data_username', usernameToSave);
       localStorage.setItem('bright_data_password', brightDataPassword);
       setHasSavedBrightData(true);
       toast.success('Credenciales de Bright Data guardadas');
     } else {
       toast.error('La API key de Bright Data es obligatoria');
+    }
+  };
+
+  // For testing the credentials
+  const handleTestBrightData = async () => {
+    if (!brightDataPassword) {
+      toast.error('La API key de Bright Data es obligatoria para realizar la prueba');
+      return;
+    }
+
+    toast.info('Probando conexión con Bright Data...');
+    
+    try {
+      // Use a test URL that should be accessible
+      const testUrl = 'https://geo.brdtest.com/welcome.txt?product=unlocker&method=api';
+      
+      // Prepare the request
+      const response = await fetch('https://api.brightdata.com/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${brightDataPassword}`
+        },
+        body: JSON.stringify({
+          zone: brightDataUsername || 'web_unlocker1',
+          url: testUrl,
+          format: "raw"
+        })
+      });
+      
+      if (response.ok) {
+        const text = await response.text();
+        console.log('Bright Data test response:', text);
+        toast.success('Conexión con Bright Data exitosa', {
+          description: 'Las credenciales son válidas'
+        });
+        
+        // Save credentials if test is successful
+        if (!hasSavedBrightData) {
+          localStorage.setItem('bright_data_username', brightDataUsername || 'web_unlocker1');
+          localStorage.setItem('bright_data_password', brightDataPassword);
+          setHasSavedBrightData(true);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('Bright Data test failed:', response.status, errorText);
+        toast.error('Error en la conexión con Bright Data', {
+          description: `Error ${response.status}: ${errorText || 'Credenciales inválidas'}`
+        });
+      }
+    } catch (error) {
+      console.error('Error testing Bright Data credentials:', error);
+      toast.error('Error al probar las credenciales de Bright Data', {
+        description: error instanceof Error ? error.message : 'Error desconocido'
+      });
     }
   };
 
@@ -95,7 +155,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="brightDataUsername">Zone de Bright Data (opcional)</Label>
+            <Label htmlFor="brightDataUsername">Zone de Bright Data</Label>
             <Input
               id="brightDataUsername"
               type="text"
@@ -124,13 +184,23 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
             </p>
           </div>
           
-          <Button 
-            onClick={handleSaveBrightData} 
-            className="w-full mt-2"
-            variant="default"
-          >
-            Guardar credenciales de Bright Data
-          </Button>
+          <div className="flex gap-2 mt-2">
+            <Button 
+              onClick={handleSaveBrightData} 
+              className="flex-1"
+              variant="default"
+            >
+              Guardar credenciales
+            </Button>
+            
+            <Button 
+              onClick={handleTestBrightData} 
+              className="flex-1"
+              variant="outline"
+            >
+              Probar conexión
+            </Button>
+          </div>
           
           {hasSavedBrightData && (
             <div className="flex items-center text-sm text-green-600 mt-2">
@@ -142,7 +212,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           <Alert className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Las credenciales de Bright Data son necesarias para el rastreo SEO. Asegúrate de configurarlas antes de utilizar el rastreador.
+              Las credenciales de Bright Data son necesarias para el rastreo SEO. Asegúrate de configurarlas y guardarlas antes de utilizar el rastreador.
             </AlertDescription>
           </Alert>
         </CardContent>

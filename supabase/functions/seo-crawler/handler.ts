@@ -33,11 +33,11 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       }
       
       const { url, crawlId, settings = {} } = requestData;
-      let brightDataUsername = requestData.brightDataUsername || 'web_unlocker1';
-      let brightDataPassword = requestData.brightDataPassword;
+      const brightDataUsername = requestData.brightDataUsername || 'web_unlocker1';
+      const brightDataPassword = requestData.brightDataPassword || '';
       
       console.log(`Parameters received - URL: ${url}, CrawlID: ${crawlId}`);
-      console.log(`Bright Data credentials received: Username: ${brightDataUsername}, Password: ${brightDataPassword ? 'Yes (hidden)' : 'No'}`);
+      console.log(`Bright Data credentials: Username: ${brightDataUsername}, Password length: ${brightDataPassword ? brightDataPassword.length : 0}`);
       
       if (!url || !crawlId) {
         console.error('URL and crawlId are required');
@@ -87,7 +87,13 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       console.log('Starting analysis of main page with Bright Data...');
       
       try {
-        const mainPage = await crawlPage(supabase, normalizedUrl, crawlId, brightDataUsername, brightDataPassword);
+        const mainPage = await crawlPage(
+          supabase, 
+          normalizedUrl, 
+          crawlId, 
+          brightDataUsername, 
+          brightDataPassword
+        );
         
         if (!mainPage) {
           console.error('Could not analyze main page');
@@ -97,7 +103,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
             .from('seo_crawler_crawls')
             .update({
               status: 'failed',
-              error_message: 'Error analyzing the main page',
+              error_message: 'Error analyzing the main page. Please check that the URL is accessible and the Bright Data API key is valid.',
               completed_at: new Date().toISOString()
             })
             .eq('id', crawlId);
@@ -105,14 +111,14 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
           return new Response(
             JSON.stringify({ 
               success: false, 
-              message: 'Error analyzing the main page. Check that the URL is accessible and the proxy configuration is correct.'
+              message: 'Error analyzing the main page. Please check that the URL is accessible and the Bright Data API key is valid.' 
             }),
             { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
         
         console.log('Main page analysis completed successfully');
-        console.log(`Results - pageId: ${mainPage.pageId}, issues: ${mainPage.issues}`);
+        console.log(`Results - pageId: ${mainPage.pageId || 'unknown'}, issues: ${mainPage.issues || 0}`);
         
         // Update crawl status to completed
         await supabase
@@ -197,7 +203,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         stack: error instanceof Error ? error.stack : undefined,
         code: 'INTERNAL_SERVER_ERROR'
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }

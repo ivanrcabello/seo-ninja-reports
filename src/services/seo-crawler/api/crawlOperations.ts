@@ -47,7 +47,7 @@ export async function startCrawl(
     const brightDataUsername = localStorage.getItem('bright_data_username') || 'web_unlocker1';
     const brightDataPassword = localStorage.getItem('bright_data_password') || '';
     
-    console.log(`Using Bright Data credentials - Username: ${brightDataUsername ? brightDataUsername : 'web_unlocker1'}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
+    console.log(`Using Bright Data credentials - Username: ${brightDataUsername}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
     
     if (!brightDataPassword) {
       throw new Error('No Bright Data API key configured. Please add it in Settings -> API Settings -> Value SERP tab.');
@@ -80,6 +80,21 @@ export async function startCrawl(
           .eq('id', crawlRecord.id);
           
         throw new Error(`Edge function error: ${error.message}`);
+      }
+      
+      if (data && data.success === false) {
+        console.error('Edge function returned error:', data.message);
+        
+        // Update the crawl record to reflect the error
+        await supabase
+          .from('seo_crawler_crawls')
+          .update({ 
+            status: 'failed',
+            error_message: data.message || 'Edge function returned an error'
+          })
+          .eq('id', crawlRecord.id);
+          
+        throw new Error(data.message || 'Edge function returned an error');
       }
       
       // The status will be updated by the edge function, but we set it to processing here

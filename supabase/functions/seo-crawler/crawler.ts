@@ -17,15 +17,14 @@ export async function crawlPage(
     console.log(`Starting page analysis: ${url}`);
     const startTime = Date.now();
     
-    // Use Bright Data proxy or API credentials
-    const username = customUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || 'web_unlocker1';
-    const password = customPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
+    // Use Bright Data API credentials
+    const username = customUsername || 'web_unlocker1';
+    const password = customPassword || '';
     
-    console.log(`Using Bright Data credentials - Username: ${username ? username : 'web_unlocker1'}`);
-    console.log(`Bright Data API key available: ${password ? 'Yes (length: ' + password.length + ')' : 'No'}`);
+    console.log(`Using Bright Data credentials - Username: ${username}, Password: ${password ? 'Available (length: ' + password.length + ')' : 'Not available'}`);
     
     if (!password) {
-      throw new Error('No Bright Data API key/password configured');
+      throw new Error('No Bright Data API key/password provided');
     }
     
     // Normalize the URL
@@ -40,15 +39,15 @@ export async function crawlPage(
       const apiEndpoint = 'https://api.brightdata.com/request';
       
       // Format request according to Bright Data's API documentation
-      const apiRequestBody = {
+      const requestBody = {
         zone: username,
         url: normalizedUrl,
         format: "raw"  // Get raw HTML response
       };
       
-      console.log('API Request Body:', JSON.stringify(apiRequestBody, null, 2));
+      console.log('Request Body:', JSON.stringify(requestBody, null, 2));
       
-      const apiRequestHeaders = {
+      const requestHeaders = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${password}`
       };
@@ -56,31 +55,31 @@ export async function crawlPage(
       console.log('Sending request to Bright Data API...');
       
       // Make the actual request to Bright Data API
-      const scrapeResponse = await fetch(apiEndpoint, {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
-        headers: apiRequestHeaders,
-        body: JSON.stringify(apiRequestBody),
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
       });
       
-      console.log(`Response received: status ${scrapeResponse.status}`);
+      console.log(`Bright Data API response status: ${response.status}`);
       
-      if (!scrapeResponse.ok) {
-        const errorText = await scrapeResponse.text();
-        console.error(`HTTP error: ${scrapeResponse.status}, Response: ${errorText}`);
-        throw new Error(`HTTP error! Status: ${scrapeResponse.status}, Response: ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP error from Bright Data API: ${response.status}, Response: ${errorText}`);
+        throw new Error(`Bright Data API error! Status: ${response.status}, Response: ${errorText}`);
       }
       
       // Get response content as HTML
-      const html = await scrapeResponse.text();
+      const html = await response.text();
       
-      if (!html || html.trim().length === 0) {
-        console.error('No valid HTML content received from Bright Data');
-        throw new Error('No valid HTML content received');
+      console.log(`HTML content received, length: ${html.length} characters`);
+      
+      if (!html || html.length < 100) {
+        console.error('Empty or too short HTML content received from Bright Data');
+        console.log(`Content preview: ${html}`);
+        throw new Error('Invalid HTML content received from Bright Data API');
       }
-      
-      console.log(`HTML content received: ${html.length} characters`);
-      console.log(`First 200 characters: ${html.substring(0, 200)}`);
       
       // Process the HTML content using our HTML processor module
       const pageResult = await processHtml(supabase, normalizedUrl, crawlId, html);
@@ -89,7 +88,7 @@ export async function crawlPage(
       console.log(`Analysis completed in ${(endTime - startTime) / 1000} seconds`);
       
       if (pageResult) {
-        console.log(`Found ${pageResult.issues} SEO issues`);
+        console.log(`Found ${pageResult.issues || 0} SEO issues on the page`);
       }
       
       return pageResult;
