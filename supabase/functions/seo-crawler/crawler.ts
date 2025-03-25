@@ -32,29 +32,27 @@ export async function crawlPage(
     console.log(`Normalized URL: ${normalizedUrl}`);
     
     try {
-      // Use Bright Data's API to fetch the page
-      console.log(`Calling Bright Data API to analyze: ${normalizedUrl}`);
+      // Set up the proxy URL for Bright Data
+      const proxyUrl = 'http://brd.superproxy.io:22225';
       
-      // Use the correct Bright Data API endpoint for the Web Unlocker
-      const apiEndpoint = 'https://brd.superproxy.io:22225';
+      // Create proxy auth
+      const auth = btoa(`${username}:${password}`);
       
-      // Set up authentication headers using Basic Auth
-      const authHeader = 'Basic ' + btoa(`${username}:${password}`);
-      
-      // Set up the request
-      const requestHeaders = {
-        'Authorization': authHeader,
-        'Content-Type': 'text/plain'
+      // Set up the request options
+      const requestOptions = {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+        signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
       };
       
-      console.log('Making request to Bright Data proxy...');
+      console.log(`Making request through Bright Data proxy to analyze: ${normalizedUrl}`);
       
-      // Make the actual request to Bright Data's proxy service
-      const response = await fetch(normalizedUrl, {
-        method: 'GET',
-        headers: requestHeaders,
-        signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
-      });
+      // Make the request directly to the target URL
+      // Bright Data will intercept this via proxy settings
+      const response = await fetch(normalizedUrl, requestOptions);
       
       console.log(`Bright Data API response status: ${response.status}`);
       
