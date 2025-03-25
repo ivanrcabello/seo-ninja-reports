@@ -18,8 +18,9 @@ export async function crawlPage(
     const startTime = Date.now();
     
     // Use Bright Data API credentials
-    const username = customUsername || 'web_unlocker1';
-    const password = customPassword || '';
+    // The new Bright Data username format
+    const username = customUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
+    const password = customPassword || 'f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382';
     
     console.log(`Using Bright Data credentials - Username: ${username}, Password: ${password ? 'Available (length: ' + password.length + ')' : 'Not available'}`);
     
@@ -40,7 +41,7 @@ export async function crawlPage(
       
       // Format request according to Bright Data's API documentation
       const requestBody = {
-        zone: username,
+        zone: 'web_unlocker1', // Using just the zone part
         url: normalizedUrl,
         format: "raw"  // Get raw HTML response
       };

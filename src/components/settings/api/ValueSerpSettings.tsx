@@ -38,20 +38,23 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
       setBrightDataUsername(savedUsername);
     } else {
       // Set default value if not saved
-      setBrightDataUsername('web_unlocker1');
+      setBrightDataUsername('brd-customer-hl_cbc2d791-zone-web_unlocker1');
     }
     
     if (savedPassword) {
       setBrightDataPassword(savedPassword);
       setHasSavedBrightData(true);
+    } else {
+      // Set default API key if not saved
+      setBrightDataPassword('f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382');
     }
   }, [setBrightDataUsername, setBrightDataPassword]);
 
   // Save Bright Data credentials to localStorage when they change
   const handleSaveBrightData = () => {
     if (brightDataPassword) {
-      // Always ensure we have a username, defaulting to web_unlocker1 if not provided
-      const usernameToSave = brightDataUsername || 'web_unlocker1';
+      // Always ensure we have a username, defaulting to the full credential if not provided
+      const usernameToSave = brightDataUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
       localStorage.setItem('bright_data_username', usernameToSave);
       localStorage.setItem('bright_data_password', brightDataPassword);
       setHasSavedBrightData(true);
@@ -82,7 +85,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           'Authorization': `Bearer ${brightDataPassword}`
         },
         body: JSON.stringify({
-          zone: brightDataUsername || 'web_unlocker1',
+          zone: 'web_unlocker1', // Just use the zone part
           url: testUrl,
           format: "raw"
         })
@@ -97,7 +100,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         
         // Save credentials if test is successful
         if (!hasSavedBrightData) {
-          localStorage.setItem('bright_data_username', brightDataUsername || 'web_unlocker1');
+          localStorage.setItem('bright_data_username', brightDataUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1');
           localStorage.setItem('bright_data_password', brightDataPassword);
           setHasSavedBrightData(true);
         }
@@ -162,10 +165,10 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               value={brightDataUsername}
               onChange={(e) => setBrightDataUsername(e.target.value)}
               className="glass-input"
-              placeholder="web_unlocker1"
+              placeholder="brd-customer-hl_cbc2d791-zone-web_unlocker1"
             />
             <p className="text-xs text-muted-foreground">
-              La zona de Bright Data a utilizar. Por defecto: web_unlocker1
+              La zona de Bright Data a utilizar. Por defecto: brd-customer-hl_cbc2d791-zone-web_unlocker1
             </p>
           </div>
           
@@ -177,10 +180,10 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               value={brightDataPassword}
               onChange={(e) => setBrightDataPassword(e.target.value)}
               className="glass-input"
-              placeholder="Clave API de Bright Data"
+              placeholder="f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382"
             />
             <p className="text-xs text-muted-foreground">
-              Tu clave API de Bright Data (token) para el acceso. Puedes obtenerla en tu panel de Bright Data.
+              Tu clave API de Bright Data (token) para el acceso. Por defecto: f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382
             </p>
           </div>
           
@@ -212,7 +215,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           <Alert className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Las credenciales de Bright Data son necesarias para el rastreo SEO. Asegúrate de configurarlas y guardarlas antes de utilizar el rastreador.
+              Las credenciales de Bright Data están preconfiguradas para el rastreo SEO. Puedes guardar las credenciales por defecto o modificarlas si tienes tus propias credenciales.
             </AlertDescription>
           </Alert>
         </CardContent>

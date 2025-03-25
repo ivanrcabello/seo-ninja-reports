@@ -43,9 +43,9 @@ export async function startCrawl(
 
     console.log('Crawl record created:', crawlRecord.id);
 
-    // Get Bright Data credentials from localStorage
-    const brightDataUsername = localStorage.getItem('bright_data_username') || 'web_unlocker1';
-    const brightDataPassword = localStorage.getItem('bright_data_password') || '';
+    // Use the hardcoded Bright Data credentials
+    const brightDataUsername = 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
+    const brightDataPassword = 'f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382';
     
     console.log(`Using Bright Data credentials - Username: ${brightDataUsername}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
     
