@@ -50,12 +50,40 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       
       console.log(`Parameters received - URL: ${url}, CrawlID: ${crawlId}`);
       console.log(`Bright Data credentials configured: Username available: ${!!brightDataUsername}, Password available: ${!!brightDataPassword}`);
+      console.log(`URL validation check: isEmpty=${!url}, isValidURL=${/^https?:\/\//i.test(url)}`);
       
       if (!url || !crawlId) {
         console.error('URL and crawlId are required');
         return new Response(
           JSON.stringify({ error: 'URL and crawlId are required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Validate URL format
+      if (!url.match(/^https?:\/\//i)) {
+        console.error('Invalid URL format (must start with http:// or https://)', url);
+        
+        // Update crawl status to failed
+        try {
+          await supabase
+            .from('seo_crawler_crawls')
+            .update({
+              status: 'failed',
+              error_message: 'URL inválida. La URL debe comenzar con http:// o https://',
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', crawlId);
+        } catch (updateError) {
+          console.error('Error updating crawl status:', updateError);
+        }
+          
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'URL inválida. La URL debe comenzar con http:// o https://' 
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -92,6 +120,8 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       
       // Check if the URL is accessible with a basic test
       console.log(`Testing URL accessibility: ${normalizedUrl}`);
+      let isUrlAccessible = false;
+      
       try {
         const testResponse = await fetch(normalizedUrl, {
           method: 'HEAD',
@@ -102,33 +132,15 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         });
         
         console.log(`URL accessibility test response: ${testResponse.status}`);
-        if (testResponse.status >= 400) {
+        isUrlAccessible = testResponse.status < 400;
+        
+        if (!isUrlAccessible) {
           console.error(`URL accessibility test failed with status ${testResponse.status}`);
-          
-          // Update crawl status to failed
-          try {
-            await supabase
-              .from('seo_crawler_crawls')
-              .update({
-                status: 'failed',
-                error_message: `URL is not accessible (HTTP status: ${testResponse.status}). Please check that the URL is valid and the site is online.`,
-                completed_at: new Date().toISOString()
-              })
-              .eq('id', crawlId);
-          } catch (updateError) {
-            console.error('Error updating crawl status:', updateError);
-          }
-          
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              message: `URL is not accessible (HTTP status: ${testResponse.status}). Please check that the URL is valid and the site is online.` 
-            }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          console.log('Will still attempt to use Bright Data as it may be able to access the page');
         }
       } catch (testError) {
         console.error(`URL accessibility test error:`, testError);
+        console.log('Will still attempt to use Bright Data as it may be able to access the page');
         // Continue anyway, as this might be a transient error or specific to the test
       }
       
