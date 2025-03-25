@@ -33,11 +33,11 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       }
       
       const { url, crawlId, settings = {} } = requestData;
-      let brightDataUsername = requestData.brightDataUsername;
+      let brightDataUsername = requestData.brightDataUsername || 'web_unlocker1';
       let brightDataPassword = requestData.brightDataPassword;
       
       console.log(`Parameters received - URL: ${url}, CrawlID: ${crawlId}`);
-      console.log(`Bright Data credentials received: ${brightDataUsername ? 'Yes (length: ' + brightDataUsername.length + ')' : 'No'}, ${brightDataPassword ? 'Yes (length: ' + brightDataPassword.length + ')' : 'No'}`);
+      console.log(`Bright Data credentials received: Username: ${brightDataUsername}, Password: ${brightDataPassword ? 'Yes (hidden)' : 'No'}`);
       
       if (!url || !crawlId) {
         console.error('URL and crawlId are required');
@@ -50,11 +50,23 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       // Make sure we have credentials
       if (!brightDataPassword) {
         console.error('No Bright Data API key available');
+        
+        // Update crawl status to failed
+        await supabase
+          .from('seo_crawler_crawls')
+          .update({
+            status: 'failed',
+            error_message: 'Bright Data API key is required. Please configure it in Settings -> API Settings -> Value SERP tab.',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', crawlId);
+          
         return new Response(
           JSON.stringify({ 
-            error: 'Bright Data API key is required. Please configure it in Settings -> API Settings -> Value SERP tab.' 
+            success: false, 
+            message: 'Bright Data API key is required. Please configure it in Settings -> API Settings -> Value SERP tab.' 
           }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
@@ -185,7 +197,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         stack: error instanceof Error ? error.stack : undefined,
         code: 'INTERNAL_SERVER_ERROR'
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }

@@ -34,8 +34,11 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     const savedUsername = localStorage.getItem('bright_data_username');
     const savedPassword = localStorage.getItem('bright_data_password');
     
-    if (savedUsername && savedPassword) {
+    if (savedUsername) {
       setBrightDataUsername(savedUsername);
+    }
+    
+    if (savedPassword) {
       setBrightDataPassword(savedPassword);
       setHasSavedBrightData(true);
     }
@@ -44,7 +47,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   // Save Bright Data credentials to localStorage when they change
   const handleSaveBrightData = () => {
     if (brightDataPassword) {
-      localStorage.setItem('bright_data_username', brightDataUsername);
+      localStorage.setItem('bright_data_username', brightDataUsername || 'web_unlocker1');
       localStorage.setItem('bright_data_password', brightDataPassword);
       setHasSavedBrightData(true);
       toast.success('Credenciales de Bright Data guardadas');

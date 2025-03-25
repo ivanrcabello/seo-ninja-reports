@@ -44,10 +44,10 @@ export async function startCrawl(
     console.log('Crawl record created:', crawlRecord.id);
 
     // Get Bright Data credentials from localStorage
-    const brightDataUsername = localStorage.getItem('bright_data_username') || '';
+    const brightDataUsername = localStorage.getItem('bright_data_username') || 'web_unlocker1';
     const brightDataPassword = localStorage.getItem('bright_data_password') || '';
     
-    console.log(`Using Bright Data credentials - Username: ${brightDataUsername ? 'Available' : 'Not available'}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
+    console.log(`Using Bright Data credentials - Username: ${brightDataUsername ? brightDataUsername : 'web_unlocker1'}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
     
     if (!brightDataPassword) {
       throw new Error('No Bright Data API key configured. Please add it in Settings -> API Settings -> Value SERP tab.');
