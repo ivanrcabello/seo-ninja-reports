@@ -22,6 +22,11 @@ export async function crawlPage(
     const password = customPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
     
     console.log(`Usando credenciales: ${username.substring(0, 3)}... (${username.length} caracteres)`);
+    console.log(`Password disponible: ${password ? 'Sí' : 'No'}`);
+    
+    if (!password) {
+      throw new Error('No se ha configurado la contraseña/API key de Bright Data');
+    }
     
     // Normalize the URL
     const normalizedUrl = normalizeUrl(url);
@@ -32,12 +37,18 @@ export async function crawlPage(
       console.log(`Llamando a la API de Bright Data para analizar: ${normalizedUrl}`);
       
       // Bright Data API endpoint
-      const apiEndpoint = 'https://api.brightdata.com/request';
+      const apiEndpoint = 'https://api.brightdata.com/scrape';
       
       const apiRequestBody = {
-        zone: 'web_unlocker1',
         url: normalizedUrl,
-        format: 'raw'  // Changed from 'json' to 'raw' to get HTML content directly
+        render: 'html',
+        premium_proxy: 'residential',
+        // Adding bypass options for common anti-scraping measures
+        bypass: {
+          headless: false, 
+          wait_for_selectors: ['body'],
+          wait_for_timeout: 5000
+        }
       };
       
       const apiRequestHeaders = {
@@ -65,11 +76,20 @@ export async function crawlPage(
         throw new Error(`HTTP error! Status: ${scrapeResponse.status}, Respuesta: ${errorText}`);
       }
       
-      // Get HTML content from response - handle different response formats
+      // Get response as JSON first
+      const responseData = await scrapeResponse.json();
+      
+      // Extract HTML content from the response
       let html = '';
       
-      // First try to get as text (which is what we expect with format: 'raw')
-      html = await scrapeResponse.text();
+      if (responseData && responseData.body) {
+        html = responseData.body;
+      } else if (responseData && responseData.results && responseData.results.length > 0) {
+        html = responseData.results[0].body || responseData.results[0].html || '';
+      } else {
+        console.error('Formato de respuesta inesperado de Bright Data:', JSON.stringify(responseData, null, 2));
+        throw new Error('Formato de respuesta inesperado de Bright Data');
+      }
       
       if (!html || html.trim().length === 0) {
         console.error('No se recibió contenido HTML válido de Bright Data');

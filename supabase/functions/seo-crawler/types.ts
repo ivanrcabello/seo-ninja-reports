@@ -1,39 +1,36 @@
 
-// Type definitions for SEO Crawler functionality
+// Type definitions for SEO crawler
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
-// Basic types
-export type SupabaseInstance = any; // Simplified for Edge Function
+// Supabase instance type
+export type SupabaseInstance = SupabaseClient;
 
-// Response from Bright Data
-export interface BrightDataResponse {
-  status: number;
-  body: string;
-  headers: Record<string, string>;
-  url?: string;
-  error?: string;
-}
-
-// Result of crawling a page
+// Page crawl result
 export interface PageCrawlResult {
   pageId: string;
   url: string;
+  statusCode: number;
   issues: number;
 }
 
-// Basic page data type
-export interface CrawlPageData {
-  id: string;
-  crawl_id: string;
-  url: string;
-  title?: string;
-  meta_description?: string;
-  h1?: string;
-  status_code: number;
-  is_indexable: boolean;
+// SEO issue definition
+export interface SeoIssue {
+  page_id: string;
+  issue_type: string;
+  description: string;
+  severity: 'critical' | 'major' | 'minor' | 'info';
+  recommended_fix?: string;
+  element?: string;
 }
 
-// Bright Data credentials
-export interface BrightDataCredentials {
-  username?: string;
-  password?: string;
+// Crawl settings
+export interface CrawlSettings {
+  max_pages: number;
+  exclude_urls: string[];
+  include_urls: string[];
+  respect_robots_txt: boolean;
+  user_agent: string;
+  crawl_sitemap: boolean;
+  follow_links: boolean;
+  max_depth: number;
 }

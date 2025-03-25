@@ -43,14 +43,20 @@ export async function startCrawl(
 
     console.log('Crawl record created:', crawlRecord.id);
 
+    // Get Bright Data credentials from localStorage
+    let brightDataUsername = localStorage.getItem('bright_data_username') || '';
+    let brightDataPassword = localStorage.getItem('bright_data_password') || '';
+    
+    console.log(`Using Bright Data credentials - Username: ${brightDataUsername ? 'Available' : 'Not available'}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
+
     // Call the Edge Function to start the crawl
     const { data, error } = await supabase.functions.invoke('seo-crawler', {
       body: { 
         crawlId: crawlRecord.id,
         url, 
         settings: mergedSettings,
-        // We don't send Bright Data credentials through the API call,
-        // they should be configured as environment variables in the Edge Function
+        brightDataUsername,
+        brightDataPassword
       }
     });
 

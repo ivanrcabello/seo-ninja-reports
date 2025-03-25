@@ -32,7 +32,9 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
-      const { url, crawlId, brightDataUsername, brightDataPassword } = requestData;
+      const { url, crawlId, settings = {} } = requestData;
+      const brightDataUsername = requestData.brightDataUsername || Deno.env.get('BRIGHT_DATA_USERNAME');
+      const brightDataPassword = requestData.brightDataPassword || Deno.env.get('BRIGHT_DATA_PASSWORD');
       
       console.log(`Parámetros recibidos - URL: ${url}, CrawlID: ${crawlId}`);
       console.log(`Credenciales de Bright Data recibidas: ${brightDataUsername ? 'Sí' : 'No'}, ${brightDataPassword ? 'Sí' : 'No'}`);
@@ -45,11 +47,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
-      // Priorizar las variables de entorno, luego los parámetros de la solicitud
-      const username = brightDataUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || '';
-      const password = brightDataPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
-      
-      if (!password) {
+      if (!brightDataPassword) {
         console.error('No se ha proporcionado una API key de Bright Data');
         return new Response(
           JSON.stringify({ error: 'Bright Data API key is required' }),
@@ -73,7 +71,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       // Analyze the page using Bright Data
       console.log('Iniciando análisis de página principal con Bright Data...');
       
-      const mainPage = await crawlPage(supabase, normalizedUrl, crawlId, username, password);
+      const mainPage = await crawlPage(supabase, normalizedUrl, crawlId, brightDataUsername, brightDataPassword);
       
       if (!mainPage) {
         console.error('No se pudo analizar la página principal');

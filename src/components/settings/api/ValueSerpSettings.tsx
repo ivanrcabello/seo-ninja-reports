@@ -1,12 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
-import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 
 interface ValueSerpSettingsProps {
   valueSerpApiKey: string;
@@ -27,6 +26,17 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   brightDataPassword,
   setBrightDataPassword,
 }) => {
+  // Save Bright Data credentials to localStorage when they change
+  useEffect(() => {
+    if (brightDataUsername) {
+      localStorage.setItem('bright_data_username', brightDataUsername);
+    }
+    if (brightDataPassword) {
+      localStorage.setItem('bright_data_password', brightDataPassword);
+      toast.success('Credenciales de Bright Data guardadas');
+    }
+  }, [brightDataUsername, brightDataPassword]);
+
   return (
     <div className="space-y-6">
       {!hasConfiguredValueSerpKey && (
@@ -81,19 +91,26 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="brightDataPassword">Contraseña de Bright Data</Label>
+            <Label htmlFor="brightDataPassword">API Key de Bright Data</Label>
             <Input
               id="brightDataPassword"
               type="password"
               value={brightDataPassword}
               onChange={(e) => setBrightDataPassword(e.target.value)}
               className="glass-input"
-              placeholder="Contraseña de Bright Data"
+              placeholder="Clave API de Bright Data"
             />
             <p className="text-xs text-muted-foreground">
-              Tu contraseña de Bright Data para el Web Unlocker. Por defecto: 5d024usr515b
+              Tu clave API de Bright Data (token) para el acceso. Puedes obtenerla en tu panel de Bright Data.
             </p>
           </div>
+          
+          <Alert className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Las credenciales de Bright Data son necesarias para el rastreo SEO. Asegúrate de configurarlas antes de utilizar el rastreador.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     </div>
