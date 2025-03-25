@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Client } from '@/types/client.types';
 import { toast } from 'sonner';
@@ -75,7 +74,6 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
   };
 
   const handleOpenCrawl = (crawl: CrawlResult) => {
-    // Navegamos a la ruta del detalle
     navigate(`/clients/${client.id}/crawl/${crawl.id}`);
   };
 
@@ -198,11 +196,10 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
 
       {showCrawlerDialog && (
         <CrawlerDialog
-          client={client}
+          clientId={client.id}
           open={showCrawlerDialog}
           onOpenChange={setShowCrawlerDialog}
-          onClose={() => setShowCrawlerDialog(false)}
-          onCrawlCompleted={handleCrawlCompleted}
+          onSuccess={handleCrawlCompleted}
         />
       )}
 
