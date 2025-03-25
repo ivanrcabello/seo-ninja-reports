@@ -46,7 +46,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
       setHasSavedBrightData(true);
     } else {
       // Set default API key if not saved
-      setBrightDataPassword('f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382');
+      setBrightDataPassword('5d024usr515b');
     }
   }, [setBrightDataUsername, setBrightDataPassword]);
 
@@ -74,26 +74,23 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     toast.info('Probando conexión con Bright Data...');
     
     try {
-      // Use a test URL that should be accessible
-      const testUrl = 'https://geo.brdtest.com/welcome.txt?product=unlocker&method=api';
+      // Create basic auth header
+      const authHeader = 'Basic ' + btoa(`${brightDataUsername}:${brightDataPassword}`);
       
-      // Prepare the request
-      const response = await fetch('https://api.brightdata.com/request', {
-        method: 'POST',
+      // Use a test URL that should be accessible via the proxy
+      const testUrl = 'https://www.example.com';
+      
+      // Make the direct request through the proxy
+      const response = await fetch(testUrl, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${brightDataPassword}`
-        },
-        body: JSON.stringify({
-          zone: 'web_unlocker1', // Just use the zone part
-          url: testUrl,
-          format: "raw"
-        })
+          'Authorization': authHeader
+        }
       });
       
       if (response.ok) {
         const text = await response.text();
-        console.log('Bright Data test response:', text);
+        console.log('Bright Data test response length:', text.length);
         toast.success('Conexión con Bright Data exitosa', {
           description: 'Las credenciales son válidas'
         });
@@ -158,7 +155,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="brightDataUsername">Zone de Bright Data</Label>
+            <Label htmlFor="brightDataUsername">Usuario de Bright Data</Label>
             <Input
               id="brightDataUsername"
               type="text"
@@ -168,22 +165,22 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               placeholder="brd-customer-hl_cbc2d791-zone-web_unlocker1"
             />
             <p className="text-xs text-muted-foreground">
-              La zona de Bright Data a utilizar. Por defecto: brd-customer-hl_cbc2d791-zone-web_unlocker1
+              Tu usuario de Bright Data. Por defecto: brd-customer-hl_cbc2d791-zone-web_unlocker1
             </p>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="brightDataPassword">API Key de Bright Data</Label>
+            <Label htmlFor="brightDataPassword">Contraseña de Bright Data</Label>
             <Input
               id="brightDataPassword"
               type="password"
               value={brightDataPassword}
               onChange={(e) => setBrightDataPassword(e.target.value)}
               className="glass-input"
-              placeholder="f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382"
+              placeholder="5d024usr515b"
             />
             <p className="text-xs text-muted-foreground">
-              Tu clave API de Bright Data (token) para el acceso. Por defecto: f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382
+              Tu contraseña de Bright Data. Por defecto: 5d024usr515b
             </p>
           </div>
           
@@ -215,7 +212,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
           <Alert className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Las credenciales de Bright Data están preconfiguradas para el rastreo SEO. Puedes guardar las credenciales por defecto o modificarlas si tienes tus propias credenciales.
+              Las credenciales de Bright Data son necesarias para el rastreo SEO. Puedes usar las credenciales por defecto o configurar tus propias credenciales.
             </AlertDescription>
           </Alert>
         </CardContent>

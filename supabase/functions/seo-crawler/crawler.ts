@@ -17,10 +17,9 @@ export async function crawlPage(
     console.log(`Starting page analysis: ${url}`);
     const startTime = Date.now();
     
-    // Use Bright Data API credentials
-    // The new Bright Data username format
+    // Use provided Bright Data credentials or fallback to defaults
     const username = customUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
-    const password = customPassword || 'f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382';
+    const password = customPassword || '5d024usr515b';
     
     console.log(`Using Bright Data credentials - Username: ${username}, Password: ${password ? 'Available (length: ' + password.length + ')' : 'Not available'}`);
     
@@ -36,30 +35,24 @@ export async function crawlPage(
       // Use Bright Data's API to fetch the page
       console.log(`Calling Bright Data API to analyze: ${normalizedUrl}`);
       
-      // Bright Data API endpoint
-      const apiEndpoint = 'https://api.brightdata.com/request';
+      // Use the correct Bright Data API endpoint for the Web Unlocker
+      const apiEndpoint = 'https://brd.superproxy.io:22225';
       
-      // Format request according to Bright Data's API documentation
-      const requestBody = {
-        zone: 'web_unlocker1', // Using just the zone part
-        url: normalizedUrl,
-        format: "raw"  // Get raw HTML response
-      };
+      // Set up authentication headers using Basic Auth
+      const authHeader = 'Basic ' + btoa(`${username}:${password}`);
       
-      console.log('Request Body:', JSON.stringify(requestBody, null, 2));
-      
+      // Set up the request
       const requestHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${password}`
+        'Authorization': authHeader,
+        'Content-Type': 'text/plain'
       };
       
-      console.log('Sending request to Bright Data API...');
+      console.log('Making request to Bright Data proxy...');
       
-      // Make the actual request to Bright Data API
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
+      // Make the actual request to Bright Data's proxy service
+      const response = await fetch(normalizedUrl, {
+        method: 'GET',
         headers: requestHeaders,
-        body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
       });
       

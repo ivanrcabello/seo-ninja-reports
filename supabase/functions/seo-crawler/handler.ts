@@ -34,7 +34,7 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       
       const { url, crawlId, settings = {} } = requestData;
       const brightDataUsername = requestData.brightDataUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
-      const brightDataPassword = requestData.brightDataPassword || 'f5d2a610003ca042f0500f50e9aa8366f2143369867522e170fa004b084ec382';
+      const brightDataPassword = requestData.brightDataPassword || '5d024usr515b';
       
       console.log(`Parameters received - URL: ${url}, CrawlID: ${crawlId}`);
       console.log(`Bright Data credentials: Username: ${brightDataUsername}, Password available: ${!!brightDataPassword}`);
