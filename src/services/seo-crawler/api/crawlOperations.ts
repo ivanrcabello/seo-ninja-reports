@@ -2,6 +2,19 @@
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlSettings } from '../types';
 
+// Helper function to ensure URL has proper protocol
+function normalizeUrl(url: string): string {
+  if (!url) return '';
+  
+  // Check if URL already has a protocol
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    // Add https:// as default protocol
+    return `https://${url}`;
+  }
+  
+  return url;
+}
+
 /**
  * Start a new crawl for a given client
  */
@@ -11,6 +24,15 @@ export async function startCrawl(
   settings: Partial<CrawlSettings> = {}
 ): Promise<CrawlResult> {
   try {
+    // Normalize the URL to ensure it has a protocol
+    const normalizedUrl = normalizeUrl(url);
+    
+    if (!normalizedUrl) {
+      throw new Error('URL inválida. Por favor, introduce una URL válida.');
+    }
+    
+    console.log(`Starting crawl for normalized URL: ${normalizedUrl}`);
+    
     // Merge default settings with custom settings
     const defaultSettings: CrawlSettings = {
       max_pages: 100,
@@ -30,8 +52,8 @@ export async function startCrawl(
       .from('seo_crawler_crawls')
       .insert({
         client_id: clientId,
-        url: url,
-        domain: new URL(url.startsWith('http') ? url : `https://${url}`).hostname,
+        url: normalizedUrl,
+        domain: new URL(normalizedUrl).hostname,
         status: 'queued',
         settings: mergedSettings
       })
@@ -58,7 +80,7 @@ export async function startCrawl(
       const { data, error } = await supabase.functions.invoke('seo-crawler', {
         body: { 
           crawlId: crawlRecord.id,
-          url, 
+          url: normalizedUrl, 
           settings: mergedSettings,
           brightDataUsername,
           brightDataPassword

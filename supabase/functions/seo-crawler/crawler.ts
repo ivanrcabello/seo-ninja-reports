@@ -32,7 +32,7 @@ export async function crawlPage(
     console.log(`Normalized URL: ${normalizedUrl}`);
     
     try {
-      // Set up the proxy URL for Bright Data
+      // Set up the Bright Data proxy with credentials
       const proxyUrl = 'http://brd.superproxy.io:22225';
       
       // Create proxy auth

@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Client } from '@/types/client.types';
 import { startCrawl, getSettings } from '@/services/seo-crawler/api';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash, AlertCircle } from 'lucide-react';
+import { Loader2, Plus, Trash, AlertCircle, Globe } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CrawlerDialogProps {
@@ -65,6 +65,19 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
     }
   };
 
+  // Function to ensure URL has proper protocol
+  const normalizeUrl = (inputUrl: string): string => {
+    if (!inputUrl) return '';
+    
+    // Check if URL already has a protocol
+    if (!inputUrl.startsWith('http://') && !inputUrl.startsWith('https://')) {
+      // Add https:// as default protocol
+      return `https://${inputUrl}`;
+    }
+    
+    return inputUrl;
+  };
+
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setUrl(newUrl);
@@ -95,8 +108,18 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       setIsLoading(true);
       setError(null);
       
+      // Normalize URL before sending
+      const normalizedUrl = normalizeUrl(url);
+      
+      if (!normalizedUrl) {
+        setError('Por favor, introduce una URL válida');
+        return;
+      }
+      
+      console.log(`Starting crawl with normalized URL: ${normalizedUrl}`);
+      
       // Start the analysis with the settings
-      const result = await startCrawl(client.id, url, {
+      const result = await startCrawl(client.id, normalizedUrl, {
         max_pages: maxPages,
         follow_links: followExternalLinks,
         exclude_urls: excludePatterns,
@@ -138,13 +161,17 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
         <div className="space-y-6 py-4">
           <div className="space-y-2">
             <Label htmlFor="url">URL a analizar</Label>
-            <Input 
-              id="url" 
-              value={url} 
-              onChange={handleUrlChange} 
-              placeholder="https://ejemplo.com"
-              disabled={isLoadingSettings}
-            />
+            <div className="relative">
+              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                id="url" 
+                value={url} 
+                onChange={handleUrlChange} 
+                placeholder="https://ejemplo.com"
+                className="pl-10"
+                disabled={isLoadingSettings}
+              />
+            </div>
             {isLoadingSettings && (
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -152,7 +179,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
               </div>
             )}
             <p className="text-sm text-muted-foreground">
-              URL completa desde donde comenzará el análisis
+              URL completa desde donde comenzará el análisis. Asegúrate de incluir 'https://' al principio.
             </p>
           </div>
           
@@ -264,7 +291,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
           <Button variant="outline" onClick={() => onClose ? onClose() : onOpenChange && onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleStartCrawl} disabled={isLoading}>
+          <Button onClick={handleStartCrawl} disabled={isLoading || !url.trim()}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
