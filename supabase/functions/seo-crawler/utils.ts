@@ -1,12 +1,7 @@
 
 // Utility functions for SEO crawler
 import { SupabaseInstance } from './types.ts';
-
-// Constants
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders } from './constants.ts';
 
 // Normalize URL to ensure consistency
 export function normalizeUrl(url: string): string {
@@ -69,44 +64,25 @@ export async function registerCrawlerError(
   try {
     console.log(`Registrando error para URL ${url}: ${errorMessage}`);
     
-    // Try to insert the error into the issues table
-    // First we need to check if there's a page entry for this URL
-    const { data: pages, error: pageError } = await supabase
-      .from('seo_crawl_pages')
-      .select('id')
-      .eq('crawl_id', crawlId)
-      .eq('url', url)
-      .limit(1);
+    // Update the crawl record with the error
+    const { error } = await supabase
+      .from('seo_crawler_crawls')
+      .update({
+        status: 'failed',
+        error_message: errorMessage,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', crawlId);
       
-    if (pageError) {
-      console.error('Error buscando página para registrar error:', pageError);
-      return;
-    }
-    
-    if (pages && pages.length > 0) {
-      // Page exists, add the issue
-      const { error } = await supabase
-        .from('seo_crawl_issues')
-        .insert({
-          page_id: pages[0].id,
-          issue_type: 'ERROR_CRAWL',
-          severity: 'high',
-          description: `Error durante el crawling: ${errorMessage}`,
-          recommended_fix: 'Verificar que la página sea accesible y no tenga restricciones'
-        });
-        
-      if (error) {
-        console.error('Error al registrar error en base de datos:', error);
-      }
-    } else {
-      console.log(`No se encontró página para la URL ${url}, no se pudo registrar el error`);
+    if (error) {
+      console.error('Error actualizando estado del crawl:', error);
     }
   } catch (error) {
     console.error('Error en registerCrawlerError:', error);
   }
 }
 
-// Queue links for crawling
+// Queue links for crawling (simplified version for now)
 export async function queueLinksForCrawling(
   supabase: SupabaseInstance,
   pageId: string,
@@ -124,17 +100,17 @@ export async function queueLinksForCrawling(
     
     // Insert links into the links table
     const linksToInsert = links.map(url => ({
-      id: crypto.randomUUID(),
+      crawl_id: crawlId,
       page_id: pageId,
       url: url,
-      is_internal: true,
+      is_internal: isInternalUrl(sourceUrl, url),
       is_broken: false,
       follow: true
     }));
     
     if (linksToInsert.length > 0) {
       const { error } = await supabase
-        .from('seo_crawl_links')
+        .from('seo_crawler_links')
         .insert(linksToInsert);
         
       if (error) {
@@ -143,42 +119,7 @@ export async function queueLinksForCrawling(
         console.log(`${linksToInsert.length} enlaces guardados correctamente`);
       }
     }
-    
-    // We're not implementing full recursive crawling in this version
-    // as it would exceed the function execution time limits
   } catch (error) {
     console.error(`Error procesando enlaces de ${sourceUrl}:`, error);
-  }
-}
-
-// Update crawl status
-export async function updateCrawlStatus(
-  supabase: SupabaseInstance,
-  crawlId: string,
-  status: 'processing' | 'completed' | 'error',
-  pagesCrawled: number,
-  issuesCount: number,
-  totalTimeSeconds: number
-): Promise<void> {
-  try {
-    console.log(`Actualizando estado del crawl ${crawlId} a ${status}`);
-    
-    const { error } = await supabase
-      .from('seo_crawl_results')
-      .update({
-        status: status,
-        pages_crawled: pagesCrawled,
-        issues_count: issuesCount,
-        total_time_seconds: totalTimeSeconds
-      })
-      .eq('id', crawlId);
-      
-    if (error) {
-      console.error('Error actualizando estado del crawl:', error);
-    } else {
-      console.log('Estado del crawl actualizado correctamente');
-    }
-  } catch (error) {
-    console.error('Error en updateCrawlStatus:', error);
   }
 }

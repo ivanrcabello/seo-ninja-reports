@@ -41,18 +41,28 @@ export async function startCrawl(
     if (insertError) throw new Error(`Failed to create crawl record: ${insertError.message}`);
     if (!crawlRecord) throw new Error('Failed to create crawl record: No data returned');
 
+    console.log('Crawl record created:', crawlRecord.id);
+
     // Call the Edge Function to start the crawl
     const { data, error } = await supabase.functions.invoke('seo-crawler', {
       body: { 
         crawlId: crawlRecord.id,
         url, 
-        settings: mergedSettings 
+        settings: mergedSettings,
+        // We don't send Bright Data credentials through the API call,
+        // they should be configured as environment variables in the Edge Function
       }
     });
 
-    if (error) throw new Error(`Edge function error: ${error.message}`);
+    console.log('Edge function response:', data);
     
-    // Update the crawl record with processing status
+    if (error) {
+      console.error('Edge function error:', error);
+      throw new Error(`Edge function error: ${error.message}`);
+    }
+    
+    // The status will be updated by the edge function, but we set it to processing here
+    // in case there's a delay before the edge function starts
     const { error: updateError } = await supabase
       .from('seo_crawler_crawls')
       .update({ status: 'processing' })

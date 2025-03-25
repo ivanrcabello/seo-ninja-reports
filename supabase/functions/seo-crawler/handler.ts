@@ -3,7 +3,7 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { corsHeaders } from './constants.ts';
 import { crawlPage } from './crawler.ts';
-import { normalizeUrl, updateCrawlStatus } from './utils.ts';
+import { normalizeUrl } from './utils.ts';
 
 export async function handleRequest(req: Request, supabase: SupabaseClient) {
   console.log('Procesando solicitud para SEO Crawler');
@@ -49,24 +49,44 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       const username = brightDataUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || '';
       const password = brightDataPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
       
+      if (!password) {
+        console.error('No se ha proporcionado una API key de Bright Data');
+        return new Response(
+          JSON.stringify({ error: 'Bright Data API key is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       // Normalize the URL
       const normalizedUrl = normalizeUrl(url);
       console.log(`URL normalizada: ${normalizedUrl}`);
       
-      // Actualizar el estado del crawl a processing (por si acaso)
-      await updateCrawlStatus(supabase, crawlId, 'processing', 0, 0, 0);
+      // Update crawl status to processing
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          status: 'processing',
+          started_at: new Date().toISOString()
+        })
+        .eq('id', crawlId);
       
-      // Analyze main page first
+      // Analyze the page using Bright Data
       console.log('Iniciando análisis de página principal con Bright Data...');
-      console.log(`Usando credenciales: ${username ? 'Usuario configurado' : 'Usuario por defecto'}, ${password ? 'Contraseña configurada' : 'Contraseña por defecto'}`);
       
       const mainPage = await crawlPage(supabase, normalizedUrl, crawlId, username, password);
       
       if (!mainPage) {
         console.error('No se pudo analizar la página principal');
         
-        // Update crawl status to error, but don't throw exception to return a valid response
-        await updateCrawlStatus(supabase, crawlId, 'error', 0, 1, 0);
+        // Update crawl status to error
+        await supabase
+          .from('seo_crawler_crawls')
+          .update({
+            status: 'failed',
+            error_message: 'Error al analizar la página principal',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', crawlId);
           
         return new Response(
           JSON.stringify({ 
@@ -80,9 +100,17 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       console.log('Análisis de página principal completado con éxito');
       console.log(`Resultados - pageId: ${mainPage.pageId}, issues: ${mainPage.issues}`);
       
-      // Update crawl status
-      console.log('Actualizando estado del crawl a completado...');
-      await updateCrawlStatus(supabase, crawlId, 'completed', 1, mainPage.issues, 1);
+      // Update crawl status to completed
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          pages_crawled: 1,
+          total_pages: 1,
+          total_issues: mainPage.issues || 0
+        })
+        .eq('id', crawlId);
       
       console.log('Enviando respuesta exitosa');
       return new Response(
@@ -107,12 +135,18 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
     
     // Try to update crawl status to error
     try {
-      console.log('Intentando actualizar estado del crawl a error...');
       if (req.method === 'POST') {
         try {
           const { crawlId } = await req.json();
           if (crawlId) {
-            await updateCrawlStatus(supabase, crawlId, 'error', 0, 0, 0);
+            await supabase
+              .from('seo_crawler_crawls')
+              .update({
+                status: 'failed',
+                error_message: error instanceof Error ? error.message : 'Error desconocido',
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', crawlId);
           }
         } catch (e) {
           console.error('Error leyendo crawlId del body:', e);

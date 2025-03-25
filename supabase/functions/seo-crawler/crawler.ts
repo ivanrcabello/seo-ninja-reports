@@ -21,7 +21,7 @@ export async function crawlPage(
     const username = customUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || BRIGHT_DATA_CONFIG.DEFAULT_USER;
     const password = customPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
     
-    console.log(`Usando credenciales: ${username.substring(0, 15)}... (${username.length} caracteres)`);
+    console.log(`Usando credenciales: ${username.substring(0, 3)}... (${username.length} caracteres)`);
     
     // Normalize the URL
     const normalizedUrl = normalizeUrl(url);
@@ -37,7 +37,7 @@ export async function crawlPage(
       const apiRequestBody = {
         zone: 'web_unlocker1',
         url: normalizedUrl,
-        format: 'json'
+        format: 'raw'  // Changed from 'json' to 'raw' to get HTML content directly
       };
       
       const apiRequestHeaders = {
@@ -65,25 +65,19 @@ export async function crawlPage(
         throw new Error(`HTTP error! Status: ${scrapeResponse.status}, Respuesta: ${errorText}`);
       }
       
-      // Parse the JSON response from Bright Data
-      const responseData = await scrapeResponse.json();
-      console.log(`Respuesta JSON recibida: ${JSON.stringify(responseData).substring(0, 200)}...`);
-      
-      // Check if response contains HTML content
+      // Get HTML content from response - handle different response formats
       let html = '';
-      if (responseData.body) {
-        html = typeof responseData.body === 'string' ? responseData.body : JSON.stringify(responseData.body);
-      } else if (typeof responseData === 'string') {
-        html = responseData;
-      } else {
-        html = JSON.stringify(responseData);
-      }
       
-      if (!html || html.length === 0) {
+      // First try to get as text (which is what we expect with format: 'raw')
+      html = await scrapeResponse.text();
+      
+      if (!html || html.trim().length === 0) {
+        console.error('No se recibió contenido HTML válido de Bright Data');
         throw new Error('No se recibió contenido HTML válido');
       }
       
       console.log(`Contenido HTML recibido: ${html.length} caracteres`);
+      console.log(`Primeros 200 caracteres: ${html.substring(0, 200)}`);
       
       // Process the HTML content using our HTML processor module
       const pageResult = await processHtml(supabase, normalizedUrl, crawlId, html);
