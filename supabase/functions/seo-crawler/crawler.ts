@@ -14,27 +14,27 @@ export async function crawlPage(
   customPassword?: string
 ): Promise<PageCrawlResult | null> {
   try {
-    console.log(`Iniciando análisis de página: ${url}`);
+    console.log(`Starting page analysis: ${url}`);
     const startTime = Date.now();
     
     // Use Bright Data proxy or API credentials
     const username = customUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || BRIGHT_DATA_CONFIG.DEFAULT_USER;
     const password = customPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
     
-    console.log(`Usando credenciales: ${username.substring(0, 3)}... (${username.length} caracteres)`);
-    console.log(`Password disponible: ${password ? 'Sí' : 'No'}`);
+    console.log(`Using credentials: ${username ? 'Yes (length: ' + username.length + ')' : 'No'}`);
+    console.log(`Password available: ${password ? 'Yes' : 'No'}`);
     
     if (!password) {
-      throw new Error('No se ha configurado la contraseña/API key de Bright Data');
+      throw new Error('No Bright Data API key/password configured');
     }
     
     // Normalize the URL
     const normalizedUrl = normalizeUrl(url);
-    console.log(`URL normalizada: ${normalizedUrl}`);
+    console.log(`Normalized URL: ${normalizedUrl}`);
     
     try {
       // Use Bright Data's API to fetch the page
-      console.log(`Llamando a la API de Bright Data para analizar: ${normalizedUrl}`);
+      console.log(`Calling Bright Data API to analyze: ${normalizedUrl}`);
       
       // Bright Data API endpoint
       const apiEndpoint = 'https://api.brightdata.com/scrape';
@@ -56,7 +56,7 @@ export async function crawlPage(
         'Authorization': `Bearer ${password}` // Using password as API key
       };
       
-      console.log('Enviando solicitud a Bright Data API...');
+      console.log('Sending request to Bright Data API...');
       console.log(`Endpoint: ${apiEndpoint}`);
       console.log(`Body: ${JSON.stringify(apiRequestBody)}`);
       
@@ -68,12 +68,12 @@ export async function crawlPage(
         signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
       });
       
-      console.log(`Respuesta recibida: status ${scrapeResponse.status}`);
+      console.log(`Response received: status ${scrapeResponse.status}`);
       
       if (!scrapeResponse.ok) {
         const errorText = await scrapeResponse.text();
-        console.error(`Error HTTP: ${scrapeResponse.status}, Respuesta: ${errorText}`);
-        throw new Error(`HTTP error! Status: ${scrapeResponse.status}, Respuesta: ${errorText}`);
+        console.error(`HTTP error: ${scrapeResponse.status}, Response: ${errorText}`);
+        throw new Error(`HTTP error! Status: ${scrapeResponse.status}, Response: ${errorText}`);
       }
       
       // Get response as JSON first
@@ -87,39 +87,39 @@ export async function crawlPage(
       } else if (responseData && responseData.results && responseData.results.length > 0) {
         html = responseData.results[0].body || responseData.results[0].html || '';
       } else {
-        console.error('Formato de respuesta inesperado de Bright Data:', JSON.stringify(responseData, null, 2));
-        throw new Error('Formato de respuesta inesperado de Bright Data');
+        console.error('Unexpected response format from Bright Data:', JSON.stringify(responseData, null, 2));
+        throw new Error('Unexpected response format from Bright Data');
       }
       
       if (!html || html.trim().length === 0) {
-        console.error('No se recibió contenido HTML válido de Bright Data');
-        throw new Error('No se recibió contenido HTML válido');
+        console.error('No valid HTML content received from Bright Data');
+        throw new Error('No valid HTML content received');
       }
       
-      console.log(`Contenido HTML recibido: ${html.length} caracteres`);
-      console.log(`Primeros 200 caracteres: ${html.substring(0, 200)}`);
+      console.log(`HTML content received: ${html.length} characters`);
+      console.log(`First 200 characters: ${html.substring(0, 200)}`);
       
       // Process the HTML content using our HTML processor module
       const pageResult = await processHtml(supabase, normalizedUrl, crawlId, html);
       
       const endTime = Date.now();
-      console.log(`Análisis completado en ${(endTime - startTime) / 1000} segundos`);
+      console.log(`Analysis completed in ${(endTime - startTime) / 1000} seconds`);
       
       if (pageResult) {
-        console.log(`Encontrados ${pageResult.issues} problemas SEO`);
+        console.log(`Found ${pageResult.issues} SEO issues`);
       }
       
       return pageResult;
       
     } catch (fetchError) {
-      console.error(`Error al obtener la página desde Bright Data: ${fetchError}`);
+      console.error(`Error fetching page from Bright Data: ${fetchError}`);
       console.error(`Stack trace: ${fetchError instanceof Error ? fetchError.stack : 'No stack trace'}`);
-      await registerCrawlerError(supabase, crawlId, url, fetchError instanceof Error ? fetchError.message : 'Error desconocido en la API de Bright Data');
+      await registerCrawlerError(supabase, crawlId, url, fetchError instanceof Error ? fetchError.message : 'Unknown error in Bright Data API');
       return null;
     }
     
   } catch (error) {
-    console.error(`Error general analizando página ${url}:`, error);
+    console.error(`General error analyzing page ${url}:`, error);
     await registerCrawlerError(supabase, crawlId, url, error instanceof Error ? error.message : String(error));
     return null;
   }

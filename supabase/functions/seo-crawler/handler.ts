@@ -6,11 +6,11 @@ import { crawlPage } from './crawler.ts';
 import { normalizeUrl } from './utils.ts';
 
 export async function handleRequest(req: Request, supabase: SupabaseClient) {
-  console.log('Procesando solicitud para SEO Crawler');
+  console.log('Processing request for SEO Crawler');
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Devolviendo cabeceras CORS para preflight');
+    console.log('Returning CORS headers for preflight');
     return new Response(null, {
       headers: corsHeaders
     });
@@ -18,14 +18,14 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
   
   try {
     if (req.method === 'POST') {
-      console.log('Procesando solicitud POST');
+      console.log('Processing POST request');
       
       // Parse request body
       let requestData;
       try {
         requestData = await req.json();
       } catch (e) {
-        console.error('Error al parsear JSON:', e);
+        console.error('Error parsing JSON:', e);
         return new Response(
           JSON.stringify({ error: 'Invalid JSON in request body' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -33,31 +33,44 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       }
       
       const { url, crawlId, settings = {} } = requestData;
-      const brightDataUsername = requestData.brightDataUsername || Deno.env.get('BRIGHT_DATA_USERNAME');
-      const brightDataPassword = requestData.brightDataPassword || Deno.env.get('BRIGHT_DATA_PASSWORD');
+      let brightDataUsername = requestData.brightDataUsername;
+      let brightDataPassword = requestData.brightDataPassword;
       
-      console.log(`Parámetros recibidos - URL: ${url}, CrawlID: ${crawlId}`);
-      console.log(`Credenciales de Bright Data recibidas: ${brightDataUsername ? 'Sí' : 'No'}, ${brightDataPassword ? 'Sí' : 'No'}`);
+      console.log(`Parameters received - URL: ${url}, CrawlID: ${crawlId}`);
+      console.log(`Bright Data credentials received: ${brightDataUsername ? 'Yes' : 'No'}, ${brightDataPassword ? 'Yes' : 'No'}`);
       
       if (!url || !crawlId) {
-        console.error('URL y crawlId son obligatorios');
+        console.error('URL and crawlId are required');
         return new Response(
           JSON.stringify({ error: 'URL and crawlId are required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      // Fallback to environment variables if credentials not provided in request
+      if (!brightDataUsername) {
+        brightDataUsername = Deno.env.get('BRIGHT_DATA_USERNAME') || '';
+        console.log(`Using environment variable for Bright Data username: ${brightDataUsername ? 'Available' : 'Not available'}`);
+      }
       
       if (!brightDataPassword) {
-        console.error('No se ha proporcionado una API key de Bright Data');
+        brightDataPassword = Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
+        console.log(`Using environment variable for Bright Data password: ${brightDataPassword ? 'Available' : 'Not available'}`);
+      }
+      
+      if (!brightDataPassword) {
+        console.error('No Bright Data API key available');
         return new Response(
-          JSON.stringify({ error: 'Bright Data API key is required' }),
+          JSON.stringify({ 
+            error: 'Bright Data API key is required. Please configure it in Settings -> API Settings -> Value SERP tab.' 
+          }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       // Normalize the URL
       const normalizedUrl = normalizeUrl(url);
-      console.log(`URL normalizada: ${normalizedUrl}`);
+      console.log(`Normalized URL: ${normalizedUrl}`);
       
       // Update crawl status to processing
       await supabase
@@ -69,19 +82,19 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         .eq('id', crawlId);
       
       // Analyze the page using Bright Data
-      console.log('Iniciando análisis de página principal con Bright Data...');
+      console.log('Starting analysis of main page with Bright Data...');
       
       const mainPage = await crawlPage(supabase, normalizedUrl, crawlId, brightDataUsername, brightDataPassword);
       
       if (!mainPage) {
-        console.error('No se pudo analizar la página principal');
+        console.error('Could not analyze main page');
         
         // Update crawl status to error
         await supabase
           .from('seo_crawler_crawls')
           .update({
             status: 'failed',
-            error_message: 'Error al analizar la página principal',
+            error_message: 'Error analyzing the main page',
             completed_at: new Date().toISOString()
           })
           .eq('id', crawlId);
@@ -89,14 +102,14 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Error al analizar la página principal. Compruebe que la URL es accesible y que la configuración del proxy es correcta.' 
+            message: 'Error analyzing the main page. Check that the URL is accessible and the proxy configuration is correct.'
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      console.log('Análisis de página principal completado con éxito');
-      console.log(`Resultados - pageId: ${mainPage.pageId}, issues: ${mainPage.issues}`);
+      console.log('Main page analysis completed successfully');
+      console.log(`Results - pageId: ${mainPage.pageId}, issues: ${mainPage.issues}`);
       
       // Update crawl status to completed
       await supabase
@@ -110,11 +123,11 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         })
         .eq('id', crawlId);
       
-      console.log('Enviando respuesta exitosa');
+      console.log('Sending successful response');
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Página analizada correctamente',
+          message: 'Page analyzed correctly',
           pageId: mainPage.pageId,
           issuesCount: mainPage.issues
         }),
@@ -122,13 +135,13 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       );
     }
     
-    console.error('Método no permitido:', req.method);
+    console.error('Method not allowed:', req.method);
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error en la función:', error);
+    console.error('Error in function:', error);
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
     
     // Try to update crawl status to error
@@ -141,22 +154,22 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
               .from('seo_crawler_crawls')
               .update({
                 status: 'failed',
-                error_message: error instanceof Error ? error.message : 'Error desconocido',
+                error_message: error instanceof Error ? error.message : 'Unknown error',
                 completed_at: new Date().toISOString()
               })
               .eq('id', crawlId);
           }
         } catch (e) {
-          console.error('Error leyendo crawlId del body:', e);
+          console.error('Error reading crawlId from body:', e);
         }
       }
     } catch (e) {
-      console.error('Error actualizando estado del crawl a error:', e);
+      console.error('Error updating crawl status to error:', e);
     }
     
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Error interno del servidor',
+        error: error instanceof Error ? error.message : 'Internal server error',
         stack: error instanceof Error ? error.stack : undefined,
         code: 'INTERNAL_SERVER_ERROR'
       }),

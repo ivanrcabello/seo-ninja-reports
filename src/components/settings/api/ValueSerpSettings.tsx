@@ -1,11 +1,12 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface ValueSerpSettingsProps {
   valueSerpApiKey: string;
@@ -26,16 +27,31 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   brightDataPassword,
   setBrightDataPassword,
 }) => {
-  // Save Bright Data credentials to localStorage when they change
+  const [hasSavedBrightData, setHasSavedBrightData] = useState(false);
+  
+  // Check if Bright Data credentials are already in localStorage
   useEffect(() => {
+    const savedUsername = localStorage.getItem('bright_data_username');
+    const savedPassword = localStorage.getItem('bright_data_password');
+    
+    if (savedUsername && savedPassword) {
+      setHasSavedBrightData(true);
+    }
+  }, []);
+
+  // Save Bright Data credentials to localStorage when they change
+  const handleSaveBrightData = () => {
     if (brightDataUsername) {
       localStorage.setItem('bright_data_username', brightDataUsername);
     }
     if (brightDataPassword) {
       localStorage.setItem('bright_data_password', brightDataPassword);
+      setHasSavedBrightData(true);
       toast.success('Credenciales de Bright Data guardadas');
+    } else {
+      toast.error('La API key de Bright Data es obligatoria');
     }
-  }, [brightDataUsername, brightDataPassword]);
+  };
 
   return (
     <div className="space-y-6">
@@ -104,6 +120,21 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               Tu clave API de Bright Data (token) para el acceso. Puedes obtenerla en tu panel de Bright Data.
             </p>
           </div>
+          
+          <Button 
+            onClick={handleSaveBrightData} 
+            className="w-full mt-2"
+            variant="default"
+          >
+            Guardar credenciales de Bright Data
+          </Button>
+          
+          {hasSavedBrightData && (
+            <div className="flex items-center text-sm text-green-600 mt-2">
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Credenciales guardadas correctamente
+            </div>
+          )}
           
           <Alert className="mt-4">
             <AlertCircle className="h-4 w-4" />

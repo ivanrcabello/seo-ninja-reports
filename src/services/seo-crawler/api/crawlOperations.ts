@@ -50,31 +50,59 @@ export async function startCrawl(
     console.log(`Using Bright Data credentials - Username: ${brightDataUsername ? 'Available' : 'Not available'}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
 
     // Call the Edge Function to start the crawl
-    const { data, error } = await supabase.functions.invoke('seo-crawler', {
-      body: { 
-        crawlId: crawlRecord.id,
-        url, 
-        settings: mergedSettings,
-        brightDataUsername,
-        brightDataPassword
-      }
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('seo-crawler', {
+        body: { 
+          crawlId: crawlRecord.id,
+          url, 
+          settings: mergedSettings,
+          brightDataUsername,
+          brightDataPassword
+        }
+      });
 
-    console.log('Edge function response:', data);
-    
-    if (error) {
-      console.error('Edge function error:', error);
-      throw new Error(`Edge function error: ${error.message}`);
+      console.log('Edge function response:', data);
+      
+      if (error) {
+        console.error('Edge function error:', error);
+        
+        // Update the crawl record to reflect the error
+        await supabase
+          .from('seo_crawler_crawls')
+          .update({ 
+            status: 'failed',
+            error_message: `Edge function error: ${error.message || 'Unknown error'}`
+          })
+          .eq('id', crawlRecord.id);
+          
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+      
+      // The status will be updated by the edge function, but we set it to processing here
+      // in case there's a delay before the edge function starts
+      const { error: updateError } = await supabase
+        .from('seo_crawler_crawls')
+        .update({ status: 'processing' })
+        .eq('id', crawlRecord.id);
+      
+      if (updateError) console.error('Error updating crawl status:', updateError);
+      
+    } catch (invokeFunctionError) {
+      console.error('Error invoking edge function:', invokeFunctionError);
+      
+      // Update the crawl record to reflect the error
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({ 
+          status: 'failed',
+          error_message: invokeFunctionError instanceof Error 
+            ? invokeFunctionError.message 
+            : 'Error invoking the SEO crawler edge function'
+        })
+        .eq('id', crawlRecord.id);
+        
+      throw invokeFunctionError;
     }
-    
-    // The status will be updated by the edge function, but we set it to processing here
-    // in case there's a delay before the edge function starts
-    const { error: updateError } = await supabase
-      .from('seo_crawler_crawls')
-      .update({ status: 'processing' })
-      .eq('id', crawlRecord.id);
-    
-    if (updateError) console.error('Error updating crawl status:', updateError);
     
     // Add success and message properties for the component to use
     return {
