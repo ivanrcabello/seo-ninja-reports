@@ -6,7 +6,7 @@ import { crawlPage } from './crawler.ts';
 import { normalizeUrl } from './utils.ts';
 
 export async function handleRequest(req: Request, supabase: SupabaseClient) {
-  console.log('Processing request for SEO Crawler');
+  console.log('Processing request for SEO Crawler at', new Date().toISOString());
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -16,14 +16,25 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
     });
   }
   
+  let crawlId: string | null = null;
+  
   try {
     if (req.method === 'POST') {
-      console.log('Processing POST request');
+      console.log('Processing POST request for SEO Crawler');
       
       // Parse request body
       let requestData;
       try {
         requestData = await req.json();
+        console.log('Request data received:', JSON.stringify({
+          url: requestData.url,
+          crawlId: requestData.crawlId,
+          settingsReceived: !!requestData.settings,
+          brightDataCredentialsReceived: {
+            username: !!requestData.brightDataUsername,
+            password: !!requestData.brightDataPassword
+          }
+        }));
       } catch (e) {
         console.error('Error parsing JSON:', e);
         return new Response(
@@ -32,12 +43,13 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       }
       
-      const { url, crawlId, settings = {} } = requestData;
+      const { url, settings = {} } = requestData;
+      crawlId = requestData.crawlId;
       const brightDataUsername = requestData.brightDataUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
       const brightDataPassword = requestData.brightDataPassword || '5d024usr515b';
       
       console.log(`Parameters received - URL: ${url}, CrawlID: ${crawlId}`);
-      console.log(`Bright Data credentials: Username: ${brightDataUsername}, Password available: ${!!brightDataPassword}`);
+      console.log(`Bright Data credentials configured: Username available: ${!!brightDataUsername}, Password available: ${!!brightDataPassword}`);
       
       if (!url || !crawlId) {
         console.error('URL and crawlId are required');
@@ -52,14 +64,18 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         console.error('No Bright Data API key available');
         
         // Update crawl status to failed
-        await supabase
-          .from('seo_crawler_crawls')
-          .update({
-            status: 'failed',
-            error_message: 'Bright Data API key is required. Please configure it in Settings -> API Settings -> Value SERP tab.',
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', crawlId);
+        try {
+          await supabase
+            .from('seo_crawler_crawls')
+            .update({
+              status: 'failed',
+              error_message: 'Bright Data API key is required. Please configure it in Settings -> API Settings -> Value SERP tab.',
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', crawlId);
+        } catch (updateError) {
+          console.error('Error updating crawl status:', updateError);
+        }
           
         return new Response(
           JSON.stringify({ 
@@ -74,14 +90,62 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
       const normalizedUrl = normalizeUrl(url);
       console.log(`Normalized URL: ${normalizedUrl}`);
       
+      // Check if the URL is accessible with a basic test
+      console.log(`Testing URL accessibility: ${normalizedUrl}`);
+      try {
+        const testResponse = await fetch(normalizedUrl, {
+          method: 'HEAD',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)'
+          },
+          signal: AbortSignal.timeout(5000) // 5 second timeout for the test
+        });
+        
+        console.log(`URL accessibility test response: ${testResponse.status}`);
+        if (testResponse.status >= 400) {
+          console.error(`URL accessibility test failed with status ${testResponse.status}`);
+          
+          // Update crawl status to failed
+          try {
+            await supabase
+              .from('seo_crawler_crawls')
+              .update({
+                status: 'failed',
+                error_message: `URL is not accessible (HTTP status: ${testResponse.status}). Please check that the URL is valid and the site is online.`,
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', crawlId);
+          } catch (updateError) {
+            console.error('Error updating crawl status:', updateError);
+          }
+          
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: `URL is not accessible (HTTP status: ${testResponse.status}). Please check that the URL is valid and the site is online.` 
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (testError) {
+        console.error(`URL accessibility test error:`, testError);
+        // Continue anyway, as this might be a transient error or specific to the test
+      }
+      
       // Update crawl status to processing
-      await supabase
-        .from('seo_crawler_crawls')
-        .update({
-          status: 'processing',
-          started_at: new Date().toISOString()
-        })
-        .eq('id', crawlId);
+      try {
+        await supabase
+          .from('seo_crawler_crawls')
+          .update({
+            status: 'processing',
+            started_at: new Date().toISOString()
+          })
+          .eq('id', crawlId);
+          
+        console.log(`Updated crawl status to 'processing' for ID: ${crawlId}`);
+      } catch (updateError) {
+        console.error('Error updating crawl status to processing:', updateError);
+      }
       
       // Analyze the page using Bright Data
       console.log('Starting analysis of main page with Bright Data...');
@@ -96,17 +160,21 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
         
         if (!mainPage) {
-          console.error('Could not analyze main page');
+          console.error('Could not analyze main page - crawlPage returned null');
           
           // Update crawl status to error
-          await supabase
-            .from('seo_crawler_crawls')
-            .update({
-              status: 'failed',
-              error_message: 'Error analyzing the main page. Please check that the URL is accessible and the Bright Data API key is valid.',
-              completed_at: new Date().toISOString()
-            })
-            .eq('id', crawlId);
+          try {
+            await supabase
+              .from('seo_crawler_crawls')
+              .update({
+                status: 'failed',
+                error_message: 'Error analyzing the main page. Please check that the URL is accessible and the Bright Data API key is valid.',
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', crawlId);
+          } catch (updateError) {
+            console.error('Error updating crawl status to failed:', updateError);
+          }
             
           return new Response(
             JSON.stringify({ 
@@ -121,16 +189,22 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         console.log(`Results - pageId: ${mainPage.pageId || 'unknown'}, issues: ${mainPage.issues || 0}`);
         
         // Update crawl status to completed
-        await supabase
-          .from('seo_crawler_crawls')
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            pages_crawled: 1,
-            total_pages: 1,
-            total_issues: mainPage.issues || 0
-          })
-          .eq('id', crawlId);
+        try {
+          await supabase
+            .from('seo_crawler_crawls')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              pages_crawled: 1,
+              total_pages: 1,
+              total_issues: mainPage.issues || 0
+            })
+            .eq('id', crawlId);
+            
+          console.log(`Updated crawl status to 'completed' for ID: ${crawlId}`);
+        } catch (updateError) {
+          console.error('Error updating crawl status to completed:', updateError);
+        }
         
         console.log('Sending successful response');
         return new Response(
@@ -144,21 +218,40 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
         );
       } catch (crawlerError) {
         console.error('Error during page crawling:', crawlerError);
+        console.error('Stack trace:', crawlerError instanceof Error ? crawlerError.stack : 'No stack trace available');
+        
+        // Determine a more specific error message
+        let errorMessage = 'Unknown error during crawling';
+        if (crawlerError instanceof Error) {
+          errorMessage = crawlerError.message;
+          
+          if (crawlerError.message.includes('timeout')) {
+            errorMessage = 'Request timeout while fetching the page. The site may be slow or blocking our requests.';
+          } else if (crawlerError.message.includes('network')) {
+            errorMessage = 'Network error while connecting to the site. The URL may be unreachable.';
+          } else if (crawlerError.message.includes('Access Denied') || crawlerError.message.includes('Rejected')) {
+            errorMessage = 'The website is blocking our crawler. Try with a different URL or contact support.';
+          }
+        }
         
         // Update crawl status to error
-        await supabase
-          .from('seo_crawler_crawls')
-          .update({
-            status: 'failed',
-            error_message: crawlerError instanceof Error ? crawlerError.message : 'Unknown error during crawling',
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', crawlId);
+        try {
+          await supabase
+            .from('seo_crawler_crawls')
+            .update({
+              status: 'failed',
+              error_message: errorMessage,
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', crawlId);
+        } catch (updateError) {
+          console.error('Error updating crawl status to failed:', updateError);
+        }
           
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Error during page crawling: ' + (crawlerError instanceof Error ? crawlerError.message : 'Unknown error')
+            message: errorMessage
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -176,22 +269,17 @@ export async function handleRequest(req: Request, supabase: SupabaseClient) {
     
     // Try to update crawl status to error
     try {
-      if (req.method === 'POST') {
-        try {
-          const { crawlId } = await req.json();
-          if (crawlId) {
-            await supabase
-              .from('seo_crawler_crawls')
-              .update({
-                status: 'failed',
-                error_message: error instanceof Error ? error.message : 'Unknown error',
-                completed_at: new Date().toISOString()
-              })
-              .eq('id', crawlId);
-          }
-        } catch (e) {
-          console.error('Error reading crawlId from body:', e);
-        }
+      if (crawlId) {
+        await supabase
+          .from('seo_crawler_crawls')
+          .update({
+            status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown server error',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', crawlId);
+          
+        console.log(`Updated crawl status to 'failed' for ID: ${crawlId}`);
       }
     } catch (e) {
       console.error('Error updating crawl status to error:', e);
