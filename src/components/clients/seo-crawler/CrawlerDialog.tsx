@@ -58,7 +58,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       
       console.log('Edge function response:', result);
       
-      if (result.success && result.data) {
+      if (result.success) {
         toast.success('Análisis SEO iniciado correctamente');
         onOpenChange(false);
         if (onSuccess) {

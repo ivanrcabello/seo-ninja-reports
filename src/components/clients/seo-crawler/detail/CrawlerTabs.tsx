@@ -39,6 +39,8 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
           selectedPage={selectedPage} 
           onPageSelect={onPageSelect}
           isLoading={isLoadingPageData}
+          pageIssues={pageIssues}
+          pageLinks={pageLinks}
         />
       </TabsContent>
       
@@ -56,6 +58,8 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
           pageLinks={pageLinks} 
           selectedPage={selectedPage}
           isLoading={isLoadingPageData}
+          pages={pages}
+          onPageSelect={onPageSelect}
         />
       </TabsContent>
     </Tabs>

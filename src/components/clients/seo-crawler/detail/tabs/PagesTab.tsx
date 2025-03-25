@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CrawlPage } from '@/services/seo-crawler/types';
+import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
 import PagesList from './PagesList';
 import PageDetail from './PageDetail';
 import { Loader2 } from 'lucide-react';
@@ -10,13 +10,17 @@ interface PagesTabProps {
   selectedPage: CrawlPage | null;
   onPageSelect: (page: CrawlPage) => void;
   isLoading?: boolean;
+  pageIssues?: CrawlIssue[];
+  pageLinks?: CrawlLink[];
 }
 
 const PagesTab: React.FC<PagesTabProps> = ({ 
   pages, 
   selectedPage, 
   onPageSelect,
-  isLoading = false 
+  isLoading = false,
+  pageIssues = [],
+  pageLinks = []
 }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -34,7 +38,11 @@ const PagesTab: React.FC<PagesTabProps> = ({
           </div>
         ) : (
           selectedPage ? (
-            <PageDetail page={selectedPage} />
+            <PageDetail 
+              page={selectedPage} 
+              issues={pageIssues}
+              links={pageLinks}
+            />
           ) : (
             <div className="border rounded-lg p-6 text-center text-muted-foreground">
               Selecciona una página para ver sus detalles

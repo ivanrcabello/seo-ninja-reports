@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ExternalLink, CheckCircle } from 'lucide-react';
-import { CrawlIssue } from '@/services/seo-crawler';
+import { CrawlIssue, CrawlPage } from '@/services/seo-crawler';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -12,9 +12,15 @@ import { getIssueTypeIcon, getSeverityColor } from '../utils/crawlerUtils';
 
 interface IssuesTabContentProps {
   issuesByType: Record<string, CrawlIssue[]>;
+  pageIssues?: CrawlIssue[];
+  selectedPage?: CrawlPage | null;
 }
 
-const IssuesTabContent: React.FC<IssuesTabContentProps> = ({ issuesByType }) => {
+const IssuesTabContent: React.FC<IssuesTabContentProps> = ({ 
+  issuesByType,
+  pageIssues,
+  selectedPage
+}) => {
   return (
     <BlurredCard>
       <CardHeader>

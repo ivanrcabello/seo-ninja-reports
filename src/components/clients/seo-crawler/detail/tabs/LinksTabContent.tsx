@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { CrawlPage, CrawlLink } from '@/services/seo-crawler';
 import BlurredCard from '@/components/ui/BlurredCard';
@@ -11,17 +10,17 @@ import { ExternalLink, Search, Link, Link2, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface LinksTabContentProps {
-  pages: CrawlPage[];
-  pageLinks?: CrawlLink[];
+  pageLinks: CrawlLink[];
   selectedPage: CrawlPage | null;
-  onPageSelect: (page: CrawlPage) => void;
+  pages?: CrawlPage[];
+  onPageSelect?: (page: CrawlPage) => void;
 }
 
 const LinksTabContent: React.FC<LinksTabContentProps> = ({
-  pages,
   pageLinks = [],
   selectedPage,
-  onPageSelect
+  pages = [],
+  onPageSelect = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   

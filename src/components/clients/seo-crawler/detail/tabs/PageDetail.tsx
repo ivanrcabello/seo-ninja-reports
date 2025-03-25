@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +12,7 @@ interface PageDetailProps {
   links?: CrawlLink[];
 }
 
-const PageDetail: React.FC<PageDetailProps> = ({ page, issues, links = [] }) => {
+const PageDetail: React.FC<PageDetailProps> = ({ page, issues = [], links = [] }) => {
   // Agrupar enlaces
   const internalLinks = links.filter(link => link.is_internal);
   const externalLinks = links.filter(link => !link.is_internal);
