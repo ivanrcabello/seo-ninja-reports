@@ -44,10 +44,14 @@ export async function startCrawl(
     console.log('Crawl record created:', crawlRecord.id);
 
     // Get Bright Data credentials from localStorage
-    let brightDataUsername = localStorage.getItem('bright_data_username') || '';
-    let brightDataPassword = localStorage.getItem('bright_data_password') || '';
+    const brightDataUsername = localStorage.getItem('bright_data_username') || '';
+    const brightDataPassword = localStorage.getItem('bright_data_password') || '';
     
     console.log(`Using Bright Data credentials - Username: ${brightDataUsername ? 'Available' : 'Not available'}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
+    
+    if (!brightDataPassword) {
+      throw new Error('No Bright Data API key configured. Please add it in Settings -> API Settings -> Value SERP tab.');
+    }
 
     // Call the Edge Function to start the crawl
     try {

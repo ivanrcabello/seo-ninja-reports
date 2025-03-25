@@ -18,11 +18,11 @@ export async function crawlPage(
     const startTime = Date.now();
     
     // Use Bright Data proxy or API credentials
-    const username = customUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || BRIGHT_DATA_CONFIG.DEFAULT_USER;
-    const password = customPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
+    const username = customUsername || Deno.env.get('BRIGHT_DATA_USERNAME') || '';
+    const password = customPassword || Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
     
-    console.log(`Using credentials: ${username ? 'Yes (length: ' + username.length + ')' : 'No'}`);
-    console.log(`Password available: ${password ? 'Yes' : 'No'}`);
+    console.log(`Using Bright Data credentials - Username: ${username ? 'Available (length: ' + username.length + ')' : 'Not available'}`);
+    console.log(`Bright Data API key available: ${password ? 'Yes (length: ' + password.length + ')' : 'No'}`);
     
     if (!password) {
       throw new Error('No Bright Data API key/password configured');
@@ -36,20 +36,19 @@ export async function crawlPage(
       // Use Bright Data's API to fetch the page
       console.log(`Calling Bright Data API to analyze: ${normalizedUrl}`);
       
-      // Bright Data API endpoint
-      const apiEndpoint = 'https://api.brightdata.com/scrape';
+      // Bright Data API endpoint - using the request endpoint
+      const apiEndpoint = 'https://api.brightdata.com/request';
       
+      const zone = username || 'web_unlocker1';
+      
+      // Format request according to Bright Data's API documentation
       const apiRequestBody = {
+        zone: zone,
         url: normalizedUrl,
-        render: 'html',
-        premium_proxy: 'residential',
-        // Adding bypass options for common anti-scraping measures
-        bypass: {
-          headless: false, 
-          wait_for_selectors: ['body'],
-          wait_for_timeout: 5000
-        }
+        format: "json"  // Get JSON response with HTML content
       };
+      
+      console.log('API Request Body:', JSON.stringify(apiRequestBody, null, 2));
       
       const apiRequestHeaders = {
         'Content-Type': 'application/json',
@@ -58,7 +57,6 @@ export async function crawlPage(
       
       console.log('Sending request to Bright Data API...');
       console.log(`Endpoint: ${apiEndpoint}`);
-      console.log(`Body: ${JSON.stringify(apiRequestBody)}`);
       
       // Make the actual request to Bright Data API
       const scrapeResponse = await fetch(apiEndpoint, {
@@ -76,19 +74,29 @@ export async function crawlPage(
         throw new Error(`HTTP error! Status: ${scrapeResponse.status}, Response: ${errorText}`);
       }
       
-      // Get response as JSON first
-      const responseData = await scrapeResponse.json();
-      
-      // Extract HTML content from the response
+      // Get response content
+      const contentType = scrapeResponse.headers.get('content-type') || '';
       let html = '';
       
-      if (responseData && responseData.body) {
-        html = responseData.body;
-      } else if (responseData && responseData.results && responseData.results.length > 0) {
-        html = responseData.results[0].body || responseData.results[0].html || '';
+      if (contentType.includes('application/json')) {
+        // Parse JSON response
+        const responseData = await scrapeResponse.json();
+        console.log('JSON response structure:', Object.keys(responseData));
+        
+        // Extract HTML content based on Bright Data API response format
+        if (responseData.body) {
+          html = responseData.body;
+        } else if (responseData.html) {
+          html = responseData.html;
+        } else if (responseData.data) {
+          html = typeof responseData.data === 'string' ? responseData.data : JSON.stringify(responseData.data);
+        } else {
+          console.error('Unexpected response format from Bright Data:', JSON.stringify(responseData, null, 2));
+          throw new Error('Unexpected response format from Bright Data');
+        }
       } else {
-        console.error('Unexpected response format from Bright Data:', JSON.stringify(responseData, null, 2));
-        throw new Error('Unexpected response format from Bright Data');
+        // If response is not JSON, treat it as raw HTML
+        html = await scrapeResponse.text();
       }
       
       if (!html || html.trim().length === 0) {

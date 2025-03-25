@@ -35,16 +35,16 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     const savedPassword = localStorage.getItem('bright_data_password');
     
     if (savedUsername && savedPassword) {
+      setBrightDataUsername(savedUsername);
+      setBrightDataPassword(savedPassword);
       setHasSavedBrightData(true);
     }
-  }, []);
+  }, [setBrightDataUsername, setBrightDataPassword]);
 
   // Save Bright Data credentials to localStorage when they change
   const handleSaveBrightData = () => {
-    if (brightDataUsername) {
-      localStorage.setItem('bright_data_username', brightDataUsername);
-    }
     if (brightDataPassword) {
+      localStorage.setItem('bright_data_username', brightDataUsername);
       localStorage.setItem('bright_data_password', brightDataPassword);
       setHasSavedBrightData(true);
       toast.success('Credenciales de Bright Data guardadas');
@@ -92,17 +92,17 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="brightDataUsername">Usuario de Bright Data (zone)</Label>
+            <Label htmlFor="brightDataUsername">Zone de Bright Data (opcional)</Label>
             <Input
               id="brightDataUsername"
               type="text"
               value={brightDataUsername}
               onChange={(e) => setBrightDataUsername(e.target.value)}
               className="glass-input"
-              placeholder="brd-customer-hl_cbc2d791-zone-web_unlocker1"
+              placeholder="web_unlocker1"
             />
             <p className="text-xs text-muted-foreground">
-              Tu nombre de usuario de Bright Data para el Web Unlocker. Por defecto: brd-customer-hl_cbc2d791-zone-web_unlocker1
+              La zona de Bright Data a utilizar. Por defecto: web_unlocker1
             </p>
           </div>
           
