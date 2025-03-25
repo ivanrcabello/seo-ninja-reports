@@ -1,29 +1,18 @@
+
 import React, { useEffect, useState } from 'react';
 import { Client } from '@/types/client.types';
 import { toast } from 'sonner';
-import { 
-  getCrawlResults, 
-  deleteCrawlRecord
-} from '@/services/seo-crawler/api';
+import { getCrawlResults, deleteCrawlRecord } from '@/services/seo-crawler/api';
 import { CrawlResult } from '@/services/seo-crawler/types';
 import CrawlerDialog from './CrawlerDialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Loader2, Trash2, ChevronRight } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useNavigate } from 'react-router-dom';
+import CrawlerHeader from './components/CrawlerHeader';
+import CrawlerSearch from './components/CrawlerSearch';
+import CrawlerItem from './components/CrawlerItem';
+import CrawlerEmptyState from './components/CrawlerEmptyState';
+import CrawlerLoadingState from './components/CrawlerLoadingState';
+import DeleteCrawlDialog from './components/DeleteCrawlDialog';
 
 interface CrawlerListProps {
   client: Client;
@@ -69,10 +58,6 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
     }
   }, [searchTerm, crawls]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
   const handleOpenCrawl = (crawl: CrawlResult) => {
     navigate(`/clients/${client.id}/crawl/${crawl.id}`);
   };
@@ -105,93 +90,35 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
     loadCrawls();
   };
 
-  const getCrawlStatusBadge = (status: string) => {
-    if (status === 'completed') {
-      return <Badge className="bg-green-500">Completado</Badge>;
-    } else if (status === 'processing') {
-      return <Badge className="bg-orange-500">Procesando</Badge>;
-    } else if (status === 'pending') {
-      return <Badge className="bg-blue-500">Pendiente</Badge>;
-    } else if (status === 'error') {
-      return <Badge variant="destructive">Error</Badge>;
-    }
-    return <Badge>{status}</Badge>;
-  };
-
-  const formatCrawlDate = (crawl: CrawlResult) => {
-    const dateStr = crawl.crawl_date || crawl.started_at || crawl.inserted_at;
-    return format(new Date(dateStr), 'd MMM yyyy', { locale: es });
-  };
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4">
-        <h2 className="text-lg font-semibold">Análisis SEO técnico</h2>
-        <Button onClick={() => setShowCrawlerDialog(true)}>
-          Nuevo análisis
-        </Button>
-      </div>
+      <CrawlerHeader 
+        onNewCrawl={() => setShowCrawlerDialog(true)} 
+      />
 
-      <div className="relative">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Buscar por dominio..."
-          className="pl-8"
-          value={searchTerm}
-          onChange={handleSearch}
-        />
-      </div>
+      <CrawlerSearch 
+        searchTerm={searchTerm} 
+        onSearchChange={setSearchTerm} 
+      />
 
       {loading ? (
-        <div className="py-12 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <CrawlerLoadingState />
       ) : filteredCrawls.length > 0 ? (
         <div className="space-y-2 mt-2">
           {filteredCrawls.map((crawl) => (
-            <div
+            <CrawlerItem
               key={crawl.id}
+              crawl={crawl}
               onClick={() => handleOpenCrawl(crawl)}
-              className="flex items-center justify-between bg-background/50 hover:bg-primary/5 border border-border rounded-lg p-3 cursor-pointer transition-colors"
-            >
-              <div className="flex flex-col">
-                <div className="font-medium truncate max-w-[200px] sm:max-w-[300px]">
-                  {crawl.domain}
-                </div>
-                <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
-                  <span>{formatCrawlDate(crawl)}</span>
-                  {getCrawlStatusBadge(crawl.status)}
-                </div>
-              </div>
-              <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => handleDeleteCrawl(crawl.id, e)}
-                  className="mr-1 text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
+              onDelete={(e) => handleDeleteCrawl(crawl.id, e)}
+            />
           ))}
         </div>
       ) : (
-        <div className="py-12 text-center">
-          <p className="text-muted-foreground">
-            {searchTerm ? "No se encontraron análisis que coincidan con la búsqueda" : "No hay análisis SEO realizados todavía"}
-          </p>
-          {searchTerm && (
-            <Button 
-              variant="link" 
-              onClick={() => setSearchTerm('')}
-            >
-              Mostrar todos los análisis
-            </Button>
-          )}
-        </div>
+        <CrawlerEmptyState 
+          searchTerm={searchTerm} 
+          onClearSearch={() => setSearchTerm('')} 
+        />
       )}
 
       {showCrawlerDialog && (
@@ -203,27 +130,12 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
         />
       )}
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar este análisis SEO?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente este análisis y todos sus datos asociados.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteCrawlDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        deleting={deleting}
+      />
     </div>
   );
 };
