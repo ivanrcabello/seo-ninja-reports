@@ -38,6 +38,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const [pageLinks, setPageLinks] = useState<CrawlLink[]>([]);
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
   const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
+  const [isLoadingPageData, setIsLoadingPageData] = useState(false);
   
   useEffect(() => {
     const loadData = async () => {
@@ -51,17 +52,50 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         
         console.log(`Loading crawl result for ID: ${crawlId}`);
         
-        const result = await getCrawlResult(crawlId);
+        // Cargar datos básicos del análisis y páginas
+        const [result, pagesData] = await Promise.all([
+          getCrawlResult(crawlId),
+          getCrawlPages(crawlId)
+        ]);
+        
+        if (!result) {
+          console.error('No se pudo obtener el resultado del análisis');
+          return;
+        }
+        
         setCrawlResult(result);
+        setPages(pagesData || []);
         
-        // Fetch pages and ensure they have all required properties
-        const pagesData = await getCrawlPages(crawlId);
-        setPages(pagesData);
+        // Si hay páginas, preseleccionar la primera
+        if (pagesData && pagesData.length > 0) {
+          setSelectedPage(pagesData[0]);
+          // Cargar datos detallados de la primera página
+          handlePageSelect(pagesData[0]);
+        }
         
+        // Carga inicial de la distribución de problemas por tipo y severidad
+        // Esta carga se hace de forma separada para no bloquear la interfaz
+        loadIssuesDistribution();
+        
+      } catch (error) {
+        console.error('Error loading crawl data:', error);
+        toast.error('Error al cargar los datos del análisis SEO');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    const loadIssuesDistribution = async () => {
+      try {
+        if (!crawlId) return;
+        
+        // Aquí podríamos optimizar usando endpoints específicos para obtener
+        // solo la distribución de issues, pero por ahora cargamos todos los issues
+        // y los procesamos en el cliente
         const issuesByType: Record<string, CrawlIssue[]> = {};
         const issuesBySeverity: Record<string, CrawlIssue[]> = {};
         
-        for (const page of pagesData) {
+        for (const page of pages) {
           const issues = await getPageIssues(page.id);
           
           issues.forEach(issue => {
@@ -85,11 +119,9 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         
         setIssuesByType(issuesByType);
         setIssuesBySeverity(issuesBySeverity);
+        
       } catch (error) {
-        console.error('Error loading crawl data:', error);
-        toast.error('Error al cargar los datos del análisis SEO');
-      } finally {
-        setIsLoading(false);
+        console.error('Error loading issues distribution:', error);
       }
     };
     
@@ -99,14 +131,21 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const handlePageSelect = async (page: CrawlPage) => {
     try {
       setSelectedPage(page);
-      const issues = await getPageIssues(page.id);
-      setPageIssues(issues || []);
+      setIsLoadingPageData(true);
       
-      const links = await getPageLinks(page.id);
-      setPageLinks(links);
+      // Cargar datos detallados de la página seleccionada en paralelo
+      const [issues, links] = await Promise.all([
+        getPageIssues(page.id),
+        getPageLinks(page.id)
+      ]);
+      
+      setPageIssues(issues || []);
+      setPageLinks(links || []);
     } catch (error) {
       console.error('Error loading page data:', error);
       toast.error('Error al cargar los datos de la página');
+    } finally {
+      setIsLoadingPageData(false);
     }
   };
   
@@ -153,6 +192,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         pageLinks={pageLinks}
         issuesByType={issuesByType}
         onPageSelect={handlePageSelect}
+        isLoadingPageData={isLoadingPageData}
       />
     </div>
   );

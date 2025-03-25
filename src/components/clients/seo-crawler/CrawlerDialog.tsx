@@ -58,21 +58,19 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       
       console.log('Edge function response:', result);
       
-      if (result.success) {
+      if (result.success && result.data) {
         toast.success('Análisis SEO iniciado correctamente');
         onOpenChange(false);
         if (onSuccess) {
           onSuccess();
         }
       } else {
-        console.error('Edge function returned error:', result.message);
-        toast.error(`Error: ${result.message}`);
+        toast.error(`Error: ${result.message || 'Respuesta vacía o inválida'}`);
+        console.error('Respuesta inválida:', result);
       }
     } catch (error: any) {
-      console.error('Error invoking edge function:', error);
-      console.error('Error starting crawl:', error);
-      console.error('Error al iniciar análisis:', error);
-      toast.error('Error al iniciar análisis SEO' + (error.message ? `: ${error.message}` : ''));
+      toast.error(`Error al iniciar análisis SEO: ${error.message}`);
+      console.error('Error completo:', error);
     } finally {
       setIsLoading(false);
     }

@@ -152,9 +152,9 @@ export async function crawlPage(
         }
       }
       
-      // If no method worked, throw an error
-      if (!html || html.length === 0) {
-        throw new Error('All methods to fetch the page content failed. Check Bright Data credentials or URL accessibility.');
+      // Verificar que hemos recibido un HTML válido
+      if (!html || typeof html !== 'string' || !html.includes('<html')) {
+        throw new Error('Respuesta inválida de Bright Data: HTML no recibido o incompleto.');
       }
       
       console.log(`Successfully retrieved HTML content using method: ${successMethod}`);

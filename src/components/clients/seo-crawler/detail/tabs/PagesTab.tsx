@@ -1,72 +1,47 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { CrawlPage } from '@/services/seo-crawler/types';
 import PagesList from './PagesList';
 import PageDetail from './PageDetail';
+import { Loader2 } from 'lucide-react';
 
 interface PagesTabProps {
   pages: CrawlPage[];
   selectedPage: CrawlPage | null;
-  pageIssues: CrawlIssue[];
-  pageLinks?: CrawlLink[];
   onPageSelect: (page: CrawlPage) => void;
+  isLoading?: boolean;
 }
 
-const PagesTab: React.FC<PagesTabProps> = ({
-  pages,
-  selectedPage,
-  pageIssues,
-  pageLinks = [],
-  onPageSelect
+const PagesTab: React.FC<PagesTabProps> = ({ 
+  pages, 
+  selectedPage, 
+  onPageSelect,
+  isLoading = false 
 }) => {
-  if (!pages || pages.length === 0) {
-    return (
-      <Alert>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>No se encontraron páginas</AlertTitle>
-        <AlertDescription>
-          No se pudieron encontrar páginas para analizar. Esto puede deberse a problemas de acceso al sitio web 
-          o a errores durante el análisis. Intente nuevamente y verifique que la URL sea accesible.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card className="lg:col-span-1">
-        <CardContent className="p-4">
-          <PagesList 
-            pages={pages}
-            selectedPage={selectedPage}
-            onPageSelect={onPageSelect}
-          />
-        </CardContent>
-      </Card>
-      
-      <Card className="lg:col-span-2">
-        <CardContent className="p-4">
-          {selectedPage ? (
-            <PageDetail
-              page={selectedPage}
-              issues={pageIssues}
-              links={pageLinks}
-            />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-1">
+        <PagesList 
+          pages={pages} 
+          selectedPage={selectedPage} 
+          onPageSelect={onPageSelect}
+        />
+      </div>
+      <div className="md:col-span-2">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          selectedPage ? (
+            <PageDetail page={selectedPage} />
           ) : (
-            <div className="flex flex-col items-center justify-center p-12">
-              <div className="text-center">
-                <h3 className="text-lg font-medium mb-2">Selecciona una página</h3>
-                <p className="text-muted-foreground">
-                  Haz clic en una página en la lista para ver sus detalles
-                </p>
-              </div>
+            <div className="border rounded-lg p-6 text-center text-muted-foreground">
+              Selecciona una página para ver sus detalles
             </div>
-          )}
-        </CardContent>
-      </Card>
+          )
+        )}
+      </div>
     </div>
   );
 };
