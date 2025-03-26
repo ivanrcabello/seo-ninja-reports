@@ -18,6 +18,11 @@ export interface CrawlResult {
   summary?: any;
   success?: boolean;
   message?: string;
+  crawl_date?: string;
+  inserted_at?: string;
+  updated_at?: string;
+  issues_count?: number;
+  total_time_seconds?: number;
 }
 
 export interface CrawlSettings {

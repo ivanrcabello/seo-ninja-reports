@@ -16,6 +16,7 @@ interface CrawlerItemProps {
 const CrawlerItem: React.FC<CrawlerItemProps> = ({ crawl, onClick, onDelete }) => {
   const formatCrawlDate = (crawl: CrawlResult) => {
     const dateStr = crawl.crawl_date || crawl.started_at || crawl.inserted_at;
+    if (!dateStr) return 'Fecha desconocida';
     return format(new Date(dateStr), 'd MMM yyyy', { locale: es });
   };
 
@@ -24,9 +25,9 @@ const CrawlerItem: React.FC<CrawlerItemProps> = ({ crawl, onClick, onDelete }) =
       return <Badge className="bg-green-500">Completado</Badge>;
     } else if (status === 'processing') {
       return <Badge className="bg-orange-500">Procesando</Badge>;
-    } else if (status === 'pending') {
+    } else if (status === 'pending' || status === 'queued') {
       return <Badge className="bg-blue-500">Pendiente</Badge>;
-    } else if (status === 'error') {
+    } else if (status === 'error' || status === 'failed') {
       return <Badge variant="destructive">Error</Badge>;
     }
     return <Badge>{status}</Badge>;

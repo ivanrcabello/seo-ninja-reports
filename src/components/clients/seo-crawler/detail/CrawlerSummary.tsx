@@ -20,12 +20,11 @@ const CrawlerSummary: React.FC<CrawlerSummaryProps> = ({
   const mediumIssues = issuesBySeverity.medium?.length || 0;
   const lowIssues = issuesBySeverity.low?.length || 0;
 
-  // Use appropriate date field
-  const dateFormatted = format(
-    new Date(crawlResult.crawl_date || crawlResult.started_at || crawlResult.inserted_at), 
-    'PPP, HH:mm', 
-    { locale: es }
-  );
+  // Use appropriate date field with fallbacks
+  const dateStr = crawlResult.crawl_date || crawlResult.started_at || crawlResult.inserted_at;
+  const dateFormatted = dateStr 
+    ? format(new Date(dateStr), 'PPP, HH:mm', { locale: es })
+    : 'Fecha desconocida';
 
   return (
     <Card>
