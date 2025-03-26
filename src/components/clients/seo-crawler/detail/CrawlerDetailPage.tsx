@@ -117,13 +117,14 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   }
 
   if (error || !crawl) {
-    return <NotFoundState clientId={clientId} onBack={onBack} error={error} />;
+    return <NotFoundState clientId={clientId} error={error} onBack={onBack} />;
   }
 
   return (
     <div className="space-y-8">
       <CrawlerHeader
-        crawl={crawl}
+        clientId={clientId}
+        crawlResult={crawl}
         onBack={onBack}
       />
       
