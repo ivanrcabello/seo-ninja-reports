@@ -37,8 +37,8 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         settings: crawl.settings as unknown as CrawlSettings,
         // Add the additional properties that components use
         inserted_at: crawl.inserted_at,
-        // Handle total_time_seconds safely with proper type assertions
-        total_time_seconds: typeof crawl.total_time_seconds !== 'undefined' ? Number(crawl.total_time_seconds) : undefined,
+        // Use the type assertion approach as recommended
+        total_time_seconds: (crawl as any).total_time_seconds !== undefined ? Number((crawl as any).total_time_seconds) : undefined,
         // Also add issues_count as an alias for total_issues for compatibility
         issues_count: crawl.total_issues || 0
       };
@@ -87,8 +87,8 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult | nul
       settings: data.settings as unknown as CrawlSettings,
       // Add the additional properties that components use
       inserted_at: data.inserted_at,
-      // Handle total_time_seconds safely with proper type assertions
-      total_time_seconds: typeof data.total_time_seconds !== 'undefined' ? Number(data.total_time_seconds) : undefined,
+      // Use the type assertion approach as recommended
+      total_time_seconds: (data as any).total_time_seconds !== undefined ? Number((data as any).total_time_seconds) : undefined,
       // Also add issues_count as an alias for total_issues for compatibility
       issues_count: data.total_issues || 0
     };

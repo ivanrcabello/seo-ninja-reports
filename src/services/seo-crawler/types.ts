@@ -1,4 +1,3 @@
-
 // TypeScript types for SEO crawler functionality
 
 // Crawl settings interface
