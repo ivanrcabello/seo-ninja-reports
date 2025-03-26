@@ -14,6 +14,7 @@ export interface PageCrawlResult {
   h1?: string;
   issues: number;
   statusCode: number;
+  links?: string[]; // Add links array to return found links
 }
 
 // SEO issue definition

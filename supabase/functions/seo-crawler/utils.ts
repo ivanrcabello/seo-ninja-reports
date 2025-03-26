@@ -37,19 +37,35 @@ export function isInternalUrl(baseUrl: string, url: string): boolean {
   try {
     // Handle relative URLs
     if (url.startsWith('/')) {
-      console.log(`URL ${url} es interna: true`);
+      console.log(`URL ${url} is internal: true (relative path)`);
       return true;
     }
     
     // Handle absolute URLs
     const baseHostname = new URL(baseUrl).hostname;
-    const urlHostname = new URL(url, baseUrl).hostname;
+    let urlHostname;
     
-    const isInternal = baseHostname === urlHostname;
-    console.log(`URL ${url} es interna: ${isInternal}`);
+    try {
+      urlHostname = new URL(url).hostname;
+    } catch (urlError) {
+      // If we can't parse the URL, try to add the base URL
+      try {
+        urlHostname = new URL(url, baseUrl).hostname;
+      } catch (combinedError) {
+        console.error(`Could not parse URL ${url} even with base URL`);
+        return false;
+      }
+    }
+    
+    // Remove 'www.' prefix for comparison
+    const normalizedBaseHostname = baseHostname.replace(/^www\./i, '');
+    const normalizedUrlHostname = urlHostname.replace(/^www\./i, '');
+    
+    const isInternal = normalizedBaseHostname === normalizedUrlHostname;
+    console.log(`URL ${url} is internal: ${isInternal} (${normalizedUrlHostname} vs ${normalizedBaseHostname})`);
     return isInternal;
   } catch (error) {
-    console.error(`Error al verificar si la URL es interna ${url}:`, error);
+    console.error(`Error checking if URL is internal ${url}:`, error);
     return false;
   }
 }
@@ -62,7 +78,7 @@ export async function registerCrawlerError(
   errorMessage: string
 ): Promise<void> {
   try {
-    console.log(`Registrando error para URL ${url}: ${errorMessage}`);
+    console.log(`Registering error for URL ${url}: ${errorMessage}`);
     
     // Update the crawl record with the error
     const { error } = await supabase
@@ -75,10 +91,10 @@ export async function registerCrawlerError(
       .eq('id', crawlId);
       
     if (error) {
-      console.error('Error actualizando estado del crawl:', error);
+      console.error('Error updating crawl status:', error);
     }
   } catch (error) {
-    console.error('Error en registerCrawlerError:', error);
+    console.error('Error in registerCrawlerError:', error);
   }
 }
 
@@ -92,11 +108,11 @@ export async function queueLinksForCrawling(
 ): Promise<void> {
   try {
     if (!links || links.length === 0) {
-      console.log('No hay enlaces para procesar');
+      console.log('No links to process');
       return;
     }
     
-    console.log(`Guardando ${links.length} enlaces para la página ${pageId}`);
+    console.log(`Saving ${links.length} links for page ${pageId}`);
     
     // Insert links into the links table
     const linksToInsert = links.map(url => ({
@@ -114,12 +130,12 @@ export async function queueLinksForCrawling(
         .insert(linksToInsert);
         
       if (error) {
-        console.error('Error guardando enlaces:', error);
+        console.error('Error saving links:', error);
       } else {
-        console.log(`${linksToInsert.length} enlaces guardados correctamente`);
+        console.log(`${linksToInsert.length} links saved successfully`);
       }
     }
   } catch (error) {
-    console.error(`Error procesando enlaces de ${sourceUrl}:`, error);
+    console.error(`Error processing links from ${sourceUrl}:`, error);
   }
 }
