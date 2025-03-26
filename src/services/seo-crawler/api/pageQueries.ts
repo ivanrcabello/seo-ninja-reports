@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlIssue, CrawlLink } from '../types';
+import { CrawlIssue, CrawlLink, CrawlHeading } from '../types';
 
 /**
  * Get all issues for a specific page
@@ -130,6 +130,66 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
     }));
   } catch (error) {
     console.error('Error fetching crawl links:', error);
+    return [];
+  }
+}
+
+/**
+ * Get headings for a specific page (H1, H2, H3)
+ */
+export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
+  try {
+    console.log(`Fetching headings for page ID: ${pageId}`);
+    const { data, error } = await supabase
+      .from('seo_crawler_headings')
+      .select('*')
+      .eq('page_id', pageId)
+      .order('position', { ascending: true });
+
+    if (error) throw error;
+    console.log(`Found ${data?.length || 0} headings for page ${pageId}`);
+    
+    return (data || []).map((heading: any) => ({
+      id: heading.id,
+      crawl_id: heading.crawl_id,
+      page_id: heading.page_id,
+      heading_type: heading.heading_type || 'h2',
+      content: heading.content || '',
+      position: heading.position || 0
+    }));
+  } catch (error) {
+    console.error('Error fetching page headings:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all headings for a specific crawl
+ */
+export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]> {
+  try {
+    console.log(`Fetching all headings for crawl ID: ${crawlId}`);
+    const { data, error } = await supabase
+      .from('seo_crawler_headings')
+      .select('*')
+      .eq('crawl_id', crawlId)
+      .order('page_id', { ascending: true })
+      .order('position', { ascending: true });
+
+    if (error) throw error;
+    console.log(`Found ${data?.length || 0} headings for crawl ${crawlId}`);
+    
+    return (data || []).map((heading: any) => ({
+      id: heading.id,
+      crawl_id: heading.crawl_id,
+      page_id: heading.page_id,
+      page_url: heading.page_url,
+      heading_type: heading.heading_type || 'h2',
+      content: heading.content || '',
+      position: heading.position || 0
+    }));
+  } catch (error) {
+    console.error('Error fetching crawl headings:', error);
     return [];
   }
 }

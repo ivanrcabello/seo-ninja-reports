@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
+import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlHeading } from '@/services/seo-crawler/types';
 import { getCrawlResult, getCrawlPages } from '@/services/seo-crawler/api';
-import { getCrawlIssues } from '@/services/seo-crawler/api/pageQueries';
+import { getCrawlIssues, getPageHeadings, getCrawlHeadings } from '@/services/seo-crawler/api/pageQueries';
 import { getPageLinks } from '@/services/seo-crawler/additionalApi';
 import CrawlerDetailHeader from './CrawlerDetailHeader';
 import CrawlerTabs from './CrawlerTabs';
@@ -27,6 +27,8 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const [issues, setIssues] = useState<CrawlIssue[]>([]);
   const [pageIssues, setPageIssues] = useState<CrawlIssue[]>([]);
   const [pageLinks, setPageLinks] = useState<CrawlLink[]>([]);
+  const [pageHeadings, setPageHeadings] = useState<CrawlHeading[]>([]);
+  const [allHeadings, setAllHeadings] = useState<CrawlHeading[]>([]);
   const [selectedPage, setSelectedPage] = useState<CrawlPage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPageData, setIsLoadingPageData] = useState(false);
@@ -62,8 +64,13 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         const issuesData = await getCrawlIssues(crawlId);
         console.log('Issues data:', issuesData);
         
+        // Fetch headings data
+        const headingsData = await getCrawlHeadings(crawlId);
+        console.log('Headings data:', headingsData);
+        
         setPages(formattedPages);
         setIssues(issuesData);
+        setAllHeadings(headingsData);
         
         // Group issues by type
         const groupedIssues: Record<string, CrawlIssue[]> = {};
@@ -91,6 +98,12 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
               issue.page_id === formattedPages[0].id
             );
             setPageIssues(firstPageIssues);
+            
+            // Set page headings for the first page
+            const firstPageHeadings = headingsData.filter((heading: CrawlHeading) => 
+              heading.page_id === formattedPages[0].id
+            );
+            setPageHeadings(firstPageHeadings);
           }
         }
       } catch (error) {
@@ -121,6 +134,22 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       if (page.id) {
         const linksData = await getPageLinks(page.id);
         setPageLinks(linksData);
+        
+        // Find headings for this page
+        const filteredPageHeadings = allHeadings.filter(heading => heading.page_id === page.id);
+        
+        // If no headings found, try to fetch them
+        if (filteredPageHeadings.length === 0) {
+          try {
+            const headingsData = await getPageHeadings(page.id);
+            setPageHeadings(headingsData);
+          } catch (err) {
+            console.error('Error fetching page headings:', err);
+            setPageHeadings([]);
+          }
+        } else {
+          setPageHeadings(filteredPageHeadings);
+        }
       }
       
     } catch (error) {
@@ -169,6 +198,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
           crawlResult={crawl} 
           pages={pages}
           issues={issues}
+          headings={allHeadings}
         />
       ) : (
         <CrawlerTabs 
@@ -176,6 +206,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
           selectedPage={selectedPage}
           pageIssues={pageIssues}
           pageLinks={pageLinks}
+          pageHeadings={pageHeadings}
           issuesByType={issuesByType}
           onPageSelect={handlePageSelect}
           isLoadingPageData={isLoadingPageData}

@@ -1,516 +1,582 @@
 
-import React, { useState, useEffect } from 'react';
-import { CrawlResult, CrawlPage, CrawlIssue } from '@/services/seo-crawler/types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchIssueTypesDistribution, fetchSeverityDistribution } from '@/services/seo-crawler/additionalApi';
-import TechnicalTab from './TechnicalTab';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-  ResponsiveContainer, PieChart, Pie, Cell 
-} from 'recharts';
-import { Loader2, AlertCircle, Link, FileText, Check } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CrawlResult, CrawlPage, CrawlIssue, CrawlHeading } from '@/services/seo-crawler/types';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import SeverityBadge from '@/components/clients/seo-crawler/detail/SeverityBadge';
+import { AlertTriangle, Check, FileText, LinkIcon, ExternalLink, Heading1, Heading2, Heading3 } from 'lucide-react';
 
 interface CrawlerReportViewProps {
   crawlResult: CrawlResult;
-  pages?: CrawlPage[];
-  issues?: CrawlIssue[];
+  pages: CrawlPage[];
+  issues: CrawlIssue[];
+  headings?: CrawlHeading[];
 }
 
-const COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#D62728'];
 const SEVERITY_COLORS = {
-  critical: '#ef4444',
-  high: '#f97316',
-  medium: '#facc15',
-  low: '#22c55e',
-  info: '#3b82f6'
+  critical: '#FF0000',
+  high: '#FF6B6B',
+  medium: '#FFC107',
+  low: '#4CAF50',
+  info: '#2196F3'
 };
 
 const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({ 
   crawlResult,
   pages = [],
-  issues = []
+  issues = [],
+  headings = []
 }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [issueTypes, setIssueTypes] = useState<any[]>([]);
-  const [severityDistribution, setSeverityDistribution] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('overview');
   
-  // Generate report content
-  const generateTechnicalReport = () => {
-    if (!crawlResult) return '';
-    
-    const issueCount = crawlResult.total_issues || 0;
-    const pagesCount = crawlResult.pages_crawled || 0;
-    const domain = crawlResult.domain || '';
-    
-    let reportContent = `# Análisis Técnico SEO de ${domain}\n\n`;
-    
-    // Add summary statistics
-    reportContent += `## Resumen Técnico\n\n`;
-    reportContent += `- Dominio analizado: ${domain}\n`;
-    reportContent += `- Páginas analizadas: ${pagesCount}\n`;
-    reportContent += `- Problemas detectados: ${issueCount}\n`;
-    reportContent += `- Enlaces internos: ${crawlResult.total_internal_links || 0}\n`;
-    reportContent += `- Enlaces externos: ${crawlResult.total_external_links || 0}\n`;
-    reportContent += `- Enlaces rotos: ${crawlResult.total_broken_links || 0}\n\n`;
-    
-    // Add issues summary if available
-    if (issueTypes.length > 0) {
-      reportContent += `## Principales Problemas Detectados\n\n`;
-      issueTypes.slice(0, 5).forEach(issue => {
-        reportContent += `- ${issue.type}: ${issue.count} instancias (${issue.severity})\n`;
-      });
-      reportContent += '\n';
+  // Group issues by type and severity
+  const issuesByType: Record<string, CrawlIssue[]> = {};
+  const issuesBySeverity: Record<string, CrawlIssue[]> = {};
+  
+  issues.forEach(issue => {
+    // Group by type
+    if (!issuesByType[issue.issue_type]) {
+      issuesByType[issue.issue_type] = [];
     }
+    issuesByType[issue.issue_type].push(issue);
     
-    // Add advice based on issues
-    reportContent += `## Recomendaciones Técnicas\n\n`;
-    
-    if (crawlResult.total_broken_links > 0) {
-      reportContent += `- **Arreglar enlaces rotos**: Se detectaron ${crawlResult.total_broken_links} enlaces rotos. Reparar estos enlaces mejorará la experiencia de usuario y la indexabilidad: 85/100\n`;
+    // Group by severity (with default value)
+    const severity = issue.severity || 'info';
+    if (!issuesBySeverity[severity]) {
+      issuesBySeverity[severity] = [];
     }
+    issuesBySeverity[severity].push(issue);
+  });
+  
+  // Prepare data for charts
+  const issueTypeChartData = Object.entries(issuesByType).map(([type, typeIssues]) => ({
+    name: type,
+    count: typeIssues.length
+  })).sort((a, b) => b.count - a.count).slice(0, 10);
+  
+  const issueSeverityChartData = Object.entries(issuesBySeverity).map(([severity, sevIssues]) => ({
+    name: severity,
+    value: sevIssues.length
+  }));
+  
+  // Group headings by page
+  const headingsByPage: Record<string, CrawlHeading[]> = {};
+  headings.forEach(heading => {
+    if (!heading.page_id) return;
     
-    if (issueTypes.some(i => i.type.includes('title') || i.type.includes('meta'))) {
-      reportContent += `- **Optimizar metadatos**: Mejorar títulos y meta descripciones para mejorar el CTR en resultados de búsqueda: 70/100\n`;
+    if (!headingsByPage[heading.page_id]) {
+      headingsByPage[heading.page_id] = [];
     }
-    
-    if (issueTypes.some(i => i.type.includes('h1'))) {
-      reportContent += `- **Estructura de encabezados**: Asegurar que todas las páginas tengan un H1 único y descriptivo: 65/100\n`;
-    }
-    
-    // Add some general recommendations
-    reportContent += `- **Velocidad de carga**: Optimizar imágenes y recursos para mejorar los tiempos de carga: 75/100\n`;
-    reportContent += `- **Mobile-friendly**: Asegurar que el sitio sea completamente responsive: 80/100\n`;
-    reportContent += `- **Seguridad HTTPS**: Mantener certificados SSL actualizados: 90/100\n\n`;
-    
-    // Add conclusion
-    reportContent += `## Conclusión\n\n`;
-    reportContent += `El análisis técnico SEO de ${domain} ha revelado ${issueCount} problemas que deben ser abordados para mejorar el rendimiento del sitio en motores de búsqueda. Priorizando la corrección de los problemas más críticos, se podrá mejorar significativamente la visibilidad y experiencia de usuario del sitio web.`;
-    
-    return reportContent;
+    headingsByPage[heading.page_id].push(heading);
+  });
+
+  // Helper function to check if a page has multiple h1 tags
+  const hasMultipleH1s = (pageId: string): boolean => {
+    const pageHeadings = headingsByPage[pageId] || [];
+    return pageHeadings.filter(h => h.heading_type === 'h1').length > 1;
   };
   
-  // Fetch data
-  useEffect(() => {
-    const loadData = async () => {
-      if (!crawlResult || !crawlResult.id) return;
-      
-      try {
-        setIsLoading(true);
-        
-        // Fetch issue types distribution
-        const issueTypesData = await fetchIssueTypesDistribution(crawlResult.id);
-        setIssueTypes(issueTypesData);
-        
-        // Fetch severity distribution
-        const severityData = await fetchSeverityDistribution(crawlResult.id);
-        setSeverityDistribution(severityData);
-        
-      } catch (error) {
-        console.error('Error loading report data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadData();
-  }, [crawlResult]);
+  // Helper function to check if a page is missing h1 tags
+  const isMissingH1 = (pageId: string): boolean => {
+    const pageHeadings = headingsByPage[pageId] || [];
+    return pageHeadings.filter(h => h.heading_type === 'h1').length === 0;
+  };
   
-  // If there's no crawl result, show error
-  if (!crawlResult) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-          No se pudo cargar el resultado del análisis.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  // Count heading issues across all pages
+  const pagesWithMultipleH1 = Object.keys(headingsByPage).filter(hasMultipleH1).length;
+  const pagesWithMissingH1 = Object.keys(headingsByPage).filter(isMissingH1).length;
   
-  // Format date
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-ES', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+  // Helper function to get heading icon based on type
+  const getHeadingIcon = (type: string) => {
+    switch (type) {
+      case 'h1': return <Heading1 className="h-4 w-4 text-blue-500" />;
+      case 'h2': return <Heading2 className="h-4 w-4 text-green-500" />;
+      case 'h3': return <Heading3 className="h-4 w-4 text-amber-500" />;
+      default: return <Heading2 className="h-4 w-4 text-gray-500" />;
+    }
+  };
+  
+  // Helper function to get indentation based on heading type
+  const getIndentationClass = (type: string) => {
+    switch (type) {
+      case 'h1': return 'pl-0';
+      case 'h2': return 'pl-4';
+      case 'h3': return 'pl-8';
+      default: return 'pl-0';
+    }
   };
   
   return (
     <div className="space-y-6">
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full md:w-auto">
-          <TabsTrigger value="overview">General</TabsTrigger>
-          <TabsTrigger value="issues">Problemas</TabsTrigger>
-          <TabsTrigger value="pages">Páginas</TabsTrigger>
-          <TabsTrigger value="links">Enlaces</TabsTrigger>
-          <TabsTrigger value="technical">SEO Técnico</TabsTrigger>
+      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+        <TabsList className="grid grid-cols-4 w-full md:w-[600px]">
+          <TabsTrigger value="overview">Resumen</TabsTrigger>
+          <TabsTrigger value="pages">Páginas ({pages.length})</TabsTrigger>
+          <TabsTrigger value="issues">Problemas ({issues.length})</TabsTrigger>
+          <TabsTrigger value="headings">Encabezados</TabsTrigger>
         </TabsList>
         
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4 pt-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <TabsContent value="overview" className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Resumen del Rastreo</CardTitle>
-                <CardDescription>
-                  {formatDate(crawlResult.completed_at)}
-                </CardDescription>
+                <CardTitle>Páginas analizadas</CardTitle>
+                <CardDescription>Total de páginas en el sitio</CardDescription>
               </CardHeader>
               <CardContent>
-                <dl className="space-y-2">
-                  <div className="flex justify-between">
-                    <dt className="text-sm font-medium text-muted-foreground">URL:</dt>
-                    <dd className="text-sm font-medium">{crawlResult.url}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-sm font-medium text-muted-foreground">Páginas:</dt>
-                    <dd className="text-sm font-medium">{crawlResult.pages_crawled} / {crawlResult.total_pages}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-sm font-medium text-muted-foreground">Problemas:</dt>
-                    <dd className="text-sm font-medium">{crawlResult.total_issues}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-sm font-medium text-muted-foreground">Estado:</dt>
-                    <dd className="text-sm font-medium">
-                      <Badge variant={
-                        crawlResult.status === 'completed' ? 'secondary' : 
-                        crawlResult.status === 'failed' ? 'destructive' : 
-                        'default'
-                      }>
-                        {crawlResult.status === 'completed' ? 'Completado' : 
-                        crawlResult.status === 'failed' ? 'Fallido' : 
-                        crawlResult.status === 'processing' ? 'Procesando' : 'En cola'}
-                      </Badge>
-                    </dd>
-                  </div>
-                </dl>
+                <div className="text-4xl font-bold">{pages.length}</div>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Distribución de Problemas</CardTitle>
-                <CardDescription>
-                  Tipos de problemas encontrados
-                </CardDescription>
+                <CardTitle>Problemas detectados</CardTitle>
+                <CardDescription>Total de problemas SEO</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-[200px]">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : issueTypes.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
+                <div className="text-4xl font-bold">{issues.length}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Problemas críticos</CardTitle>
+                <CardDescription>Necesitan atención inmediata</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold">{issuesBySeverity.critical?.length || 0}</div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Problemas por tipo</CardTitle>
+                <CardDescription>Los 10 tipos de problemas más comunes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={issueTypes.slice(0, 5)}
-                      margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                      data={issueTypeChartData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="type" angle={-45} textAnchor="end" height={60} />
-                      <YAxis />
+                      <XAxis type="number" />
+                      <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                       <Tooltip />
-                      <Bar dataKey="count" fill="#8884d8" />
+                      <Bar dataKey="count" fill="#8884d8" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-[200px]">
-                    <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">No hay datos disponibles</p>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Severidad de Problemas</CardTitle>
-                <CardDescription>
-                  Distribución por nivel de severidad
-                </CardDescription>
+              <CardHeader>
+                <CardTitle>Problemas por severidad</CardTitle>
+                <CardDescription>Distribución de problemas según importancia</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-[200px]">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : severityDistribution.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={severityDistribution.filter(item => item.count > 0)}
+                        data={issueSeverityChartData}
+                        dataKey="value"
+                        nameKey="name"
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
                         outerRadius={80}
                         fill="#8884d8"
-                        dataKey="count"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label
                       >
-                        {severityDistribution.map((entry, index) => (
+                        {issueSeverityChartData.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
-                            fill={SEVERITY_COLORS[entry.severity as keyof typeof SEVERITY_COLORS] || COLORS[index % COLORS.length]} 
+                            fill={SEVERITY_COLORS[entry.name as keyof typeof SEVERITY_COLORS] || COLORS[index % COLORS.length]} 
                           />
                         ))}
                       </Pie>
                       <Tooltip />
+                      <Legend />
                     </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-[200px]">
-                    <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">No hay datos disponibles</p>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           </div>
           
           <Card>
             <CardHeader>
-              <CardTitle>Estadísticas de Enlaces</CardTitle>
-              <CardDescription>
-                Distribución de enlaces internos y externos
-              </CardDescription>
+              <CardTitle>Problemas de estructura de encabezados</CardTitle>
+              <CardDescription>Problemas con la jerarquía de encabezados H1, H2, H3</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="flex flex-col items-center p-4 border rounded-md">
-                  <p className="text-3xl font-bold">{crawlResult.total_links || 0}</p>
-                  <p className="text-sm text-muted-foreground">Enlaces Totales</p>
-                </div>
-                <div className="flex flex-col items-center p-4 border rounded-md">
-                  <p className="text-3xl font-bold">{crawlResult.total_internal_links || 0}</p>
-                  <p className="text-sm text-muted-foreground">Enlaces Internos</p>
-                </div>
-                <div className="flex flex-col items-center p-4 border rounded-md">
-                  <p className="text-3xl font-bold">{crawlResult.total_external_links || 0}</p>
-                  <p className="text-sm text-muted-foreground">Enlaces Externos</p>
-                </div>
-              </div>
-              {crawlResult.total_broken_links > 0 && (
-                <Alert className="mt-4" variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Enlaces Rotos Detectados</AlertTitle>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Alert variant={pagesWithMultipleH1 > 0 ? "destructive" : "default"}>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Páginas con múltiples H1</AlertTitle>
                   <AlertDescription>
-                    Se encontraron {crawlResult.total_broken_links} enlaces rotos que deberían corregirse.
+                    {pagesWithMultipleH1} páginas tienen más de un encabezado H1
                   </AlertDescription>
                 </Alert>
-              )}
+                
+                <Alert variant={pagesWithMissingH1 > 0 ? "destructive" : "default"}>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Páginas sin H1</AlertTitle>
+                  <AlertDescription>
+                    {pagesWithMissingH1} páginas no tienen encabezado H1
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumen del análisis</CardTitle>
+              <CardDescription>Fecha: {new Date(crawlResult.started_at).toLocaleDateString()}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="font-medium">URL analizada</h3>
+                <a 
+                  href={crawlResult.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline flex items-center"
+                >
+                  {crawlResult.url}
+                  <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+              </div>
+              
+              <div>
+                <h3 className="font-medium">Duración del análisis</h3>
+                <p>{crawlResult.total_time_seconds || 0} segundos</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
         
-        {/* Issues Tab */}
-        <TabsContent value="issues" className="space-y-4 pt-4">
+        <TabsContent value="pages" className="space-y-6 pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Problemas Detectados</CardTitle>
-              <CardDescription>
-                Lista de problemas encontrados durante el análisis
-              </CardDescription>
+              <CardTitle>Páginas analizadas</CardTitle>
+              <CardDescription>Total: {pages.length} páginas</CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <div className="flex items-center justify-center h-[200px]">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : issueTypes.length > 0 ? (
-                <ScrollArea className="h-[500px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>URL</TableHead>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Problemas</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pages.map(page => (
+                    <TableRow key={page.id}>
+                      <TableCell className="font-medium truncate max-w-[200px]">
+                        <a 
+                          href={page.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center"
+                        >
+                          {page.url}
+                          <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      </TableCell>
+                      <TableCell className="truncate max-w-[200px]">{page.title || 'Sin título'}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            page.status_code >= 200 && page.status_code < 300
+                              ? 'bg-green-100 text-green-800'
+                              : page.status_code >= 300 && page.status_code < 400
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : page.status_code >= 400
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }
+                        >
+                          {page.status_code}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={page.issues_count && page.issues_count > 0 ? 'destructive' : 'secondary'}>
+                          {page.issues_count || 0}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="issues" className="space-y-6 pt-4">
+          {issues.length > 0 ? (
+            <div className="space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Problemas por severidad</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Object.entries(issuesBySeverity).map(([severity, issuesList]) => (
+                      <div 
+                        key={severity}
+                        className="border rounded-lg p-4 flex flex-col"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <SeverityBadge severity={severity} />
+                          <Badge variant="outline">{issuesList.length}</Badge>
+                        </div>
+                        <ul className="space-y-2 text-sm">
+                          {issuesList.slice(0, 3).map(issue => (
+                            <li key={issue.id} className="truncate">
+                              <AlertTriangle className="h-3 w-3 inline mr-1 text-amber-500" />
+                              {issue.description}
+                            </li>
+                          ))}
+                          {issuesList.length > 3 && (
+                            <li className="text-muted-foreground">
+                              + {issuesList.length - 3} más...
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Todos los problemas</CardTitle>
+                  <CardDescription>Total: {issues.length} problemas</CardDescription>
+                </CardHeader>
+                <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Tipo de Problema</TableHead>
-                        <TableHead>Cantidad</TableHead>
+                        <TableHead>Problema</TableHead>
                         <TableHead>Severidad</TableHead>
-                        <TableHead>Sugerencia</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {issueTypes.map((issue, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{issue.type}</TableCell>
-                          <TableCell>{issue.count}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              issue.severity === 'critical' ? 'destructive' :
-                              issue.severity === 'high' ? 'destructive' :
-                              issue.severity === 'medium' ? 'warning' :
-                              issue.severity === 'low' ? 'secondary' :
-                              'outline'
-                            }>
-                              {issue.severity}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {issue.type.includes('title') ? 'Optimizar títulos' :
-                             issue.type.includes('meta') ? 'Mejorar meta descripciones' :
-                             issue.type.includes('h1') ? 'Añadir H1 únicos y descriptivos' :
-                             issue.type.includes('image') ? 'Añadir atributos alt a imágenes' :
-                             issue.type.includes('broken') ? 'Corregir enlaces rotos' :
-                             'Revisar y corregir'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-10">
-                  <Check className="h-10 w-10 text-green-500 mb-2" />
-                  <p className="text-muted-foreground">No se encontraron problemas</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Pages Tab */}
-        <TabsContent value="pages" className="space-y-4 pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Páginas Analizadas</CardTitle>
-              <CardDescription>
-                Lista de páginas indexadas del sitio
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pages.length > 0 ? (
-                <ScrollArea className="h-[500px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
                         <TableHead>URL</TableHead>
-                        <TableHead>Título</TableHead>
-                        <TableHead>H1</TableHead>
-                        <TableHead>Problemas</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pages.map((page, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium truncate max-w-[200px]">
-                            <a href={page.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
-                              <span className="truncate">{page.url}</span>
-                              <Link className="h-3 w-3 ml-1 flex-shrink-0" />
-                            </a>
-                          </TableCell>
-                          <TableCell className="truncate max-w-[200px]">
-                            {page.title || 'Sin título'}
-                          </TableCell>
-                          <TableCell className="truncate max-w-[200px]">
-                            {page.h1 ? 
-                              page.h1.replace(/<[^>]*>/g, '') : 
-                              'Sin H1'}
+                      {issues.map(issue => (
+                        <TableRow key={issue.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center">
+                              <AlertTriangle className="h-4 w-4 text-amber-500 mr-2 flex-shrink-0" />
+                              <span className="truncate">{issue.description}</span>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            {page.issues_count > 0 ? (
-                              <Badge variant="destructive">{page.issues_count}</Badge>
-                            ) : (
-                              <Badge variant="secondary">0</Badge>
-                            )}
+                            <SeverityBadge severity={issue.severity || 'info'} />
+                          </TableCell>
+                          <TableCell className="truncate max-w-[200px]">
+                            {issue.page_url}
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Check className="h-12 w-12 text-green-500 mb-4" />
+              <h3 className="text-lg font-medium">No se encontraron problemas</h3>
+              <p className="text-muted-foreground mt-2 max-w-md">
+                No se encontraron problemas en el análisis. El sitio web parece estar bien optimizado.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="headings" className="space-y-6 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Estructura de encabezados</CardTitle>
+              <CardDescription>
+                Análisis de la jerarquía de encabezados H1, H2, H3 en las páginas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {headings.length > 0 ? (
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border rounded-lg p-4">
+                      <div className="text-lg font-medium mb-2 flex items-center">
+                        <Heading1 className="h-5 w-5 text-blue-500 mr-2" />
+                        Encabezados H1
+                      </div>
+                      <div className="text-3xl font-bold">
+                        {headings.filter(h => h.heading_type === 'h1').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        En {Object.keys(headingsByPage).filter(pageId => 
+                          headingsByPage[pageId].some(h => h.heading_type === 'h1')
+                        ).length} páginas
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4">
+                      <div className="text-lg font-medium mb-2 flex items-center">
+                        <Heading2 className="h-5 w-5 text-green-500 mr-2" />
+                        Encabezados H2
+                      </div>
+                      <div className="text-3xl font-bold">
+                        {headings.filter(h => h.heading_type === 'h2').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        En {Object.keys(headingsByPage).filter(pageId => 
+                          headingsByPage[pageId].some(h => h.heading_type === 'h2')
+                        ).length} páginas
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4">
+                      <div className="text-lg font-medium mb-2 flex items-center">
+                        <Heading3 className="h-5 w-5 text-amber-500 mr-2" />
+                        Encabezados H3
+                      </div>
+                      <div className="text-3xl font-bold">
+                        {headings.filter(h => h.heading_type === 'h3').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        En {Object.keys(headingsByPage).filter(pageId => 
+                          headingsByPage[pageId].some(h => h.heading_type === 'h3')
+                        ).length} páginas
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-lg">Problemas de estructura</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Alert variant={pagesWithMultipleH1 > 0 ? "destructive" : "default"}>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Páginas con múltiples H1</AlertTitle>
+                        <AlertDescription>
+                          {pagesWithMultipleH1} páginas tienen más de un encabezado H1
+                        </AlertDescription>
+                      </Alert>
+                      
+                      <Alert variant={pagesWithMissingH1 > 0 ? "destructive" : "default"}>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Páginas sin H1</AlertTitle>
+                        <AlertDescription>
+                          {pagesWithMissingH1} páginas no tienen encabezado H1
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium text-lg mb-4">Encabezados por página</h3>
+                    
+                    {Object.entries(headingsByPage).slice(0, 5).map(([pageId, pageHeadings]) => {
+                      // Find the page URL from the heading data or pages array
+                      const pageUrl = pageHeadings[0]?.page_url || 
+                        pages.find(p => p.id === pageId)?.url || 
+                        'Página desconocida';
+                        
+                      const multipleH1 = pageHeadings.filter(h => h.heading_type === 'h1').length > 1;
+                      const missingH1 = pageHeadings.filter(h => h.heading_type === 'h1').length === 0;
+                      
+                      return (
+                        <div key={pageId} className="mb-6 border rounded-lg p-4">
+                          <h4 className="font-medium text-primary mb-2 truncate">
+                            <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center">
+                              {pageUrl}
+                              <ExternalLink className="h-3 w-3 ml-1" />
+                            </a>
+                          </h4>
+                          
+                          {multipleH1 && (
+                            <Alert variant="destructive" className="mb-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle>Múltiples H1</AlertTitle>
+                              <AlertDescription>
+                                Esta página tiene {pageHeadings.filter(h => h.heading_type === 'h1').length} encabezados H1
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          
+                          {missingH1 && (
+                            <Alert variant="destructive" className="mb-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle>Falta H1</AlertTitle>
+                              <AlertDescription>
+                                Esta página no tiene ningún encabezado H1
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-16">Tipo</TableHead>
+                                <TableHead>Contenido</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {pageHeadings.map((heading, index) => (
+                                <TableRow key={heading.id || `${pageId}-${index}`}>
+                                  <TableCell>
+                                    <div className="flex items-center justify-center">
+                                      {getHeadingIcon(heading.heading_type)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className={getIndentationClass(heading.heading_type)}>
+                                    {heading.content}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      );
+                    })}
+                    
+                    {Object.keys(headingsByPage).length > 5 && (
+                      <div className="text-center text-muted-foreground mt-4">
+                        Mostrando 5 de {Object.keys(headingsByPage).length} páginas
+                      </div>
+                    )}
+                  </div>
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-10">
-                  <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">No hay páginas disponibles</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+                  <h3 className="text-lg font-medium">No se encontraron encabezados</h3>
+                  <p className="text-muted-foreground mt-2 max-w-md">
+                    No se pudieron encontrar encabezados (H1, H2, H3) en las páginas analizadas.
+                    Es posible que las páginas no tengan encabezados estructurados correctamente.
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        {/* Links Tab */}
-        <TabsContent value="links" className="space-y-4 pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Análisis de Enlaces</CardTitle>
-              <CardDescription>
-                Resumen y detalles de enlaces
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3 mb-6">
-                <Card>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-base">Enlaces Internos</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-2">
-                    <p className="text-3xl font-bold">{crawlResult.total_internal_links || 0}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-base">Enlaces Externos</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-2">
-                    <p className="text-3xl font-bold">{crawlResult.total_external_links || 0}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-base">Enlaces Rotos</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-2">
-                    <p className="text-3xl font-bold">{crawlResult.total_broken_links || 0}</p>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              {crawlResult.total_broken_links > 0 ? (
-                <Alert className="mb-6" variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Enlaces Rotos Detectados</AlertTitle>
-                  <AlertDescription>
-                    Se encontraron {crawlResult.total_broken_links} enlaces rotos que deben ser corregidos para mejorar la experiencia del usuario y el SEO.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Alert className="mb-6" variant="default">
-                  <Check className="h-4 w-4" />
-                  <AlertTitle>Enlaces en Buen Estado</AlertTitle>
-                  <AlertDescription>
-                    No se detectaron enlaces rotos durante el análisis.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Recomendaciones para Enlaces</h3>
-                <ul className="space-y-2 list-disc pl-5">
-                  <li>Asegurarse de que los enlaces internos importantes tengan texto de anclaje descriptivo</li>
-                  <li>Utilizar una estructura de enlazado interna lógica que facilite la navegación</li>
-                  <li>Incluir enlaces a páginas relevantes de autoridad para mejorar la credibilidad</li>
-                  <li>Revisar y corregir los enlaces rotos inmediatamente</li>
-                  <li>Utilizar atributos rel="nofollow" para enlaces externos no confiables</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Technical SEO Tab */}
-        <TabsContent value="technical" className="space-y-4 pt-4">
-          <TechnicalTab content={generateTechnicalReport()} />
         </TabsContent>
       </Tabs>
     </div>
