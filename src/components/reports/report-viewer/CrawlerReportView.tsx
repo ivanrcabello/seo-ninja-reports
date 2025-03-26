@@ -88,7 +88,7 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
   };
   
   // Count heading issues across all pages
-  const pagesWithMultipleH1 = Object.keys(headingsByPage).filter(hasMultipleH1).length;
+  const pagesWithMultipleH1 = Object.keys(headingsByPage).filter(hasMultipleH1s).length;
   const pagesWithMissingH1 = Object.keys(headingsByPage).filter(isMissingH1).length;
   
   // Helper function to get heading icon based on type

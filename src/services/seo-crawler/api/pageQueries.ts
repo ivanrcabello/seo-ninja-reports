@@ -140,11 +140,9 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
 export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
   try {
     console.log(`Fetching headings for page ID: ${pageId}`);
+    // Using a raw SQL query via rpc to avoid type issues
     const { data, error } = await supabase
-      .from('seo_crawler_headings')
-      .select('*')
-      .eq('page_id', pageId)
-      .order('position', { ascending: true });
+      .rpc('get_page_headings', { page_id_param: pageId });
 
     if (error) throw error;
     console.log(`Found ${data?.length || 0} headings for page ${pageId}`);
@@ -155,7 +153,8 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
       page_id: heading.page_id,
       heading_type: heading.heading_type || 'h2',
       content: heading.content || '',
-      position: heading.position || 0
+      position: heading.position || 0,
+      page_url: heading.page_url
     }));
   } catch (error) {
     console.error('Error fetching page headings:', error);
@@ -169,12 +168,9 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
 export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]> {
   try {
     console.log(`Fetching all headings for crawl ID: ${crawlId}`);
+    // Using a raw SQL query via rpc to avoid type issues
     const { data, error } = await supabase
-      .from('seo_crawler_headings')
-      .select('*')
-      .eq('crawl_id', crawlId)
-      .order('page_id', { ascending: true })
-      .order('position', { ascending: true });
+      .rpc('get_crawl_headings', { crawl_id_param: crawlId });
 
     if (error) throw error;
     console.log(`Found ${data?.length || 0} headings for crawl ${crawlId}`);
