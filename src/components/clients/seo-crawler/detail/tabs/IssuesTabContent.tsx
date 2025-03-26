@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { CrawlIssue, CrawlPage } from '@/services/seo-crawler/types';
 import BlurredCard from '@/components/ui/BlurredCard';
@@ -7,7 +6,7 @@ import { CardHeader, CardTitle, CardDescription, CardContent } from '@/component
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { AlertTriangle, Search, AlertCircle, Info, CheckCircle, Warning } from 'lucide-react';
+import { AlertTriangle, Search, AlertCircle, Info, CheckCircle, Triangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -94,7 +93,7 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
       case 'high':
         return <AlertTriangle className="h-4 w-4 text-amber-500" />;
       case 'medium':
-        return <Warning className="h-4 w-4 text-yellow-500" />;
+        return <Triangle className="h-4 w-4 text-yellow-500" />;
       case 'low':
         return <Info className="h-4 w-4 text-blue-500" />;
       case 'info':
