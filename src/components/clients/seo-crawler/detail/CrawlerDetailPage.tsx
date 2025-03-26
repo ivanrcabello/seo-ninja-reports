@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
 import { getCrawlResult, getCrawlPages } from '@/services/seo-crawler/api';
 import { getCrawlIssues } from '@/services/seo-crawler/api/pageQueries';
+import { getPageLinks } from '@/services/seo-crawler/additionalApi';
 import CrawlerDetailHeader from './CrawlerDetailHeader';
 import CrawlerTabs from './CrawlerTabs';
 import CrawlerReportView from '@/components/reports/report-viewer/CrawlerReportView';
@@ -65,6 +66,12 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         // Set the first page as selected if available
         if (pagesData.length > 0) {
           setSelectedPage(pagesData[0]);
+          
+          // Also fetch links for the first page since it's selected
+          if (pagesData[0].id) {
+            const pageLinksData = await getPageLinks(pagesData[0].id);
+            setPageLinks(pageLinksData);
+          }
         }
       } catch (error) {
         console.error('Error fetching crawl data:', error);
@@ -78,30 +85,29 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   }, [crawlId]);
   
   // Handle page selection
-  const handlePageSelect = (page: CrawlPage) => {
+  const handlePageSelect = async (page: CrawlPage) => {
     setSelectedPage(page);
     
     // Load page-specific issues and links
-    const loadPageData = async () => {
-      try {
-        setIsLoadingPageData(true);
-        
-        // Find issues for this page
-        const pageIssues = issues.filter(issue => issue.page_id === page.id);
-        setPageIssues(pageIssues);
-        
-        // Here you'd load links for the page too
-        // For now we'll set empty array
-        setPageLinks([]);
-        
-      } catch (error) {
-        console.error('Error loading page data:', error);
-      } finally {
-        setIsLoadingPageData(false);
+    try {
+      setIsLoadingPageData(true);
+      
+      // Find issues for this page
+      const pageIssues = issues.filter(issue => issue.page_id === page.id);
+      setPageIssues(pageIssues);
+      
+      // Fetch links for this page
+      if (page.id) {
+        const linksData = await getPageLinks(page.id);
+        setPageLinks(linksData);
       }
-    };
-    
-    loadPageData();
+      
+    } catch (error) {
+      console.error('Error loading page data:', error);
+      toast.error('Error al cargar los datos de la página');
+    } finally {
+      setIsLoadingPageData(false);
+    }
   };
 
   if (isLoading) {
@@ -138,7 +144,11 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       />
       
       {showReport ? (
-        <CrawlerReportView crawlResult={crawl} />
+        <CrawlerReportView 
+          crawlResult={crawl} 
+          pages={pages}
+          issues={issues}
+        />
       ) : (
         <CrawlerTabs 
           pages={pages}

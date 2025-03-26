@@ -48,23 +48,28 @@ export async function fetchSeverityDistribution(crawlId: string) {
     if (error) throw error;
 
     // Count issues by severity
-    const counts = {
+    const counts: Record<string, number> = {
       critical: 0,
-      major: 0,
-      minor: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
       info: 0,
     };
     
     data.forEach((issue: any) => {
       if (counts[issue.severity as keyof typeof counts] !== undefined) {
         counts[issue.severity as keyof typeof counts]++;
+      } else {
+        // For any other severity not in predefined list
+        counts['info']++;
       }
     });
     
     return [
       { severity: 'critical', count: counts.critical },
-      { severity: 'major', count: counts.major },
-      { severity: 'minor', count: counts.minor },
+      { severity: 'high', count: counts.high },
+      { severity: 'medium', count: counts.medium },
+      { severity: 'low', count: counts.low },
       { severity: 'info', count: counts.info },
     ];
   } catch (error) {
@@ -87,7 +92,9 @@ export async function fetchIssuesWithDetails(crawlId: string): Promise<CrawlIssu
 
     return data.map((issue: any) => ({
       id: issue.id,
+      crawl_id: issue.crawl_id,
       page_id: issue.page_id,
+      page_url: issue.page_url,
       issue_type: issue.issue_type,
       description: issue.description,
       severity: issue.severity,
@@ -115,6 +122,7 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
 
     return data.map((link: any) => ({
       id: link.id,
+      crawl_id: link.crawl_id,
       page_id: link.page_id,
       url: link.url,
       anchor_text: link.anchor_text || '',
@@ -122,7 +130,7 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
       is_broken: link.is_broken,
       status_code: link.status_code,
       follow: link.follow,
-      rel_attributes: typeof link.rel_attributes === 'string' ? link.rel_attributes : null
+      rel_attributes: link.rel_attributes
     }));
   } catch (error) {
     console.error('Error fetching links with details:', error);
@@ -131,62 +139,82 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
 }
 
 // Export these functions for compatibility
-import { getPageIssues as fetchCrawlIssues, getPageLinks as fetchCrawlLinks } from './api/pageQueries';
-export { fetchCrawlIssues, fetchCrawlLinks };
+export { getPageIssues, getPageLinks, getCrawlIssues, getCrawlLinks } from './api/pageQueries';
 
 /**
- * Get issues for a specific page
+ * Fetch all metadata for pages (titles, descriptions, h1s)
  */
-export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
+export async function fetchPagesMetadata(crawlId: string): Promise<any[]> {
   try {
     const { data, error } = await supabase
-      .from('seo_crawler_issues')
-      .select('*')
-      .eq('page_id', pageId);
+      .from('seo_crawler_pages')
+      .select('id, url, title, meta_description, h1, canonical_url, is_indexable, meta_robots, issues_count')
+      .eq('crawl_id', crawlId);
 
     if (error) throw error;
     
-    return data.map((issue: any) => ({
-      id: issue.id,
-      page_id: issue.page_id,
-      issue_type: issue.issue_type,
-      description: issue.description,
-      severity: issue.severity,
-      recommended_fix: issue.recommended_fix,
-      fix_suggestion: issue.fix_suggestion || null,
-      element: issue.element || null
-    }));
+    return data;
   } catch (error) {
-    console.error('Error fetching page issues:', error);
+    console.error('Error fetching pages metadata:', error);
     return [];
   }
 }
 
 /**
- * Get links for a specific page
+ * Get statistics about page metadata quality
  */
-export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
+export async function getMetadataStats(crawlId: string): Promise<any> {
   try {
-    const { data, error } = await supabase
-      .from('seo_crawler_links')
-      .select('*')
-      .eq('page_id', pageId);
-
-    if (error) throw error;
+    const pages = await fetchPagesMetadata(crawlId);
     
-    return data.map((link: any) => ({
-      id: link.id,
-      page_id: link.page_id,
-      url: link.url,
-      anchor_text: link.anchor_text || '',
-      is_internal: link.is_internal,
-      is_broken: link.is_broken,
-      status_code: link.status_code,
-      follow: link.follow,
-      rel_attributes: typeof link.rel_attributes === 'string' ? link.rel_attributes : null
-    }));
+    const stats = {
+      totalPages: pages.length,
+      missingTitle: 0,
+      missingMetaDescription: 0,
+      missingH1: 0,
+      longTitles: 0,
+      shortTitles: 0,
+      longMetaDescriptions: 0,
+      shortMetaDescriptions: 0,
+      duplicateTitles: {} as Record<string, number>,
+      duplicateMetaDescriptions: {} as Record<string, number>
+    };
+    
+    pages.forEach(page => {
+      // Check missing elements
+      if (!page.title) stats.missingTitle++;
+      if (!page.meta_description) stats.missingMetaDescription++;
+      if (!page.h1) stats.missingH1++;
+      
+      // Check title length
+      if (page.title && page.title.length > 60) stats.longTitles++;
+      if (page.title && page.title.length < 10) stats.shortTitles++;
+      
+      // Check meta description length
+      if (page.meta_description && page.meta_description.length > 160) stats.longMetaDescriptions++;
+      if (page.meta_description && page.meta_description.length < 50) stats.shortMetaDescriptions++;
+      
+      // Track duplicates
+      if (page.title) {
+        stats.duplicateTitles[page.title] = (stats.duplicateTitles[page.title] || 0) + 1;
+      }
+      
+      if (page.meta_description) {
+        stats.duplicateMetaDescriptions[page.meta_description] = (stats.duplicateMetaDescriptions[page.meta_description] || 0) + 1;
+      }
+    });
+    
+    // Count only actual duplicates (appearing more than once)
+    const duplicateTitlesCount = Object.values(stats.duplicateTitles).filter(count => count > 1).length;
+    const duplicateMetaDescriptionsCount = Object.values(stats.duplicateMetaDescriptions).filter(count => count > 1).length;
+    
+    return {
+      ...stats,
+      duplicateTitlesCount,
+      duplicateMetaDescriptionsCount
+    };
   } catch (error) {
-    console.error('Error fetching page links:', error);
-    return [];
+    console.error('Error calculating metadata stats:', error);
+    return null;
   }
 }
