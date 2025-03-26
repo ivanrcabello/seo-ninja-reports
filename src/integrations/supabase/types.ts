@@ -1658,6 +1658,34 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_crawl_headings: {
+        Args: {
+          crawl_id_param: string
+        }
+        Returns: {
+          id: string
+          crawl_id: string
+          page_id: string
+          page_url: string
+          heading_type: string
+          content: string
+          heading_position: number
+        }[]
+      }
+      get_page_headings: {
+        Args: {
+          page_id_param: string
+        }
+        Returns: {
+          id: string
+          crawl_id: string
+          page_id: string
+          page_url: string
+          heading_type: string
+          content: string
+          heading_position: number
+        }[]
+      }
       get_public_contract_by_shared_url: {
         Args: {
           shared_url_param: string

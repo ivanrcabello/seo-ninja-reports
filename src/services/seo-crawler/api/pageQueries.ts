@@ -153,7 +153,7 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
       page_id: heading.page_id,
       heading_type: heading.heading_type || 'h2',
       content: heading.content || '',
-      position: heading.position || 0,
+      position: heading.heading_position || 0,
       page_url: heading.page_url
     }));
   } catch (error) {
@@ -182,7 +182,7 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
       page_url: heading.page_url,
       heading_type: heading.heading_type || 'h2',
       content: heading.content || '',
-      position: heading.position || 0
+      position: heading.heading_position || 0
     }));
   } catch (error) {
     console.error('Error fetching crawl headings:', error);
