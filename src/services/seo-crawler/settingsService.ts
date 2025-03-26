@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SavedCrawlSettings } from './types';
+import { CrawlSettings } from './types';
 
 // Define CrawlSettingsConfig type locally to avoid conflict with the one from types.ts
 interface CrawlSettingsConfig {
@@ -13,7 +13,7 @@ interface CrawlSettingsConfig {
 }
 
 // Get saved crawl settings for a client
-export const getSettings = async (clientId: string, domain?: string): Promise<SavedCrawlSettings | null> => {
+export const getSettings = async (clientId: string, domain?: string): Promise<CrawlSettings | null> => {
   try {
     let query = supabase
       .from('seo_crawl_settings')
@@ -34,7 +34,7 @@ export const getSettings = async (clientId: string, domain?: string): Promise<Sa
       return null;
     }
     
-    return data as SavedCrawlSettings;
+    return data as unknown as CrawlSettings;
   } catch (error) {
     console.error("Error retrieving crawl settings:", error);
     return null;
@@ -42,7 +42,7 @@ export const getSettings = async (clientId: string, domain?: string): Promise<Sa
 };
 
 // Save crawl settings for a client
-export const saveSettings = async (settings: CrawlSettingsConfig): Promise<SavedCrawlSettings | null> => {
+export const saveSettings = async (settings: CrawlSettingsConfig): Promise<CrawlSettings | null> => {
   try {
     // First check if settings already exist
     const { data: existingSettings, error: checkError } = await supabase
@@ -90,7 +90,7 @@ export const saveSettings = async (settings: CrawlSettingsConfig): Promise<Saved
       result = data;
     }
     
-    return result[0] as SavedCrawlSettings;
+    return result[0] as unknown as CrawlSettings;
   } catch (error) {
     console.error("Error saving crawl settings:", error);
     throw error;

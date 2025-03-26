@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings } from '../types';
 
@@ -77,7 +78,8 @@ export async function getSettings(
         user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
         crawl_sitemap: true,
         follow_links: true,
-        max_depth: 5
+        max_depth: 5,
+        custom_headers: {}
       };
     }
     

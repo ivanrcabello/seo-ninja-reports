@@ -2,13 +2,9 @@
 // Main SEO Crawler handler
 import { corsHeaders } from './constants.ts';
 import { crawlPage } from './crawler.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { normalizeUrl } from './utils.ts';
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
-
-export async function handleRequest(req: Request): Promise<Response> {
+export async function handleRequest(req: Request, supabase: any): Promise<Response> {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Returning CORS headers for preflight');
@@ -57,9 +53,6 @@ export async function handleRequest(req: Request): Promise<Response> {
     }
     
     console.log(`Parameters received - URL: ${requestData.url}, CrawlID: ${requestData.crawlId}`);
-    
-    // Initialize Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     // Check Bright Data credentials
     console.log(`Bright Data credentials configured: Username available: ${!!requestData.brightDataUsername}, Password available: ${!!requestData.brightDataPassword}`);
