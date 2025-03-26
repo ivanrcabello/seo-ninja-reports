@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlResult, CrawlPage } from '../types';
+import { CrawlResult, CrawlPage, CrawlSettings } from '../types';
 
 /**
  * Get all crawl results for a given client
@@ -34,10 +34,12 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         total_external_links: crawl.total_external_links || 0,
         total_broken_links: crawl.total_broken_links || 0,
         error_message: crawl.error_message,
-        settings: crawl.settings,
+        // Cast the settings JSON to CrawlSettings type
+        settings: crawl.settings as unknown as CrawlSettings,
         // Add the additional properties that components use
         inserted_at: crawl.inserted_at,
-        total_time_seconds: typeof crawl.total_time_seconds === 'number' ? crawl.total_time_seconds : 0
+        // Check if total_time_seconds exists and is a number
+        total_time_seconds: crawl.total_time_seconds ? Number(crawl.total_time_seconds) : 0
       };
       
       return result;
@@ -80,10 +82,12 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult | nul
       total_external_links: data.total_external_links || 0,
       total_broken_links: data.total_broken_links || 0,
       error_message: data.error_message,
-      settings: data.settings,
+      // Cast the settings JSON to CrawlSettings type
+      settings: data.settings as unknown as CrawlSettings,
       // Add the additional properties that components use
       inserted_at: data.inserted_at,
-      total_time_seconds: typeof data.total_time_seconds === 'number' ? data.total_time_seconds : 0
+      // Check if total_time_seconds exists and is a number
+      total_time_seconds: data.total_time_seconds ? Number(data.total_time_seconds) : 0
     };
     
     return result;
