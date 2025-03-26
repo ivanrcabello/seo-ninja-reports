@@ -1,164 +1,104 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CrawlPage, CrawlResult, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
-import { getCrawlData } from '@/services/seo-crawler/crawlerService';
-import { toast } from '@/components/ui/use-toast';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { CrawlResult, CrawlPage } from '@/services/seo-crawler/types';
+import { fetchCrawlResult, fetchCrawlPages, fetchCrawlIssues } from '@/services/seo-crawler';
+import CrawlerDetailHeader from './CrawlerDetailHeader';
 import CrawlerTabs from './CrawlerTabs';
-import CrawlerHeader from './CrawlerHeader';
-import CrawlerSummary from './CrawlerSummary';
-import LoadingState from './LoadingState';
-import NotFoundState from './NotFoundState';
+import CrawlerReportView from '@/components/reports/report-viewer/CrawlerReportView';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CrawlerDetailPageProps {
   clientId: string;
   crawlId: string;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({ 
-  clientId,
+  clientId, 
   crawlId,
-  onBack
+  onBack 
 }) => {
   const [crawl, setCrawl] = useState<CrawlResult | null>(null);
   const [pages, setPages] = useState<CrawlPage[]>([]);
-  const [selectedPage, setSelectedPage] = useState<CrawlPage | null>(null);
-  const [pageIssues, setPageIssues] = useState<CrawlIssue[]>([]);
-  const [pageLinks, setPageLinks] = useState<CrawlLink[]>([]);
-  const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
-  const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
+  const [issues, setIssues] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingPageData, setIsLoadingPageData] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showReport, setShowReport] = useState(false);
 
-  // Function to refresh the crawler status
-  const refreshCrawlStatus = async () => {
-    try {
-      const data = await getCrawlData(crawlId);
-      setCrawl(data.result);
-      
-      // If the status is still processing, check again in 10 seconds
-      if (data.result.status === 'processing') {
-        setTimeout(refreshCrawlStatus, 10000);
-      }
-    } catch (error) {
-      console.error('Error refreshing crawl status:', error);
-    }
-  };
-
+  // Fetch data
   useEffect(() => {
-    const fetchCrawlData = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        setError(null);
         
-        const data = await getCrawlData(crawlId);
+        // Fetch crawl result
+        const result = await fetchCrawlResult(crawlId);
+        setCrawl(result);
         
-        setCrawl(data.result);
-        setPages(data.pages);
-        setIssuesByType(data.issuesByType);
-        setIssuesBySeverity(data.issuesBySeverity);
+        // Fetch pages and issues
+        const pagesData = await fetchCrawlPages(crawlId);
+        const issuesData = await fetchCrawlIssues(crawlId);
         
-        // If status is processing, set up a polling mechanism
-        if (data.result.status === 'processing') {
-          setTimeout(refreshCrawlStatus, 10000);
-        }
-        
-        // Si hay páginas, selecciona la primera por defecto
-        if (data.pages.length > 0) {
-          setSelectedPage(data.pages[0]);
-          // Obtén los issues y links de la primera página
-          const pageId = data.pages[0].id;
-          setPageIssues(data.issues[pageId] || []);
-          setPageLinks(data.links[pageId] || []);
-        }
+        setPages(pagesData);
+        setIssues(issuesData);
       } catch (error) {
         console.error('Error fetching crawl data:', error);
-        setError('No se pudieron cargar los datos del análisis');
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudieron cargar los datos del análisis"
-        });
+        toast.error('Error al cargar los datos del análisis');
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchCrawlData();
+    
+    fetchData();
   }, [crawlId]);
 
-  const handlePageSelect = (page: CrawlPage) => {
-    setIsLoadingPageData(true);
-    setSelectedPage(page);
-    
-    // Busca en los datos ya cargados
-    const pageId = page.id;
-    
-    // Usa setTimeout para simular una carga asíncrona y evitar bloqueos de UI
-    setTimeout(() => {
-      try {
-        // Intentar obtener issues y links de los datos ya cargados
-        const issues = issuesByType ? 
-          Object.values(issuesByType).flat().filter(issue => issue.page_id === pageId) :
-          [];
-          
-        setPageIssues(issues);
-        
-        // Intentar obtener links de la página seleccionada
-        const fetchPageLinks = async () => {
-          try {
-            const { getPageLinks } = await import('@/services/seo-crawler/api/pageQueries');
-            const links = await getPageLinks(pageId);
-            setPageLinks(links);
-          } catch (error) {
-            console.error('Error loading page links:', error);
-            setPageLinks([]);
-          } finally {
-            setIsLoadingPageData(false);
-          }
-        };
-        
-        fetchPageLinks();
-      } catch (error) {
-        console.error('Error selecting page:', error);
-        setPageIssues([]);
-        setPageLinks([]);
-        setIsLoadingPageData(false);
-      }
-    }, 100);
-  };
-
   if (isLoading) {
-    return <LoadingState />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
+        <p className="text-muted-foreground">Cargando datos del análisis...</p>
+      </div>
+    );
   }
 
-  if (error || !crawl) {
-    return <NotFoundState clientId={clientId} error={error} onBack={onBack} />;
+  if (!crawl) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <h2 className="text-xl font-semibold mb-4">Error</h2>
+        <p className="text-muted-foreground mb-6">No se ha encontrado el análisis</p>
+        <button 
+          className="text-primary hover:underline" 
+          onClick={onBack}
+        >
+          Volver a la lista de análisis
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      <CrawlerHeader
-        clientId={clientId}
-        crawlResult={crawl}
+    <div className="space-y-6">
+      <CrawlerDetailHeader 
+        crawl={crawl} 
         onBack={onBack}
+        showReport={() => setShowReport(!showReport)} 
+        isReportShown={showReport}
       />
       
-      <CrawlerSummary crawl={crawl} pages={pages} issuesByType={issuesByType} issuesBySeverity={issuesBySeverity} />
-      
-      <CrawlerTabs
-        pages={pages}
-        selectedPage={selectedPage}
-        pageIssues={pageIssues}
-        pageLinks={pageLinks}
-        issuesByType={issuesByType}
-        onPageSelect={handlePageSelect}
-        isLoadingPageData={isLoadingPageData}
-      />
+      {showReport ? (
+        <CrawlerReportView crawlResult={crawl} />
+      ) : (
+        <CrawlerTabs 
+          crawl={crawl}
+          pages={pages}
+          issues={issues}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          clientId={clientId}
+        />
+      )}
     </div>
   );
 };
