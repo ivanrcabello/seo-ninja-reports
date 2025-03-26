@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
-import { getCrawlResult, getCrawlPages, getCrawlIssues } from '@/services/seo-crawler/api';
+import { getCrawlResult, getCrawlPages } from '@/services/seo-crawler/api';
+import { getCrawlIssues } from '@/services/seo-crawler/api/pageQueries';
 import CrawlerDetailHeader from './CrawlerDetailHeader';
 import CrawlerTabs from './CrawlerTabs';
 import CrawlerReportView from '@/components/reports/report-viewer/CrawlerReportView';
