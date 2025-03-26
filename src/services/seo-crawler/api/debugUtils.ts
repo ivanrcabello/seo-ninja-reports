@@ -1,74 +1,80 @@
 
 /**
- * Utility functions for debugging SEO crawler data
- */
-
-/**
- * Write detailed logs about issues data
+ * Debug utility to log issues data structure
  */
 export function debugIssuesData(data: any[]) {
-  console.log(`Issues data count: ${data?.length || 0}`);
+  if (!data || data.length === 0) {
+    console.warn('No issues data found');
+    return;
+  }
   
-  if (data && data.length > 0) {
-    console.log('Sample issue:', data[0]);
+  try {
+    console.log('Issues data count:', data.length);
+    console.log('First issue example:', data[0]);
     
-    // Count issues by page_id
+    // Create a list of all issue types
+    const issueTypes = [...new Set(data.map(issue => issue.issue_type))];
+    console.log('Issue types found:', issueTypes);
+    
+    // Create a list of all severities
+    const severities = [...new Set(data.map(issue => issue.severity))];
+    console.log('Severity types found:', severities);
+    
+    // Count issues per page
     const issuesByPage: Record<string, number> = {};
     data.forEach(issue => {
-      if (!issuesByPage[issue.page_id]) {
-        issuesByPage[issue.page_id] = 0;
+      const pageId = issue.page_id;
+      if (pageId) {
+        issuesByPage[pageId] = (issuesByPage[pageId] || 0) + 1;
       }
-      issuesByPage[issue.page_id]++;
     });
     
-    console.log('Issues by page:', issuesByPage);
+    console.log('Issues count by page:', issuesByPage);
     
-    // Count issues by type
-    const issuesByType: Record<string, number> = {};
-    data.forEach(issue => {
-      if (!issuesByType[issue.issue_type]) {
-        issuesByType[issue.issue_type] = 0;
-      }
-      issuesByType[issue.issue_type]++;
-    });
-    
-    console.log('Issues by type:', issuesByType);
-  } else {
-    console.warn('No issues data found');
+    // Check if we have any issues with missing page_id or page_url
+    const missingPageData = data.filter(issue => !issue.page_id && !issue.page_url);
+    if (missingPageData.length > 0) {
+      console.warn(`Found ${missingPageData.length} issues with missing page data`);
+    }
+  } catch (error) {
+    console.error('Error while debugging issues data:', error);
   }
 }
 
 /**
- * Write detailed logs about headings data
+ * Debug utility to log headings data structure
  */
 export function debugHeadingsData(data: any[]) {
-  console.log(`Headings data count: ${data?.length || 0}`);
+  if (!data || data.length === 0) {
+    console.warn('No headings data found');
+    return;
+  }
   
-  if (data && data.length > 0) {
-    console.log('Sample heading:', data[0]);
+  try {
+    console.log('Headings data count:', data.length);
+    console.log('First heading example:', data[0]);
     
-    // Count headings by page_id
+    // Create a list of all heading types
+    const headingTypes = [...new Set(data.map(heading => heading.heading_type))];
+    console.log('Heading types found:', headingTypes);
+    
+    // Count headings per page
     const headingsByPage: Record<string, number> = {};
     data.forEach(heading => {
-      if (!headingsByPage[heading.page_id]) {
-        headingsByPage[heading.page_id] = 0;
+      const pageId = heading.page_id;
+      if (pageId) {
+        headingsByPage[pageId] = (headingsByPage[pageId] || 0) + 1;
       }
-      headingsByPage[heading.page_id]++;
     });
     
-    console.log('Headings by page:', headingsByPage);
+    console.log('Headings count by page:', headingsByPage);
     
-    // Count headings by type
-    const headingsByType: Record<string, number> = {};
-    data.forEach(heading => {
-      if (!headingsByType[heading.heading_type]) {
-        headingsByType[heading.heading_type] = 0;
-      }
-      headingsByType[heading.heading_type]++;
-    });
-    
-    console.log('Headings by type:', headingsByType);
-  } else {
-    console.warn('No headings data found');
+    // Check if we have the expected structure
+    const hasPageUrl = data.some(heading => heading.page_url || (heading.seo_crawler_pages && heading.seo_crawler_pages.url));
+    if (!hasPageUrl) {
+      console.warn('No page_url found in headings data');
+    }
+  } catch (error) {
+    console.error('Error while debugging headings data:', error);
   }
 }

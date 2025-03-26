@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlHeading } from '@/services/seo-crawler/types';
@@ -34,52 +33,42 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const [activeTab, setActiveTab] = useState('overview');
   const [showReport, setShowReport] = useState(false);
   
-  // Group issues by type for reporting
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
   const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
 
-  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch crawl result
         const result = await getCrawlResult(crawlId);
         console.log('Crawl result:', result);
         setCrawl(result);
         
-        // Fetch pages
         const pagesData = await getCrawlPages(crawlId);
         console.log('Pages data:', pagesData);
         
-        // Ensure page issues_count are correctly formatted
         const formattedPages = pagesData.map((page: CrawlPage) => ({
           ...page,
           issues_count: Number(page.issues_count || 0)
         }));
         
-        // Fetch issues separately - this is causing problems
         let issuesData: CrawlIssue[] = [];
         try {
           issuesData = await getCrawlIssues(crawlId);
           console.log('Issues data:', issuesData);
           
-          // Initialize with empty arrays to avoid undefined errors
           const tempIssuesByType: Record<string, CrawlIssue[]> = {};
           const tempIssuesBySeverity: Record<string, CrawlIssue[]> = {};
           
-          // Group issues by type and severity
           issuesData.forEach((issue: CrawlIssue) => {
             if (!issue.issue_type || !issue.severity) return;
             
-            // Group by type
             if (!tempIssuesByType[issue.issue_type]) {
               tempIssuesByType[issue.issue_type] = [];
             }
             tempIssuesByType[issue.issue_type].push(issue);
             
-            // Group by severity
             if (!tempIssuesBySeverity[issue.severity]) {
               tempIssuesBySeverity[issue.severity] = [];
             }
@@ -93,25 +82,22 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
           toast.error('Error al cargar los problemas de SEO');
         }
         
-        // Fetch headings data - this is causing problems too
         let headingsData: CrawlHeading[] = [];
         try {
           headingsData = await getCrawlHeadings(crawlId);
           console.log('Headings data:', headingsData);
         } catch (err) {
           console.error('Failed to fetch headings:', err);
-          headingsData = []; // Reset to empty array to avoid undefined errors
+          headingsData = [];
         }
         
         setPages(formattedPages);
         setIssues(issuesData);
         setAllHeadings(headingsData);
         
-        // Set the first page as selected if available
         if (formattedPages.length > 0) {
           setSelectedPage(formattedPages[0]);
           
-          // Also fetch data for the first page since it's selected
           await loadPageData(formattedPages[0], issuesData, headingsData);
         }
       } catch (error) {
@@ -125,20 +111,21 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
     fetchData();
   }, [crawlId]);
   
-  // Load data for a specific page
   const loadPageData = async (page: CrawlPage, allIssues: CrawlIssue[] = [], allHeadings: CrawlHeading[] = []) => {
     if (!page.id) return;
     
     try {
       setIsLoadingPageData(true);
       
-      // Find issues for this page from already loaded issues if possible
-      const filteredPageIssues = allIssues.filter(issue => issue.page_id === page.id);
-      console.log(`Found ${filteredPageIssues.length} issues for page ${page.id} from preloaded data`);
+      const pageIssuesFromAll = allIssues.filter(issue => 
+        issue.page_id === page.id || 
+        (issue.page_url && issue.page_url === page.url)
+      );
       
-      // If no issues found, try to fetch directly
-      let pageIssuesData = filteredPageIssues;
-      if (filteredPageIssues.length === 0) {
+      let pageIssuesData = pageIssuesFromAll;
+      
+      if (pageIssuesFromAll.length === 0 && page.issues_count && page.issues_count > 0) {
+        console.log(`No issues found in preloaded data for page ${page.id}, but issues_count is ${page.issues_count}. Fetching directly...`);
         try {
           const fetchedIssues = await getPageIssues(page.id);
           pageIssuesData = fetchedIssues;
@@ -148,9 +135,9 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         }
       }
       
+      console.log(`Setting ${pageIssuesData.length} issues for page ${page.id}`);
       setPageIssues(pageIssuesData);
       
-      // Fetch links for this page
       try {
         const linksData = await getPageLinks(page.id);
         setPageLinks(linksData);
@@ -159,11 +146,9 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         setPageLinks([]);
       }
       
-      // Try to find headings for this page from allHeadings first
       const filteredPageHeadings = allHeadings.filter(heading => heading.page_id === page.id);
       console.log(`Found ${filteredPageHeadings.length} headings for page ${page.id} from preloaded data`);
       
-      // If no headings found, try to fetch them directly
       if (filteredPageHeadings.length === 0) {
         try {
           const headingsData = await getPageHeadings(page.id);
@@ -184,7 +169,6 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
     }
   };
   
-  // Handle page selection
   const handlePageSelect = async (page: CrawlPage) => {
     setSelectedPage(page);
     await loadPageData(page, issues, allHeadings);

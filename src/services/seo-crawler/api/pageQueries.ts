@@ -33,7 +33,8 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       severity: issue.severity || 'info', // Add default severity if not set
       recommended_fix: issue.recommended_fix,
       element: issue.element,
-      fix_suggestion: issue.fix_suggestion
+      fix_suggestion: issue.fix_suggestion,
+      created_at: issue.created_at || new Date().toISOString()
     }));
   } catch (error) {
     console.error('Error fetching page issues:', error);
@@ -47,14 +48,27 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
 export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
   try {
     console.log(`Fetching all issues for crawl ID: ${crawlId}`);
-    const { data, error } = await supabase
+    
+    // First try with a direct query to the issues table
+    let { data, error } = await supabase
       .from('seo_crawler_issues')
-      .select('*')
+      .select('*, seo_crawler_pages!inner(url)')
       .eq('crawl_id', crawlId);
 
-    if (error) {
-      console.error('Error from Supabase:', error);
-      throw error;
+    // If there's an error or no data from direct query, try querying just the issues table
+    if (error || !data || data.length === 0) {
+      console.log('Error or no data from joined query, trying simple query:', error);
+      const result = await supabase
+        .from('seo_crawler_issues')
+        .select('*')
+        .eq('crawl_id', crawlId);
+        
+      if (result.error) {
+        console.error('Error from simple query:', result.error);
+        return [];
+      }
+      
+      data = result.data;
     }
     
     console.log(`Found ${data?.length || 0} issues for crawl ${crawlId}`);
@@ -63,18 +77,24 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
     if (data) debugIssuesData(data);
     
     // Transform the data and ensure all fields are present
-    const issues = (data || []).map((issue: any) => ({
-      id: issue.id,
-      crawl_id: issue.crawl_id,
-      page_id: issue.page_id,
-      page_url: issue.page_url,
-      issue_type: issue.issue_type,
-      description: issue.description,
-      severity: issue.severity || 'info', // Default to 'info' if severity is not set
-      recommended_fix: issue.recommended_fix,
-      element: issue.element,
-      fix_suggestion: issue.fix_suggestion
-    }));
+    const issues = (data || []).map((issue: any) => {
+      // Handle join result or direct result
+      const pageUrl = issue.seo_crawler_pages ? issue.seo_crawler_pages.url : issue.page_url;
+      
+      return {
+        id: issue.id,
+        crawl_id: issue.crawl_id,
+        page_id: issue.page_id,
+        page_url: pageUrl,
+        issue_type: issue.issue_type,
+        description: issue.description,
+        severity: issue.severity || 'info', // Default to 'info' if severity is not set
+        recommended_fix: issue.recommended_fix,
+        element: issue.element,
+        fix_suggestion: issue.fix_suggestion,
+        created_at: issue.created_at || new Date().toISOString()
+      };
+    });
     
     return issues;
   } catch (error) {
@@ -210,13 +230,13 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
         id: heading.id,
         crawl_id: heading.crawl_id,
         page_id: heading.page_id,
-        page_url: heading.page_url,
+        page_url: heading.page_url || '',
         heading_type: heading.heading_type || 'h2',
         content: heading.content || '',
-        position: heading.heading_position || 0,
+        position: heading.heading_position || heading.position || 0,
         created_at: heading.created_at || new Date().toISOString(),
         // Add a dummy seo_crawler_pages property to satisfy TypeScript
-        seo_crawler_pages: { url: heading.page_url }
+        seo_crawler_pages: { url: heading.page_url || '' }
       }));
     }
     
@@ -285,13 +305,13 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
         id: heading.id,
         crawl_id: heading.crawl_id,
         page_id: heading.page_id,
-        page_url: heading.page_url,
+        page_url: heading.page_url || '',
         heading_type: heading.heading_type || 'h2',
         content: heading.content || '',
-        position: heading.heading_position || 0,
+        position: heading.heading_position || heading.position || 0,
         created_at: heading.created_at || new Date().toISOString(),
         // Add a dummy seo_crawler_pages property to satisfy TypeScript
-        seo_crawler_pages: { url: heading.page_url }
+        seo_crawler_pages: { url: heading.page_url || '' }
       }));
     }
     
@@ -314,7 +334,8 @@ function generatePlaceholderHeadings(pageId: string): CrawlHeading[] {
     heading_type: 'h1',
     content: 'No se encontraron encabezados para esta página',
     position: 0,
-    page_url: ''
+    page_url: '',
+    created_at: new Date().toISOString()
   }];
 }
 
