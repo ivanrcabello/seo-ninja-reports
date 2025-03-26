@@ -14,16 +14,16 @@ export async function processHtml(
   try {
     console.log(`Processing HTML for URL: ${url}, HTML length: ${html.length} characters`);
     
-    // Create a page record in the database
+    // Create a page record in the database - using existing columns only
     console.log(`Creating page record in database for crawl_id: ${crawlId}`);
     const { data: pageData, error: pageError } = await supabase
       .from('seo_crawler_pages')
       .insert({
         crawl_id: crawlId,
         url: url,
-        status: 'analyzed',
-        content_type: 'text/html',
-        analyzed_at: new Date().toISOString()
+        status_code: 200,
+        content_type: 'text/html'
+        // Using existing fields only, removed analyzed_at
       })
       .select('id')
       .single();

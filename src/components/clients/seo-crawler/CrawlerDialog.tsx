@@ -11,9 +11,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { startCrawl } from '@/services/seo-crawler';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CrawlerDialogProps {
   clientId: string;
@@ -30,9 +31,11 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
 }) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value);
+    setErrorMessage(null);
   };
   
   const handleStartCrawl = async () => {
@@ -51,6 +54,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
     console.log(`Starting crawl with normalized URL: ${normalizedUrl}`);
     
     setIsLoading(true);
+    setErrorMessage(null);
     
     try {
       console.log(`Starting crawl for normalized URL: ${normalizedUrl}`);
@@ -65,11 +69,14 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
           onSuccess();
         }
       } else {
+        setErrorMessage(result.message || 'Respuesta vacía o inválida');
         toast.error(`Error: ${result.message || 'Respuesta vacía o inválida'}`);
         console.error('Respuesta inválida:', result);
       }
     } catch (error: any) {
-      toast.error(`Error al iniciar análisis SEO: ${error.message}`);
+      const errorMsg = `Error al iniciar análisis SEO: ${error.message}`;
+      setErrorMessage(errorMsg);
+      toast.error(errorMsg);
       console.error('Error completo:', error);
     } finally {
       setIsLoading(false);
@@ -85,6 +92,13 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
             Introduce la URL del sitio web que quieres analizar. Asegúrate de incluir el protocolo (http:// o https://).
           </DialogDescription>
         </DialogHeader>
+        
+        {errorMessage && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
         
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
