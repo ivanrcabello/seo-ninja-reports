@@ -36,6 +36,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   
   // Group issues by type for reporting
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
+  const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
 
   // Fetch data
   useEffect(() => {
@@ -58,63 +59,60 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
           issues_count: Number(page.issues_count || 0)
         }));
         
-        // Fetch issues separately
-        const issuesData = await getCrawlIssues(crawlId);
-        console.log('Issues data:', issuesData);
+        // Fetch issues separately - this is causing problems
+        let issuesData: CrawlIssue[] = [];
+        try {
+          issuesData = await getCrawlIssues(crawlId);
+          console.log('Issues data:', issuesData);
+          
+          // Initialize with empty arrays to avoid undefined errors
+          const tempIssuesByType: Record<string, CrawlIssue[]> = {};
+          const tempIssuesBySeverity: Record<string, CrawlIssue[]> = {};
+          
+          // Group issues by type and severity
+          issuesData.forEach((issue: CrawlIssue) => {
+            if (!issue.issue_type || !issue.severity) return;
+            
+            // Group by type
+            if (!tempIssuesByType[issue.issue_type]) {
+              tempIssuesByType[issue.issue_type] = [];
+            }
+            tempIssuesByType[issue.issue_type].push(issue);
+            
+            // Group by severity
+            if (!tempIssuesBySeverity[issue.severity]) {
+              tempIssuesBySeverity[issue.severity] = [];
+            }
+            tempIssuesBySeverity[issue.severity].push(issue);
+          });
+          
+          setIssuesByType(tempIssuesByType);
+          setIssuesBySeverity(tempIssuesBySeverity);
+        } catch (err) {
+          console.error('Failed to fetch issues:', err);
+          toast.error('Error al cargar los problemas de SEO');
+        }
         
-        // Fetch headings data
-        const headingsData = await getCrawlHeadings(crawlId);
-        console.log('Headings data:', headingsData);
+        // Fetch headings data - this is causing problems too
+        let headingsData: CrawlHeading[] = [];
+        try {
+          headingsData = await getCrawlHeadings(crawlId);
+          console.log('Headings data:', headingsData);
+        } catch (err) {
+          console.error('Failed to fetch headings:', err);
+          headingsData = []; // Reset to empty array to avoid undefined errors
+        }
         
         setPages(formattedPages);
         setIssues(issuesData);
         setAllHeadings(headingsData);
         
-        // Group issues by type
-        const groupedIssues: Record<string, CrawlIssue[]> = {};
-        issuesData.forEach((issue: CrawlIssue) => {
-          if (!groupedIssues[issue.issue_type]) {
-            groupedIssues[issue.issue_type] = [];
-          }
-          groupedIssues[issue.issue_type].push(issue);
-        });
-        
-        console.log('Grouped issues:', groupedIssues);
-        setIssuesByType(groupedIssues);
-        
         // Set the first page as selected if available
         if (formattedPages.length > 0) {
           setSelectedPage(formattedPages[0]);
           
-          // Also fetch links for the first page since it's selected
-          if (formattedPages[0].id) {
-            const pageLinksData = await getPageLinks(formattedPages[0].id);
-            setPageLinks(pageLinksData);
-            
-            // Set page issues for the first page
-            const firstPageIssues = issuesData.filter((issue: CrawlIssue) => 
-              issue.page_id === formattedPages[0].id
-            );
-            setPageIssues(firstPageIssues);
-            
-            // Set page headings for the first page
-            const firstPageHeadings = headingsData.filter((heading: CrawlHeading) => 
-              heading.page_id === formattedPages[0].id
-            );
-            
-            // If no headings found through filter, try to fetch directly
-            if (firstPageHeadings.length === 0) {
-              try {
-                const fetchedHeadings = await getPageHeadings(formattedPages[0].id);
-                setPageHeadings(fetchedHeadings);
-              } catch (err) {
-                console.error('Error fetching first page headings:', err);
-                setPageHeadings([]);
-              }
-            } else {
-              setPageHeadings(firstPageHeadings);
-            }
-          }
+          // Also fetch data for the first page since it's selected
+          await loadPageData(formattedPages[0], issuesData, headingsData);
         }
       } catch (error) {
         console.error('Error fetching crawl data:', error);
@@ -127,49 +125,69 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
     fetchData();
   }, [crawlId]);
   
-  // Handle page selection
-  const handlePageSelect = async (page: CrawlPage) => {
-    setSelectedPage(page);
+  // Load data for a specific page
+  const loadPageData = async (page: CrawlPage, allIssues: CrawlIssue[] = [], allHeadings: CrawlHeading[] = []) => {
+    if (!page.id) return;
     
-    // Load page-specific issues and links
     try {
       setIsLoadingPageData(true);
       
-      // Find issues for this page
-      const filteredPageIssues = issues.filter(issue => issue.page_id === page.id);
-      console.log(`Found ${filteredPageIssues.length} issues for page ${page.id}`, filteredPageIssues);
-      setPageIssues(filteredPageIssues);
+      // Find issues for this page from already loaded issues if possible
+      const filteredPageIssues = allIssues.filter(issue => issue.page_id === page.id);
+      console.log(`Found ${filteredPageIssues.length} issues for page ${page.id} from preloaded data`);
       
-      // Fetch links for this page
-      if (page.id) {
-        const linksData = await getPageLinks(page.id);
-        setPageLinks(linksData);
-        
-        // Try to find headings for this page from allHeadings first
-        const filteredPageHeadings = allHeadings.filter(heading => heading.page_id === page.id);
-        
-        // If no headings found, try to fetch them
-        if (filteredPageHeadings.length === 0) {
-          try {
-            const headingsData = await getPageHeadings(page.id);
-            console.log(`Fetched ${headingsData.length} headings for page ${page.id}`, headingsData);
-            setPageHeadings(headingsData);
-          } catch (err) {
-            console.error('Error fetching page headings:', err);
-            setPageHeadings([]);
-          }
-        } else {
-          console.log(`Found ${filteredPageHeadings.length} headings for page ${page.id} in allHeadings`, filteredPageHeadings);
-          setPageHeadings(filteredPageHeadings);
+      // If no issues found, try to fetch directly
+      let pageIssuesData = filteredPageIssues;
+      if (filteredPageIssues.length === 0) {
+        try {
+          const fetchedIssues = await getPageIssues(page.id);
+          pageIssuesData = fetchedIssues;
+          console.log(`Fetched ${fetchedIssues.length} issues for page ${page.id}`);
+        } catch (err) {
+          console.error('Error fetching page issues directly:', err);
         }
       }
       
+      setPageIssues(pageIssuesData);
+      
+      // Fetch links for this page
+      try {
+        const linksData = await getPageLinks(page.id);
+        setPageLinks(linksData);
+      } catch (err) {
+        console.error('Error fetching page links:', err);
+        setPageLinks([]);
+      }
+      
+      // Try to find headings for this page from allHeadings first
+      const filteredPageHeadings = allHeadings.filter(heading => heading.page_id === page.id);
+      console.log(`Found ${filteredPageHeadings.length} headings for page ${page.id} from preloaded data`);
+      
+      // If no headings found, try to fetch them directly
+      if (filteredPageHeadings.length === 0) {
+        try {
+          const headingsData = await getPageHeadings(page.id);
+          console.log(`Fetched ${headingsData.length} headings for page ${page.id}`);
+          setPageHeadings(headingsData);
+        } catch (err) {
+          console.error('Error fetching page headings directly:', err);
+          setPageHeadings([]);
+        }
+      } else {
+        setPageHeadings(filteredPageHeadings);
+      }
     } catch (error) {
       console.error('Error loading page data:', error);
       toast.error('Error al cargar los datos de la página');
     } finally {
       setIsLoadingPageData(false);
     }
+  };
+  
+  // Handle page selection
+  const handlePageSelect = async (page: CrawlPage) => {
+    setSelectedPage(page);
+    await loadPageData(page, issues, allHeadings);
   };
 
   if (isLoading) {
@@ -220,6 +238,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
           pageLinks={pageLinks}
           pageHeadings={pageHeadings}
           issuesByType={issuesByType}
+          issuesBySeverity={issuesBySeverity}
           onPageSelect={handlePageSelect}
           isLoadingPageData={isLoadingPageData}
         />

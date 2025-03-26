@@ -1001,6 +1001,65 @@ export type Database = {
           },
         ]
       }
+      seo_crawler_headings: {
+        Row: {
+          content: string
+          crawl_id: string | null
+          created_at: string | null
+          heading_type: string
+          id: string
+          page_id: string | null
+          position: number
+        }
+        Insert: {
+          content: string
+          crawl_id?: string | null
+          created_at?: string | null
+          heading_type: string
+          id?: string
+          page_id?: string | null
+          position?: number
+        }
+        Update: {
+          content?: string
+          crawl_id?: string | null
+          created_at?: string | null
+          heading_type?: string
+          id?: string
+          page_id?: string | null
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawler_headings_crawl_id_fkey"
+            columns: ["crawl_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_crawls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_headings_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "duplicate_content_view"
+            referencedColumns: ["page2_id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_headings_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "duplicate_content_view"
+            referencedColumns: ["page1_id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_headings_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seo_crawler_issues: {
         Row: {
           category: string | null

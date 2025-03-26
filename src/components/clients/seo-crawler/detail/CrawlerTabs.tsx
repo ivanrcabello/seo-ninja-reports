@@ -14,6 +14,7 @@ interface CrawlerTabsProps {
   pageLinks: CrawlLink[];
   pageHeadings: CrawlHeading[];
   issuesByType: Record<string, CrawlIssue[]>;
+  issuesBySeverity?: Record<string, CrawlIssue[]>;
   onPageSelect: (page: CrawlPage) => void;
   isLoadingPageData?: boolean;
 }
@@ -25,6 +26,7 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
   pageLinks,
   pageHeadings = [],
   issuesByType,
+  issuesBySeverity = {},
   onPageSelect,
   isLoadingPageData = false
 }) => {
@@ -51,6 +53,7 @@ const CrawlerTabs: React.FC<CrawlerTabsProps> = ({
       <TabsContent value="issues" className="mt-6">
         <IssuesTab 
           issuesByType={issuesByType} 
+          issuesBySeverity={issuesBySeverity}
           pageIssues={pageIssues} 
           selectedPage={selectedPage}
           isLoading={isLoadingPageData}
