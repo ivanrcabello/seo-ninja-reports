@@ -34,12 +34,11 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         total_external_links: crawl.total_external_links || 0,
         total_broken_links: crawl.total_broken_links || 0,
         error_message: crawl.error_message,
-        // Cast the settings JSON to CrawlSettings type
         settings: crawl.settings as unknown as CrawlSettings,
         // Add the additional properties that components use
         inserted_at: crawl.inserted_at,
-        // Safely handle total_time_seconds - use optional chaining and nullish coalescing
-        total_time_seconds: crawl?.total_time_seconds !== undefined ? Number(crawl.total_time_seconds) : undefined,
+        // Handle total_time_seconds safely with proper type assertions
+        total_time_seconds: typeof crawl.total_time_seconds !== 'undefined' ? Number(crawl.total_time_seconds) : undefined,
         // Also add issues_count as an alias for total_issues for compatibility
         issues_count: crawl.total_issues || 0
       };
@@ -88,8 +87,8 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult | nul
       settings: data.settings as unknown as CrawlSettings,
       // Add the additional properties that components use
       inserted_at: data.inserted_at,
-      // Safely handle total_time_seconds - use optional chaining and nullish coalescing
-      total_time_seconds: data?.total_time_seconds !== undefined ? Number(data.total_time_seconds) : undefined,
+      // Handle total_time_seconds safely with proper type assertions
+      total_time_seconds: typeof data.total_time_seconds !== 'undefined' ? Number(data.total_time_seconds) : undefined,
       // Also add issues_count as an alias for total_issues for compatibility
       issues_count: data.total_issues || 0
     };
