@@ -140,7 +140,7 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
 export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
   try {
     console.log(`Fetching headings for page ID: ${pageId}`);
-    // Using a raw SQL query via rpc to avoid type issues
+    // Using the RPC function to get page headings
     const { data, error } = await supabase
       .rpc('get_page_headings', { page_id_param: pageId });
 
@@ -168,7 +168,7 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
 export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]> {
   try {
     console.log(`Fetching all headings for crawl ID: ${crawlId}`);
-    // Using a raw SQL query via rpc to avoid type issues
+    // Using the RPC function to get crawl headings
     const { data, error } = await supabase
       .rpc('get_crawl_headings', { crawl_id_param: crawlId });
 

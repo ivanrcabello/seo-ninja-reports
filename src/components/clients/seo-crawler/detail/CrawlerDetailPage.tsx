@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlHeading } from '@/services/seo-crawler/types';
 import { getCrawlResult, getCrawlPages } from '@/services/seo-crawler/api';
-import { getCrawlIssues, getPageHeadings, getCrawlHeadings } from '@/services/seo-crawler/api/pageQueries';
-import { getPageLinks } from '@/services/seo-crawler/additionalApi';
+import { getCrawlIssues, getPageHeadings, getCrawlHeadings, getPageLinks } from '@/services/seo-crawler/api/pageQueries';
 import CrawlerDetailHeader from './CrawlerDetailHeader';
 import CrawlerTabs from './CrawlerTabs';
 import CrawlerReportView from '@/components/reports/report-viewer/CrawlerReportView';
@@ -46,12 +45,11 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         
         // Fetch crawl result
         const result = await getCrawlResult(crawlId);
+        console.log('Crawl result:', result);
         setCrawl(result);
         
-        // Fetch pages and issues
+        // Fetch pages
         const pagesData = await getCrawlPages(crawlId);
-        
-        // Log the data to help with debugging
         console.log('Pages data:', pagesData);
         
         // Ensure page issues_count are correctly formatted
@@ -103,7 +101,19 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
             const firstPageHeadings = headingsData.filter((heading: CrawlHeading) => 
               heading.page_id === formattedPages[0].id
             );
-            setPageHeadings(firstPageHeadings);
+            
+            // If no headings found through filter, try to fetch directly
+            if (firstPageHeadings.length === 0) {
+              try {
+                const fetchedHeadings = await getPageHeadings(formattedPages[0].id);
+                setPageHeadings(fetchedHeadings);
+              } catch (err) {
+                console.error('Error fetching first page headings:', err);
+                setPageHeadings([]);
+              }
+            } else {
+              setPageHeadings(firstPageHeadings);
+            }
           }
         }
       } catch (error) {
@@ -135,19 +145,21 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         const linksData = await getPageLinks(page.id);
         setPageLinks(linksData);
         
-        // Find headings for this page
+        // Try to find headings for this page from allHeadings first
         const filteredPageHeadings = allHeadings.filter(heading => heading.page_id === page.id);
         
         // If no headings found, try to fetch them
         if (filteredPageHeadings.length === 0) {
           try {
             const headingsData = await getPageHeadings(page.id);
+            console.log(`Fetched ${headingsData.length} headings for page ${page.id}`, headingsData);
             setPageHeadings(headingsData);
           } catch (err) {
             console.error('Error fetching page headings:', err);
             setPageHeadings([]);
           }
         } else {
+          console.log(`Found ${filteredPageHeadings.length} headings for page ${page.id} in allHeadings`, filteredPageHeadings);
           setPageHeadings(filteredPageHeadings);
         }
       }
