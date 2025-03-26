@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlIssue, CrawlLink, CrawlHeading } from '../types';
 import { debugIssuesData, debugHeadingsData } from './debugUtils';
@@ -191,31 +190,37 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
     // Debug the data to see what we're getting
     if (data) debugHeadingsData(data);
     
-    return (data || []).map((heading: any) => {
-      // If data comes from direct query
-      if (heading.seo_crawler_pages) {
-        return {
+    if (data) {
+      // Handle data from direct query
+      if (data[0] && data[0].seo_crawler_pages) {
+        return data.map((heading: any) => ({
           id: heading.id,
           crawl_id: heading.crawl_id,
           page_id: heading.page_id,
           page_url: heading.seo_crawler_pages.url,
           heading_type: heading.heading_type || 'h2',
           content: heading.content || '',
-          position: heading.position || 0
-        };
+          position: heading.position || 0,
+          created_at: heading.created_at || new Date().toISOString()
+        }));
       }
       
-      // If data comes from RPC
-      return {
+      // Handle data from RPC
+      return data.map((heading: any) => ({
         id: heading.id,
         crawl_id: heading.crawl_id,
         page_id: heading.page_id,
         page_url: heading.page_url,
         heading_type: heading.heading_type || 'h2',
         content: heading.content || '',
-        position: heading.heading_position || 0
-      };
-    });
+        position: heading.heading_position || 0,
+        created_at: heading.created_at || new Date().toISOString(),
+        // Add a dummy seo_crawler_pages property to satisfy TypeScript
+        seo_crawler_pages: { url: heading.page_url }
+      }));
+    }
+    
+    return [];
   } catch (error) {
     console.error('Error fetching page headings:', error);
     
@@ -260,31 +265,37 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
     // Debug the data to see what we're getting
     if (data) debugHeadingsData(data);
     
-    return (data || []).map((heading: any) => {
-      // If data comes from direct query
-      if (heading.seo_crawler_pages) {
-        return {
+    if (data) {
+      // Handle data from direct query
+      if (data[0] && data[0].seo_crawler_pages) {
+        return data.map((heading: any) => ({
           id: heading.id,
           crawl_id: heading.crawl_id,
           page_id: heading.page_id,
           page_url: heading.seo_crawler_pages.url,
           heading_type: heading.heading_type || 'h2',
           content: heading.content || '',
-          position: heading.position || 0
-        };
+          position: heading.position || 0,
+          created_at: heading.created_at || new Date().toISOString()
+        }));
       }
       
-      // If data comes from RPC
-      return {
+      // Handle data from RPC
+      return data.map((heading: any) => ({
         id: heading.id,
         crawl_id: heading.crawl_id,
         page_id: heading.page_id,
         page_url: heading.page_url,
         heading_type: heading.heading_type || 'h2',
         content: heading.content || '',
-        position: heading.heading_position || 0
-      };
-    });
+        position: heading.heading_position || 0,
+        created_at: heading.created_at || new Date().toISOString(),
+        // Add a dummy seo_crawler_pages property to satisfy TypeScript
+        seo_crawler_pages: { url: heading.page_url }
+      }));
+    }
+    
+    return [];
   } catch (error) {
     console.error('Error fetching crawl headings:', error);
     

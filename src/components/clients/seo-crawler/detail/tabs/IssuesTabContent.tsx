@@ -14,6 +14,7 @@ import SeverityBadge from '../SeverityBadge';
 
 interface IssuesTabContentProps {
   issuesByType: Record<string, CrawlIssue[]>;
+  issuesBySeverity?: Record<string, CrawlIssue[]>;
   pageIssues: CrawlIssue[];
   selectedPage: CrawlPage | null;
 }
