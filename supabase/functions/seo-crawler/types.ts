@@ -9,8 +9,11 @@ export type SupabaseInstance = SupabaseClient;
 export interface PageCrawlResult {
   pageId: string;
   url: string;
-  statusCode: number;
+  title?: string;
+  metaDescription?: string;
+  h1?: string;
   issues: number;
+  statusCode: number;
 }
 
 // SEO issue definition
@@ -18,7 +21,7 @@ export interface SeoIssue {
   page_id: string;
   issue_type: string;
   description: string;
-  severity: 'critical' | 'major' | 'minor' | 'info';
+  severity: 'critical' | 'high' | 'medium' | 'minor' | 'low' | 'info';
   recommended_fix?: string;
   element?: string;
 }

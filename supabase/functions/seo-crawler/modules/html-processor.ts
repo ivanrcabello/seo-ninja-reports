@@ -14,17 +14,39 @@ export async function processHtml(
   try {
     console.log(`Processing HTML for URL: ${url}, HTML length: ${html.length} characters`);
     
-    // Create a page record in the database - using existing columns only
+    // First check if the table has the correct schema
+    try {
+      // Get column information to ensure we're only using existing columns
+      const { data: columns, error: columnsError } = await supabase
+        .from('seo_crawler_pages')
+        .select('*')
+        .limit(1);
+        
+      if (columnsError) {
+        console.error(`Error checking table schema: ${columnsError.message}`);
+      } else {
+        console.log(`Table schema checked, found ${columns ? 'data' : 'no data'}`);
+      }
+    } catch (schemaError) {
+      console.error('Error checking schema:', schemaError);
+    }
+    
+    // Create a page record in the database - using only columns we know exist
     console.log(`Creating page record in database for crawl_id: ${crawlId}`);
+    
+    // Build insert object with only guaranteed fields
+    const pageInsert = {
+      crawl_id: crawlId,
+      url: url,
+      status_code: 200,
+      content_type: 'text/html'
+    };
+    
+    console.log('Inserting page with data:', JSON.stringify(pageInsert));
+    
     const { data: pageData, error: pageError } = await supabase
       .from('seo_crawler_pages')
-      .insert({
-        crawl_id: crawlId,
-        url: url,
-        status_code: 200,
-        content_type: 'text/html'
-        // Using existing fields only, removed analyzed_at
-      })
+      .insert(pageInsert)
       .select('id')
       .single();
     
@@ -186,14 +208,18 @@ export async function processHtml(
     // Update the page record with the analyzed content
     console.log('Updating page record with analysis results');
     try {
+      const updateObject = {
+        title: title || '',
+        meta_description: metaDescription || '',
+        h1: h1 || '',
+        issues_count: issuesCount
+      };
+      
+      console.log('Updating page with data:', JSON.stringify(updateObject));
+      
       const { error: updateError } = await supabase
         .from('seo_crawler_pages')
-        .update({
-          title: title || '',
-          meta_description: metaDescription || '',
-          h1: h1 || '',
-          issues_count: issuesCount
-        })
+        .update(updateObject)
         .eq('id', pageId);
         
       if (updateError) {
@@ -212,7 +238,8 @@ export async function processHtml(
       title: title || '',
       metaDescription: metaDescription || '',
       h1: h1 || '',
-      issues: issuesCount
+      issues: issuesCount,
+      statusCode: 200 // Adding statusCode to match the type definition
     };
     
   } catch (error) {
