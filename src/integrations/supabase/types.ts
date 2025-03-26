@@ -911,13 +911,19 @@ export type Database = {
       }
       seo_crawler_crawls: {
         Row: {
+          avg_page_load_time_ms: number | null
           client_id: string | null
           completed_at: string | null
+          crawl_depth: number | null
           domain: string
+          duplicate_content_count: number | null
           error_message: string | null
           id: string
           inserted_at: string | null
+          mobile_friendly_score: number | null
           pages_crawled: number | null
+          performance_score: number | null
+          schema_markup_count: number | null
           settings: Json
           started_at: string | null
           status: string
@@ -932,13 +938,19 @@ export type Database = {
           url: string
         }
         Insert: {
+          avg_page_load_time_ms?: number | null
           client_id?: string | null
           completed_at?: string | null
+          crawl_depth?: number | null
           domain: string
+          duplicate_content_count?: number | null
           error_message?: string | null
           id?: string
           inserted_at?: string | null
+          mobile_friendly_score?: number | null
           pages_crawled?: number | null
+          performance_score?: number | null
+          schema_markup_count?: number | null
           settings: Json
           started_at?: string | null
           status?: string
@@ -953,13 +965,19 @@ export type Database = {
           url: string
         }
         Update: {
+          avg_page_load_time_ms?: number | null
           client_id?: string | null
           completed_at?: string | null
+          crawl_depth?: number | null
           domain?: string
+          duplicate_content_count?: number | null
           error_message?: string | null
           id?: string
           inserted_at?: string | null
+          mobile_friendly_score?: number | null
           pages_crawled?: number | null
+          performance_score?: number | null
+          schema_markup_count?: number | null
           settings?: Json
           started_at?: string | null
           status?: string
@@ -985,6 +1003,7 @@ export type Database = {
       }
       seo_crawler_issues: {
         Row: {
+          category: string | null
           crawl_id: string | null
           description: string
           element: string | null
@@ -997,6 +1016,7 @@ export type Database = {
           severity: string
         }
         Insert: {
+          category?: string | null
           crawl_id?: string | null
           description: string
           element?: string | null
@@ -1009,6 +1029,7 @@ export type Database = {
           severity: string
         }
         Update: {
+          category?: string | null
           crawl_id?: string | null
           description?: string
           element?: string | null
@@ -1032,6 +1053,20 @@ export type Database = {
             foreignKeyName: "seo_crawler_issues_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
+            referencedRelation: "duplicate_content_view"
+            referencedColumns: ["page2_id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_issues_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "duplicate_content_view"
+            referencedColumns: ["page1_id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_issues_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
             referencedRelation: "seo_crawler_pages"
             referencedColumns: ["id"]
           },
@@ -1045,6 +1080,10 @@ export type Database = {
           id: string
           is_broken: boolean | null
           is_internal: boolean | null
+          link_location: string | null
+          link_text: string | null
+          link_type: string | null
+          nofollow: boolean | null
           page_id: string | null
           rel_attributes: string[] | null
           status_code: number | null
@@ -1057,6 +1096,10 @@ export type Database = {
           id?: string
           is_broken?: boolean | null
           is_internal?: boolean | null
+          link_location?: string | null
+          link_text?: string | null
+          link_type?: string | null
+          nofollow?: boolean | null
           page_id?: string | null
           rel_attributes?: string[] | null
           status_code?: number | null
@@ -1069,6 +1112,10 @@ export type Database = {
           id?: string
           is_broken?: boolean | null
           is_internal?: boolean | null
+          link_location?: string | null
+          link_text?: string | null
+          link_type?: string | null
+          nofollow?: boolean | null
           page_id?: string | null
           rel_attributes?: string[] | null
           status_code?: number | null
@@ -1086,6 +1133,20 @@ export type Database = {
             foreignKeyName: "seo_crawler_links_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
+            referencedRelation: "duplicate_content_view"
+            referencedColumns: ["page2_id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_links_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "duplicate_content_view"
+            referencedColumns: ["page1_id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_links_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
             referencedRelation: "seo_crawler_pages"
             referencedColumns: ["id"]
           },
@@ -1094,18 +1155,25 @@ export type Database = {
       seo_crawler_pages: {
         Row: {
           canonical_url: string | null
+          content_hash: string | null
           content_length: number | null
+          content_similarity_score: number | null
+          content_text: string | null
           content_type: string | null
           crawl_id: string | null
           crawled_at: string | null
+          dom_load_time_ms: number | null
+          dom_nodes_count: number | null
           external_links_count: number | null
           h1: string | null
           h2_count: number | null
           h3_count: number | null
           has_schema_markup: boolean | null
+          headings: Json | null
           hreflang_count: number | null
           id: string
           image_count: number | null
+          image_data: Json | null
           images_without_alt: number | null
           internal_links_count: number | null
           is_indexable: boolean | null
@@ -1113,31 +1181,44 @@ export type Database = {
           level: number | null
           load_time_ms: number | null
           meta_description: string | null
+          meta_keywords: string | null
           meta_robots: string | null
           mobile_friendly: boolean | null
+          open_graph_data: Json | null
           page_size_kb: number | null
           redirect_url: string | null
+          response_time_ms: number | null
           robots_directives: string | null
+          schema_markup: Json | null
+          similar_page_id: string | null
           status_code: number | null
           text_ratio: number | null
           title: string | null
+          twitter_card_data: Json | null
           url: string
           word_count: number | null
         }
         Insert: {
           canonical_url?: string | null
+          content_hash?: string | null
           content_length?: number | null
+          content_similarity_score?: number | null
+          content_text?: string | null
           content_type?: string | null
           crawl_id?: string | null
           crawled_at?: string | null
+          dom_load_time_ms?: number | null
+          dom_nodes_count?: number | null
           external_links_count?: number | null
           h1?: string | null
           h2_count?: number | null
           h3_count?: number | null
           has_schema_markup?: boolean | null
+          headings?: Json | null
           hreflang_count?: number | null
           id?: string
           image_count?: number | null
+          image_data?: Json | null
           images_without_alt?: number | null
           internal_links_count?: number | null
           is_indexable?: boolean | null
@@ -1145,31 +1226,44 @@ export type Database = {
           level?: number | null
           load_time_ms?: number | null
           meta_description?: string | null
+          meta_keywords?: string | null
           meta_robots?: string | null
           mobile_friendly?: boolean | null
+          open_graph_data?: Json | null
           page_size_kb?: number | null
           redirect_url?: string | null
+          response_time_ms?: number | null
           robots_directives?: string | null
+          schema_markup?: Json | null
+          similar_page_id?: string | null
           status_code?: number | null
           text_ratio?: number | null
           title?: string | null
+          twitter_card_data?: Json | null
           url: string
           word_count?: number | null
         }
         Update: {
           canonical_url?: string | null
+          content_hash?: string | null
           content_length?: number | null
+          content_similarity_score?: number | null
+          content_text?: string | null
           content_type?: string | null
           crawl_id?: string | null
           crawled_at?: string | null
+          dom_load_time_ms?: number | null
+          dom_nodes_count?: number | null
           external_links_count?: number | null
           h1?: string | null
           h2_count?: number | null
           h3_count?: number | null
           has_schema_markup?: boolean | null
+          headings?: Json | null
           hreflang_count?: number | null
           id?: string
           image_count?: number | null
+          image_data?: Json | null
           images_without_alt?: number | null
           internal_links_count?: number | null
           is_indexable?: boolean | null
@@ -1177,14 +1271,20 @@ export type Database = {
           level?: number | null
           load_time_ms?: number | null
           meta_description?: string | null
+          meta_keywords?: string | null
           meta_robots?: string | null
           mobile_friendly?: boolean | null
+          open_graph_data?: Json | null
           page_size_kb?: number | null
           redirect_url?: string | null
+          response_time_ms?: number | null
           robots_directives?: string | null
+          schema_markup?: Json | null
+          similar_page_id?: string | null
           status_code?: number | null
           text_ratio?: number | null
           title?: string | null
+          twitter_card_data?: Json | null
           url?: string
           word_count?: number | null
         }
@@ -1194,6 +1294,65 @@ export type Database = {
             columns: ["crawl_id"]
             isOneToOne: false
             referencedRelation: "seo_crawler_crawls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawler_performance: {
+        Row: {
+          crawl_id: string | null
+          created_at: string | null
+          id: string
+          metric_name: string
+          metric_unit: string | null
+          metric_value: number | null
+          page_id: string | null
+        }
+        Insert: {
+          crawl_id?: string | null
+          created_at?: string | null
+          id?: string
+          metric_name: string
+          metric_unit?: string | null
+          metric_value?: number | null
+          page_id?: string | null
+        }
+        Update: {
+          crawl_id?: string | null
+          created_at?: string | null
+          id?: string
+          metric_name?: string
+          metric_unit?: string | null
+          metric_value?: number | null
+          page_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawler_performance_crawl_id_fkey"
+            columns: ["crawl_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_crawls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_performance_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "duplicate_content_view"
+            referencedColumns: ["page2_id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_performance_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "duplicate_content_view"
+            referencedColumns: ["page1_id"]
+          },
+          {
+            foreignKeyName: "seo_crawler_performance_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -1256,6 +1415,44 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_crawler_visualizations: {
+        Row: {
+          crawl_id: string | null
+          created_at: string | null
+          data: Json
+          description: string | null
+          id: string
+          title: string
+          visualization_type: string
+        }
+        Insert: {
+          crawl_id?: string | null
+          created_at?: string | null
+          data: Json
+          description?: string | null
+          id?: string
+          title: string
+          visualization_type: string
+        }
+        Update: {
+          crawl_id?: string | null
+          created_at?: string | null
+          data?: Json
+          description?: string | null
+          id?: string
+          title?: string
+          visualization_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_crawler_visualizations_crawl_id_fkey"
+            columns: ["crawl_id"]
+            isOneToOne: false
+            referencedRelation: "seo_crawler_crawls"
             referencedColumns: ["id"]
           },
         ]
@@ -1377,6 +1574,16 @@ export type Database = {
       }
     }
     Views: {
+      duplicate_content_view: {
+        Row: {
+          content_similarity_score: number | null
+          page1_id: string | null
+          page1_url: string | null
+          page2_id: string | null
+          page2_url: string | null
+        }
+        Relationships: []
+      }
       public_contracts: {
         Row: {
           admin_signature: string | null
