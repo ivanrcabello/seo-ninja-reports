@@ -21,7 +21,7 @@ const CrawlerSummary: React.FC<CrawlerSummaryProps> = ({
   const lowIssues = issuesBySeverity.low?.length || 0;
 
   // Use appropriate date field with fallbacks
-  const dateStr = crawlResult.crawl_date || crawlResult.started_at || crawlResult.inserted_at;
+  const dateStr = crawlResult.started_at || crawlResult.inserted_at;
   const dateFormatted = dateStr 
     ? format(new Date(dateStr), 'PPP, HH:mm', { locale: es })
     : 'Fecha desconocida';
@@ -50,7 +50,7 @@ const CrawlerSummary: React.FC<CrawlerSummaryProps> = ({
             <CardContent className="p-6">
               <div className="flex flex-col items-center">
                 <h3 className="text-lg font-semibold mb-2">Problemas detectados</h3>
-                <p className="text-3xl font-bold">{crawlResult.issues_count || crawlResult.total_issues}</p>
+                <p className="text-3xl font-bold">{crawlResult.total_issues}</p>
                 <div className="flex items-center gap-2 mt-2 text-sm">
                   <span className="text-red-500">{highIssues} altos</span>
                   <span>·</span>

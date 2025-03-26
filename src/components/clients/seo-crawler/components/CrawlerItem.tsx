@@ -15,7 +15,7 @@ interface CrawlerItemProps {
 
 const CrawlerItem: React.FC<CrawlerItemProps> = ({ crawl, onClick, onDelete }) => {
   const formatCrawlDate = (crawl: CrawlResult) => {
-    const dateStr = crawl.crawl_date || crawl.started_at || crawl.inserted_at;
+    const dateStr = crawl.started_at || crawl.inserted_at;
     if (!dateStr) return 'Fecha desconocida';
     return format(new Date(dateStr), 'd MMM yyyy', { locale: es });
   };

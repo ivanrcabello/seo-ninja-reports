@@ -18,10 +18,8 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
     // Map database crawls to CrawlResult type with the fields needed by components
     return (data || []).map(crawl => ({
       ...crawl as unknown as CrawlResult,
-      crawl_date: crawl.started_at,
-      issues_count: crawl.total_issues,
       // Set total_time_seconds to 0 if it doesn't exist in the database
-      total_time_seconds: 0 
+      total_time_seconds: crawl.total_time_seconds || 0 
     }));
   } catch (error) {
     console.error('Error fetching crawl results:', error);
@@ -45,10 +43,8 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult | nul
     // Convert database crawl to CrawlResult type with fields needed by components
     return data ? {
       ...data as unknown as CrawlResult, 
-      crawl_date: data.started_at,
-      issues_count: data.total_issues,
       // Set total_time_seconds to 0 if it doesn't exist in the database
-      total_time_seconds: 0
+      total_time_seconds: data.total_time_seconds || 0
     } : null;
   } catch (error) {
     console.error('Error fetching crawl result:', error);

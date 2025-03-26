@@ -76,7 +76,7 @@ const PagesList: React.FC<PagesListProps> = ({
                       {page.status_code}
                     </Badge>
                     
-                    {page.issues_count > 0 && (
+                    {(page.issues_count && page.issues_count > 0) && (
                       <div className="flex items-center text-xs text-muted-foreground mt-1">
                         <AlertCircle className="h-3 w-3 mr-1 text-amber-500" />
                         {page.issues_count} {page.issues_count === 1 ? 'problema' : 'problemas'}

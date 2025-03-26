@@ -34,6 +34,11 @@ export interface CrawlResult {
   settings: CrawlSettings;
   success?: boolean;
   message?: string;
+  
+  // Adding missing properties used in components
+  inserted_at?: string;
+  total_time_seconds?: number;
+  issues_count?: number; // Alias for total_issues used in frontend
 }
 
 // Crawled page interface
@@ -58,6 +63,9 @@ export interface CrawlPage {
   mobile_friendly?: boolean;
   page_size_kb?: number;
   load_time_ms?: number;
+  
+  // Adding missing property used in PagesList
+  issues_count?: number;
 }
 
 // Crawl issue interface
