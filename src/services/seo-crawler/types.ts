@@ -37,7 +37,7 @@ export interface CrawlResult {
   
   // Adding missing properties used in components
   inserted_at?: string;
-  total_time_seconds?: number;
+  total_time_seconds?: number; // Added this property explicitly
   issues_count?: number; // Alias for total_issues used in frontend
 }
 

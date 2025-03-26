@@ -38,8 +38,10 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         settings: crawl.settings as unknown as CrawlSettings,
         // Add the additional properties that components use
         inserted_at: crawl.inserted_at,
-        // Check if total_time_seconds exists and is a number
-        total_time_seconds: crawl.total_time_seconds ? Number(crawl.total_time_seconds) : 0
+        // Safely handle total_time_seconds - use optional chaining and nullish coalescing
+        total_time_seconds: crawl?.total_time_seconds !== undefined ? Number(crawl.total_time_seconds) : undefined,
+        // Also add issues_count as an alias for total_issues for compatibility
+        issues_count: crawl.total_issues || 0
       };
       
       return result;
@@ -86,8 +88,10 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult | nul
       settings: data.settings as unknown as CrawlSettings,
       // Add the additional properties that components use
       inserted_at: data.inserted_at,
-      // Check if total_time_seconds exists and is a number
-      total_time_seconds: data.total_time_seconds ? Number(data.total_time_seconds) : 0
+      // Safely handle total_time_seconds - use optional chaining and nullish coalescing
+      total_time_seconds: data?.total_time_seconds !== undefined ? Number(data.total_time_seconds) : undefined,
+      // Also add issues_count as an alias for total_issues for compatibility
+      issues_count: data.total_issues || 0
     };
     
     return result;
