@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { CrawlIssue, CrawlPage } from '@/services/seo-crawler/types';
 import BlurredCard from '@/components/ui/BlurredCard';
@@ -9,6 +10,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { AlertTriangle, Search, AlertCircle, Info, CheckCircle, Triangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import SeverityBadge from '../SeverityBadge';
 
 interface IssuesTabContentProps {
   issuesByType: Record<string, CrawlIssue[]>;
@@ -28,6 +30,8 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
     // Flatten all issues from the issuesByType object
     return Object.values(issuesByType).flat();
   }, [issuesByType]);
+  
+  console.log('All issues in IssuesTabContent:', allIssues);
   
   // Filter issues based on search term and severity
   const filteredIssues = useMemo(() => {
@@ -103,25 +107,12 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
     }
   };
   
-  // Get severity badge based on severity level
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return <Badge variant="outline" className="bg-red-100 text-red-800">{getSeverityIcon(severity)} Crítico</Badge>;
-      case 'high':
-        return <Badge variant="outline" className="bg-amber-100 text-amber-800">{getSeverityIcon(severity)} Alto</Badge>;
-      case 'medium':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">{getSeverityIcon(severity)} Medio</Badge>;
-      case 'low':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">{getSeverityIcon(severity)} Bajo</Badge>;
-      case 'info':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800">{getSeverityIcon(severity)} Info</Badge>;
-      default:
-        return <Badge variant="outline">{severity}</Badge>;
-    }
-  };
+  // Has issues check
+  const hasIssues = allIssues.length > 0 || pageIssues.length > 0;
   
-  if (Object.keys(issuesByType).length === 0 && pageIssues.length === 0) {
+  console.log('Has issues:', hasIssues, 'all issues length:', allIssues.length, 'pageIssues length:', pageIssues.length);
+  
+  if (!hasIssues) {
     return (
       <BlurredCard className="p-6">
         <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -182,7 +173,7 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
           </TabsList>
           
           <TabsContent value="all" className="mt-4">
-            <IssuesList issues={filteredIssues} getSeverityBadge={getSeverityBadge} />
+            <IssuesList issues={filteredIssues} />
           </TabsContent>
           
           <TabsContent value="page" className="mt-4">
@@ -194,7 +185,7 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
                     {filteredPageIssues.length} problemas encontrados para esta página
                   </p>
                 </div>
-                <IssuesList issues={filteredPageIssues} getSeverityBadge={getSeverityBadge} />
+                <IssuesList issues={filteredPageIssues} />
               </>
             ) : (
               <p className="text-center py-8 text-muted-foreground">
@@ -218,7 +209,7 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
                         ({issues.length} {issues.length === 1 ? 'problema' : 'problemas'})
                       </span>
                     </h3>
-                    <IssuesList issues={issues} getSeverityBadge={getSeverityBadge} />
+                    <IssuesList issues={issues} />
                   </div>
                 )
               ))}
@@ -232,10 +223,9 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
 
 interface IssuesListProps {
   issues: CrawlIssue[];
-  getSeverityBadge: (severity: string) => React.ReactNode;
 }
 
-const IssuesList: React.FC<IssuesListProps> = ({ issues, getSeverityBadge }) => {
+const IssuesList: React.FC<IssuesListProps> = ({ issues }) => {
   if (issues.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -260,7 +250,7 @@ const IssuesList: React.FC<IssuesListProps> = ({ issues, getSeverityBadge }) => 
             <TableRow key={issue.id}>
               <TableCell className="font-medium">{issue.issue_type}</TableCell>
               <TableCell>{issue.description}</TableCell>
-              <TableCell>{getSeverityBadge(issue.severity)}</TableCell>
+              <TableCell><SeverityBadge severity={issue.severity} /></TableCell>
               <TableCell className="max-w-xs truncate">
                 {issue.page_url ? (
                   <a 

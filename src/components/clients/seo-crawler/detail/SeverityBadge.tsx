@@ -18,7 +18,6 @@ const SeverityBadge: React.FC<SeverityBadgeProps> = ({
     | 'destructive'
     | 'outline'
     | 'secondary'
-    | 'success'
     | 'warning';
   
   let label = severity;
@@ -29,6 +28,7 @@ const SeverityBadge: React.FC<SeverityBadgeProps> = ({
   switch (normalizedSeverity) {
     case 'critical':
       variant = 'destructive';
+      label = 'crítico';
       break;
     case 'high':
       variant = 'destructive';

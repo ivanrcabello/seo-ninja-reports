@@ -7,12 +7,14 @@ import { CrawlIssue, CrawlLink } from '../types';
  */
 export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
   try {
+    console.log(`Fetching issues for page ID: ${pageId}`);
     const { data, error } = await supabase
       .from('seo_crawler_issues')
       .select('*')
       .eq('page_id', pageId);
 
     if (error) throw error;
+    console.log(`Found ${data?.length || 0} issues for page ${pageId}`);
     
     return (data || []).map((issue: any) => ({
       id: issue.id,
@@ -21,7 +23,7 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       page_url: issue.page_url,
       issue_type: issue.issue_type,
       description: issue.description,
-      severity: issue.severity,
+      severity: issue.severity || 'info', // Add default severity if not set
       recommended_fix: issue.recommended_fix,
       element: issue.element,
       fix_suggestion: issue.fix_suggestion
@@ -37,14 +39,17 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
  */
 export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
   try {
+    console.log(`Fetching all issues for crawl ID: ${crawlId}`);
     const { data, error } = await supabase
       .from('seo_crawler_issues')
       .select('*')
       .eq('crawl_id', crawlId);
 
     if (error) throw error;
+    console.log(`Found ${data?.length || 0} issues for crawl ${crawlId}`);
     
-    return (data || []).map((issue: any) => ({
+    // Transform the data and ensure all fields are present
+    const issues = (data || []).map((issue: any) => ({
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
@@ -56,6 +61,9 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
       element: issue.element,
       fix_suggestion: issue.fix_suggestion
     }));
+    
+    console.log('Transformed issues data:', issues);
+    return issues;
   } catch (error) {
     console.error('Error fetching crawl issues:', error);
     return [];
@@ -67,12 +75,14 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
  */
 export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
   try {
+    console.log(`Fetching links for page ID: ${pageId}`);
     const { data, error } = await supabase
       .from('seo_crawler_links')
       .select('*')
       .eq('page_id', pageId);
 
     if (error) throw error;
+    console.log(`Found ${data?.length || 0} links for page ${pageId}`);
     
     return (data || []).map((link: any) => ({
       id: link.id,
@@ -97,12 +107,14 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
  */
 export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
   try {
+    console.log(`Fetching all links for crawl ID: ${crawlId}`);
     const { data, error } = await supabase
       .from('seo_crawler_links')
       .select('*')
       .eq('crawl_id', crawlId);
 
     if (error) throw error;
+    console.log(`Found ${data?.length || 0} links for crawl ${crawlId}`);
     
     return (data || []).map((link: any) => ({
       id: link.id,

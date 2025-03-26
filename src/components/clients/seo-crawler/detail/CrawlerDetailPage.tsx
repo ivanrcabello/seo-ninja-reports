@@ -48,9 +48,21 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         
         // Fetch pages and issues
         const pagesData = await getCrawlPages(crawlId);
-        const issuesData = await getCrawlIssues(crawlId);
         
-        setPages(pagesData);
+        // Log the data to help with debugging
+        console.log('Pages data:', pagesData);
+        
+        // Ensure page issues_count are correctly formatted
+        const formattedPages = pagesData.map((page: CrawlPage) => ({
+          ...page,
+          issues_count: Number(page.issues_count || 0)
+        }));
+        
+        // Fetch issues separately
+        const issuesData = await getCrawlIssues(crawlId);
+        console.log('Issues data:', issuesData);
+        
+        setPages(formattedPages);
         setIssues(issuesData);
         
         // Group issues by type
@@ -61,16 +73,24 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
           }
           groupedIssues[issue.issue_type].push(issue);
         });
+        
+        console.log('Grouped issues:', groupedIssues);
         setIssuesByType(groupedIssues);
         
         // Set the first page as selected if available
-        if (pagesData.length > 0) {
-          setSelectedPage(pagesData[0]);
+        if (formattedPages.length > 0) {
+          setSelectedPage(formattedPages[0]);
           
           // Also fetch links for the first page since it's selected
-          if (pagesData[0].id) {
-            const pageLinksData = await getPageLinks(pagesData[0].id);
+          if (formattedPages[0].id) {
+            const pageLinksData = await getPageLinks(formattedPages[0].id);
             setPageLinks(pageLinksData);
+            
+            // Set page issues for the first page
+            const firstPageIssues = issuesData.filter((issue: CrawlIssue) => 
+              issue.page_id === formattedPages[0].id
+            );
+            setPageIssues(firstPageIssues);
           }
         }
       } catch (error) {
@@ -93,8 +113,9 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       setIsLoadingPageData(true);
       
       // Find issues for this page
-      const pageIssues = issues.filter(issue => issue.page_id === page.id);
-      setPageIssues(pageIssues);
+      const filteredPageIssues = issues.filter(issue => issue.page_id === page.id);
+      console.log(`Found ${filteredPageIssues.length} issues for page ${page.id}`, filteredPageIssues);
+      setPageIssues(filteredPageIssues);
       
       // Fetch links for this page
       if (page.id) {
