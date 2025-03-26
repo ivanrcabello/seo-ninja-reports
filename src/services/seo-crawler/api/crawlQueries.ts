@@ -20,7 +20,8 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
       ...crawl as unknown as CrawlResult,
       crawl_date: crawl.started_at,
       issues_count: crawl.total_issues,
-      total_time_seconds: crawl.total_time_seconds || 0
+      // Set total_time_seconds to 0 if it doesn't exist in the database
+      total_time_seconds: 0 
     }));
   } catch (error) {
     console.error('Error fetching crawl results:', error);
@@ -46,7 +47,8 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult | nul
       ...data as unknown as CrawlResult, 
       crawl_date: data.started_at,
       issues_count: data.total_issues,
-      total_time_seconds: data.total_time_seconds || 0
+      // Set total_time_seconds to 0 if it doesn't exist in the database
+      total_time_seconds: 0
     } : null;
   } catch (error) {
     console.error('Error fetching crawl result:', error);
