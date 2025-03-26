@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -107,25 +108,25 @@ const PageDetail: React.FC<PageDetailProps> = ({ page, issues = [], links = [] }
                 <StatCard 
                   icon={<FileText className="h-4 w-4 text-blue-500" />}
                   label="Palabras"
-                  value={page.word_count.toString()}
+                  value={page.word_count?.toString() || '0'}
                 />
                 
                 <StatCard 
                   icon={<Image className="h-4 w-4 text-purple-500" />}
                   label="Imágenes"
-                  value={page.image_count.toString()}
+                  value={page.image_count?.toString() || '0'}
                 />
                 
                 <StatCard 
                   icon={<Link className="h-4 w-4 text-green-500" />}
                   label="Enlaces internos"
-                  value={page.internal_links_count.toString()}
+                  value={page.internal_links_count?.toString() || '0'}
                 />
                 
                 <StatCard 
                   icon={<Link2 className="h-4 w-4 text-amber-500" />}
                   label="Enlaces externos"
-                  value={page.external_links_count.toString()}
+                  value={page.external_links_count?.toString() || '0'}
                 />
               </div>
               
@@ -185,9 +186,9 @@ const PageDetail: React.FC<PageDetailProps> = ({ page, issues = [], links = [] }
                 <Badge 
                   variant="outline"
                   className={
-                    page.load_time_ms < 1000
+                    (page.load_time_ms || 0) < 1000
                       ? 'bg-green-100 text-green-800'
-                      : page.load_time_ms < 3000
+                      : (page.load_time_ms || 0) < 3000
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-red-100 text-red-800'
                   }
@@ -199,9 +200,9 @@ const PageDetail: React.FC<PageDetailProps> = ({ page, issues = [], links = [] }
               <div className="flex justify-between items-center border-b pb-2">
                 <span>Imágenes sin alt</span>
                 <Badge 
-                  variant={page.images_without_alt > 0 ? 'destructive' : 'outline'}
+                  variant={(page.images_without_alt || 0) > 0 ? 'destructive' : 'outline'}
                 >
-                  {page.images_without_alt}
+                  {page.images_without_alt || 0}
                 </Badge>
               </div>
             </div>
@@ -247,7 +248,7 @@ const PageDetail: React.FC<PageDetailProps> = ({ page, issues = [], links = [] }
                         {issue.severity}
                       </Badge>
                     </TableCell>
-                    <TableCell>{issue.recommended_fix}</TableCell>
+                    <TableCell>{issue.recommended_fix || 'No definida'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
