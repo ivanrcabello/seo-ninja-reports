@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CrawlResult, CrawlPage } from '@/services/seo-crawler/types';
-import { fetchCrawlResult, fetchCrawlPages, fetchCrawlIssues } from '@/services/seo-crawler';
+import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from '@/services/seo-crawler/types';
+import { getCrawlResult, getCrawlPages, getCrawlIssues } from '@/services/seo-crawler/api';
 import CrawlerDetailHeader from './CrawlerDetailHeader';
 import CrawlerTabs from './CrawlerTabs';
 import CrawlerReportView from '@/components/reports/report-viewer/CrawlerReportView';
@@ -22,10 +22,17 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
 }) => {
   const [crawl, setCrawl] = useState<CrawlResult | null>(null);
   const [pages, setPages] = useState<CrawlPage[]>([]);
-  const [issues, setIssues] = useState<any[]>([]);
+  const [issues, setIssues] = useState<CrawlIssue[]>([]);
+  const [pageIssues, setPageIssues] = useState<CrawlIssue[]>([]);
+  const [pageLinks, setPageLinks] = useState<CrawlLink[]>([]);
+  const [selectedPage, setSelectedPage] = useState<CrawlPage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPageData, setIsLoadingPageData] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showReport, setShowReport] = useState(false);
+  
+  // Group issues by type for reporting
+  const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
 
   // Fetch data
   useEffect(() => {
@@ -34,15 +41,30 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         setIsLoading(true);
         
         // Fetch crawl result
-        const result = await fetchCrawlResult(crawlId);
+        const result = await getCrawlResult(crawlId);
         setCrawl(result);
         
         // Fetch pages and issues
-        const pagesData = await fetchCrawlPages(crawlId);
-        const issuesData = await fetchCrawlIssues(crawlId);
+        const pagesData = await getCrawlPages(crawlId);
+        const issuesData = await getCrawlIssues(crawlId);
         
         setPages(pagesData);
         setIssues(issuesData);
+        
+        // Group issues by type
+        const groupedIssues: Record<string, CrawlIssue[]> = {};
+        issuesData.forEach((issue: CrawlIssue) => {
+          if (!groupedIssues[issue.issue_type]) {
+            groupedIssues[issue.issue_type] = [];
+          }
+          groupedIssues[issue.issue_type].push(issue);
+        });
+        setIssuesByType(groupedIssues);
+        
+        // Set the first page as selected if available
+        if (pagesData.length > 0) {
+          setSelectedPage(pagesData[0]);
+        }
       } catch (error) {
         console.error('Error fetching crawl data:', error);
         toast.error('Error al cargar los datos del análisis');
@@ -53,6 +75,33 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
     
     fetchData();
   }, [crawlId]);
+  
+  // Handle page selection
+  const handlePageSelect = (page: CrawlPage) => {
+    setSelectedPage(page);
+    
+    // Load page-specific issues and links
+    const loadPageData = async () => {
+      try {
+        setIsLoadingPageData(true);
+        
+        // Find issues for this page
+        const pageIssues = issues.filter(issue => issue.page_id === page.id);
+        setPageIssues(pageIssues);
+        
+        // Here you'd load links for the page too
+        // For now we'll set empty array
+        setPageLinks([]);
+        
+      } catch (error) {
+        console.error('Error loading page data:', error);
+      } finally {
+        setIsLoadingPageData(false);
+      }
+    };
+    
+    loadPageData();
+  };
 
   if (isLoading) {
     return (
@@ -91,12 +140,13 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         <CrawlerReportView crawlResult={crawl} />
       ) : (
         <CrawlerTabs 
-          crawl={crawl}
           pages={pages}
-          issues={issues}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          clientId={clientId}
+          selectedPage={selectedPage}
+          pageIssues={pageIssues}
+          pageLinks={pageLinks}
+          issuesByType={issuesByType}
+          onPageSelect={handlePageSelect}
+          isLoadingPageData={isLoadingPageData}
         />
       )}
     </div>
