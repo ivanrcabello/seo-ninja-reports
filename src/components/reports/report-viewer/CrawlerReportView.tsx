@@ -187,9 +187,9 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
                     <dt className="text-sm font-medium text-muted-foreground">Estado:</dt>
                     <dd className="text-sm font-medium">
                       <Badge variant={
-                        crawlResult.status === 'completed' ? 'success' : 
+                        crawlResult.status === 'completed' ? 'secondary' : 
                         crawlResult.status === 'failed' ? 'destructive' : 
-                        'secondary'
+                        'default'
                       }>
                         {crawlResult.status === 'completed' ? 'Completado' : 
                         crawlResult.status === 'failed' ? 'Fallido' : 
@@ -421,7 +421,7 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
                             {page.issues_count > 0 ? (
                               <Badge variant="destructive">{page.issues_count}</Badge>
                             ) : (
-                              <Badge variant="success">0</Badge>
+                              <Badge variant="secondary">0</Badge>
                             )}
                           </TableCell>
                         </TableRow>
@@ -485,7 +485,7 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Alert className="mb-6" variant="success">
+                <Alert className="mb-6" variant="default">
                   <Check className="h-4 w-4" />
                   <AlertTitle>Enlaces en Buen Estado</AlertTitle>
                   <AlertDescription>
