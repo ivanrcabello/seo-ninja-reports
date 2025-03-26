@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlIssue, CrawlLink, CrawlHeading } from '../types';
 import { debugIssuesData, debugHeadingsData } from './debugUtils';
@@ -34,7 +35,10 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       recommended_fix: issue.recommended_fix,
       element: issue.element,
       fix_suggestion: issue.fix_suggestion,
-      created_at: issue.created_at || new Date().toISOString()
+      category: issue.category || '',
+      created_at: issue.created_at || new Date().toISOString(),
+      // Add a dummy seo_crawler_pages property to satisfy TypeScript
+      seo_crawler_pages: { url: issue.page_url || '' }
     }));
   } catch (error) {
     console.error('Error fetching page issues:', error);
@@ -92,7 +96,10 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
         recommended_fix: issue.recommended_fix,
         element: issue.element,
         fix_suggestion: issue.fix_suggestion,
-        created_at: issue.created_at || new Date().toISOString()
+        category: issue.category || '',
+        created_at: issue.created_at || new Date().toISOString(),
+        // Add a dummy seo_crawler_pages property if it doesn't exist
+        seo_crawler_pages: issue.seo_crawler_pages || { url: pageUrl || '' }
       };
     });
     
@@ -217,11 +224,14 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
           id: heading.id,
           crawl_id: heading.crawl_id,
           page_id: heading.page_id,
-          page_url: heading.seo_crawler_pages.url,
           heading_type: heading.heading_type || 'h2',
           content: heading.content || '',
           position: heading.position || 0,
-          created_at: heading.created_at || new Date().toISOString()
+          created_at: heading.created_at || new Date().toISOString(),
+          // Add the seo_crawler_pages property
+          seo_crawler_pages: { 
+            url: heading.seo_crawler_pages.url 
+          }
         }));
       }
       
@@ -230,13 +240,15 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
         id: heading.id,
         crawl_id: heading.crawl_id,
         page_id: heading.page_id,
-        page_url: heading.page_url || '',
         heading_type: heading.heading_type || 'h2',
         content: heading.content || '',
-        position: heading.heading_position || heading.position || 0,
+        // Transform heading_position to position if needed
+        position: heading.position || heading.heading_position || 0,
         created_at: heading.created_at || new Date().toISOString(),
-        // Add a dummy seo_crawler_pages property to satisfy TypeScript
-        seo_crawler_pages: { url: heading.page_url || '' }
+        // Add the seo_crawler_pages property
+        seo_crawler_pages: { 
+          url: heading.page_url || '' 
+        }
       }));
     }
     
@@ -292,11 +304,14 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
           id: heading.id,
           crawl_id: heading.crawl_id,
           page_id: heading.page_id,
-          page_url: heading.seo_crawler_pages.url,
           heading_type: heading.heading_type || 'h2',
           content: heading.content || '',
           position: heading.position || 0,
-          created_at: heading.created_at || new Date().toISOString()
+          created_at: heading.created_at || new Date().toISOString(),
+          // Add the seo_crawler_pages property
+          seo_crawler_pages: { 
+            url: heading.seo_crawler_pages.url 
+          }
         }));
       }
       
@@ -305,13 +320,15 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
         id: heading.id,
         crawl_id: heading.crawl_id,
         page_id: heading.page_id,
-        page_url: heading.page_url || '',
         heading_type: heading.heading_type || 'h2',
         content: heading.content || '',
-        position: heading.heading_position || heading.position || 0,
+        // Transform heading_position to position if needed
+        position: heading.position || heading.heading_position || 0,
         created_at: heading.created_at || new Date().toISOString(),
-        // Add a dummy seo_crawler_pages property to satisfy TypeScript
-        seo_crawler_pages: { url: heading.page_url || '' }
+        // Add the seo_crawler_pages property
+        seo_crawler_pages: { 
+          url: heading.page_url || '' 
+        }
       }));
     }
     
@@ -334,8 +351,10 @@ function generatePlaceholderHeadings(pageId: string): CrawlHeading[] {
     heading_type: 'h1',
     content: 'No se encontraron encabezados para esta página',
     position: 0,
-    page_url: '',
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    seo_crawler_pages: {
+      url: ''
+    }
   }];
 }
 
@@ -362,10 +381,13 @@ async function getHeadingsFromPages(crawlId: string): Promise<CrawlHeading[]> {
           id: `generated-h1-${page.id}`,
           crawl_id: crawlId,
           page_id: page.id,
-          page_url: page.url,
           heading_type: 'h1',
           content: page.h1,
-          position: 0
+          position: 0,
+          created_at: new Date().toISOString(),
+          seo_crawler_pages: {
+            url: page.url
+          }
         });
       } 
       // Add title as H1 if no H1 available
@@ -374,10 +396,13 @@ async function getHeadingsFromPages(crawlId: string): Promise<CrawlHeading[]> {
           id: `generated-title-${page.id}`,
           crawl_id: crawlId,
           page_id: page.id,
-          page_url: page.url,
           heading_type: 'h1',
           content: page.title,
-          position: 0
+          position: 0,
+          created_at: new Date().toISOString(),
+          seo_crawler_pages: {
+            url: page.url
+          }
         });
       }
     });
@@ -403,7 +428,7 @@ async function populateHeadingsTable(crawlId: string, headings: CrawlHeading[]):
     
     // Map to the format expected by the database table
     const headingsForDb = headings.map((heading) => ({
-      crawl_id: crawlId,
+      crawl_id: heading.crawl_id,
       page_id: heading.page_id,
       heading_type: heading.heading_type,
       content: heading.content,

@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 interface IssuesTabProps {
   issuesByType: Record<string, CrawlIssue[]>;
-  issuesBySeverity?: Record<string, CrawlIssue[]>;
+  issuesBySeverity: Record<string, CrawlIssue[]>;
   pageIssues: CrawlIssue[];
   selectedPage: CrawlPage | null;
   isLoading?: boolean;
@@ -14,7 +14,7 @@ interface IssuesTabProps {
 
 const IssuesTab: React.FC<IssuesTabProps> = ({
   issuesByType,
-  issuesBySeverity = {},
+  issuesBySeverity,
   pageIssues,
   selectedPage,
   isLoading = false

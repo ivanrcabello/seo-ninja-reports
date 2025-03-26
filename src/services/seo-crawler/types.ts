@@ -88,7 +88,10 @@ export interface CrawlIssue {
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
   recommended_fix?: string;
   element?: string;
-  fix_suggestion?: string; // Adding this property to match database schema
+  fix_suggestion?: string;
+  category?: string;
+  created_at?: string;
+  seo_crawler_pages?: { url: string };
 }
 
 // Link interface
@@ -110,10 +113,11 @@ export interface CrawlHeading {
   id: string;
   crawl_id?: string;
   page_id?: string;
-  page_url?: string;
   heading_type: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
   content: string;
   position: number;
+  created_at?: string;
+  seo_crawler_pages?: { url: string };
 }
 
 // Saved crawl settings type
