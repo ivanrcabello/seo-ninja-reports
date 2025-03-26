@@ -16,11 +16,32 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
     if (error) throw error;
     
     // Map database crawls to CrawlResult type with the fields needed by components
-    return (data || []).map(crawl => ({
-      ...crawl as unknown as CrawlResult,
-      // Set total_time_seconds to 0 if it doesn't exist in the database
-      total_time_seconds: crawl.total_time_seconds || 0 
-    }));
+    return (data || []).map(crawl => {
+      // Create a properly typed object
+      const result: CrawlResult = {
+        id: crawl.id,
+        client_id: crawl.client_id || '',
+        url: crawl.url,
+        domain: crawl.domain,
+        status: crawl.status as 'queued' | 'processing' | 'completed' | 'failed',
+        started_at: crawl.started_at || '',
+        completed_at: crawl.completed_at,
+        total_pages: crawl.total_pages || 0,
+        pages_crawled: crawl.pages_crawled || 0,
+        total_issues: crawl.total_issues || 0,
+        total_links: crawl.total_links || 0,
+        total_internal_links: crawl.total_internal_links || 0,
+        total_external_links: crawl.total_external_links || 0,
+        total_broken_links: crawl.total_broken_links || 0,
+        error_message: crawl.error_message,
+        settings: crawl.settings,
+        // Add the additional properties that components use
+        inserted_at: crawl.inserted_at,
+        total_time_seconds: typeof crawl.total_time_seconds === 'number' ? crawl.total_time_seconds : 0
+      };
+      
+      return result;
+    });
   } catch (error) {
     console.error('Error fetching crawl results:', error);
     return [];
@@ -40,12 +61,32 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult | nul
 
     if (error) throw error;
     
-    // Convert database crawl to CrawlResult type with fields needed by components
-    return data ? {
-      ...data as unknown as CrawlResult, 
-      // Set total_time_seconds to 0 if it doesn't exist in the database
-      total_time_seconds: data.total_time_seconds || 0
-    } : null;
+    if (!data) return null;
+    
+    // Create a properly typed CrawlResult object
+    const result: CrawlResult = {
+      id: data.id,
+      client_id: data.client_id || '',
+      url: data.url,
+      domain: data.domain,
+      status: data.status as 'queued' | 'processing' | 'completed' | 'failed',
+      started_at: data.started_at || '',
+      completed_at: data.completed_at,
+      total_pages: data.total_pages || 0,
+      pages_crawled: data.pages_crawled || 0,
+      total_issues: data.total_issues || 0,
+      total_links: data.total_links || 0,
+      total_internal_links: data.total_internal_links || 0,
+      total_external_links: data.total_external_links || 0,
+      total_broken_links: data.total_broken_links || 0,
+      error_message: data.error_message,
+      settings: data.settings,
+      // Add the additional properties that components use
+      inserted_at: data.inserted_at,
+      total_time_seconds: typeof data.total_time_seconds === 'number' ? data.total_time_seconds : 0
+    };
+    
+    return result;
   } catch (error) {
     console.error('Error fetching crawl result:', error);
     return null;
