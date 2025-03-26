@@ -1,26 +1,21 @@
 export interface CrawlResult {
   id: string;
-  client_id: string;
+  client_id: string; 
   url: string;
+  domain: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
-  started_at: string;
-  completed_at: string | null;
-  error_message: string | null;
+  started_at?: string;
+  completed_at?: string;
+  error_message?: string;
   total_pages: number;
   total_issues: number;
-  total_links: number;
-  total_internal_links: number;
-  total_external_links: number;
-  total_broken_links: number;
+  total_links?: number;
+  total_internal_links?: number;
+  total_external_links?: number;
+  total_broken_links?: number;
   pages_crawled: number;
   settings: CrawlSettings;
-  summary?: CrawlSummary;
-  inserted_at: string;
-  updated_at: string;
-  domain: string;
-  crawl_date?: string;
-  issues_count?: number;
-  total_time_seconds?: number;
+  summary?: any;
   success?: boolean;
   message?: string;
 }
@@ -127,4 +122,3 @@ export interface SavedCrawlSettings {
   created_at: string;
   updated_at: string;
 }
-

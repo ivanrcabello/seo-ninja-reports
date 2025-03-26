@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { CrawlIssue, CrawlPage } from '@/services/seo-crawler/types';
-import IssuesTabContent from './IssuesTabContent';
 import { Loader2 } from 'lucide-react';
+import IssuesTabContent from './IssuesTabContent';
 
 interface IssuesTabProps {
   issuesByType: Record<string, CrawlIssue[]>;
@@ -13,24 +13,24 @@ interface IssuesTabProps {
 
 const IssuesTab: React.FC<IssuesTabProps> = ({ 
   issuesByType, 
-  pageIssues, 
+  pageIssues,
   selectedPage,
   isLoading = false 
 }) => {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div>
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <IssuesTabContent 
-          issuesByType={issuesByType} 
-          pageIssues={pageIssues} 
-          selectedPage={selectedPage} 
-        />
-      )}
-    </div>
+    <IssuesTabContent 
+      issuesByType={issuesByType} 
+      pageIssues={pageIssues} 
+      selectedPage={selectedPage}
+    />
   );
 };
 
