@@ -1,3 +1,4 @@
+
 // TypeScript types for SEO crawler functionality
 
 // Crawl settings interface
@@ -38,6 +39,7 @@ export interface CrawlResult {
   inserted_at?: string;
   total_time_seconds?: number; // Added this property explicitly
   issues_count?: number; // Alias for total_issues used in frontend
+  summary?: any; // Summary data that might include charts or metrics
 }
 
 // Crawled page interface
@@ -65,6 +67,14 @@ export interface CrawlPage {
   
   // Adding missing property used in PagesList
   issues_count?: number;
+  level?: number;
+  content_type?: string;
+  h2_count?: number;
+  h3_count?: number;
+  text_ratio?: number;
+  hreflang_count?: number;
+  redirect_url?: string;
+  crawled_at?: string;
 }
 
 // Crawl issue interface
@@ -78,6 +88,7 @@ export interface CrawlIssue {
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
   recommended_fix?: string;
   element?: string;
+  fix_suggestion?: string; // Adding this property to match database schema
 }
 
 // Link interface
