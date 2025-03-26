@@ -34,6 +34,21 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   
   const navigate = useNavigate();
 
+  // Function to refresh the crawler status
+  const refreshCrawlStatus = async () => {
+    try {
+      const data = await getCrawlData(crawlId);
+      setCrawl(data.result);
+      
+      // If the status is still processing, check again in 10 seconds
+      if (data.result.status === 'processing') {
+        setTimeout(refreshCrawlStatus, 10000);
+      }
+    } catch (error) {
+      console.error('Error refreshing crawl status:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchCrawlData = async () => {
       try {
@@ -46,6 +61,11 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         setPages(data.pages);
         setIssuesByType(data.issuesByType);
         setIssuesBySeverity(data.issuesBySeverity);
+        
+        // If status is processing, set up a polling mechanism
+        if (data.result.status === 'processing') {
+          setTimeout(refreshCrawlStatus, 10000);
+        }
         
         // Si hay páginas, selecciona la primera por defecto
         if (data.pages.length > 0) {

@@ -34,7 +34,30 @@ export const getCrawlData = async (crawlId: string): Promise<{
     const issuesByType: Record<string, CrawlIssue[]> = {};
     const issuesBySeverity: Record<string, CrawlIssue[]> = {};
     
-    allIssues.forEach(issue => {
+    // Set default severity levels if not present
+    const ensureSeverity = (issue: CrawlIssue): CrawlIssue => {
+      if (!issue.severity) {
+        // Assign severity based on issue type if not already set
+        const issueLowerCase = issue.issue_type.toLowerCase();
+        
+        if (issueLowerCase.includes('critical') || issueLowerCase.includes('broken') || issueLowerCase.includes('error')) {
+          return { ...issue, severity: 'critical' };
+        } else if (issueLowerCase.includes('missing') || issueLowerCase.includes('duplicate')) {
+          return { ...issue, severity: 'high' };
+        } else if (issueLowerCase.includes('warning') || issueLowerCase.includes('long')) {
+          return { ...issue, severity: 'medium' };
+        } else if (issueLowerCase.includes('improve') || issueLowerCase.includes('consider')) {
+          return { ...issue, severity: 'low' };
+        } else {
+          return { ...issue, severity: 'info' };
+        }
+      }
+      return issue;
+    };
+    
+    const processedIssues = allIssues.map(ensureSeverity);
+    
+    processedIssues.forEach(issue => {
       // Group by page ID
       if (issue.page_id) {
         if (!issues[issue.page_id]) {
@@ -50,10 +73,11 @@ export const getCrawlData = async (crawlId: string): Promise<{
       issuesByType[issue.issue_type].push(issue);
       
       // Group by severity
-      if (!issuesBySeverity[issue.severity]) {
-        issuesBySeverity[issue.severity] = [];
+      const severity = issue.severity || 'info';
+      if (!issuesBySeverity[severity]) {
+        issuesBySeverity[severity] = [];
       }
-      issuesBySeverity[issue.severity].push(issue);
+      issuesBySeverity[severity].push(issue);
     });
     
     // Organize links by page ID
@@ -118,10 +142,11 @@ export const getCrawlSummary = async (crawlId: string): Promise<{
     // Count issues by severity and type
     issues.forEach(issue => {
       // Count by severity
-      if (!summary.issuesBySeverity[issue.severity]) {
-        summary.issuesBySeverity[issue.severity] = 0;
+      const severity = issue.severity || 'info';
+      if (!summary.issuesBySeverity[severity]) {
+        summary.issuesBySeverity[severity] = 0;
       }
-      summary.issuesBySeverity[issue.severity]++;
+      summary.issuesBySeverity[severity]++;
       
       // Count by type
       if (!summary.issuesByType[issue.issue_type]) {

@@ -51,7 +51,7 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
       page_url: issue.page_url,
       issue_type: issue.issue_type,
       description: issue.description,
-      severity: issue.severity,
+      severity: issue.severity || 'info', // Default to 'info' if severity is not set
       recommended_fix: issue.recommended_fix,
       element: issue.element,
       fix_suggestion: issue.fix_suggestion
@@ -79,7 +79,7 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
       crawl_id: link.crawl_id,
       page_id: link.page_id,
       url: link.url,
-      anchor_text: link.anchor_text,
+      anchor_text: link.anchor_text || 'Sin texto ancla', // Provide a default value
       is_internal: link.is_internal,
       is_broken: link.is_broken,
       status_code: link.status_code,
@@ -109,7 +109,7 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
       crawl_id: link.crawl_id,
       page_id: link.page_id,
       url: link.url,
-      anchor_text: link.anchor_text,
+      anchor_text: link.anchor_text || 'Sin texto ancla', // Provide a default value
       is_internal: link.is_internal,
       is_broken: link.is_broken,
       status_code: link.status_code,
