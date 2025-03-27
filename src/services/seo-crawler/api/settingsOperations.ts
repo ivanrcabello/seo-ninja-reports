@@ -3,91 +3,82 @@ import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings } from '../types';
 
 /**
- * Update settings for a specific crawl
+ * Save settings for a specific domain
  */
-export async function updateCrawlSettings(
-  crawlId: string, 
-  settings: Partial<CrawlSettings>
-): Promise<boolean> {
+export async function saveSettings(domainOrClientId: string, settings: CrawlSettings, isClient: boolean = false): Promise<boolean> {
   try {
-    // Get current settings first
-    const { data: currentData, error: fetchError } = await supabase
-      .from('seo_crawler_crawls')
-      .select('settings')
-      .eq('id', crawlId)
-      .single();
+    const column = isClient ? 'client_id' : 'domain';
     
-    if (fetchError) {
-      console.error('Error fetching current settings:', fetchError);
-      throw fetchError;
-    }
+    // Check if settings already exist
+    const { data: existingSettings } = await supabase
+      .from('seo_crawler_settings')
+      .select('id')
+      .eq(column, domainOrClientId)
+      .maybeSingle();
     
-    // Merge the current settings with the new settings
-    const currentSettings = currentData.settings as CrawlSettings || getDefaultCrawlSettings();
-    const mergedSettings = {
-      ...currentSettings,
-      ...settings
-    };
-    
-    // Update the crawl settings
-    const { error } = await supabase
-      .from('seo_crawler_crawls')
-      .update({ settings: mergedSettings })
-      .eq('id', crawlId);
-    
-    if (error) {
-      console.error('Error updating crawl settings:', error);
-      throw error;
+    if (existingSettings) {
+      // Update existing settings
+      const { error } = await supabase
+        .from('seo_crawler_settings')
+        .update(settings as any)
+        .eq('id', existingSettings.id);
+      
+      if (error) throw error;
+    } else {
+      // Create new settings
+      const insertData = {
+        domain: isClient ? '' : domainOrClientId,
+        client_id: isClient ? domainOrClientId : null,
+        ...settings
+      };
+      
+      const { error } = await supabase
+        .from('seo_crawler_settings')
+        .insert(insertData);
+      
+      if (error) throw error;
     }
     
     return true;
   } catch (error) {
-    console.error('Error updating crawl settings:', error);
+    console.error('Error saving settings:', error);
     return false;
   }
 }
 
 /**
- * Get settings for a specific crawl
+ * Get settings for a specific domain or client
  */
-export async function getCrawlSettings(
-  crawlId: string
-): Promise<CrawlSettings | null> {
+export async function getSettings(domainOrClientId: string, isClient: boolean = false): Promise<CrawlSettings | null> {
   try {
+    const column = isClient ? 'client_id' : 'domain';
+    
     const { data, error } = await supabase
-      .from('seo_crawler_crawls')
-      .select('settings')
-      .eq('id', crawlId)
-      .single();
+      .from('seo_crawler_settings')
+      .select('*')
+      .eq(column, domainOrClientId)
+      .maybeSingle();
     
-    if (error) {
-      console.error('Error fetching crawl settings:', error);
-      throw error;
+    if (error) throw error;
+    
+    if (!data) {
+      // Return default settings if none exist
+      return {
+        max_pages: 100,
+        exclude_urls: [],
+        include_urls: [],
+        respect_robots_txt: true,
+        user_agent: 'Mozilla/5.0 (compatible; SEOcrawler/1.0; +https://example.com/bot)',
+        crawl_sitemap: true,
+        follow_links: true,
+        max_depth: 10
+      };
     }
     
-    if (!data || !data.settings) {
-      return getDefaultCrawlSettings();
-    }
-    
-    return data.settings as CrawlSettings;
+    // Cast data to CrawlSettings
+    return data as unknown as CrawlSettings;
   } catch (error) {
-    console.error('Error fetching crawl settings:', error);
+    console.error('Error getting settings:', error);
     return null;
   }
-}
-
-/**
- * Get default crawl settings
- */
-export function getDefaultCrawlSettings(): CrawlSettings {
-  return {
-    max_pages: 100,
-    exclude_urls: [],
-    include_urls: [],
-    respect_robots_txt: true,
-    user_agent: 'Mozilla/5.0 (compatible; SEOcrawler/1.0; +https://example.com/bot)',
-    crawl_sitemap: true,
-    follow_links: true,
-    max_depth: 10
-  };
 }

@@ -15,6 +15,9 @@ export async function startCrawl(clientId: string, url: string): Promise<ApiSucc
     const domainMatch = url.match(/^https?:\/\/([^/:]+)/i);
     const domain = domainMatch ? domainMatch[1] : url.split('/')[0];
     
+    // Get default settings
+    const defaultSettings = getDefaultCrawlSettings();
+    
     // Create a new crawl record
     const { data: crawlData, error: crawlError } = await supabase
       .from('seo_crawler_crawls')
@@ -26,7 +29,7 @@ export async function startCrawl(clientId: string, url: string): Promise<ApiSucc
         started_at: new Date().toISOString(),
         pages_crawled: 0,
         total_pages: 0,
-        settings: getDefaultCrawlSettings() // Include default settings
+        settings: defaultSettings as any // Cast to any to satisfy TypeScript
       })
       .select()
       .single();

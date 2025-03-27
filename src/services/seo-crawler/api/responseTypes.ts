@@ -89,7 +89,7 @@ export interface ApiCrawlLink {
   is_broken: boolean;
   status_code?: number;
   follow?: boolean;
-  rel_attributes?: string;
+  rel_attributes?: string | string[]; // Accept both string and string[]
   created_at?: string;
   inserted_at?: string;
   [key: string]: any; // Allow for additional properties

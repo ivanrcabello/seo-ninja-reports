@@ -75,7 +75,7 @@ export interface CrawlIssue {
   url: string;
   issue_type: string;
   description: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info'; // Updated to include all possible values
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
   created_at: string;
   
   // Additional properties used in API responses
@@ -107,7 +107,7 @@ export interface CrawlLink {
   url?: string;
   anchor_text?: string;
   follow?: boolean;
-  rel_attributes?: string;
+  rel_attributes?: string | string[];
 }
 
 export interface CrawlHeading {
@@ -131,7 +131,7 @@ export interface CrawlHeading {
   };
 }
 
-// Add CrawlSettings interface
+// Update CrawlSettings interface to be compatible with JSON
 export interface CrawlSettings {
   max_pages: number;
   exclude_urls: string[];
@@ -142,6 +142,7 @@ export interface CrawlSettings {
   follow_links: boolean;
   max_depth: number;
   custom_headers?: Record<string, string>;
+  [key: string]: any; // Add index signature for JSON compatibility
 }
 
 // Type for API success responses

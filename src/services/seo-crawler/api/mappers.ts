@@ -83,6 +83,13 @@ export function mapApiPageToCrawlPage(page: ApiCrawlPage): CrawlPage {
  * Map API issue to our domain model
  */
 export function mapApiIssueToCrawlIssue(issue: ApiCrawlIssue): CrawlIssue {
+  // Normalize severity to a valid value
+  let severityValue: 'critical' | 'high' | 'medium' | 'low' | 'info' = 'medium';
+  if (issue.severity === 'critical' || issue.severity === 'high' || 
+      issue.severity === 'medium' || issue.severity === 'low' || issue.severity === 'info') {
+    severityValue = issue.severity as any;
+  }
+
   return {
     id: issue.id,
     crawl_id: issue.crawl_id,
@@ -92,7 +99,7 @@ export function mapApiIssueToCrawlIssue(issue: ApiCrawlIssue): CrawlIssue {
     issue_type: issue.issue_type,
     description: issue.description,
     element: issue.element || '',
-    severity: issue.severity || 'medium',
+    severity: severityValue,
     fix_suggestion: issue.fix_suggestion || '',
     recommended_fix: issue.recommended_fix || '',
     category: issue.category || 'General',

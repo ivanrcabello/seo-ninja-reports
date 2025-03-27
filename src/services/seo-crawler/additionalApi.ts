@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlIssue, CrawlLink } from './types';
 import { mapApiIssueToCrawlIssue, mapApiLinkToCrawlLink } from './api/mappers';
+import { ApiCrawlIssue, ApiCrawlLink } from './api/responseTypes';
 
 /**
  * Get issues for a specific crawl grouped by page URL
@@ -29,7 +30,7 @@ export async function getIssuesByPage(crawlId: string): Promise<Record<string, C
         issuesByPage[pageUrl] = [];
       }
       
-      issuesByPage[pageUrl].push(mapApiIssueToCrawlIssue(issue));
+      issuesByPage[pageUrl].push(mapApiIssueToCrawlIssue(issue as ApiCrawlIssue));
     }
     
     return issuesByPage;
@@ -65,7 +66,7 @@ export async function getIssuesByType(crawlId: string): Promise<Record<string, C
         issuesByType[issueType] = [];
       }
       
-      issuesByType[issueType].push(mapApiIssueToCrawlIssue(issue));
+      issuesByType[issueType].push(mapApiIssueToCrawlIssue(issue as ApiCrawlIssue));
     }
     
     return issuesByType;
@@ -101,7 +102,7 @@ export async function getLinksByPage(crawlId: string): Promise<Record<string, Cr
         linksByPageId[pageId] = [];
       }
       
-      linksByPageId[pageId].push(mapApiLinkToCrawlLink(link));
+      linksByPageId[pageId].push(mapApiLinkToCrawlLink(link as unknown as ApiCrawlLink));
     }
     
     // Now, we need to get the page URLs for each page ID

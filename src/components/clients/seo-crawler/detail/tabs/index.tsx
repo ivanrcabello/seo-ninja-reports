@@ -25,13 +25,13 @@ export const CrawlerTabContent: React.FC<CrawlerTabContentProps> = ({
 }) => {
   switch (activeTab) {
     case 'issues':
-      return <IssuesTabComponent clientId={clientId} />;
+      return <IssuesTabComponent />;
     case 'pages':
-      return <PagesTabComponent clientId={clientId} />;
+      return <PagesTabComponent />;
     case 'links':
-      return <LinksTabComponent clientId={clientId} />;
+      return <LinksTabComponent />;
     case 'headings':
-      return <HeadingsTabComponent clientId={clientId} />;
+      return <HeadingsTabComponent />;
     default:
       return <div>Select a tab to view content</div>;
   }
