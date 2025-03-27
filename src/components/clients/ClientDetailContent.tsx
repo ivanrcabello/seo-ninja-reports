@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
