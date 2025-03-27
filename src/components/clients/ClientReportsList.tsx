@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import BlurredCard from '@/components/ui/BlurredCard';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import { FileText, Plus, BarChart } from 'lucide-react';
+import { FileText, Plus, BarChart, PlusCircle } from 'lucide-react';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
 import CrawlerList from './seo-crawler/CrawlerList';
+import ReportGenerator from '@/components/reports/ReportGenerator';
 
 interface ClientReportsListProps {
   client: Client;
@@ -25,12 +26,33 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
   onCreateReport 
 }) => {
   const [showCrawlerList, setShowCrawlerList] = useState(false);
+  const [showReportGenerator, setShowReportGenerator] = useState(false);
   
   const handleCreateReport = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onCreateReport();
-  }, [onCreateReport]);
+    setShowReportGenerator(true);
+  }, []);
+
+  const handleCloseReportGenerator = useCallback(() => {
+    setShowReportGenerator(false);
+  }, []);
+
+  // If showing the report generator, render it instead of the list
+  if (showReportGenerator) {
+    return (
+      <div className="space-y-4">
+        <Button 
+          variant="outline" 
+          onClick={handleCloseReportGenerator}
+          className="mb-4"
+        >
+          ← Volver a informes
+        </Button>
+        <ReportGenerator clientId={client.id} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -52,7 +74,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
             </Button>
             
             <Button onClick={handleCreateReport}>
-              <Plus className="h-4 w-4 mr-1.5" /> Nuevo Informe
+              <PlusCircle className="h-4 w-4 mr-1.5" /> Nuevo Informe Automatizado
             </Button>
           </div>
         </CardHeader>
@@ -74,11 +96,21 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
                             <FileText className="h-4 w-4 text-primary" />
                             <h3 className="font-medium">{report.title}</h3>
                           </div>
-                          {report.summary && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
-                              {report.summary}
-                            </p>
-                          )}
+                          <div className="flex items-center mt-1">
+                            <div className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                            ${report.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                              report.status === 'processing' ? 'bg-blue-100 text-blue-800' : 
+                              'bg-red-100 text-red-800'}`}>
+                              {report.status === 'completed' ? 'Completado' : 
+                               report.status === 'processing' ? 'Procesando' : 
+                               'Error'}
+                            </div>
+                            {report.summary && (
+                              <p className="text-sm text-muted-foreground ml-2 line-clamp-1">
+                                {report.summary}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <div className="text-sm text-muted-foreground self-end sm:self-auto">
                           {format(new Date(report.date), 'd MMM yyyy', { locale: es })}
@@ -99,7 +131,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
                   onClick={handleCreateReport}
                   className="focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 >
-                  Generar Informe
+                  Generar Informe Automatizado
                 </Button>
               </div>
             )
