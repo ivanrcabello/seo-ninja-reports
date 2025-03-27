@@ -9,7 +9,7 @@ import ClientProposalsList from './ClientProposalsList';
 import ClientContractsList from './ClientContractsList';
 import ClientInvoicesList from './ClientInvoicesList';
 import ReportGeneratorWrapper from '@/components/reports/ReportGeneratorWrapper';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ClientDetailContentProps {
   client: Client;
@@ -82,7 +82,7 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Pestañas de navegación */}
+      {/* Tabs navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="overview" className="text-sm">Resumen</TabsTrigger>
@@ -91,11 +91,9 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
           <TabsTrigger value="contracts" className="text-sm">Contratos</TabsTrigger>
           <TabsTrigger value="invoices" className="text-sm">Facturas</TabsTrigger>
         </TabsList>
-      </Tabs>
 
-      {/* Contenido según la pestaña activa */}
-      <div className="mt-4">
-        {activeTab === 'overview' && (
+        {/* Tab content */}
+        <TabsContent value="overview" className="mt-4">
           <ClientTabsSection
             activeTab="summary"
             setActiveTab={() => {}}
@@ -116,20 +114,28 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
             onRefreshBusinessProfile={handleRefreshBusinessProfile}
             onRefreshPageSpeed={handleRefreshPageSpeed}
           />
-        )}
-        {activeTab === 'reports' && (
-          <ClientReportsList client={client} reports={reports} onCreateReport={handleCreateReport} />
-        )}
-        {activeTab === 'proposals' && (
+        </TabsContent>
+        
+        <TabsContent value="reports" className="mt-4">
+          <ClientReportsList 
+            client={client} 
+            reports={reports} 
+            onCreateReport={handleCreateReport} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="proposals" className="mt-4">
           <ClientProposalsList client={client} />
-        )}
-        {activeTab === 'contracts' && (
+        </TabsContent>
+        
+        <TabsContent value="contracts" className="mt-4">
           <ClientContractsList client={client} />
-        )}
-        {activeTab === 'invoices' && (
+        </TabsContent>
+        
+        <TabsContent value="invoices" className="mt-4">
           <ClientInvoicesList client={client} />
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
