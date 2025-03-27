@@ -26,7 +26,11 @@ const TechnicalTab: React.FC<TechnicalTabProps> = ({
       /(\w+(?:\s+\w+)*):\s*(\d+)%/gi,
       /(\w+(?:\s+\w+)*)\s*score:\s*(\d+)/gi,
       /(\w+(?:\s+\w+)*)\s*puntuación:\s*(\d+)/gi,
-      /(\w+(?:\s+\w+)*)\s*valoración:\s*(\d+)/gi
+      /(\w+(?:\s+\w+)*)\s*valoración:\s*(\d+)/gi,
+      /(\w+(?:\s+\w+)*)\s*rating:\s*(\d+)/gi,
+      /(\w+(?:\s+\w+)*)\s*es de\s*:?\s*(\d+)/gi,
+      /(\w+(?:\s+\w+)*)\s*tiene\s*:?\s*(\d+)\s*puntos/gi,
+      /(\w+(?:\s+\w+)*)\s*obtiene\s*:?\s*(\d+)/gi
     ];
     
     for (const pattern of patterns) {
@@ -47,6 +51,20 @@ const TechnicalTab: React.FC<TechnicalTabProps> = ({
   const metrics = extractMetrics(content);
   const hasMetrics = Object.keys(metrics).length > 0;
   
+  // Define default metrics if none are found but should be present
+  const defaultMetrics = {
+    'velocidad_de_carga': metrics['velocidad_de_carga'] || metrics['page_speed'] || metrics['speed'] || 0,
+    'seo_técnico': metrics['seo_técnico'] || metrics['technical_seo'] || metrics['seo_general'] || 0,
+    'optimización_móvil': metrics['optimización_móvil'] || metrics['mobile_optimization'] || metrics['mobile'] || 0,
+    'rendimiento': metrics['rendimiento'] || metrics['performance'] || 0,
+    'accesibilidad': metrics['accesibilidad'] || metrics['accessibility'] || 0,
+    'mejores_prácticas': metrics['mejores_prácticas'] || metrics['best_practices'] || 0,
+    'seo_on-page': metrics['seo_on-page'] || metrics['on_page_seo'] || 0
+  };
+  
+  // Combine extracted and default metrics
+  const finalMetrics = { ...defaultMetrics, ...metrics };
+  
   return (
     <div className="space-y-6">
       <ReportSection 
@@ -64,7 +82,7 @@ const TechnicalTab: React.FC<TechnicalTabProps> = ({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Object.entries(metrics).map(([key, value]) => (
+              {Object.entries(finalMetrics).map(([key, value]) => (
                 <div key={key} className="flex items-center space-x-2 p-3 rounded-md bg-background/80 border border-border/50">
                   <div className={`rounded-full p-1.5 ${value > 70 ? 'bg-green-500/10 text-green-500' : value > 40 ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'}`}>
                     {value > 70 ? (

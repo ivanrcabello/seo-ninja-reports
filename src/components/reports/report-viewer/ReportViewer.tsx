@@ -17,7 +17,7 @@ import { BusinessProfile } from '@/types/report.types';
 import ReportEditDialog from '../ReportEditDialog';
 
 const ReportViewer = () => {
-  const { id } = useParams();
+  const { id, clientId } = useParams();
   const { getReport, updateReport, isLoading: reportsLoading } = useReports();
   const navigate = useNavigate();
   
@@ -35,7 +35,7 @@ const ReportViewer = () => {
   
   // If no ID is provided, redirect to reports page
   if (!id) {
-    navigate('/reports');
+    navigate('/dashboard');
     return null;
   }
   

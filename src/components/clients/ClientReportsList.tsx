@@ -89,7 +89,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
                     animation="fade"
                     delay={index * 100}
                   >
-                    <Link to={`/reports/${report.id}`} className="block">
+                    <Link to={`/clients/${client.id}/reports/${report.id}`} className="block">
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-background/50 hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/10">
                         <div className="mb-3 sm:mb-0">
                           <div className="flex items-center gap-2">
