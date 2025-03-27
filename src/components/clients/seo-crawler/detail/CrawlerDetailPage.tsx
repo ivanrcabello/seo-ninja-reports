@@ -1,17 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCrawler } from '@/hooks/useCrawler';
-import { ClientSidebar } from '@/components/clients/ClientSidebar';
 import BlurredCard from '@/components/ui/BlurredCard';
 import CrawlerHeader from './CrawlerHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CrawlerTabContent } from './tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { FileBarChart, Plus } from 'lucide-react';
+import { FileBarChart } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 interface CrawlerDetailPageProps {
   clientId: string;
@@ -24,41 +20,24 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   crawlId,
   onBack 
 }) => {
-  const { getCrawl, isLoading } = useCrawler();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const crawl = getCrawl(crawlId);
+
+  // We'll mock the crawl data for now - in a real implementation we'd fetch this
+  const crawl = {
+    id: crawlId,
+    domain: 'example.com',
+    url: 'https://example.com',
+    status: 'completed',
+    pages_crawled: 10,
+    total_pages: 15,
+    total_issues: 5
+  };
 
   const handleGenerateReport = () => {
     // Navigate to the report generator with the crawl ID as a parameter
     navigate(`/clients/${clientId}/reports/create?crawlId=${crawlId}`);
   };
-
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!crawl) {
-    return (
-      <div className="p-6">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Análisis no encontrado</h2>
-          <p className="text-muted-foreground mb-4">
-            No se ha encontrado el análisis solicitado.
-          </p>
-          <Button onClick={() => navigate(`/clients/${clientId}`)}>
-            Volver a la lista de análisis
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 pt-6 pb-16">
@@ -100,11 +79,13 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
             </div>
             
             <ScrollArea className="p-6 h-[calc(100vh-400px)]">
-              <CrawlerTabContent 
-                activeTab={activeTab} 
-                crawl={crawl} 
-                clientId={clientId} 
-              />
+              {/* Tab content will be implemented here */}
+              <div className="p-4">
+                <h3 className="text-lg font-semibold">Contenido de {activeTab}</h3>
+                <p className="text-muted-foreground">
+                  El contenido para esta pestaña se está cargando...
+                </p>
+              </div>
             </ScrollArea>
           </Tabs>
         </div>

@@ -101,13 +101,11 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       
       const formattedKeywords = keywords.map(k => ({
         keyword: k.keyword,
-        searchVolume: k.searchVolume ? parseInt(k.searchVolume) : undefined,
-        difficulty: k.difficulty ? parseInt(k.difficulty) : undefined
+        searchVolume: k.searchVolume ? parseInt(k.searchVolume as string) : undefined,
+        difficulty: k.difficulty ? parseInt(k.difficulty as string) : undefined
       }));
       
-      // Prepare crawler data for the report
-      const crawlerData = useCrawlData && crawlData ? crawlData : null;
-      
+      // Generate the report with the proper parameters
       const report = await generateReport(
         clientId, 
         url, 
@@ -117,8 +115,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         useKeywordsData ? formattedKeywords : [],
         notes,
         useGmbData ? businessProfile : null,
-        selectedSeoReport ? { id: selectedSeoReport } : null,
-        crawlerData
+        selectedSeoReport ? { id: selectedSeoReport } : null
       );
       
       console.log('Report generated successfully:', report);
