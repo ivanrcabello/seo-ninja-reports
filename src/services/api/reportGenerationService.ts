@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
@@ -27,7 +26,8 @@ export const generateSeoReport = async (
   keywords?: Keyword[],
   notes?: string,
   businessProfile?: Partial<BusinessProfile> | null,
-  seoReport?: SeoReport | null
+  seoReport?: { id: string } | null,
+  crawlData?: any
 ): Promise<Report> => {
   try {
     const session = await supabase.auth.getSession();
@@ -41,12 +41,18 @@ export const generateSeoReport = async (
     console.log('¿Hay notas?', !!notes);
     console.log('¿Hay perfil de negocio?', !!businessProfile);
     console.log('¿Hay informe SEO seleccionado?', !!seoReport);
+    console.log('¿Hay datos de análisis SEO técnico?', !!crawlData);
 
     // Check for stuck reports and fix them
     await checkAndFixStuckReports();
 
     // Convert seoReport to a serializable format if present
-    const serializedSeoReport = seoReport ? JSON.parse(JSON.stringify(seoReport)) : null;
+    const serializedSeoReport = seoReport ? 
+      await fetchCompleteSeoReport(seoReport.id) : null;
+      
+    // Convert crawlData to a serializable format if present
+    const serializedCrawlData = crawlData ? 
+      JSON.parse(JSON.stringify(crawlData)) : null;
 
     // Prepare initial content object with properly typed structure
     const initialContent = {
@@ -63,7 +69,9 @@ export const generateSeoReport = async (
       // Include business profile if available
       businessProfile: businessProfile || null,
       // Include SEO report data if available (serialized)
-      seoReportData: serializedSeoReport
+      seoReportData: serializedSeoReport,
+      // Include crawl data if available (serialized)
+      crawlData: serializedCrawlData
     };
 
     // Create a new report with status "processing"
@@ -132,14 +140,8 @@ export const generateSeoReport = async (
         // Don't stop the process if business profile save fails
       }
     }
-    
-    // If we have SEO report data, store it in the report content
-    if (seoReport) {
-      console.log('Guardando datos de informe SEO en el contenido');
-      // The SEO report data is already included in the initialContent
-    }
 
-    // Start the report generation process with prefetched PageSpeed data
+    // Start the report generation process
     processReportGeneration(
       newReport.id, 
       clientId, 
@@ -149,7 +151,8 @@ export const generateSeoReport = async (
       prefetchedPageSpeedData,
       notes,
       businessProfile,
-      seoReport
+      serializedSeoReport,
+      serializedCrawlData
     ).catch(error => {
       console.error('Error no controlado en procesamiento de informe:', error);
       markReportAsFailed(newReport.id, `Error no controlado: ${error.message || 'Error desconocido'}`);
@@ -189,7 +192,8 @@ const processReportGeneration = async (
   prefetchedPageSpeedData?: any,
   notes?: string,
   businessProfile?: Partial<BusinessProfile> | null,
-  seoReport?: SeoReport | null
+  seoReport?: any | null,
+  crawlData?: any | null
 ) => {
   try {
     console.log('Iniciando proceso de generación en segundo plano para reporte:', reportId);
@@ -235,7 +239,7 @@ const processReportGeneration = async (
     console.log('Procesando informe con OpenAI...');
     
     // Process the report with OpenAI
-    await processOpenAIReport(reportId, url, pageSpeedData, customPrompt, notes, businessProfile, seoReport);
+    await processOpenAIReport(reportId, url, pageSpeedData, customPrompt, notes, businessProfile, seoReport, crawlData);
     console.log('Procesamiento de informe completado con éxito');
     
   } catch (error: any) {
@@ -246,6 +250,53 @@ const processReportGeneration = async (
     
     toast.error('Error al generar informe');
     throw error;
+  }
+};
+
+/**
+ * Fetch complete SEO report data
+ */
+const fetchCompleteSeoReport = async (reportId: string): Promise<any> => {
+  try {
+    const { data: report, error } = await supabase
+      .from('seo_reports')
+      .select('*')
+      .eq('id', reportId)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching SEO report:', error);
+      return null;
+    }
+    
+    // Get keywords data
+    const { data: keywords, error: keywordsError } = await supabase
+      .from('seo_keywords')
+      .select('*')
+      .eq('report_id', reportId);
+      
+    if (keywordsError) {
+      console.error('Error fetching SEO keywords:', keywordsError);
+    }
+    
+    // Get competitors data
+    const { data: competitors, error: competitorsError } = await supabase
+      .from('seo_competitors')
+      .select('*')
+      .eq('report_id', reportId);
+      
+    if (competitorsError) {
+      console.error('Error fetching SEO competitors:', competitorsError);
+    }
+    
+    return {
+      ...report,
+      keywordsData: keywords || [],
+      competitorsData: competitors || []
+    };
+  } catch (error) {
+    console.error('Error in fetchCompleteSeoReport:', error);
+    return null;
   }
 };
 

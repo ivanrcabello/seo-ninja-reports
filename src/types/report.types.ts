@@ -26,6 +26,7 @@ export interface Report {
     pageSpeedData?: PageSpeedData;
     businessProfile?: BusinessProfile;
     seoReportData?: Record<string, any>; // Store SEO report data in content
+    crawlData?: Record<string, any>; // Store SEO crawler data in content
   };
   customPrompt?: string;
   customSections?: CustomSection[];

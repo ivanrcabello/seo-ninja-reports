@@ -1,113 +1,84 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import BlurredCard from '../ui/BlurredCard';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
 import { toast } from 'sonner';
-import ReportGeneratorHeader from './report-steps/ReportGeneratorHeader';
-import ReportGeneratorStep1 from './report-steps/ReportGeneratorStep1';
-import ReportGeneratorStep2 from './report-steps/ReportGeneratorStep2';
-import ReportGeneratorStep3 from './report-steps/ReportGeneratorStep3';
-import ReportGeneratorStep4 from './report-steps/ReportGeneratorStep4';
-import ReportGeneratorStep5 from './report-steps/ReportGeneratorStep5';
-import { BusinessProfile } from '@/types/report.types';
-import usePersistentState from '@/hooks/usePersistentState';
+import { useReportGenerator } from '@/context/ReportGeneratorContext';
+import { useCrawler } from '@/hooks/useCrawler';
 import { PDFExtractor } from '@/utils/PDFExtractor';
 import { fetchClientSeoReports } from '@/services/seoReport';
 import { SeoReport } from '@/types/seo-reporting.types';
+
+// Import steps
+import ReportGeneratorHeader from './report-steps/ReportGeneratorHeader';
+import CrawlDataStep from './report-steps/CrawlDataStep';
+import UrlAndSpeedStep from './report-steps/UrlAndSpeedStep';
+import BusinessProfileStep from './report-steps/BusinessProfileStep';
+import KeywordsStep from './report-steps/KeywordsStep';
+import DocumentsAndNotesStep from './report-steps/DocumentsAndNotesStep';
+import ReviewAndGenerateStep from './report-steps/ReviewAndGenerateStep';
 
 interface ReportGeneratorProps {
   clientId: string;
 }
 
-interface Keyword {
-  keyword: string;
-  searchVolume?: string;
-  difficulty?: string;
-}
-
 const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
-  const [url, setUrl] = usePersistentState<string>(`report-generator-url-${clientId}`, '');
-  const [files, setFiles] = useState<File[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = usePersistentState<1 | 2 | 3 | 4 | 5>(`report-generator-step-${clientId}`, 1);
-  const [pageSpeedData, setPageSpeedData] = useState<any>(null);
-  const [customPrompt, setCustomPrompt] = usePersistentState<string>('report-generator-prompt', 
-    localStorage.getItem('default_seo_prompt') || '');
-  const [keywords, setKeywords] = usePersistentState<Keyword[]>(`report-generator-keywords-${clientId}`, []);
-  const [notes, setNotes] = usePersistentState<string>(`report-generator-notes-${clientId}`, '');
-  const [businessUrl, setBusinessUrl] = usePersistentState<string>(`report-generator-business-url-${clientId}`, '');
-  const [businessProfile, setBusinessProfile] = usePersistentState<Partial<BusinessProfile> | null>(
-    `report-generator-business-profile-${clientId}`, null);
+  const {
+    url, setUrl,
+    files, setFiles,
+    pageSpeedData,
+    customPrompt, 
+    keywords,
+    notes,
+    businessProfile,
+    usePageSpeedData,
+    useGmbData,
+    useKeywordsData,
+    selectedSeoReport,
+    crawlId,
+    crawlData,
+    useCrawlData,
+    setCrawlId,
+    setCrawlData,
+    reset
+  } = useReportGenerator();
   
-  const [seoReports, setSeoReports] = useState<SeoReport[]>([]);
-  const [selectedSeoReport, setSelectedSeoReport] = usePersistentState<string | null>(
-    `report-generator-selected-seo-report-${clientId}`, null);
-  const [usePageSpeedData, setUsePageSpeedData] = usePersistentState<boolean>(
-    `report-generator-use-pagespeed-${clientId}`, true);
-  const [useGmbData, setUseGmbData] = usePersistentState<boolean>(
-    `report-generator-use-gmb-${clientId}`, true);
-  const [useKeywordsData, setUseKeywordsData] = usePersistentState<boolean>(
-    `report-generator-use-keywords-${clientId}`, true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   
   const { generateReport } = useReports();
   const { getClient } = useClients();
+  const { getCrawl } = useCrawler();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const client = getClient(clientId);
   const hasGoogleApiKey = !!localStorage.getItem('google_pagespeed_api_key');
   const hasOpenAIApiKey = !!localStorage.getItem('openai_api_key');
 
+  // Check for crawlId in query parameters
   useEffect(() => {
-    const loadSeoReports = async () => {
-      try {
-        const reports = await fetchClientSeoReports(clientId);
-        setSeoReports(reports);
-        console.log('Loaded SEO reports:', reports.length);
-      } catch (error) {
-        console.error('Error loading SEO reports:', error);
-      }
-    };
+    const params = new URLSearchParams(location.search);
+    const crawlIdParam = params.get('crawlId');
     
-    loadSeoReports();
-  }, [clientId]);
-  
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && pageSpeedData === null) {
-        const savedData = sessionStorage.getItem(`report-generator-pagespeed-${clientId}`);
-        if (savedData) {
-          try {
-            setPageSpeedData(JSON.parse(savedData));
-          } catch (e) {
-            console.error('Error parsing saved PageSpeed data:', e);
-          }
-        }
-      } else if (pageSpeedData !== null) {
-        sessionStorage.setItem(`report-generator-pagespeed-${clientId}`, JSON.stringify(pageSpeedData));
+    if (crawlIdParam) {
+      setCrawlId(crawlIdParam);
+      const crawlData = getCrawl(crawlIdParam);
+      
+      if (crawlData) {
+        setCrawlData(crawlData);
+        // Set URL from crawl data
+        setUrl(crawlData.url || '');
       }
-    };
+    }
+  }, [location, setCrawlId, setCrawlData, getCrawl, setUrl]);
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [clientId, pageSpeedData]);
-  
   const clearPersistedData = () => {
-    sessionStorage.removeItem(`report-generator-url-${clientId}`);
-    sessionStorage.removeItem(`report-generator-step-${clientId}`);
-    sessionStorage.removeItem(`report-generator-keywords-${clientId}`);
-    sessionStorage.removeItem(`report-generator-notes-${clientId}`);
-    sessionStorage.removeItem(`report-generator-business-url-${clientId}`);
-    sessionStorage.removeItem(`report-generator-business-profile-${clientId}`);
-    sessionStorage.removeItem(`report-generator-pagespeed-${clientId}`);
-    sessionStorage.removeItem(`report-generator-selected-seo-report-${clientId}`);
-    sessionStorage.removeItem(`report-generator-use-pagespeed-${clientId}`);
-    sessionStorage.removeItem(`report-generator-use-gmb-${clientId}`);
-    sessionStorage.removeItem(`report-generator-use-keywords-${clientId}`);
+    // Clear all persisted data
+    reset();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,11 +98,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     
     try {
       console.log('Generating report for client:', clientId, 'URL:', url);
-      console.log('Using PageSpeed data:', usePageSpeedData ? pageSpeedData : 'No');
-      console.log('Using GMB data:', useGmbData ? businessProfile : 'No');
-      console.log('Using Keywords data:', useKeywordsData ? keywords : 'No');
-      console.log('Selected SEO report:', selectedSeoReport);
-      console.log('Notes:', notes);
       
       const formattedKeywords = keywords.map(k => ({
         keyword: k.keyword,
@@ -139,11 +105,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         difficulty: k.difficulty ? parseInt(k.difficulty) : undefined
       }));
       
-      const seoReportData = selectedSeoReport 
-        ? seoReports.find(r => r.id === selectedSeoReport) || null
-        : null;
-      
-      console.log('SEO report data:', seoReportData);
+      // Prepare crawler data for the report
+      const crawlerData = useCrawlData && crawlData ? crawlData : null;
       
       const report = await generateReport(
         clientId, 
@@ -154,7 +117,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         useKeywordsData ? formattedKeywords : [],
         notes,
         useGmbData ? businessProfile : null,
-        seoReportData
+        selectedSeoReport ? { id: selectedSeoReport } : null,
+        crawlerData
       );
       
       console.log('Report generated successfully:', report);
@@ -183,29 +147,21 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   };
 
   const goToNextStep = () => {
-    if (step < 5) {
-      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4 | 5);
+    if (step < 6) {
+      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4 | 5 | 6);
     }
   };
 
   const goToPreviousStep = () => {
     if (step > 1) {
-      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4 | 5);
+      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4 | 5 | 6);
     }
-  };
-
-  const nextStep = () => {
-    if (step === 1 && !url) {
-      toast.error('Debes proporcionar una URL válida');
-      return;
-    }
-    goToNextStep();
   };
 
   return (
     <BlurredCard animation="scale" className="w-full max-w-2xl mx-auto">
       <Card className="border-none shadow-none bg-transparent">
-        <ReportGeneratorHeader clientName={client?.name} />
+        <ReportGeneratorHeader clientName={client?.name} step={step} totalSteps={6} />
         
         {!hasOpenAIApiKey && (
           <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-md">
@@ -215,73 +171,48 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         )}
         
         {step === 1 && (
-          <ReportGeneratorStep1
-            url={url}
-            setUrl={setUrl}
-            hasGoogleApiKey={hasGoogleApiKey}
-            nextStep={nextStep}
-            setPageSpeedData={setPageSpeedData}
-            usePageSpeedData={usePageSpeedData}
-            setUsePageSpeedData={setUsePageSpeedData}
+          <CrawlDataStep
+            nextStep={goToNextStep}
+            crawlId={crawlId}
+            crawlData={crawlData}
+            useCrawlData={useCrawlData}
           />
         )}
         
         {step === 2 && (
-          <ReportGeneratorStep2
-            files={files}
-            setFiles={setFiles}
-            customPrompt={customPrompt}
-            setCustomPrompt={setCustomPrompt}
-            hasGoogleApiKey={hasGoogleApiKey}
-            pageSpeedDataFetched={!!pageSpeedData}
-            isLoading={isLoading}
-            previousStep={goToPreviousStep}
+          <UrlAndSpeedStep
             nextStep={goToNextStep}
-            businessUrl={businessUrl}
-            setBusinessUrl={setBusinessUrl}
-            businessProfile={businessProfile}
-            setBusinessProfile={setBusinessProfile}
-            useGmbData={useGmbData}
-            setUseGmbData={setUseGmbData}
+            previousStep={goToPreviousStep}
+            hasGoogleApiKey={hasGoogleApiKey}
           />
         )}
         
         {step === 3 && (
-          <ReportGeneratorStep3
-            keywords={keywords}
-            setKeywords={setKeywords}
-            isLoading={isLoading}
-            previousStep={goToPreviousStep}
+          <BusinessProfileStep
             nextStep={goToNextStep}
-            useKeywordsData={useKeywordsData}
-            setUseKeywordsData={setUseKeywordsData}
+            previousStep={goToPreviousStep}
           />
         )}
         
         {step === 4 && (
-          <ReportGeneratorStep4
-            notes={notes}
-            setNotes={setNotes}
-            seoReports={seoReports}
-            selectedSeoReport={selectedSeoReport}
-            setSelectedSeoReport={setSelectedSeoReport}
-            isLoading={isLoading}
-            previousStep={goToPreviousStep}
+          <KeywordsStep
             nextStep={goToNextStep}
+            previousStep={goToPreviousStep}
           />
         )}
         
         {step === 5 && (
-          <ReportGeneratorStep5
-            url={url}
-            usePageSpeedData={usePageSpeedData}
-            useGmbData={useGmbData}
-            useKeywordsData={useKeywordsData}
-            selectedSeoReport={selectedSeoReport ? seoReports.find(r => r.id === selectedSeoReport) : null}
-            filesCount={files.length}
-            isLoading={isLoading}
+          <DocumentsAndNotesStep
+            nextStep={goToNextStep}
+            previousStep={goToPreviousStep}
+          />
+        )}
+        
+        {step === 6 && (
+          <ReviewAndGenerateStep
             previousStep={goToPreviousStep}
             handleSubmit={handleSubmit}
+            isLoading={isLoading}
           />
         )}
       </Card>

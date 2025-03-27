@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
@@ -16,7 +15,8 @@ export const processOpenAIReport = async (
   customPrompt?: string,
   notes?: string,
   businessProfile?: Partial<BusinessProfile> | null,
-  seoReport?: SeoReport | null
+  seoReport?: SeoReport | null,
+  crawlData?: any = null
 ): Promise<Report | null> => {
   try {
     console.log('Iniciando procesamiento de informe con OpenAI para:', url);
@@ -25,6 +25,7 @@ export const processOpenAIReport = async (
     console.log('¿Hay notas?', !!notes);
     console.log('¿Hay perfil de negocio?', !!businessProfile);
     console.log('¿Hay informe SEO?', !!seoReport);
+    console.log('¿Hay datos de análisis SEO técnico?', !!crawlData);
     
     let prompt = customPrompt || localStorage.getItem('default_seo_prompt') || '';
     prompt = prompt.replace('[DOMINIO]', url ? new URL(url).hostname : 'dominio');
@@ -38,6 +39,27 @@ export const processOpenAIReport = async (
       } catch (pageSpeedError) {
         console.error('Error al obtener datos de PageSpeed:', pageSpeedError);
         // Continue without PageSpeed data
+      }
+    }
+    
+    // Add SEO crawler data to the prompt if available
+    if (crawlData) {
+      try {
+        const crawlSummary = formatCrawlData(crawlData);
+        prompt += "\n\nA continuación se incluyen datos del análisis SEO técnico realizado. Utiliza esta información para enriquecer el informe y proporcionar recomendaciones específicas:\n" + crawlSummary;
+        
+        // Include information about specific issues if available
+        if (crawlData.summary && typeof crawlData.summary === 'object') {
+          if (crawlData.summary.topIssues && crawlData.summary.topIssues.length > 0) {
+            prompt += "\n\nProblemas principales encontrados en el análisis SEO técnico:\n";
+            crawlData.summary.topIssues.forEach((issue: any, index: number) => {
+              prompt += `${index + 1}. ${issue.issue_type}: ${issue.description} (${issue.severity})\n`;
+            });
+          }
+        }
+      } catch (formatError) {
+        console.error('Error al formatear datos del análisis SEO técnico:', formatError);
+        prompt += "\n\nSe obtuvieron datos del análisis SEO técnico pero hubo un error al procesarlos. Por favor, incluye recomendaciones generales sobre SEO técnico.";
       }
     }
     
@@ -86,7 +108,7 @@ export const processOpenAIReport = async (
         // Add keywords data if available
         if (seoReport.keywordsData && seoReport.keywordsData.length > 0) {
           prompt += "\nPalabras clave principales:\n";
-          seoReport.keywordsData.slice(0, 10).forEach(kw => {
+          seoReport.keywordsData.slice(0, 10).forEach((kw: any) => {
             prompt += `- "${kw.keyword}" (posición: ${kw.position}, volumen: ${kw.volume})\n`;
           });
         }
@@ -94,7 +116,7 @@ export const processOpenAIReport = async (
         // Add competitors data if available
         if (seoReport.competitorsData && seoReport.competitorsData.length > 0) {
           prompt += "\nCompetidores principales:\n";
-          seoReport.competitorsData.slice(0, 5).forEach(comp => {
+          seoReport.competitorsData.slice(0, 5).forEach((comp: any) => {
             prompt += `- ${comp.domain} (solapamiento: ${comp.keywordsOverlap} palabras clave)\n`;
           });
         }
@@ -203,7 +225,9 @@ export const processOpenAIReport = async (
         // Include business profile if available
         businessProfile: businessProfile || null,
         // Include SEO report data if available, ensuring it's serializable
-        seoReportData: seoReport ? JSON.parse(JSON.stringify(seoReport)) : null
+        seoReportData: seoReport ? JSON.parse(JSON.stringify(seoReport)) : null,
+        // Include crawl data if available
+        crawlData: crawlData ? JSON.parse(JSON.stringify(crawlData)) : null
       };
       
       console.log('Actualización de content preparada con secciones:', Object.keys(reportContent));
@@ -279,6 +303,49 @@ export const processOpenAIReport = async (
     
     throw apiError;
   }
+};
+
+/**
+ * Format crawl data for inclusion in the prompt
+ */
+const formatCrawlData = (crawlData: any): string => {
+  if (!crawlData) return 'No hay datos disponibles del análisis SEO técnico.';
+  
+  let summary = `Análisis SEO técnico de ${crawlData.domain || 'dominio'}\n`;
+  summary += `URL analizada: ${crawlData.url || 'N/A'}\n`;
+  summary += `Estado del análisis: ${crawlData.status || 'N/A'}\n`;
+  summary += `Páginas analizadas: ${crawlData.pages_crawled || 0} de ${crawlData.total_pages || 'N/A'}\n`;
+  
+  // Include performance metrics if available
+  if (crawlData.performance_score !== undefined) {
+    summary += `Puntuación de rendimiento: ${(crawlData.performance_score * 100).toFixed(0)}%\n`;
+  }
+  
+  if (crawlData.mobile_friendly_score !== undefined) {
+    summary += `Puntuación de optimización móvil: ${(crawlData.mobile_friendly_score * 100).toFixed(0)}%\n`;
+  }
+  
+  if (crawlData.avg_page_load_time_ms !== undefined) {
+    summary += `Tiempo medio de carga: ${(crawlData.avg_page_load_time_ms / 1000).toFixed(2)} segundos\n`;
+  }
+  
+  // Include issue counts if available
+  summary += `Total de problemas encontrados: ${crawlData.total_issues || 0}\n`;
+  summary += `Total de enlaces internos: ${crawlData.total_internal_links || 0}\n`;
+  summary += `Total de enlaces externos: ${crawlData.total_external_links || 0}\n`;
+  summary += `Total de enlaces rotos: ${crawlData.total_broken_links || 0}\n`;
+  
+  // Include information about schema markup if available
+  if (crawlData.schema_markup_count !== undefined) {
+    summary += `Marcado de esquema encontrado: ${crawlData.schema_markup_count}\n`;
+  }
+  
+  // Include information about duplicate content if available
+  if (crawlData.duplicate_content_count !== undefined) {
+    summary += `Contenido duplicado detectado: ${crawlData.duplicate_content_count} páginas\n`;
+  }
+  
+  return summary;
 };
 
 /**
