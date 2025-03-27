@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
@@ -8,6 +9,7 @@ import ClientProposalsList from './ClientProposalsList';
 import ClientContractsList from './ClientContractsList';
 import ClientInvoicesList from './ClientInvoicesList';
 import ReportGeneratorWrapper from '@/components/reports/ReportGeneratorWrapper';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ClientDetailContentProps {
   client: Client;
@@ -78,42 +80,58 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
     );
   }
 
-  // Determine which tab content to render
-  switch (activeTab) {
-    case 'overview':
-      return (
-        <ClientTabsSection
-          activeTab="summary"
-          setActiveTab={() => {}}
-          client={client}
-          reports={reports}
-          onViewReports={handleViewReports}
-          onCreateReport={handleCreateReport}
-          onBusinessProfileUpdate={handleBusinessProfileUpdate}
-          onPageSpeedUpdate={handlePageSpeedUpdate}
-          businessProfile={businessProfile}
-          pageSpeedScore={pageSpeedScore}
-          clientWebsite={client.website}
-          clientName={client.name}
-          clientLocation={client.industry}
-          clientId={clientId}
-          isRefreshingBusinessProfile={isRefreshingBusinessProfile}
-          isRefreshingPageSpeed={isRefreshingPageSpeed}
-          onRefreshBusinessProfile={handleRefreshBusinessProfile}
-          onRefreshPageSpeed={handleRefreshPageSpeed}
-        />
-      );
-    case 'reports':
-      return <ClientReportsList client={client} reports={reports} onCreateReport={handleCreateReport} />;
-    case 'proposals':
-      return <ClientProposalsList client={client} />;
-    case 'contracts':
-      return <ClientContractsList client={client} />;
-    case 'invoices':
-      return <ClientInvoicesList client={client} />;
-    default:
-      return null;
-  }
+  return (
+    <div className="space-y-6">
+      {/* Pestañas de navegación */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger value="overview" className="text-sm">Resumen</TabsTrigger>
+          <TabsTrigger value="reports" className="text-sm">Informes</TabsTrigger>
+          <TabsTrigger value="proposals" className="text-sm">Propuestas</TabsTrigger>
+          <TabsTrigger value="contracts" className="text-sm">Contratos</TabsTrigger>
+          <TabsTrigger value="invoices" className="text-sm">Facturas</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Contenido según la pestaña activa */}
+      <div className="mt-4">
+        {activeTab === 'overview' && (
+          <ClientTabsSection
+            activeTab="summary"
+            setActiveTab={() => {}}
+            client={client}
+            reports={reports}
+            onViewReports={handleViewReports}
+            onCreateReport={handleCreateReport}
+            onBusinessProfileUpdate={handleBusinessProfileUpdate}
+            onPageSpeedUpdate={handlePageSpeedUpdate}
+            businessProfile={businessProfile}
+            pageSpeedScore={pageSpeedScore}
+            clientWebsite={client.website}
+            clientName={client.name}
+            clientLocation={client.industry}
+            clientId={clientId}
+            isRefreshingBusinessProfile={isRefreshingBusinessProfile}
+            isRefreshingPageSpeed={isRefreshingPageSpeed}
+            onRefreshBusinessProfile={handleRefreshBusinessProfile}
+            onRefreshPageSpeed={handleRefreshPageSpeed}
+          />
+        )}
+        {activeTab === 'reports' && (
+          <ClientReportsList client={client} reports={reports} onCreateReport={handleCreateReport} />
+        )}
+        {activeTab === 'proposals' && (
+          <ClientProposalsList client={client} />
+        )}
+        {activeTab === 'contracts' && (
+          <ClientContractsList client={client} />
+        )}
+        {activeTab === 'invoices' && (
+          <ClientInvoicesList client={client} />
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ClientDetailContent;
