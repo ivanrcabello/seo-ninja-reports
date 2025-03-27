@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ArrowLeft, Calendar, Clock, AlertCircle, CheckCircle, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -51,9 +52,8 @@ const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({
           </Badge>
         );
       default:
-        const status = (crawlResult.status as 'completed' | 'processing' | 'failed' | 'queued') || 'processing';
         return (
-          <Badge variant="outline">{status}</Badge>
+          <Badge variant="outline">{crawlResult.status}</Badge>
         );
     }
   };
@@ -72,17 +72,12 @@ const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({
     return formatDistanceToNow(date, { addSuffix: true, locale: es });
   };
 
-  const handleBackClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onBack();
-  };
-
   return (
     <BlurredCard>
       <CardContent className="p-6">
         <div className="flex flex-col space-y-4">
           <div className="flex justify-between items-start">
-            <Button variant="ghost" onClick={handleBackClick} className="flex items-center -ml-4 p-2">
+            <Button variant="ghost" onClick={onBack} className="flex items-center -ml-4 p-2">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver
             </Button>

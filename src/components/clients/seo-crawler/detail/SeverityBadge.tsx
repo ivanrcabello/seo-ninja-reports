@@ -7,13 +7,11 @@ type SeverityLevel = 'critical' | 'high' | 'medium' | 'low' | 'info' | string;
 interface SeverityBadgeProps {
   severity: SeverityLevel;
   showLabel?: boolean;
-  className?: string; // Add className prop to the interface
 }
 
 const SeverityBadge: React.FC<SeverityBadgeProps> = ({ 
   severity,
-  showLabel = true,
-  className = '' // Add default empty string for className
+  showLabel = true 
 }) => {
   let variant: 
     | 'default'
@@ -53,7 +51,7 @@ const SeverityBadge: React.FC<SeverityBadgeProps> = ({
   }
   
   return (
-    <Badge variant={variant} className={`capitalize ${className}`}>
+    <Badge variant={variant} className="capitalize">
       {showLabel ? label : ''}
     </Badge>
   );

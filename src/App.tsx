@@ -1,195 +1,166 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'sonner';
-import { AuthProvider } from '@/context/AuthContext';
-import { ClientsProvider } from '@/hooks/useClients';
-import { ReportsProvider } from '@/hooks/useReports';
-import { ReportGeneratorProvider } from '@/context/ReportGeneratorContext';
-import { ThemeProvider } from '@/context/ThemeContext';
-import ProtectedRoute from '@/routes/ProtectedRoute';
-import Layout from '@/components/layout/Layout';
-import NotFoundPage from '@/pages/NotFoundPage';
-import CrawlerDetailPage from '@/pages/CrawlerDetailPage';
 
-// We're using a simplification here - in a real app, these would be separate page components
-const DummyPage = ({ title }: { title: string }) => (
-  <Layout>
-    <div className="container mx-auto px-4 pt-24 pb-16">
-      <h1 className="text-2xl font-bold mb-4">{title}</h1>
-      <p>This is a placeholder page for {title}.</p>
-    </div>
-  </Layout>
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import AuthProvider from './context/AuthContext';
+import { ClientsProvider } from './hooks/useClients';
+import { ReportsProvider } from './hooks/useReports.tsx';
+import { Toaster } from 'sonner';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a client
+const queryClient = new QueryClient();
+
+const LoadingSpinner = () => {
+  return <div className="flex items-center justify-center h-screen">Loading...</div>;
+};
+
+const Auth = lazy(() => import('./pages/Auth'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Settings = lazy(() => import('./pages/Settings'));
+
+const ClientDetail = lazy(() => 
+  import('./pages/ClientDetail')
+    .catch(error => {
+      console.error("Error loading ClientDetail component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading client details</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Reload page
+            </button>
+          </div>
+        )
+      };
+    })
 );
 
-const LoginPage = () => <DummyPage title="Login" />;
-const RegisterPage = () => <DummyPage title="Register" />;
-const DashboardPage = () => <DummyPage title="Dashboard" />;
-const ClientsPage = () => <DummyPage title="Clients" />;
-const ClientDetailPage = () => <DummyPage title="Client Detail" />;
-const ProfilePage = () => <DummyPage title="Profile" />;
-const SettingsPage = () => <DummyPage title="Settings" />;
-const ReportsPage = () => <DummyPage title="Reports" />;
-const ReportPage = () => <DummyPage title="Report" />;
-const ProposalsPage = () => <DummyPage title="Proposals" />;
-const ProposalDetailPage = () => <DummyPage title="Proposal Detail" />;
-const ContractsPage = () => <DummyPage title="Contracts" />;
-const ContractDetailPage = () => <DummyPage title="Contract Detail" />;
-const InvoicesPage = () => <DummyPage title="Invoices" />;
-const InvoiceDetailPage = () => <DummyPage title="Invoice Detail" />;
-const PublicReportPage = () => <DummyPage title="Public Report" />;
-const PublicProposalPage = () => <DummyPage title="Public Proposal" />;
-const PublicContractPage = () => <DummyPage title="Public Contract" />;
-const PublicInvoicePage = () => <DummyPage title="Public Invoice" />;
-const BlogPage = () => <DummyPage title="Blog" />;
+const ClientDetailWithErrorBoundary = (props: any) => {
+  return (
+    <ErrorBoundary fallback={<ClientErrorFallback />}>
+      <ClientDetail {...props} />
+    </ErrorBoundary>
+  );
+};
+
+const ClientErrorFallback = () => (
+  <div className="flex flex-col items-center justify-center h-screen">
+    <h1 className="text-xl font-bold mb-4">Error loading client details</h1>
+    <p className="mb-4">There was a problem displaying this client's information.</p>
+    <button 
+      onClick={() => window.location.href = '/dashboard'}
+      className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+    >
+      Return to dashboard
+    </button>
+  </div>
+);
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Component error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
+const ReportDetail = lazy(() => 
+  import('./pages/ReportDetail')
+    .catch(error => {
+      console.error("Error loading ReportDetail component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading report details</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const CrawlerDetailPage = lazy(() => 
+  import('./pages/CrawlerDetailPage')
+    .catch(error => {
+      console.error("Error loading CrawlerDetailPage component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading crawler details</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const AuthGuard = ({ children }: { children: React.ReactNode }) => {
+  return <>{children}</>;
+};
 
 function App() {
   return (
-    <BrowserRouter>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <AuthProvider>
-          <ClientsProvider>
-            <ReportsProvider>
-              <ReportGeneratorProvider>
-                <Routes>
-                  {/* Auth routes */}
-                  <Route path="/auth" element={<LoginPage />} />
-                  <Route path="/auth/register" element={<RegisterPage />} />
-                  
-                  {/* Protected routes */}
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <DashboardPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/clients" 
-                    element={
-                      <ProtectedRoute>
-                        <ClientsPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/clients/:id" 
-                    element={
-                      <ProtectedRoute>
-                        <ClientDetailPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/clients/:clientId/seo/:crawlId" 
-                    element={
-                      <ProtectedRoute>
-                        <CrawlerDetailPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/reports" 
-                    element={
-                      <ProtectedRoute>
-                        <ReportsPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/reports/:id" 
-                    element={
-                      <ProtectedRoute>
-                        <ReportPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/proposals" 
-                    element={
-                      <ProtectedRoute>
-                        <ProposalsPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/proposals/:id" 
-                    element={
-                      <ProtectedRoute>
-                        <ProposalDetailPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/contracts" 
-                    element={
-                      <ProtectedRoute>
-                        <ContractsPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/contracts/:id" 
-                    element={
-                      <ProtectedRoute>
-                        <ContractDetailPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/invoices" 
-                    element={
-                      <ProtectedRoute>
-                        <InvoicesPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/invoices/:id" 
-                    element={
-                      <ProtectedRoute>
-                        <InvoiceDetailPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/profile" 
-                    element={
-                      <ProtectedRoute>
-                        <ProfilePage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/settings" 
-                    element={
-                      <ProtectedRoute>
-                        <SettingsPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Public routes */}
-                  <Route path="/p/r/:id" element={<PublicReportPage />} />
-                  <Route path="/p/p/:id" element={<PublicProposalPage />} />
-                  <Route path="/p/c/:id" element={<PublicContractPage />} />
-                  <Route path="/p/i/:id" element={<PublicInvoicePage />} />
-                  <Route path="/blog" element={<BlogPage />} />
-                  
-                  {/* Default route */}
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  
-                  {/* Not found */}
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-                
-                <Toaster position="top-right" richColors />
-              </ReportGeneratorProvider>
-            </ReportsProvider>
-          </ClientsProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <>
+      <AuthProvider>
+        <ClientsProvider>
+          <ReportsProvider>
+            <QueryClientProvider client={queryClient}>
+              <Router>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    
+                    <Route path="/" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
+                    <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+                    <Route path="/clients/:id" element={<AuthGuard><ClientDetailWithErrorBoundary /></AuthGuard>} />
+                    <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
+                    <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
+                    <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
+                    <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                </Suspense>
+              </Router>
+              <Toaster position="top-right" richColors closeButton />
+            </QueryClientProvider>
+          </ReportsProvider>
+        </ClientsProvider>
+      </AuthProvider>
+    </>
   );
 }
 

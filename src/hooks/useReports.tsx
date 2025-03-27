@@ -1,17 +1,18 @@
-// Import relevant functions and types
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
-import {
-  fetchReports,
-  createNewReport,
-  updateExistingReport,
+
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { Report, BusinessProfile } from '@/types/report.types';
+import { useAuth } from '@/context/AuthContext';
+import { 
+  fetchReports, 
+  createNewReport, 
+  updateExistingReport, 
   deleteReportById,
   generateSeoReport,
-  retryFailedReport
+  retryFailedReport,
+  checkAndFixStuckReports,
+  saveBusinessProfile
 } from '@/services/reportService';
-import { Report, BusinessProfile } from '@/types/report.types';
-import { SeoReport } from '@/types/seo-reporting.types';
-import React, { createContext, useContext } from 'react';
+import { toast } from 'sonner';
 
 interface Keyword {
   keyword: string;
@@ -19,176 +20,241 @@ interface Keyword {
   difficulty?: number;
 }
 
-// Create a standalone hook for direct use (not through context)
-export default function useReportsHook() {
+interface ReportsContextType {
+  reports: Report[];
+  isLoading: boolean;
+  getReport: (id: string) => Report | undefined;
+  getClientReports: (clientId: string) => Report[];
+  createReport: (data: Omit<Report, 'id' | 'date' | 'status'>) => Promise<Report>;
+  updateReport: (id: string, data: Partial<Report>) => Promise<Report>;
+  deleteReport: (id: string) => Promise<void>;
+  generateReport: (
+    clientId: string, 
+    url: string, 
+    files: File[], 
+    customPrompt?: string, 
+    pageSpeedData?: any,
+    keywords?: Keyword[],
+    notes?: string,
+    businessProfile?: Partial<BusinessProfile> | null,
+    seoReport?: any
+  ) => Promise<Report>;
+  retryReport: (id: string) => Promise<boolean>;
+  checkForStuckReports: () => Promise<void>;
+}
+
+const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
+
+// Export ReportsProvider as a named export
+export const ReportsProvider = ({ children }: { children: ReactNode }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Fetch all reports on component mount
+  const { user } = useAuth();
+
   useEffect(() => {
     const loadReports = async () => {
+      if (!user) {
+        setReports([]);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const data = await fetchReports();
-        setReports(data);
+        setIsLoading(true);
+        const reportsData = await fetchReports();
+        setReports(reportsData);
+        
+        // Intentamos verificar informes atascados de manera segura
+        try {
+          await checkAndFixStuckReports();
+        } catch (stuckError) {
+          console.error('Error al verificar informes atascados:', stuckError);
+          // No interrumpimos el flujo principal si esto falla
+        }
       } catch (error) {
-        console.error('Error fetching reports:', error);
-        toast.error('Error al cargar los informes');
+        console.error('Error en loadReports:', error);
+        toast.error('Error al cargar informes');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadReports();
-  }, []);
+    
+    // Configuramos un intervalo para verificar informes atascados cada 5 minutos
+    // pero lo hacemos de manera segura para que no interrumpa la aplicación
+    let stuckReportsInterval: NodeJS.Timeout | null = null;
+    
+    if (user) {
+      stuckReportsInterval = setInterval(async () => {
+        try {
+          await checkAndFixStuckReports();
+          // Actualizamos la lista de informes después de arreglar los atascados
+          const reportsData = await fetchReports();
+          setReports(reportsData);
+        } catch (error) {
+          console.error('Error al verificar informes atascados en intervalo:', error);
+          // No hacemos nada más, simplemente registramos el error
+        }
+      }, 5 * 60 * 1000); // 5 minutos
+    }
+    
+    return () => {
+      if (stuckReportsInterval) {
+        clearInterval(stuckReportsInterval);
+      }
+    };
+  }, [user]);
 
-  // Get a specific report by ID
-  const getReport = useCallback((id: string): Report | undefined => {
+  const getReport = (id: string) => {
     return reports.find(report => report.id === id);
-  }, [reports]);
+  };
 
-  // Get reports for a specific client
-  const getClientReports = useCallback((clientId: string): Report[] => {
+  const getClientReports = (clientId: string) => {
     return reports.filter(report => report.clientId === clientId);
-  }, [reports]);
+  };
 
-  // Generate a new report
-  const generateReport = useCallback(async (
+  const createReport = async (data: Omit<Report, 'id' | 'date' | 'status'>) => {
+    try {
+      const newReport = await createNewReport(data);
+      setReports(prevReports => [newReport, ...prevReports]);
+      return newReport;
+    } catch (error) {
+      console.error('Error al crear informe:', error);
+      throw error;
+    }
+  };
+
+  const updateReport = async (id: string, data: Partial<Report>) => {
+    try {
+      const updatedReport = await updateExistingReport(id, data);
+      setReports(prevReports => 
+        prevReports.map(report => report.id === id ? updatedReport : report)
+      );
+      return updatedReport;
+    } catch (error) {
+      console.error('Error al actualizar informe:', error);
+      throw error;
+    }
+  };
+
+  const deleteReport = async (id: string) => {
+    try {
+      await deleteReportById(id);
+      setReports(prevReports => prevReports.filter(report => report.id !== id));
+    } catch (error) {
+      console.error('Error al eliminar informe:', error);
+      throw error;
+    }
+  };
+
+  const generateReport = async (
     clientId: string, 
     url: string, 
     files: File[], 
-    customPrompt?: string,
+    customPrompt?: string, 
     pageSpeedData?: any,
     keywords?: Keyword[],
     notes?: string,
     businessProfile?: Partial<BusinessProfile> | null,
-    seoReport?: SeoReport | null
-  ): Promise<Report> => {
+    seoReport?: any
+  ) => {
     try {
+      // Pasamos todos los parámetros necesarios
       const report = await generateSeoReport(
         clientId, 
         url, 
         files, 
         customPrompt, 
-        pageSpeedData, 
+        pageSpeedData,
         keywords,
         notes,
         businessProfile,
         seoReport
       );
       
-      // Add the new report to our local state
-      setReports(prev => [report, ...prev]);
-      
-      return report;
-    } catch (error) {
-      console.error('Error generating report:', error);
-      throw error;
-    }
-  }, []);
-
-  // Create a new report
-  const createReport = useCallback(async (data: Omit<Report, 'id' | 'date' | 'status'>): Promise<Report> => {
-    try {
-      const newReport = await createNewReport(data);
-      setReports(prev => [newReport, ...prev]);
-      return newReport;
-    } catch (error) {
-      console.error('Error creating report:', error);
-      throw error;
-    }
-  }, []);
-
-  // Update an existing report
-  const updateReport = useCallback(async (id: string, data: Partial<Report>): Promise<Report> => {
-    try {
-      // Ensure data has required fields for the Omit type constraint
-      if (data && typeof data === 'object') {
-        const reportToUpdate = reports.find(r => r.id === id);
-        if (reportToUpdate && !data.title) {
-          data.title = reportToUpdate.title;
-        }
+      // Actualizar el estado según el status del informe
+      if (report.status === 'processing') {
+        setReports(prevReports => [report, ...prevReports]);
+      } else if (report.status === 'completed' || report.status === 'failed') {
+        setReports(prevReports => 
+          prevReports.map(r => r.id === report.id ? report : r)
+        );
       }
       
-      const updatedReport = await updateExistingReport(id, data as any);
-      setReports(prev => prev.map(report => 
-        report.id === id ? { ...report, ...updatedReport } : report
-      ));
-      return updatedReport;
-    } catch (error) {
-      console.error('Error updating report:', error);
+      return report;
+    } catch (error: any) {
+      console.error('Error al generar informe:', error);
+      toast.error('Error al generar informe: ' + (error.message || 'Error desconocido'));
       throw error;
     }
-  }, [reports]);
-
-  // Delete a report
-  const deleteReport = useCallback(async (id: string): Promise<void> => {
-    try {
-      await deleteReportById(id);
-      setReports(prev => prev.filter(report => report.id !== id));
-      toast.success('Informe eliminado');
-    } catch (error) {
-      console.error('Error deleting report:', error);
-      toast.error('Error al eliminar el informe');
-      throw error;
-    }
-  }, []);
-
-  // Retry a failed report
-  const retryReport = useCallback(async (id: string): Promise<boolean> => {
+  };
+  
+  const retryReport = async (id: string) => {
     try {
       const result = await retryFailedReport(id);
-      
       if (result) {
-        // Update report status in our local state
-        setReports(prev => prev.map(report => 
-          report.id === id 
-            ? { ...report, status: 'processing' as const, summary: 'Reintentando generación de informe...' } 
-            : report
-        ));
+        // Actualizar el estado del informe en el estado
+        const report = getReport(id);
+        if (report) {
+          const updatedReport = {
+            ...report,
+            status: 'processing' as const,
+            summary: 'Reintentando generación de informe...'
+          };
+          
+          setReports(prevReports => 
+            prevReports.map(r => r.id === id ? updatedReport : r)
+          );
+        }
         
         toast.success('Reintentando generación del informe');
       } else {
         toast.error('No se pudo reintentar el informe');
       }
-      
       return result;
     } catch (error) {
-      console.error('Error retrying report:', error);
+      console.error('Error al reintentar informe:', error);
       toast.error('Error al reintentar el informe');
+      return false;
+    }
+  };
+  
+  const checkForStuckReports = async () => {
+    try {
+      await checkAndFixStuckReports();
+      // Actualizamos la lista de informes
+      const reportsData = await fetchReports();
+      setReports(reportsData);
+    } catch (error) {
+      console.error('Error al verificar informes atascados (función manual):', error);
+      toast.error('Error al verificar informes atascados');
       throw error;
     }
-  }, []);
+  };
 
-  return {
+  const value = {
     reports,
     isLoading,
     getReport,
     getClientReports,
-    generateReport,
     createReport,
     updateReport,
     deleteReport,
-    retryReport
+    generateReport,
+    retryReport,
+    checkForStuckReports
   };
-}
 
-// Create a context for the ReportsProvider
-const ReportsContext = createContext<ReturnType<typeof useReportsHook> | null>(null);
+  return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>;
+};
 
-export function ReportsProvider({ children }: { children: React.ReactNode }) {
-  const reportsHook = useReportsHook();
-  
-  return (
-    <ReportsContext.Provider value={reportsHook}>
-      {children}
-    </ReportsContext.Provider>
-  );
-}
-
-export function useReports() {
+const useReports = () => {
   const context = useContext(ReportsContext);
-  if (context === null) {
+  if (context === undefined) {
     throw new Error('useReports must be used within a ReportsProvider');
   }
   return context;
-}
+};
+
+export default useReports;

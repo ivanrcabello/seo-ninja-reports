@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -61,19 +62,15 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       
       console.log('Edge function response:', result);
       
-      // Safely handle the response by checking for the success property
-      const success = result && 'success' in result ? result.success : false;
-      const message = result && 'message' in result ? result.message : 'No message returned';
-      
-      if (success) {
+      if (result.success) {
         toast.success('Análisis SEO iniciado correctamente');
         onOpenChange(false);
         if (onSuccess) {
           onSuccess();
         }
       } else {
-        setErrorMessage(message || 'Respuesta vacía o inválida');
-        toast.error(`Error: ${message || 'Respuesta vacía o inválida'}`);
+        setErrorMessage(result.message || 'Respuesta vacía o inválida');
+        toast.error(`Error: ${result.message || 'Respuesta vacía o inválida'}`);
         console.error('Respuesta inválida:', result);
       }
     } catch (error: any) {
