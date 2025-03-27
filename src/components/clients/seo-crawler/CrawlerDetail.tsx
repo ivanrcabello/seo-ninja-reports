@@ -36,10 +36,12 @@ const CrawlerDetail: React.FC<CrawlerDetailProps> = ({
     );
   }
 
+  // Ensure we properly handle the back action
   const handleBack = () => {
     if (onBack) {
       onBack();
     } else {
+      // Navigate back to the client page
       navigate(`/clients/${clientId}`);
     }
   };
@@ -54,3 +56,4 @@ const CrawlerDetail: React.FC<CrawlerDetailProps> = ({
 };
 
 export default CrawlerDetail;
+

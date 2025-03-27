@@ -42,20 +42,28 @@ const CrawlerDetailHeader: React.FC<CrawlerDetailHeaderProps> = ({
     }
   };
 
+  // Handle back button click explicitly using window.history
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onBack) {
+      onBack();
+    } else {
+      window.history.back();
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          {onBack && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onBack} 
-              className="mr-1"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleBackClick} 
+            className="mr-1"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <h1 className="text-2xl font-bold">{crawl.domain}</h1>
           <Badge className={getStatusColor(crawl.status)}>
             {crawl.status.charAt(0).toUpperCase() + crawl.status.slice(1)}
@@ -118,3 +126,4 @@ const CrawlerDetailHeader: React.FC<CrawlerDetailHeaderProps> = ({
 };
 
 export default CrawlerDetailHeader;
+
