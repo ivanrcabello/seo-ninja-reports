@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
 import { BusinessProfile } from '@/types/report.types';
 import ClientTabsSection from './overview/ClientTabsSection';
 import ClientReportsList from './ClientReportsList';
-import ClientProposalsList from './ClientProposalsList';
-import ClientContractsList from './ClientContractsList';
-import ClientInvoicesList from './ClientInvoicesList';
+import ClientProposals from './proposals/ClientProposals';
+import ClientContracts from './contracts/ClientContracts';
+import ClientInvoices from './invoices/ClientInvoices';
 import ReportGeneratorWrapper from '@/components/reports/ReportGeneratorWrapper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -125,15 +124,15 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         </TabsContent>
         
         <TabsContent value="proposals" className="mt-4">
-          <ClientProposalsList client={client} />
+          <ClientProposals clientId={client.id} clientName={client.name} />
         </TabsContent>
         
         <TabsContent value="contracts" className="mt-4">
-          <ClientContractsList client={client} />
+          <ClientContracts clientId={client.id} clientName={client.name} />
         </TabsContent>
         
         <TabsContent value="invoices" className="mt-4">
-          <ClientInvoicesList client={client} />
+          <ClientInvoices clientId={client.id} clientName={client.name} />
         </TabsContent>
       </Tabs>
     </div>
