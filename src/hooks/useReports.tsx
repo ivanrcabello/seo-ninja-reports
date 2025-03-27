@@ -1,6 +1,7 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Report, BusinessProfile } from '@/types/report.types';
-import useAuth from './useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { 
   fetchReports, 
   createNewReport, 
