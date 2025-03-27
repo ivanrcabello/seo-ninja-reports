@@ -28,7 +28,7 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
-      page_url: issue.page_url,
+      page_url: issue.page_url || (issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''),
       issue_type: issue.issue_type,
       description: issue.description,
       severity: issue.severity || 'info', // Add default severity if not set
@@ -37,7 +37,7 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       fix_suggestion: issue.fix_suggestion,
       category: issue.category || '',
       created_at: issue.created_at || new Date().toISOString(),
-      // Add seo_crawler_pages property 
+      // Add seo_crawler_pages property explicitly
       seo_crawler_pages: issue.seo_crawler_pages || { url: issue.page_url || '' }
     }));
   } catch (error) {
@@ -89,7 +89,7 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
         id: issue.id,
         crawl_id: issue.crawl_id,
         page_id: issue.page_id,
-        page_url: pageUrl,
+        page_url: pageUrl || '',
         issue_type: issue.issue_type,
         description: issue.description,
         severity: issue.severity || 'info', // Default to 'info' if severity is not set
@@ -352,6 +352,7 @@ function generatePlaceholderHeadings(pageId: string): CrawlHeading[] {
   return [{
     id: `placeholder-${pageId}`,
     page_id: pageId,
+    crawl_id: undefined, // May be undefined for placeholder
     heading_type: 'h1',
     content: 'No se encontraron encabezados para esta página',
     position: 0,
