@@ -1,140 +1,141 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlResult } from '../types';
-import { CrawlSettings } from '../types';
-import { CrawlStartResponse } from './responseTypes';
+import { CrawlResult, CrawlSettings, ApiSuccessResponse } from '../types';
+import { toast } from 'sonner';
+import { ApiCrawlResult } from './responseTypes';
 
-// Function to start a new crawl
-export async function startCrawl(clientId: string, url: string, settings?: Partial<CrawlSettings>): Promise<CrawlStartResponse> {
+/**
+ * Start a crawl for a specific client and URL
+ */
+export async function startCrawl(clientId: string, url: string): Promise<ApiSuccessResponse> {
   try {
-    console.log(`Starting crawl for client ${clientId} and URL ${url}`);
+    console.log(`Starting crawl for URL: ${url}, client: ${clientId}`);
     
-    // Make sure the URL has a protocol
-    let normalizedUrl = url;
-    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-      normalizedUrl = 'https://' + normalizedUrl;
+    // Extract domain from URL
+    const domainMatch = url.match(/^https?:\/\/([^/:]+)/i);
+    const domain = domainMatch ? domainMatch[1] : url.split('/')[0];
+    
+    // Create a new crawl record
+    const { data: crawlData, error: crawlError } = await supabase
+      .from('seo_crawler_crawls')
+      .insert({
+        client_id: clientId,
+        url: url,
+        domain: domain,
+        status: 'queued',
+        started_at: new Date().toISOString(),
+        pages_crawled: 0,
+        total_pages: 0,
+        settings: getDefaultCrawlSettings() // Include default settings
+      })
+      .select()
+      .single();
+    
+    if (crawlError) {
+      console.error('Error creating crawl record:', crawlError);
+      throw new Error(`Error creating crawl record: ${crawlError.message}`);
     }
     
-    // Build the request payload
-    const payload = {
-      client_id: clientId,
-      url: normalizedUrl,
-      settings
-    };
+    if (!crawlData) {
+      throw new Error('No crawl data returned after insertion');
+    }
     
-    // Call the Edge Function
-    const { data, error } = await supabase.functions.invoke('seo-crawler', {
-      body: JSON.stringify(payload)
+    console.log('Crawl record created:', crawlData);
+    
+    // Get Bright Data credentials from settings
+    const brightDataUsername = localStorage.getItem('bright_data_username');
+    const brightDataPassword = localStorage.getItem('bright_data_password');
+    
+    if (!brightDataUsername || !brightDataPassword) {
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({ 
+          status: 'failed', 
+          error_message: 'Missing Bright Data credentials. Please add them in Settings.',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', crawlData.id);
+      
+      return {
+        success: false,
+        message: 'Missing Bright Data credentials. Please add them in Settings.'
+      };
+    }
+    
+    // Call the edge function to start the crawl
+    const edgeFunctionUrl = `${window.location.origin}/api/seo-crawler`;
+    
+    console.log(`Calling edge function at: ${edgeFunctionUrl}`);
+    
+    const response = await fetch(edgeFunctionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: url,
+        crawlId: crawlData.id,
+        brightDataUsername,
+        brightDataPassword,
+        settings: crawlData.settings
+      })
     });
     
-    console.log('Edge function response:', data, error);
-    
-    if (error) {
-      console.error('Edge function error:', error);
-      throw new Error(`Error calling crawler: ${error.message}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Edge function error:', errorText);
+      throw new Error(`Edge function error: ${response.status} ${response.statusText}`);
     }
     
-    if (!data) {
-      throw new Error('No data returned from crawler function');
-    }
+    const result = await response.json();
+    console.log('Edge function response:', result);
     
-    return data as CrawlStartResponse;
-  } catch (error: any) {
+    return result as ApiSuccessResponse;
+  } catch (error) {
     console.error('Error starting crawl:', error);
+    if (error instanceof Error) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
     return {
       success: false,
-      message: error.message || 'Unknown error occurred'
+      message: 'Unknown error starting crawl'
     };
   }
 }
 
-// Function to cancel a crawl
-export async function cancelCrawl(crawlId: string): Promise<boolean> {
+/**
+ * Delete a crawl record and all associated data
+ */
+export async function deleteCrawlRecord(crawlId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase.functions.invoke('seo-crawler-cancel', {
-      body: JSON.stringify({ crawl_id: crawlId })
-    });
+    // Due to cascading deletes, we only need to delete the main crawl record
+    const { error } = await supabase
+      .from('seo_crawler_crawls')
+      .delete()
+      .eq('id', crawlId);
     
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     
-    return data?.success || false;
+    return true;
   } catch (error) {
-    console.error('Error cancelling crawl:', error);
-    return false;
+    console.error('Error deleting crawl record:', error);
+    throw error;
   }
 }
 
-// Function to retry a failed crawl
-export async function retryCrawl(crawlId: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabase.functions.invoke('seo-crawler-retry', {
-      body: JSON.stringify({ crawl_id: crawlId })
-    });
-    
-    if (error) {
-      throw error;
-    }
-    
-    return data?.success || false;
-  } catch (error) {
-    console.error('Error retrying crawl:', error);
-    return false;
-  }
-}
-
-// Function to get the crawler status
-export async function getCrawlerStatus(): Promise<{ enabled: boolean; message?: string }> {
-  try {
-    const { data, error } = await supabase.functions.invoke('seo-crawler-status');
-    
-    if (error) {
-      throw error;
-    }
-    
-    return {
-      enabled: data?.enabled || false,
-      message: data?.message
-    };
-  } catch (error) {
-    console.error('Error getting crawler status:', error);
-    return { enabled: false, message: 'Error checking crawler status' };
-  }
-}
-
-// Mock function for starting a crawl (for development purposes)
-export async function mockStartCrawl(clientId: string, url: string): Promise<CrawlStartResponse> {
-  console.log(`[MOCK] Starting crawl for client ${clientId} and URL ${url}`);
-  
-  // Simulate a delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  const mockCrawlId = `mock-${Date.now()}`;
-  
-  // Create a mock crawl record in the database
-  const { error } = await supabase.from('seo_crawler_crawls').insert({
-    id: mockCrawlId,
-    client_id: clientId,
-    url,
-    domain: url.replace(/^https?:\/\//, '').split('/')[0],
-    status: 'processing',
-    started_at: new Date().toISOString(),
-    pages_crawled: 0,
-    total_pages: 0
-  });
-  
-  if (error) {
-    console.error('[MOCK] Error creating mock crawl:', error);
-    return {
-      success: false,
-      message: `Error creating mock crawl: ${error.message}`
-    };
-  }
-  
+// Get default crawl settings
+export function getDefaultCrawlSettings(): CrawlSettings {
   return {
-    success: true,
-    message: 'Mock crawl started successfully',
-    crawl_id: mockCrawlId
+    max_pages: 100,
+    exclude_urls: [],
+    include_urls: [],
+    respect_robots_txt: true,
+    user_agent: 'Mozilla/5.0 (compatible; SEOcrawler/1.0; +https://example.com/bot)',
+    crawl_sitemap: true,
+    follow_links: true,
+    max_depth: 10
   };
 }

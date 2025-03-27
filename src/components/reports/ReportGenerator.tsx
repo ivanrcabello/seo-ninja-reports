@@ -120,7 +120,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
           domain: url.replace(/^https?:\/\//, '').split('/')[0],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        } : null
+        } : undefined
       );
       
       console.log('Report generated successfully:', report);

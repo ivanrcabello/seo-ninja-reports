@@ -21,13 +21,15 @@ export interface CrawlResult {
   duplicate_content_count?: number;
   createdAt?: string;
   updatedAt?: string;
-  // Additional properties used in the UI
+  
+  // Additional properties used in the API and UI
   success?: boolean;
   message?: string;
   inserted_at?: string;
   total_time_seconds?: number;
   error_message?: string;
   issues_count?: number;
+  settings?: CrawlSettings;
 }
 
 export interface CrawlPage {
@@ -44,7 +46,8 @@ export interface CrawlPage {
   load_time_ms?: number;
   content_length?: number;
   created_at?: string;
-  // Additional properties used in the UI
+  
+  // Additional properties used in API responses
   canonical_url?: string;
   redirect_url?: string;
   level?: number;
@@ -72,14 +75,20 @@ export interface CrawlIssue {
   url: string;
   issue_type: string;
   description: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info'; // Updated to include all possible values
   created_at: string;
-  // Additional properties used in the UI
+  
+  // Additional properties used in API responses
   page_url?: string;
   element?: string;
   fix_suggestion?: string;
   recommended_fix?: string;
   category?: string;
+  
+  // To accommodate API structure
+  seo_crawler_pages?: {
+    url: string;
+  };
 }
 
 export interface CrawlLink {
@@ -93,7 +102,8 @@ export interface CrawlLink {
   is_broken: boolean;
   status_code: number;
   created_at: string;
-  // Additional properties used in the UI
+  
+  // Additional properties used in API responses
   url?: string;
   anchor_text?: string;
   follow?: boolean;
@@ -108,14 +118,20 @@ export interface CrawlHeading {
   level: number;
   text: string;
   created_at: string;
-  // Additional properties used in the UI
+  
+  // Additional properties used in API responses
   heading_type?: string;
   content?: string;
   position?: number;
   page_url?: string;
+  
+  // To accommodate API structure
+  seo_crawler_pages?: {
+    url: string;
+  };
 }
 
-// Add CrawlSettings interface since it's used in several files
+// Add CrawlSettings interface
 export interface CrawlSettings {
   max_pages: number;
   exclude_urls: string[];
@@ -125,4 +141,13 @@ export interface CrawlSettings {
   crawl_sitemap: boolean;
   follow_links: boolean;
   max_depth: number;
+  custom_headers?: Record<string, string>;
+}
+
+// Type for API success responses
+export interface ApiSuccessResponse {
+  success: boolean;
+  message?: string;
+  crawl_id?: string;
+  error?: string;
 }

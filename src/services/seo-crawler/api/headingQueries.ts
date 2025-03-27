@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlHeading } from '../types';
+import { mapApiHeadingToCrawlHeading } from './mappers';
 
 /**
  * Get all headings for a specific page
@@ -20,21 +21,7 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
     
     console.log(`Found ${data?.length || 0} headings for page ${pageId}`);
     
-    return (data || []).map((heading: any) => ({
-      id: heading.id,
-      crawl_id: heading.crawl_id,
-      page_id: heading.page_id,
-      page_url: heading.seo_crawler_pages ? heading.seo_crawler_pages.url : '',
-      heading_type: heading.heading_type,
-      content: heading.content,
-      // Map heading_position to position as expected by interface
-      position: heading.position || 0,
-      // Add required fields for TypeScript compatibility
-      created_at: heading.created_at || new Date().toISOString(),
-      seo_crawler_pages: {
-        url: heading.seo_crawler_pages ? heading.seo_crawler_pages.url : ''
-      }
-    }));
+    return (data || []).map(mapApiHeadingToCrawlHeading);
   } catch (error) {
     console.error('Error fetching page headings:', error);
     return [];
@@ -56,21 +43,7 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
       if (!functionError && functionData && functionData.length > 0) {
         console.log(`Found ${functionData.length} headings using RPC function for crawl ${crawlId}`);
         
-        return functionData.map((heading: any) => ({
-          id: heading.id,
-          crawl_id: heading.crawl_id,
-          page_id: heading.page_id,
-          page_url: heading.page_url,
-          heading_type: heading.heading_type,
-          content: heading.content,
-          // Map heading_position to position as expected by interface
-          position: heading.heading_position || 0,
-          // Add required fields for TypeScript compatibility
-          created_at: heading.created_at || new Date().toISOString(),
-          seo_crawler_pages: {
-            url: heading.page_url || ''
-          }
-        }));
+        return functionData.map(mapApiHeadingToCrawlHeading);
       }
     } catch (rpcError) {
       console.log('RPC function not available, falling back to standard query:', rpcError);
@@ -89,21 +62,7 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
     
     console.log(`Found ${data?.length || 0} headings for crawl ${crawlId}`);
     
-    return (data || []).map((heading: any) => ({
-      id: heading.id,
-      crawl_id: heading.crawl_id,
-      page_id: heading.page_id,
-      page_url: heading.seo_crawler_pages ? heading.seo_crawler_pages.url : '',
-      heading_type: heading.heading_type,
-      content: heading.content,
-      // Map heading_position to position as expected by interface
-      position: heading.position || 0,
-      // Add required fields for TypeScript compatibility
-      created_at: heading.created_at || new Date().toISOString(),
-      seo_crawler_pages: {
-        url: heading.seo_crawler_pages ? heading.seo_crawler_pages.url : ''
-      }
-    }));
+    return (data || []).map(mapApiHeadingToCrawlHeading);
   } catch (error) {
     console.error('Error fetching crawl headings:', error);
     return [];

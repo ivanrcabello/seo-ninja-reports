@@ -1,12 +1,16 @@
 
-import IssuesTab from './IssuesTab';
-import PagesTab from './PagesTab';
-import LinksTab from './LinksTab';
-import HeadingsTab from './HeadingsTab';
 import React from 'react';
 import { CrawlResult } from '@/services/seo-crawler/types';
+import IssuesTabComponent from './IssuesTab';
+import PagesTabComponent from './PagesTab';
+import LinksTabComponent from './LinksTab';
+import HeadingsTabComponent from './HeadingsTab';
 
-export { IssuesTab, PagesTab, LinksTab, HeadingsTab };
+// Export individual components
+export const IssuesTab = IssuesTabComponent;
+export const PagesTab = PagesTabComponent;
+export const LinksTab = LinksTabComponent;
+export const HeadingsTab = HeadingsTabComponent;
 
 interface CrawlerTabContentProps {
   activeTab: string;
@@ -21,13 +25,13 @@ export const CrawlerTabContent: React.FC<CrawlerTabContentProps> = ({
 }) => {
   switch (activeTab) {
     case 'issues':
-      return <IssuesTab crawl={crawl} />;
+      return <IssuesTabComponent clientId={clientId} />;
     case 'pages':
-      return <PagesTab crawl={crawl} />;
+      return <PagesTabComponent clientId={clientId} />;
     case 'links':
-      return <LinksTab crawl={crawl} />;
+      return <LinksTabComponent clientId={clientId} />;
     case 'headings':
-      return <HeadingsTab crawl={crawl} />;
+      return <HeadingsTabComponent clientId={clientId} />;
     default:
       return <div>Select a tab to view content</div>;
   }

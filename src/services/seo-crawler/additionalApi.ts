@@ -1,222 +1,144 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlIssue, CrawlLink, CrawlPage } from './types';
+import { CrawlIssue, CrawlLink } from './types';
+import { mapApiIssueToCrawlIssue, mapApiLinkToCrawlLink } from './api/mappers';
 
 /**
- * Fetch issue types distribution for a crawl
+ * Get issues for a specific crawl grouped by page URL
  */
-export async function fetchIssueTypesDistribution(crawlId: string) {
+export async function getIssuesByPage(crawlId: string): Promise<Record<string, CrawlIssue[]>> {
   try {
+    // First, get all issues for this crawl
     const { data, error } = await supabase
       .from('seo_crawler_issues')
-      .select('issue_type, severity')
+      .select('*, seo_crawler_pages(url)')
       .eq('crawl_id', crawlId);
-
-    if (error) throw error;
-
-    // Count issues by type and severity
-    const issueTypes: Record<string, { count: number, severity: string }> = {};
     
-    data.forEach((issue: any) => {
-      if (!issueTypes[issue.issue_type]) {
-        issueTypes[issue.issue_type] = { count: 0, severity: issue.severity };
+    if (error) {
+      console.error('Error fetching issues by page:', error);
+      throw error;
+    }
+    
+    // Group issues by page URL
+    const issuesByPage: Record<string, CrawlIssue[]> = {};
+    
+    for (const issue of data || []) {
+      const pageUrl = issue.seo_crawler_pages?.url || 'unknown';
+      
+      if (!issuesByPage[pageUrl]) {
+        issuesByPage[pageUrl] = [];
       }
-      issueTypes[issue.issue_type].count++;
-    });
+      
+      issuesByPage[pageUrl].push(mapApiIssueToCrawlIssue(issue));
+    }
     
-    return Object.entries(issueTypes).map(([type, data]) => ({
-      type,
-      count: data.count,
-      severity: data.severity,
-    }));
+    return issuesByPage;
   } catch (error) {
-    console.error('Error fetching issue types distribution:', error);
-    return [];
+    console.error('Error fetching issues by page:', error);
+    return {};
   }
 }
 
 /**
- * Fetch severity distribution for a crawl
+ * Get issues for a specific crawl grouped by issue type
  */
-export async function fetchSeverityDistribution(crawlId: string) {
+export async function getIssuesByType(crawlId: string): Promise<Record<string, CrawlIssue[]>> {
   try {
+    // First, get all issues for this crawl
     const { data, error } = await supabase
       .from('seo_crawler_issues')
-      .select('severity')
+      .select('*, seo_crawler_pages(url)')
       .eq('crawl_id', crawlId);
-
-    if (error) throw error;
-
-    // Count issues by severity
-    const counts: Record<string, number> = {
-      critical: 0,
-      high: 0,
-      medium: 0,
-      low: 0,
-      info: 0,
-    };
     
-    data.forEach((issue: any) => {
-      if (counts[issue.severity as keyof typeof counts] !== undefined) {
-        counts[issue.severity as keyof typeof counts]++;
-      } else {
-        // For any other severity not in predefined list
-        counts['info']++;
+    if (error) {
+      console.error('Error fetching issues by type:', error);
+      throw error;
+    }
+    
+    // Group issues by issue type
+    const issuesByType: Record<string, CrawlIssue[]> = {};
+    
+    for (const issue of data || []) {
+      const issueType = issue.issue_type || 'unknown';
+      
+      if (!issuesByType[issueType]) {
+        issuesByType[issueType] = [];
       }
-    });
+      
+      issuesByType[issueType].push(mapApiIssueToCrawlIssue(issue));
+    }
     
-    return [
-      { severity: 'critical', count: counts.critical },
-      { severity: 'high', count: counts.high },
-      { severity: 'medium', count: counts.medium },
-      { severity: 'low', count: counts.low },
-      { severity: 'info', count: counts.info },
-    ];
+    return issuesByType;
   } catch (error) {
-    console.error('Error fetching severity distribution:', error);
-    return [];
+    console.error('Error fetching issues by type:', error);
+    return {};
   }
 }
 
 /**
- * Enhanced issue fetching with additional data
+ * Get links for a specific crawl grouped by page URL
  */
-export async function fetchIssuesWithDetails(crawlId: string): Promise<CrawlIssue[]> {
+export async function getLinksByPage(crawlId: string): Promise<Record<string, CrawlLink[]>> {
   try {
-    const { data, error } = await supabase
-      .from('seo_crawler_issues')
-      .select('*')
-      .eq('crawl_id', crawlId);
-
-    if (error) throw error;
-
-    return data.map((issue: any) => ({
-      id: issue.id,
-      crawl_id: issue.crawl_id,
-      page_id: issue.page_id,
-      page_url: issue.page_url,
-      issue_type: issue.issue_type,
-      description: issue.description,
-      severity: issue.severity,
-      recommended_fix: issue.recommended_fix,
-      element: issue.element || null,
-      fix_suggestion: issue.fix_suggestion || null,
-      category: issue.category || '',
-      seo_crawler_pages: { url: issue.page_url || '' }
-    }));
-  } catch (error) {
-    console.error('Error fetching issues with details:', error);
-    return [];
-  }
-}
-
-/**
- * Enhanced link fetching with additional data
- */
-export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[]> {
-  try {
+    // First, get all links for this crawl
     const { data, error } = await supabase
       .from('seo_crawler_links')
       .select('*')
       .eq('crawl_id', crawlId);
-
-    if (error) throw error;
-
-    return data.map((link: any) => ({
-      id: link.id,
-      crawl_id: link.crawl_id,
-      page_id: link.page_id,
-      url: link.url,
-      anchor_text: link.anchor_text || '',
-      is_internal: link.is_internal,
-      is_broken: link.is_broken,
-      status_code: link.status_code,
-      follow: link.follow,
-      rel_attributes: link.rel_attributes
-    }));
-  } catch (error) {
-    console.error('Error fetching links with details:', error);
-    return [];
-  }
-}
-
-// Export these functions for compatibility
-export { getPageIssues, getPageLinks, getCrawlIssues, getCrawlLinks, getPageHeadings, getCrawlHeadings } from './api/pageQueries';
-
-/**
- * Fetch all metadata for pages (titles, descriptions, h1s)
- */
-export async function fetchPagesMetadata(crawlId: string): Promise<any[]> {
-  try {
-    const { data, error } = await supabase
-      .from('seo_crawler_pages')
-      .select('id, url, title, meta_description, h1, canonical_url, is_indexable, meta_robots, issues_count')
-      .eq('crawl_id', crawlId);
-
-    if (error) throw error;
     
-    return data;
-  } catch (error) {
-    console.error('Error fetching pages metadata:', error);
-    return [];
-  }
-}
-
-/**
- * Get statistics about page metadata quality
- */
-export async function getMetadataStats(crawlId: string): Promise<any> {
-  try {
-    const pages = await fetchPagesMetadata(crawlId);
+    if (error) {
+      console.error('Error fetching links by page:', error);
+      throw error;
+    }
     
-    const stats = {
-      totalPages: pages.length,
-      missingTitle: 0,
-      missingMetaDescription: 0,
-      missingH1: 0,
-      longTitles: 0,
-      shortTitles: 0,
-      longMetaDescriptions: 0,
-      shortMetaDescriptions: 0,
-      duplicateTitles: {} as Record<string, number>,
-      duplicateMetaDescriptions: {} as Record<string, number>
-    };
+    // Group links by page ID
+    const linksByPageId: Record<string, CrawlLink[]> = {};
     
-    pages.forEach(page => {
-      // Check missing elements
-      if (!page.title) stats.missingTitle++;
-      if (!page.meta_description) stats.missingMetaDescription++;
-      if (!page.h1) stats.missingH1++;
+    for (const link of data || []) {
+      const pageId = link.page_id || 'unknown';
       
-      // Check title length
-      if (page.title && page.title.length > 60) stats.longTitles++;
-      if (page.title && page.title.length < 10) stats.shortTitles++;
-      
-      // Check meta description length
-      if (page.meta_description && page.meta_description.length > 160) stats.longMetaDescriptions++;
-      if (page.meta_description && page.meta_description.length < 50) stats.shortMetaDescriptions++;
-      
-      // Track duplicates
-      if (page.title) {
-        stats.duplicateTitles[page.title] = (stats.duplicateTitles[page.title] || 0) + 1;
+      if (!linksByPageId[pageId]) {
+        linksByPageId[pageId] = [];
       }
       
-      if (page.meta_description) {
-        stats.duplicateMetaDescriptions[page.meta_description] = (stats.duplicateMetaDescriptions[page.meta_description] || 0) + 1;
+      linksByPageId[pageId].push(mapApiLinkToCrawlLink(link));
+    }
+    
+    // Now, we need to get the page URLs for each page ID
+    const pageIds = Object.keys(linksByPageId);
+    
+    if (pageIds.length > 0) {
+      const { data: pagesData, error: pagesError } = await supabase
+        .from('seo_crawler_pages')
+        .select('id, url')
+        .in('id', pageIds);
+      
+      if (pagesError) {
+        console.error('Error fetching page URLs:', pagesError);
+        throw pagesError;
       }
-    });
+      
+      // Create a mapping from page ID to page URL
+      const pageIdToUrl: Record<string, string> = {};
+      
+      for (const page of pagesData || []) {
+        pageIdToUrl[page.id] = page.url;
+      }
+      
+      // Replace page IDs with page URLs in the links by page mapping
+      const linksByPage: Record<string, CrawlLink[]> = {};
+      
+      for (const [pageId, links] of Object.entries(linksByPageId)) {
+        const pageUrl = pageIdToUrl[pageId] || 'unknown';
+        linksByPage[pageUrl] = links;
+      }
+      
+      return linksByPage;
+    }
     
-    // Count only actual duplicates (appearing more than once)
-    const duplicateTitlesCount = Object.values(stats.duplicateTitles).filter(count => count > 1).length;
-    const duplicateMetaDescriptionsCount = Object.values(stats.duplicateMetaDescriptions).filter(count => count > 1).length;
-    
-    return {
-      ...stats,
-      duplicateTitlesCount,
-      duplicateMetaDescriptionsCount
-    };
+    return {};
   } catch (error) {
-    console.error('Error calculating metadata stats:', error);
-    return null;
+    console.error('Error fetching links by page:', error);
+    return {};
   }
 }

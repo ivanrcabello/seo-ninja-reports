@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlLink } from '../types';
+import { mapApiLinkToCrawlLink } from './mappers';
 
 /**
  * Get all links for a specific page
@@ -20,18 +21,7 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
     
     console.log(`Found ${data?.length || 0} links for page ${pageId}`);
     
-    return (data || []).map((link: any) => ({
-      id: link.id,
-      crawl_id: link.crawl_id,
-      page_id: link.page_id,
-      url: link.url,
-      anchor_text: link.anchor_text || 'Sin texto ancla', // Provide a default value
-      is_internal: link.is_internal,
-      is_broken: link.is_broken,
-      status_code: link.status_code,
-      follow: link.follow,
-      rel_attributes: link.rel_attributes
-    }));
+    return (data || []).map(mapApiLinkToCrawlLink);
   } catch (error) {
     console.error('Error fetching page links:', error);
     return [];
@@ -56,18 +46,7 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
     
     console.log(`Found ${data?.length || 0} links for crawl ${crawlId}`);
     
-    return (data || []).map((link: any) => ({
-      id: link.id,
-      crawl_id: link.crawl_id,
-      page_id: link.page_id,
-      url: link.url,
-      anchor_text: link.anchor_text || 'Sin texto ancla', // Provide a default value
-      is_internal: link.is_internal,
-      is_broken: link.is_broken,
-      status_code: link.status_code,
-      follow: link.follow,
-      rel_attributes: link.rel_attributes
-    }));
+    return (data || []).map(mapApiLinkToCrawlLink);
   } catch (error) {
     console.error('Error fetching crawl links:', error);
     return [];
