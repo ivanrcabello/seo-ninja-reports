@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlIssue, CrawlLink, CrawlHeading } from '../types';
 import { debugIssuesData, debugHeadingsData } from './debugUtils';
@@ -11,7 +10,7 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
     console.log(`Fetching issues for page ID: ${pageId}`);
     const { data, error } = await supabase
       .from('seo_crawler_issues')
-      .select('*')
+      .select('*, seo_crawler_pages(url)')
       .eq('page_id', pageId);
 
     if (error) {
@@ -37,8 +36,8 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       fix_suggestion: issue.fix_suggestion,
       category: issue.category || '',
       created_at: issue.created_at || new Date().toISOString(),
-      // Add a dummy seo_crawler_pages property to satisfy TypeScript
-      seo_crawler_pages: { url: issue.page_url || '' }
+      // Add seo_crawler_pages property 
+      seo_crawler_pages: issue.seo_crawler_pages || { url: issue.page_url || '' }
     }));
   } catch (error) {
     console.error('Error fetching page issues:', error);
@@ -98,7 +97,7 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
         fix_suggestion: issue.fix_suggestion,
         category: issue.category || '',
         created_at: issue.created_at || new Date().toISOString(),
-        // Add a dummy seo_crawler_pages property if it doesn't exist
+        // Add seo_crawler_pages property
         seo_crawler_pages: issue.seo_crawler_pages || { url: pageUrl || '' }
       };
     });
@@ -231,7 +230,8 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
           // Add the seo_crawler_pages property
           seo_crawler_pages: { 
             url: heading.seo_crawler_pages.url 
-          }
+          },
+          page_url: heading.seo_crawler_pages.url
         }));
       }
       
@@ -248,7 +248,8 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
         // Add the seo_crawler_pages property
         seo_crawler_pages: { 
           url: heading.page_url || '' 
-        }
+        },
+        page_url: heading.page_url || ''
       }));
     }
     
@@ -311,7 +312,8 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
           // Add the seo_crawler_pages property
           seo_crawler_pages: { 
             url: heading.seo_crawler_pages.url 
-          }
+          },
+          page_url: heading.seo_crawler_pages.url
         }));
       }
       
@@ -328,7 +330,8 @@ export async function getCrawlHeadings(crawlId: string): Promise<CrawlHeading[]>
         // Add the seo_crawler_pages property
         seo_crawler_pages: { 
           url: heading.page_url || '' 
-        }
+        },
+        page_url: heading.page_url || ''
       }));
     }
     
@@ -354,7 +357,8 @@ function generatePlaceholderHeadings(pageId: string): CrawlHeading[] {
     created_at: new Date().toISOString(),
     seo_crawler_pages: {
       url: ''
-    }
+    },
+    page_url: ''
   }];
 }
 
@@ -387,7 +391,8 @@ async function getHeadingsFromPages(crawlId: string): Promise<CrawlHeading[]> {
           created_at: new Date().toISOString(),
           seo_crawler_pages: {
             url: page.url
-          }
+          },
+          page_url: page.url
         });
       } 
       // Add title as H1 if no H1 available
@@ -402,7 +407,8 @@ async function getHeadingsFromPages(crawlId: string): Promise<CrawlHeading[]> {
           created_at: new Date().toISOString(),
           seo_crawler_pages: {
             url: page.url
-          }
+          },
+          page_url: page.url
         });
       }
     });
