@@ -42,38 +42,46 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       try {
         setIsLoading(true);
         
+        // Obtenemos los datos del análisis
         const result = await getCrawlResult(crawlId);
         console.log('Crawl result:', result);
         setCrawl(result);
         
+        // Obtenemos las páginas analizadas
         const pagesData = await getCrawlPages(crawlId);
         console.log('Pages data:', pagesData);
         
+        // Formateamos los datos de páginas
         const formattedPages = pagesData.map((page: CrawlPage) => ({
           ...page,
           issues_count: Number(page.issues_count || 0)
         }));
         
+        // Obtenemos los problemas detectados
         let issuesData: CrawlIssue[] = [];
         try {
           issuesData = await getCrawlIssues(crawlId);
           console.log('Issues data:', issuesData);
           
+          // Agrupamos los problemas por tipo y severidad
           const tempIssuesByType: Record<string, CrawlIssue[]> = {};
           const tempIssuesBySeverity: Record<string, CrawlIssue[]> = {};
           
           issuesData.forEach((issue: CrawlIssue) => {
-            if (!issue.issue_type || !issue.severity) return;
+            if (!issue.issue_type) return;
             
+            // Agrupar por tipo de problema
             if (!tempIssuesByType[issue.issue_type]) {
               tempIssuesByType[issue.issue_type] = [];
             }
             tempIssuesByType[issue.issue_type].push(issue);
             
-            if (!tempIssuesBySeverity[issue.severity]) {
-              tempIssuesBySeverity[issue.severity] = [];
+            // Agrupar por severidad
+            const severity = issue.severity || 'medium';
+            if (!tempIssuesBySeverity[severity]) {
+              tempIssuesBySeverity[severity] = [];
             }
-            tempIssuesBySeverity[issue.severity].push(issue);
+            tempIssuesBySeverity[severity].push(issue);
           });
           
           setIssuesByType(tempIssuesByType);
@@ -83,6 +91,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
           toast.error('Error al cargar los problemas de SEO');
         }
         
+        // Obtenemos los encabezados de las páginas
         let headingsData: CrawlHeading[] = [];
         try {
           headingsData = await getCrawlHeadings(crawlId);
@@ -92,13 +101,14 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
           headingsData = [];
         }
         
+        // Actualizamos el estado con los datos obtenidos
         setPages(formattedPages);
         setIssues(issuesData);
         setAllHeadings(headingsData);
         
+        // Si hay páginas disponibles, seleccionamos la primera y cargamos sus datos
         if (formattedPages.length > 0) {
           setSelectedPage(formattedPages[0]);
-          
           await loadPageData(formattedPages[0], issuesData, headingsData);
         }
       } catch (error) {
@@ -112,12 +122,14 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
     fetchData();
   }, [crawlId]);
   
+  // Función para cargar los datos específicos de una página
   const loadPageData = async (page: CrawlPage, allIssues: CrawlIssue[] = [], allHeadings: CrawlHeading[] = []) => {
-    if (!page.id) return;
+    if (!page || !page.id) return;
     
     try {
       setIsLoadingPageData(true);
       
+      // Primero intentamos filtrar problemas de la página desde los datos ya cargados
       const pageIssuesFromAll = allIssues.filter(issue => 
         issue.page_id === page.id || 
         (issue.page_url && issue.page_url === page.url)
@@ -125,20 +137,20 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       
       let pageIssuesData = pageIssuesFromAll;
       
+      // Si no encontramos problemas pero la página indica que tiene, los cargamos directamente
       if (pageIssuesFromAll.length === 0 && page.issues_count && page.issues_count > 0) {
-        console.log(`No issues found in preloaded data for page ${page.id}, but issues_count is ${page.issues_count}. Fetching directly...`);
         try {
           const fetchedIssues = await getPageIssues(page.id);
           pageIssuesData = fetchedIssues;
-          console.log(`Fetched ${fetchedIssues.length} issues for page ${page.id}`);
         } catch (err) {
           console.error('Error fetching page issues directly:', err);
+          pageIssuesData = [];
         }
       }
       
-      console.log(`Setting ${pageIssuesData.length} issues for page ${page.id}`);
       setPageIssues(pageIssuesData);
       
+      // Cargamos los enlaces de la página
       try {
         const linksData = await getPageLinks(page.id);
         setPageLinks(linksData);
@@ -147,13 +159,13 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         setPageLinks([]);
       }
       
+      // Intentamos filtrar encabezados desde los datos ya cargados
       const filteredPageHeadings = allHeadings.filter(heading => heading.page_id === page.id);
-      console.log(`Found ${filteredPageHeadings.length} headings for page ${page.id} from preloaded data`);
       
+      // Si no encontramos encabezados, los cargamos directamente
       if (filteredPageHeadings.length === 0) {
         try {
           const headingsData = await getPageHeadings(page.id);
-          console.log(`Fetched ${headingsData.length} headings for page ${page.id}`);
           setPageHeadings(headingsData);
         } catch (err) {
           console.error('Error fetching page headings directly:', err);
@@ -170,11 +182,13 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
     }
   };
   
+  // Función para seleccionar una página
   const handlePageSelect = async (page: CrawlPage) => {
     setSelectedPage(page);
     await loadPageData(page, issues, allHeadings);
   };
 
+  // Mostrar pantalla de carga durante la obtención de datos
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -184,6 +198,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
     );
   }
 
+  // Si no se encuentra el análisis
   if (!crawl) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">

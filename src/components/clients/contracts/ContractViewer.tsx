@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -25,10 +24,8 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   
-  // Clean up component state when closing
   useEffect(() => {
     if (!open) {
-      console.log("ContractViewer closing, resetting dialog states");
       setIsSignDialogOpen(false);
       setIsShareDialogOpen(false);
     }
@@ -36,7 +33,6 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
 
   const handleSignContract = useCallback(async (signature: string) => {
     try {
-      console.log("Signing contract with ID:", contract.id);
       await signContract(contract.id, signature, true);
       setIsSignDialogOpen(false);
     } catch (error) {
@@ -89,26 +85,21 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
     
     printWindow.document.close();
     
-    // Wait for content to load before printing
     setTimeout(() => {
       printWindow.print();
     }, 300);
-    
   }, [contract]);
 
   const handleOpenSignDialog = useCallback(() => {
-    console.log("Opening signature dialog");
     setIsSignDialogOpen(true);
   }, []);
 
   const handleOpenShareDialog = useCallback(() => {
-    console.log("Opening share dialog");
     setIsShareDialogOpen(true);
   }, []);
 
   const handleGenerateShareUrl = useCallback(async () => {
     try {
-      console.log("Generating share URL for contract ID:", contract.id);
       return await generateShareUrl(contract.id);
     } catch (error) {
       console.error('Error generating share URL:', error);
@@ -137,12 +128,10 @@ const ContractViewer: React.FC<ContractViewerProps> = ({
           </div>
           
           <div className="flex gap-2 my-4">
-            {/* Admin signature status */}
             <div className={`px-3 py-1 rounded-full text-xs ${contract.admin_signed ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
               {contract.admin_signed ? 'Firmado por admin' : 'Pendiente firma admin'}
             </div>
             
-            {/* Client signature status */}
             <div className={`px-3 py-1 rounded-full text-xs ${contract.client_signed ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
               {contract.client_signed ? 'Firmado por cliente' : 'Pendiente firma cliente'}
             </div>

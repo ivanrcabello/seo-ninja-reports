@@ -1,6 +1,6 @@
 import React from 'react';
 import { CrawlHeading, CrawlPage } from '@/services/seo-crawler/types';
-import { Loader2, Heading1, Heading2, Heading3 } from 'lucide-react';
+import { Loader2, Heading1, Heading2, Heading3, AlertTriangle } from 'lucide-react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
@@ -17,7 +17,7 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
 }) => {
   // Group headings by page when no specific page is selected
   const groupedHeadings = React.useMemo(() => {
-    if (selectedPage) return { [selectedPage.id]: pageHeadings };
+    if (selectedPage) return { [selectedPage.id || 'current']: pageHeadings };
     
     const grouped: Record<string, CrawlHeading[]> = {};
     pageHeadings.forEach(heading => {
@@ -64,6 +64,7 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
   if (pageHeadings.length === 0) {
     return (
       <Alert>
+        <AlertTriangle className="h-4 w-4" />
         <AlertTitle>No se encontraron encabezados</AlertTitle>
         <AlertDescription>
           No se pudieron encontrar encabezados (H1, H2, H3) en las páginas analizadas. 
@@ -78,6 +79,18 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
     const headings = selectedPage 
       ? pageHeadings 
       : groupedHeadings[Object.keys(groupedHeadings)[0]];
+    
+    if (!headings || headings.length === 0) {
+      return (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>No se encontraron encabezados para esta página</AlertTitle>
+          <AlertDescription>
+            No se pudieron encontrar encabezados (H1, H2, H3) en {selectedPage ? `la página ${selectedPage.url}` : 'esta página'}.
+          </AlertDescription>
+        </Alert>
+      );
+    }
     
     // Check for H1 issues
     const h1Headings = headings.filter(h => h.heading_type === 'h1');
@@ -143,12 +156,26 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
   }
   
   // Otherwise show headings grouped by page
+  if (Object.keys(groupedHeadings).length === 0) {
+    return (
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>No se encontraron encabezados</AlertTitle>
+        <AlertDescription>
+          No se pudieron encontrar encabezados para ninguna página. Es posible que el análisis no haya podido extraer esta información correctamente.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Estructura de encabezados por página</h3>
       
       <div className="space-y-8">
         {Object.entries(groupedHeadings).map(([pageId, headings]) => {
+          if (!headings || headings.length === 0) return null;
+          
           // Find the page URL if available
           const pageUrl = headings[0]?.page_url || pageId;
           
