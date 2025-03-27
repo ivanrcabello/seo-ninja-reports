@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,7 +22,7 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
   setBrightDataPassword
 }) => {
   const [openAiApiKey, setOpenAiApiKey] = usePersistentState('openai_api_key', '');
-  const [googleApiKey, setGoogleApiKey] = usePersistentState('google_api_key', '');
+  const [googleApiKey, setGoogleApiKey] = usePersistentState('google_pagespeed_api_key', ''); // Changed key name here
   const [valueSerpApiKey, setValueSerpApiKey] = usePersistentState('valueserp_api_key', '');
   const [defaultPrompt, setDefaultPrompt] = usePersistentState('default_seo_prompt', '');
 
