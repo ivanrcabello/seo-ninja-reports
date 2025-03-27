@@ -1,27 +1,22 @@
-
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './context/AuthContext';
 import { ClientsProvider } from './hooks/useClients';
-import { ReportsProvider } from './hooks/useReports';
+import { ReportsProvider } from './hooks/useReports.tsx';
 import { Toaster } from 'sonner';
 
-// Import LoadingSpinner component directly instead of lazy loading it
 const LoadingSpinner = () => {
   return <div className="flex items-center justify-center h-screen">Loading...</div>;
 };
 
-// Lazy loading of components with error boundaries
 const Auth = lazy(() => import('./pages/Auth'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
 
-// Use a more resilient approach for critical components
 const ClientDetail = lazy(() => 
   import('./pages/ClientDetail')
     .catch(error => {
       console.error("Error loading ClientDetail component:", error);
-      // Return a minimal module with a fallback component
       return {
         default: () => (
           <div className="flex flex-col items-center justify-center h-screen">
@@ -60,7 +55,6 @@ const ClientErrorFallback = () => (
   </div>
 );
 
-// Error boundary component
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback: React.ReactNode },
   { hasError: boolean }
@@ -86,7 +80,6 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-// Lazy load other components with error handling
 const ReportDetail = lazy(() => 
   import('./pages/ReportDetail')
     .catch(error => {
@@ -129,7 +122,6 @@ const CrawlerDetailPage = lazy(() =>
     })
 );
 
-// Temporary AuthGuard component until the real one is available
 const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
@@ -143,10 +135,8 @@ function App() {
             <Router>
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
-                  {/* Public routes */}
                   <Route path="/auth" element={<Auth />} />
                   
-                  {/* Protected routes */}
                   <Route path="/" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
                   <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
                   <Route path="/clients/:id" element={<AuthGuard><ClientDetailWithErrorBoundary /></AuthGuard>} />
@@ -155,7 +145,6 @@ function App() {
                   <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
                   <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
 
-                  {/* Default route - redirects to dashboard */}
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </Suspense>
