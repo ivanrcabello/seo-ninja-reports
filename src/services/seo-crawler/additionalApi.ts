@@ -100,7 +100,9 @@ export async function fetchIssuesWithDetails(crawlId: string): Promise<CrawlIssu
       severity: issue.severity,
       recommended_fix: issue.recommended_fix,
       element: issue.element || null,
-      fix_suggestion: issue.fix_suggestion || null
+      fix_suggestion: issue.fix_suggestion || null,
+      category: issue.category || '',
+      seo_crawler_pages: { url: issue.page_url || '' }
     }));
   } catch (error) {
     console.error('Error fetching issues with details:', error);
@@ -139,7 +141,7 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
 }
 
 // Export these functions for compatibility
-export { getPageIssues, getPageLinks, getCrawlIssues, getCrawlLinks } from './api/pageQueries';
+export { getPageIssues, getPageLinks, getCrawlIssues, getCrawlLinks, getPageHeadings, getCrawlHeadings } from './api/pageQueries';
 
 /**
  * Fetch all metadata for pages (titles, descriptions, h1s)
