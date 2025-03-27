@@ -53,20 +53,23 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
     
     // Try to use the specialized DB function if available
     try {
-      const { data: functionData, error: functionError } = await supabase
-        .rpc('get_crawl_issues', { crawl_id_param: crawlId });
+      // First, validate if the RPC function exists using a direct query approach instead
+      const { data: issuesData, error: issuesError } = await supabase
+        .from('seo_crawler_issues')
+        .select('*, seo_crawler_pages(url)')
+        .eq('crawl_id', crawlId);
         
-      if (!functionError && functionData && functionData.length > 0) {
-        console.log(`Found ${functionData.length} issues using RPC function for crawl ${crawlId}`);
+      if (!issuesError && issuesData) {
+        console.log(`Found ${issuesData.length} issues using standard query for crawl ${crawlId}`);
         
         // Debug received data
-        debugIssuesData(functionData);
+        debugIssuesData(issuesData);
         
-        return functionData.map((issue: any) => ({
+        return issuesData.map((issue: any) => ({
           id: issue.id,
           crawl_id: issue.crawl_id,
           page_id: issue.page_id,
-          page_url: issue.page_url,
+          page_url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : '',
           issue_type: issue.issue_type,
           description: issue.description,
           element: issue.element || '',
@@ -76,12 +79,12 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
           category: issue.category || 'General',
           // Add the seo_crawler_pages object to match the interface
           seo_crawler_pages: {
-            url: issue.page_url || ''
+            url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''
           }
         }));
       }
     } catch (rpcError) {
-      console.log('RPC function not available, falling back to standard query:', rpcError);
+      console.log('Standard query had an error, falling back to direct query:', rpcError);
     }
     
     // Fallback to standard query if RPC function fails

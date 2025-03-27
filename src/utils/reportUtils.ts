@@ -67,3 +67,154 @@ export const extractSectionsFromText = (text: string): {
   
   return sections;
 };
+
+/**
+ * Formats the markdown or plain text content to HTML
+ */
+export const formatReportContent = (content: string): string => {
+  if (!content) return '';
+  
+  // Check if content is already HTML
+  if (content.includes('<h1>') || content.includes('<p>') || content.includes('<li>')) {
+    return content;
+  }
+  
+  // Convert markdown headings to HTML
+  let html = content
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^#### (.*$)/gm, '<h4>$1</h4>');
+  
+  // Convert markdown lists to HTML
+  html = html.replace(/^\s*[-*+]\s+(.*$)/gm, '<li>$1</li>');
+  
+  // Add <ul> tags around consecutive <li> elements
+  const lines = html.split('\n');
+  let inList = false;
+  let result = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith('<li>')) {
+      if (!inList) {
+        result.push('<ul>');
+        inList = true;
+      }
+      result.push(line);
+    } else {
+      if (inList) {
+        result.push('</ul>');
+        inList = false;
+      }
+      result.push(line);
+    }
+  }
+  
+  if (inList) {
+    result.push('</ul>');
+  }
+  
+  html = result.join('\n');
+  
+  // Convert markdown emphasis
+  html = html
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  // Convert line breaks to <br> and double line breaks to paragraphs
+  const paragraphs = html.split('\n\n');
+  html = paragraphs.map(p => {
+    if (p.trim() === '') return '';
+    if (p.startsWith('<h') || p.startsWith('<ul>') || p.startsWith('<li>') || p.includes('</li>')) return p;
+    return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+  }).join('\n\n');
+  
+  return html;
+};
+
+/**
+ * Determines the priority level for a recommendation
+ */
+export const getRecommendationPriority = (text: string): { 
+  level: 'high' | 'medium' | 'low', 
+  label: string, 
+  color: string,
+  background: string,
+  border: string
+} => {
+  const lowerText = text.toLowerCase();
+  
+  // Check for explicit priority markers
+  if (lowerText.includes('prioridad: alta') || lowerText.includes('alta prioridad') || 
+      lowerText.includes('urgente') || lowerText.includes('inmediata') || 
+      lowerText.includes('priority: high') || lowerText.includes('high priority') ||
+      lowerText.includes('critical') || lowerText.includes('crítica')) {
+    return {
+      level: 'high',
+      label: 'Alta',
+      color: 'text-red-600',
+      background: 'bg-red-50',
+      border: 'border-red-100'
+    };
+  }
+  
+  if (lowerText.includes('prioridad: baja') || lowerText.includes('baja prioridad') || 
+      lowerText.includes('opcional') || lowerText.includes('priority: low') || 
+      lowerText.includes('low priority') || lowerText.includes('can be postponed')) {
+    return {
+      level: 'low',
+      label: 'Baja',
+      color: 'text-green-600',
+      background: 'bg-green-50',
+      border: 'border-green-100'
+    };
+  }
+  
+  // Check for keywords that might indicate high priority
+  const highPriorityKeywords = [
+    'crucial', 'esencial', 'indispensable', 'vital', 'importante', 'necesario',
+    'imprescindible', 'error', 'crítico', 'grave', 'mayor', 'significativo',
+    'substantial', 'severe', 'major', 'critical', 'essential', 'vital', 'urgent'
+  ];
+  
+  for (const keyword of highPriorityKeywords) {
+    if (lowerText.includes(keyword)) {
+      return {
+        level: 'high',
+        label: 'Alta',
+        color: 'text-red-600',
+        background: 'bg-red-50',
+        border: 'border-red-100'
+      };
+    }
+  }
+  
+  // Check for keywords that might indicate low priority
+  const lowPriorityKeywords = [
+    'minor', 'pequeño', 'adicional', 'opcional', 'complementario', 'podría',
+    'sugerencia', 'recomendable', 'menor', 'insignificante', 'suggestion',
+    'could', 'might', 'optional', 'nice to have', 'additional', 'plus'
+  ];
+  
+  for (const keyword of lowPriorityKeywords) {
+    if (lowerText.includes(keyword)) {
+      return {
+        level: 'low',
+        label: 'Baja',
+        color: 'text-green-600',
+        background: 'bg-green-50',
+        border: 'border-green-100'
+      };
+    }
+  }
+  
+  // Default to medium priority
+  return {
+    level: 'medium',
+    label: 'Media',
+    color: 'text-yellow-600',
+    background: 'bg-yellow-50',
+    border: 'border-yellow-100'
+  };
+};
