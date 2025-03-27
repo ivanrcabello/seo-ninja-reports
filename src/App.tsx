@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/context/AuthContext';
 import { ClientsProvider } from '@/hooks/useClients';
+import { ReportsProvider } from '@/hooks/useReports';
 import { ReportGeneratorProvider } from '@/context/ReportGeneratorContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import ProtectedRoute from '@/routes/ProtectedRoute';
@@ -12,7 +13,7 @@ import NotFoundPage from '@/pages/NotFoundPage';
 import CrawlerDetailPage from '@/pages/CrawlerDetailPage';
 
 // We're using a simplification here - in a real app, these would be separate page components
-const DummyPage = ({ title }) => (
+const DummyPage = ({ title }: { title: string }) => (
   <Layout>
     <div className="container mx-auto px-4 pt-24 pb-16">
       <h1 className="text-2xl font-bold mb-4">{title}</h1>
@@ -42,13 +43,10 @@ const PublicContractPage = () => <DummyPage title="Public Contract" />;
 const PublicInvoicePage = () => <DummyPage title="Public Invoice" />;
 const BlogPage = () => <DummyPage title="Blog" />;
 
-// Import the ReportsProvider
-import { ReportsProvider } from '@/hooks/useReports';
-
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <BrowserRouter>
+    <BrowserRouter>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <AuthProvider>
           <ClientsProvider>
             <ReportsProvider>
@@ -191,8 +189,8 @@ function App() {
             </ReportsProvider>
           </ClientsProvider>
         </AuthProvider>
-      </BrowserRouter>
-    </ThemeProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 

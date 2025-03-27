@@ -174,6 +174,7 @@ export default function useReportsHook() {
 
 // Create a context wrapper for the ReportsProvider
 import React, { createContext, useContext } from 'react';
+import { BrowserRouter } from 'react-router-dom';
 
 const ReportsContext = createContext<ReturnType<typeof useReportsHook> | null>(null);
 
