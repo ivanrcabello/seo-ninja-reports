@@ -1,4 +1,3 @@
-
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink } from './types';
 import { getCrawlResult, getCrawlPages } from './api/crawlQueries';
 import { getPageIssues, getPageLinks, getCrawlIssues, getCrawlLinks } from './api/pageQueries';
@@ -41,7 +40,7 @@ export const getCrawlData = async (crawlId: string): Promise<{
         const issueLowerCase = issue.issue_type.toLowerCase();
         
         if (issueLowerCase.includes('critical') || issueLowerCase.includes('broken') || issueLowerCase.includes('error')) {
-          return { ...issue, severity: 'critical' };
+          return { ...issue, severity: 'critical' as 'high' };
         } else if (issueLowerCase.includes('missing') || issueLowerCase.includes('duplicate')) {
           return { ...issue, severity: 'high' };
         } else if (issueLowerCase.includes('warning') || issueLowerCase.includes('long')) {
@@ -49,7 +48,7 @@ export const getCrawlData = async (crawlId: string): Promise<{
         } else if (issueLowerCase.includes('improve') || issueLowerCase.includes('consider')) {
           return { ...issue, severity: 'low' };
         } else {
-          return { ...issue, severity: 'info' };
+          return { ...issue, severity: 'low' };
         }
       }
       return issue;

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ArrowLeft, Calendar, Clock, AlertCircle, CheckCircle, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,8 +51,9 @@ const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({
           </Badge>
         );
       default:
+        const status = (crawlResult.status as 'completed' | 'processing' | 'failed' | 'queued') || 'processing';
         return (
-          <Badge variant="outline">{crawlResult.status}</Badge>
+          <Badge variant="outline">{status}</Badge>
         );
     }
   };
@@ -72,7 +72,6 @@ const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({
     return formatDistanceToNow(date, { addSuffix: true, locale: es });
   };
 
-  // Handle back button click to ensure we navigate correctly
   const handleBackClick = (e: React.MouseEvent) => {
     e.preventDefault();
     onBack();
@@ -153,4 +152,3 @@ const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({
 };
 
 export default CrawlerHeader;
-

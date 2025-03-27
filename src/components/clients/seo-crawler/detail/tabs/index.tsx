@@ -1,8 +1,8 @@
 
-import { IssuesTab } from './IssuesTab';
-import { PagesTab } from './PagesTab';
-import { LinksTab } from './LinksTab';
-import { HeadingsTab } from './HeadingsTab';
+import IssuesTab from './IssuesTab';
+import PagesTab from './PagesTab';
+import LinksTab from './LinksTab';
+import HeadingsTab from './HeadingsTab';
 import React from 'react';
 import { CrawlResult } from '@/services/seo-crawler/types';
 

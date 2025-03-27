@@ -1,101 +1,62 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { getCrawlResult } from './api/crawlQueries';
 import { CrawlSettings } from './types';
 
-// Define CrawlSettingsConfig type locally to avoid conflict with the one from types.ts
-interface CrawlSettingsConfig {
-  clientId: string;
-  url: string;
-  maxPages?: number;
-  followExternalLinks?: boolean;
-  excludePatterns?: string[];
-  includePatterns?: string[];
-}
-
-// Get saved crawl settings for a client
-export const getSettings = async (clientId: string, domain?: string): Promise<CrawlSettings | null> => {
+/**
+ * Get the settings for a specific crawl
+ */
+export async function getCrawlSettings(crawlId: string): Promise<CrawlSettings | null> {
   try {
-    let query = supabase
-      .from('seo_crawl_settings')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('updated_at', { ascending: false })
-      .limit(1);
-      
-    // Add domain filter if provided
-    if (domain) {
-      query = query.eq('domain', domain);
+    const crawl = await getCrawlResult(crawlId);
+    
+    if (!crawl) {
+      throw new Error('Crawl not found');
     }
     
-    const { data, error } = await query.maybeSingle();
-      
-    if (error) {
-      console.error("Error retrieving crawl settings:", error);
-      return null;
+    // If the crawl has custom settings, return them
+    if (crawl['settings']) {
+      return crawl['settings'] as CrawlSettings;
     }
     
-    return data as unknown as CrawlSettings;
+    // Otherwise return default settings
+    return getDefaultCrawlSettings();
   } catch (error) {
-    console.error("Error retrieving crawl settings:", error);
+    console.error('Error fetching crawl settings:', error);
     return null;
   }
-};
+}
 
-// Save crawl settings for a client
-export const saveSettings = async (settings: CrawlSettingsConfig): Promise<CrawlSettings | null> => {
+/**
+ * Update the settings for a specific crawl
+ */
+export async function updateCrawlSettings(crawlId: string, settings: Partial<CrawlSettings>): Promise<boolean> {
   try {
-    // First check if settings already exist
-    const { data: existingSettings, error: checkError } = await supabase
-      .from('seo_crawl_settings')
-      .select('id')
-      .eq('client_id', settings.clientId)
-      .eq('domain', settings.url)
-      .limit(1);
-      
-    if (checkError) throw checkError;
+    const { error } = await supabase
+      .from('seo_crawler_crawls')
+      .update({ settings })
+      .eq('id', crawlId);
     
-    // Prepare data for insert/update
-    const dataToSave = {
-      client_id: settings.clientId,
-      domain: settings.url,
-      max_pages: settings.maxPages || 100,
-      follow_external_links: settings.followExternalLinks || false,
-      exclude_patterns: settings.excludePatterns || [],
-      include_patterns: settings.includePatterns || [],
-      updated_at: new Date().toISOString()
-    };
+    if (error) throw error;
     
-    let result;
-    
-    // Update if exists, insert if not
-    if (existingSettings && existingSettings.length > 0) {
-      const { data, error } = await supabase
-        .from('seo_crawl_settings')
-        .update(dataToSave)
-        .eq('id', existingSettings[0].id)
-        .select();
-        
-      if (error) throw error;
-      result = data;
-    } else {
-      const { data, error } = await supabase
-        .from('seo_crawl_settings')
-        .insert({
-          ...dataToSave,
-          created_at: new Date().toISOString()
-        })
-        .select();
-        
-      if (error) throw error;
-      result = data;
-    }
-    
-    return result[0] as unknown as CrawlSettings;
+    return true;
   } catch (error) {
-    console.error("Error saving crawl settings:", error);
-    throw error;
+    console.error('Error updating crawl settings:', error);
+    return false;
   }
-};
+}
 
-// Export the CrawlSettingsConfig type
-export type { CrawlSettingsConfig };
+/**
+ * Get the default crawl settings
+ */
+export function getDefaultCrawlSettings(): CrawlSettings {
+  return {
+    max_pages: 100,
+    exclude_urls: [],
+    include_urls: [],
+    respect_robots_txt: true,
+    user_agent: 'Mozilla/5.0 (compatible; SEOcrawler/1.0; +https://example.com/bot)',
+    crawl_sitemap: true,
+    follow_links: true,
+    max_depth: 10
+  };
+}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -115,7 +114,13 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         useKeywordsData ? formattedKeywords : [],
         notes,
         useGmbData ? businessProfile : null,
-        selectedSeoReport ? { id: selectedSeoReport } : null
+        selectedSeoReport ? { 
+          id: selectedSeoReport,
+          clientId: clientId,
+          domain: url.replace(/^https?:\/\//, '').split('/')[0],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } : null
       );
       
       console.log('Report generated successfully:', report);

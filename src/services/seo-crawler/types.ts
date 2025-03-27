@@ -4,8 +4,9 @@ export interface CrawlResult {
   client_id: string;
   domain: string;
   url: string;
-  status: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
   started_at: string;
+  completed_at?: string;
   pages_crawled: number;
   total_pages: number;
   total_issues: number;
@@ -20,22 +21,48 @@ export interface CrawlResult {
   duplicate_content_count?: number;
   createdAt?: string;
   updatedAt?: string;
+  // Additional properties used in the UI
+  success?: boolean;
+  message?: string;
+  inserted_at?: string;
+  total_time_seconds?: number;
+  error_message?: string;
+  issues_count?: number;
 }
 
 export interface CrawlPage {
   id: string;
   crawl_id: string;
   url: string;
-  title: string;
+  title?: string;
   status_code: number;
-  content_type: string;
-  meta_description: string;
-  h1: string;
-  is_indexable: boolean;
-  word_count: number;
-  load_time_ms: number;
-  content_length: number;
-  created_at: string;
+  content_type?: string;
+  meta_description?: string;
+  h1?: string;
+  is_indexable?: boolean;
+  word_count?: number;
+  load_time_ms?: number;
+  content_length?: number;
+  created_at?: string;
+  // Additional properties used in the UI
+  canonical_url?: string;
+  redirect_url?: string;
+  level?: number;
+  internal_links_count?: number;
+  external_links_count?: number;
+  text_ratio?: number;
+  image_count?: number;
+  h2_count?: number;
+  h3_count?: number;
+  has_schema_markup?: boolean;
+  hreflang_count?: number;
+  issues_count?: number;
+  crawled_at?: string;
+  meta_robots?: string;
+  robots_directives?: string;
+  mobile_friendly?: boolean;
+  page_size_kb?: number;
+  images_without_alt?: number;
 }
 
 export interface CrawlIssue {
@@ -45,8 +72,14 @@ export interface CrawlIssue {
   url: string;
   issue_type: string;
   description: string;
-  severity: 'high' | 'medium' | 'low';
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
   created_at: string;
+  // Additional properties used in the UI
+  page_url?: string;
+  element?: string;
+  fix_suggestion?: string;
+  recommended_fix?: string;
+  category?: string;
 }
 
 export interface CrawlLink {
@@ -60,6 +93,11 @@ export interface CrawlLink {
   is_broken: boolean;
   status_code: number;
   created_at: string;
+  // Additional properties used in the UI
+  url?: string;
+  anchor_text?: string;
+  follow?: boolean;
+  rel_attributes?: string;
 }
 
 export interface CrawlHeading {
@@ -70,4 +108,21 @@ export interface CrawlHeading {
   level: number;
   text: string;
   created_at: string;
+  // Additional properties used in the UI
+  heading_type?: string;
+  content?: string;
+  position?: number;
+  page_url?: string;
+}
+
+// Add CrawlSettings interface since it's used in several files
+export interface CrawlSettings {
+  max_pages: number;
+  exclude_urls: string[];
+  include_urls: string[];
+  respect_robots_txt: boolean;
+  user_agent: string;
+  crawl_sitemap: boolean;
+  follow_links: boolean;
+  max_depth: number;
 }
