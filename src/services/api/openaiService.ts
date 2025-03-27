@@ -32,8 +32,20 @@ export const generateOpenAIReport = async (
       throw new Error('No se ha configurado una API key de OpenAI válida');
     }
     
-    // Enhance prompt to include metrics for visualizations
-    const enhancedPrompt = `${prompt}\n\nIMPORTANTE: Incluye métricas numéricas específicas en cada sección (puntuaciones de 0-100) para los aspectos clave. Por ejemplo, "Velocidad de carga: 75/100", "Calidad de backlinks: 85/100". Estas métricas serán cruciales para la visualización gráfica del informe.`;
+    // Enhanced prompt to emphasize technical metrics for better visualization
+    const enhancedPrompt = `${prompt}\n\nIMPORTANTE: 
+1. Incluye métricas numéricas específicas en la sección de Análisis Técnico (puntuaciones de 0-100) para todos los aspectos clave. 
+2. Utiliza el formato "Aspecto: XX/100" para que sean más fáciles de visualizar. 
+3. Asegúrate de incluir puntuaciones para:
+   - Velocidad de carga: XX/100
+   - SEO técnico general: XX/100
+   - Optimización móvil: XX/100
+   - Rendimiento: XX/100
+   - Accesibilidad: XX/100
+   - Mejores prácticas: XX/100
+   - SEO on-page: XX/100
+
+Estas métricas serán cruciales para la visualización gráfica del informe.`;
     
     const startTime = Date.now();
     console.log(`[${new Date().toISOString()}] Enviando solicitud a OpenAI API...`);
@@ -53,7 +65,7 @@ export const generateOpenAIReport = async (
           },
           {
             role: "user",
-            content: `Analiza el sitio web ${url}. Genera un informe SEO completo y detallado basado en el prompt proporcionado. Incluye métricas cuantitativas (puntuaciones de 0-100) para cada aspecto que analices.`
+            content: `Analiza el sitio web ${url}. Genera un informe SEO completo y detallado basado en el prompt proporcionado. Incluye métricas cuantitativas (puntuaciones de 0-100) para cada aspecto que analices, especialmente en la sección de análisis técnico.`
           }
         ],
         temperature: 0.7

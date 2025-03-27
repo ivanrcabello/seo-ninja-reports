@@ -16,15 +16,17 @@ const TechnicalTab: React.FC<TechnicalTabProps> = ({
   isEditing = false,
   onSave 
 }) => {
-  // Extract technical issues and metrics if available
+  // Enhanced extraction for technical metrics with multiple patterns
   const extractMetrics = (text: string) => {
     const metrics: Record<string, number> = {};
     
-    // Common patterns for scores in the text
+    // Common patterns for scores in the text - expanded to catch more variations
     const patterns = [
-      /(\w+):\s*(\d+)\/100/gi,
-      /(\w+):\s*(\d+)%/gi,
-      /(\w+)\s*score:\s*(\d+)/gi
+      /(\w+(?:\s+\w+)*):\s*(\d+)\/100/gi,
+      /(\w+(?:\s+\w+)*):\s*(\d+)%/gi,
+      /(\w+(?:\s+\w+)*)\s*score:\s*(\d+)/gi,
+      /(\w+(?:\s+\w+)*)\s*puntuación:\s*(\d+)/gi,
+      /(\w+(?:\s+\w+)*)\s*valoración:\s*(\d+)/gi
     ];
     
     for (const pattern of patterns) {
@@ -32,7 +34,9 @@ const TechnicalTab: React.FC<TechnicalTabProps> = ({
       while ((match = pattern.exec(text)) !== null) {
         const [, metric, score] = match;
         if (metric && score) {
-          metrics[metric.toLowerCase()] = parseInt(score, 10);
+          // Normalize metric name by removing spaces and converting to lowercase
+          const normalizedMetric = metric.toLowerCase().trim().replace(/\s+/g, '_');
+          metrics[normalizedMetric] = parseInt(score, 10);
         }
       }
     }
@@ -70,7 +74,7 @@ const TechnicalTab: React.FC<TechnicalTabProps> = ({
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-medium capitalize">{key}</p>
+                    <p className="text-sm font-medium capitalize">{key.replace(/_/g, ' ')}</p>
                     <p className="text-sm text-muted-foreground">{value}/100</p>
                   </div>
                 </div>
