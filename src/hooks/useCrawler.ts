@@ -1,19 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-
-// Define the CrawlResult type
-interface CrawlResult {
-  id: string;
-  domain: string;
-  url: string;
-  status: string;
-  pages_crawled: number;
-  total_pages: number;
-  total_issues: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { CrawlResult } from '@/services/seo-crawler/types';
 
 export function useCrawler() {
   const [crawls, setCrawls] = useState<CrawlResult[]>([]);
@@ -24,12 +12,18 @@ export function useCrawler() {
     const mockCrawls: CrawlResult[] = [
       {
         id: '1',
+        client_id: '123',
         domain: 'example.com',
         url: 'https://example.com',
         status: 'completed',
+        started_at: new Date().toISOString(),
         pages_crawled: 10,
         total_pages: 15,
         total_issues: 5,
+        total_links: 100,
+        total_internal_links: 80,
+        total_external_links: 20,
+        total_broken_links: 2,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }

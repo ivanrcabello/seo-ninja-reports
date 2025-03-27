@@ -1,8 +1,22 @@
 
 /**
+ * Types for the business profile data
+ */
+export interface BusinessProfileData {
+  businessName: string;
+  businessAddress: string;
+  businessPhone: string;
+  businessCategory: string;
+  businessRating: number;
+  businessReviewsCount: number;
+  businessWebsite: string;
+  businessHours: Record<string, string>;
+}
+
+/**
  * Scrapes business profile data from a Google My Business URL
  */
-export const scrapeBusinessProfile = async (url: string) => {
+export const scrapeBusinessProfile = async (url: string): Promise<BusinessProfileData> => {
   try {
     // In a real implementation, this would make an API call to scrape the data
     console.log(`Scraping business profile from URL: ${url}`);

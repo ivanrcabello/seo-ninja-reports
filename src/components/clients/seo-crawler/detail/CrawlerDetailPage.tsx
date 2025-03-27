@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { FileBarChart } from 'lucide-react';
 import { toast } from 'sonner';
+import { CrawlResult } from '@/services/seo-crawler/types';
 
 interface CrawlerDetailPageProps {
   clientId: string;
@@ -24,14 +25,20 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const [activeTab, setActiveTab] = useState('overview');
 
   // We'll mock the crawl data for now - in a real implementation we'd fetch this
-  const crawl = {
+  const crawl: CrawlResult = {
     id: crawlId,
+    client_id: clientId,
     domain: 'example.com',
     url: 'https://example.com',
     status: 'completed',
+    started_at: new Date().toISOString(),
     pages_crawled: 10,
     total_pages: 15,
-    total_issues: 5
+    total_issues: 5,
+    total_links: 100,
+    total_internal_links: 80,
+    total_external_links: 20,
+    total_broken_links: 2
   };
 
   const handleGenerateReport = () => {

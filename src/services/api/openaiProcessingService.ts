@@ -16,7 +16,7 @@ export const processOpenAIReport = async (
   notes?: string,
   businessProfile?: Partial<BusinessProfile> | null,
   seoReport?: SeoReport | null,
-  crawlData?: any = null
+  crawlData: any = null
 ): Promise<Report | null> => {
   try {
     console.log('Iniciando procesamiento de informe con OpenAI para:', url);

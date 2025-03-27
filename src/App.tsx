@@ -4,9 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/context/AuthContext';
 import { ClientsProvider } from '@/hooks/useClients';
-import useReports from '@/hooks/useReports';
 import { ReportGeneratorProvider } from '@/context/ReportGeneratorContext';
-import { ThemeProvider } from '@/components/ui/theme-provider';
+import { ThemeProvider } from '@/context/ThemeContext';
 import ProtectedRoute from '@/routes/ProtectedRoute';
 import Layout from '@/components/layout/Layout';
 import NotFoundPage from '@/pages/NotFoundPage';
@@ -43,28 +42,17 @@ const PublicContractPage = () => <DummyPage title="Public Contract" />;
 const PublicInvoicePage = () => <DummyPage title="Public Invoice" />;
 const BlogPage = () => <DummyPage title="Blog" />;
 
-// Create a wrapper component for useReports
-const ReportsProvider = ({ children }) => {
-  const reportsHook = useReports();
-  
-  // Create a context to expose the hook's values to children
-  const ReportsContext = React.createContext(null);
-  
-  return (
-    <ReportsContext.Provider value={reportsHook}>
-      {children}
-    </ReportsContext.Provider>
-  );
-};
+// Import the ReportsProvider
+import { ReportsProvider } from '@/hooks/useReports';
 
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <AuthProvider>
-        <ClientsProvider>
-          <ReportsProvider>
-            <ReportGeneratorProvider>
-              <BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>
+          <ClientsProvider>
+            <ReportsProvider>
+              <ReportGeneratorProvider>
                 <Routes>
                   {/* Auth routes */}
                   <Route path="/auth" element={<LoginPage />} />
@@ -199,11 +187,11 @@ function App() {
                 </Routes>
                 
                 <Toaster position="top-right" richColors />
-              </BrowserRouter>
-            </ReportGeneratorProvider>
-          </ReportsProvider>
-        </ClientsProvider>
-      </AuthProvider>
+              </ReportGeneratorProvider>
+            </ReportsProvider>
+          </ClientsProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ThemeProvider>
   );
 }

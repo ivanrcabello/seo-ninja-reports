@@ -2,7 +2,6 @@
 // Import relevant functions and types
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { useLocation } from 'react-router-dom';
 import {
   fetchReports,
   createNewReport,
@@ -24,8 +23,7 @@ interface Keyword {
 export default function useReportsHook() {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const location = useLocation();
-
+  
   // Fetch all reports on component mount
   useEffect(() => {
     const loadReports = async () => {
@@ -41,7 +39,7 @@ export default function useReportsHook() {
     };
 
     loadReports();
-  }, [location.pathname]);
+  }, []);
 
   // Get a specific report by ID
   const getReport = useCallback((id: string): Report | undefined => {
@@ -172,4 +170,27 @@ export default function useReportsHook() {
     deleteReport,
     retryReport
   };
+}
+
+// Create a context wrapper for the ReportsProvider
+import React, { createContext, useContext } from 'react';
+
+const ReportsContext = createContext<ReturnType<typeof useReportsHook> | null>(null);
+
+export function ReportsProvider({ children }: { children: React.ReactNode }) {
+  const reportsHook = useReportsHook();
+  
+  return (
+    <ReportsContext.Provider value={reportsHook}>
+      {children}
+    </ReportsContext.Provider>
+  );
+}
+
+export function useReports() {
+  const context = useContext(ReportsContext);
+  if (context === null) {
+    throw new Error('useReports must be used within a ReportsProvider');
+  }
+  return context;
 }
