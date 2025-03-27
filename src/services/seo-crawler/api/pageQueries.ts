@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlIssue, CrawlLink, CrawlHeading } from '../types';
 import { debugIssuesData, debugHeadingsData } from './debugUtils';
@@ -97,7 +98,7 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
         fix_suggestion: issue.fix_suggestion,
         category: issue.category || '',
         created_at: issue.created_at || new Date().toISOString(),
-        // Add seo_crawler_pages property
+        // Add seo_crawler_pages property explicitly to match the interface
         seo_crawler_pages: issue.seo_crawler_pages || { url: pageUrl || '' }
       };
     });

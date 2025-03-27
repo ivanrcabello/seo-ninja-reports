@@ -91,6 +91,7 @@ export interface CrawlIssue {
   fix_suggestion?: string;
   category?: string;
   created_at?: string;
+  // This is the missing property that causes the error
   seo_crawler_pages?: { url: string };
 }
 
