@@ -1,6 +1,6 @@
 
 import React, { useCallback, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale'; 
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
 }) => {
   const [showCrawlerList, setShowCrawlerList] = useState(false);
   const [showReportGenerator, setShowReportGenerator] = useState(false);
+  const navigate = useNavigate();
   
   const handleCreateReport = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -37,6 +38,10 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
   const handleCloseReportGenerator = useCallback(() => {
     setShowReportGenerator(false);
   }, []);
+
+  const handleViewReport = useCallback((clientId: string, reportId: string) => {
+    navigate(`/clients/${clientId}/reports/${reportId}`);
+  }, [navigate]);
 
   // If showing the report generator, render it instead of the list
   if (showReportGenerator) {
@@ -89,34 +94,35 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({
                     animation="fade"
                     delay={index * 100}
                   >
-                    <Link to={`/clients/${client.id}/reports/${report.id}`} className="block">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-background/50 hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/10">
-                        <div className="mb-3 sm:mb-0">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary" />
-                            <h3 className="font-medium">{report.title}</h3>
-                          </div>
-                          <div className="flex items-center mt-1">
-                            <div className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
-                            ${report.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                              report.status === 'processing' ? 'bg-blue-100 text-blue-800' : 
-                              'bg-red-100 text-red-800'}`}>
-                              {report.status === 'completed' ? 'Completado' : 
-                               report.status === 'processing' ? 'Procesando' : 
-                               'Error'}
-                            </div>
-                            {report.summary && (
-                              <p className="text-sm text-muted-foreground ml-2 line-clamp-1">
-                                {report.summary}
-                              </p>
-                            )}
-                          </div>
+                    <div 
+                      onClick={() => handleViewReport(client.id, report.id)}
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-background/50 hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/10 cursor-pointer"
+                    >
+                      <div className="mb-3 sm:mb-0">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-primary" />
+                          <h3 className="font-medium">{report.title}</h3>
                         </div>
-                        <div className="text-sm text-muted-foreground self-end sm:self-auto">
-                          {format(new Date(report.date), 'd MMM yyyy', { locale: es })}
+                        <div className="flex items-center mt-1">
+                          <div className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                          ${report.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                            report.status === 'processing' ? 'bg-blue-100 text-blue-800' : 
+                            'bg-red-100 text-red-800'}`}>
+                            {report.status === 'completed' ? 'Completado' : 
+                             report.status === 'processing' ? 'Procesando' : 
+                             'Error'}
+                          </div>
+                          {report.summary && (
+                            <p className="text-sm text-muted-foreground ml-2 line-clamp-1">
+                              {report.summary}
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </Link>
+                      <div className="text-sm text-muted-foreground self-end sm:self-auto">
+                        {format(new Date(report.date), 'd MMM yyyy', { locale: es })}
+                      </div>
+                    </div>
                   </AnimatedContainer>
                 ))}
               </div>

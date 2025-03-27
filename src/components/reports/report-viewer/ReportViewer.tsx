@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReportHeader from './ReportHeader';
 import ReportTabs from './ReportTabs';
@@ -27,6 +27,10 @@ const ReportViewer = () => {
   
   const [isEditing, setIsEditing] = useState(editMode);
   const [isSavingBusinessProfile, setIsSavingBusinessProfile] = useState(false);
+  const [pageSpeedData, setPageSpeedData] = useState(null);
+  const [businessProfile, setBusinessProfile] = useState(null);
+  const [isLoadingPageSpeed, setIsLoadingPageSpeed] = useState(false);
+  const [isLoadingBusinessProfile, setIsLoadingBusinessProfile] = useState(false);
   
   // States for the edit dialog
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -40,21 +44,45 @@ const ReportViewer = () => {
   }
   
   const report = getReport(id);
-  
-  // Query to fetch PageSpeed data for this report if it has been processed
-  const { data: pageSpeedData, isLoading: isLoadingPageSpeed } = useQuery({
-    queryKey: ['pageSpeed', id],
-    queryFn: () => fetchPageSpeedData(id),
-    enabled: !!id && report?.status === 'completed' && report?.url !== undefined
-  });
-  
-  // Query to fetch Business Profile data for this report
-  const { data: businessProfile, isLoading: isLoadingBusinessProfile } = useQuery({
-    queryKey: ['businessProfile', id],
-    queryFn: () => fetchBusinessProfile(id),
-    enabled: !!id && report?.status === 'completed' && report?.hasBusinessProfile === true
-  });
 
+  // Load PageSpeed data
+  useEffect(() => {
+    if (id && report?.status === 'completed' && report?.url) {
+      const loadPageSpeedData = async () => {
+        try {
+          setIsLoadingPageSpeed(true);
+          const data = await fetchPageSpeedData(id);
+          setPageSpeedData(data);
+        } catch (error) {
+          console.error('Error loading PageSpeed data:', error);
+        } finally {
+          setIsLoadingPageSpeed(false);
+        }
+      };
+      
+      loadPageSpeedData();
+    }
+  }, [id, report]);
+  
+  // Load Business Profile data
+  useEffect(() => {
+    if (id && report?.status === 'completed' && report?.hasBusinessProfile === true) {
+      const loadBusinessProfile = async () => {
+        try {
+          setIsLoadingBusinessProfile(true);
+          const data = await fetchBusinessProfile(id);
+          setBusinessProfile(data);
+        } catch (error) {
+          console.error('Error loading Business Profile:', error);
+        } finally {
+          setIsLoadingBusinessProfile(false);
+        }
+      };
+      
+      loadBusinessProfile();
+    }
+  }, [id, report]);
+  
   console.log('Report data:', report);
   console.log('PageSpeed data:', pageSpeedData);
   console.log('Business profile:', businessProfile);
@@ -173,8 +201,6 @@ const ReportViewer = () => {
       </div>
     );
   }
-  
-  const isLoadingData = isLoadingPageSpeed || isLoadingBusinessProfile;
 
   return (
     <>

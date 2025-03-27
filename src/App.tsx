@@ -1,9 +1,14 @@
+
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './context/AuthContext';
 import { ClientsProvider } from './hooks/useClients';
 import { ReportsProvider } from './hooks/useReports.tsx';
 import { Toaster } from 'sonner';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a client
+const queryClient = new QueryClient();
 
 const LoadingSpinner = () => {
   return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -132,24 +137,26 @@ function App() {
       <AuthProvider>
         <ClientsProvider>
           <ReportsProvider>
-            <Router>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Routes>
-                  <Route path="/auth" element={<Auth />} />
-                  
-                  <Route path="/" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
-                  <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
-                  <Route path="/clients/:id" element={<AuthGuard><ClientDetailWithErrorBoundary /></AuthGuard>} />
-                  <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
-                  <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
-                  <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
-                  <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+            <QueryClientProvider client={queryClient}>
+              <Router>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    
+                    <Route path="/" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
+                    <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+                    <Route path="/clients/:id" element={<AuthGuard><ClientDetailWithErrorBoundary /></AuthGuard>} />
+                    <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
+                    <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
+                    <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
+                    <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
 
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </Suspense>
-            </Router>
-            <Toaster position="top-right" richColors closeButton />
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                </Suspense>
+              </Router>
+              <Toaster position="top-right" richColors closeButton />
+            </QueryClientProvider>
           </ReportsProvider>
         </ClientsProvider>
       </AuthProvider>
