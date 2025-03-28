@@ -116,7 +116,7 @@ const PublicReport = () => {
   }
 
   if (error || !report) {
-    return <PublicReportError error={error} />;
+    return <PublicReportError errorMessage={error} />;
   }
 
   if (!report.content) {
