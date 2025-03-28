@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 
 interface SharedProposalData {
   id: string;
@@ -19,6 +20,7 @@ interface SharedProposalData {
   updated_at: string;
   client_name: string;
   client_website?: string;
+  password_protected?: boolean;
 }
 
 const formatPrice = (price?: number) => {
@@ -39,48 +41,102 @@ const SharedProposal = () => {
   const [proposal, setProposal] = useState<SharedProposalData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
 
-  useEffect(() => {
-    async function fetchProposal() {
-      if (!sharedUrl) return;
-      
-      try {
-        setIsLoading(true);
-        
-        console.log("Fetching proposal with shared URL:", sharedUrl);
-        
-        // Fetch from public_proposals directly (no RLS, no authentication required)
-        const { data, error: fetchError } = await supabase
-          .from('public_proposals')
-          .select('*')
-          .eq('shared_url', sharedUrl)
-          .single();
-        
-        if (fetchError) {
-          console.error("Error fetching proposal:", fetchError);
-          throw new Error(fetchError.message);
-        }
-        
-        if (!data) {
-          throw new Error('Propuesta no encontrada');
-        }
-        
-        console.log("Proposal data retrieved successfully:", data);
-        setProposal(data as SharedProposalData);
-      } catch (err: any) {
-        console.error("Error in fetchProposal:", err);
-        setError(err.message || 'No se pudo cargar la propuesta');
-        
-        toast.error('Error', { 
-          description: err.message || 'No se pudo cargar la propuesta'
+  const verifyPassword = async (password: string) => {
+    try {
+      // Call function to verify password
+      const { data, error: verifyError } = await supabase
+        .rpc('verify_shared_proposal_password', { 
+          shared_url_param: sharedUrl || '',
+          password_param: password
         });
-      } finally {
-        setIsLoading(false);
+      
+      if (verifyError) throw new Error(verifyError.message);
+      
+      if (data === true) {
+        setAccessGranted(true);
+        setIsPasswordDialogOpen(false);
+        toast.success('Acceso concedido');
+        fetchProposal();
+      } else {
+        toast.error('Contraseña incorrecta');
       }
+    } catch (err: any) {
+      console.error("Error verifying password:", err);
+      toast.error('Error al verificar la contraseña');
     }
+  };
+
+  const fetchProposal = async () => {
+    if (!sharedUrl) return;
     
+    try {
+      setIsLoading(true);
+      
+      console.log("Fetching proposal with shared URL:", sharedUrl);
+      
+      // Check if proposal is password protected without requiring the password
+      const { data: protectionData, error: protectionError } = await supabase
+        .rpc('check_proposal_password_protection', { 
+          shared_url_param: sharedUrl 
+        });
+      
+      if (protectionError) throw new Error(protectionError.message);
+      
+      // If password protected and access not granted yet, show password dialog
+      if (protectionData === true && !accessGranted) {
+        setIsPasswordProtected(true);
+        setIsPasswordDialogOpen(true);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Fetch from public_proposals directly (no RLS, no authentication required)
+      const { data, error: fetchError } = await supabase
+        .from('public_proposals')
+        .select('*')
+        .eq('shared_url', sharedUrl)
+        .single();
+      
+      if (fetchError) {
+        console.error("Error fetching proposal:", fetchError);
+        throw new Error(fetchError.message);
+      }
+      
+      if (!data) {
+        throw new Error('Propuesta no encontrada');
+      }
+      
+      console.log("Proposal data retrieved successfully:", data);
+      setProposal(data as SharedProposalData);
+    } catch (err: any) {
+      console.error("Error in fetchProposal:", err);
+      setError(err.message || 'No se pudo cargar la propuesta');
+      
+      toast.error('Error', { 
+        description: err.message || 'No se pudo cargar la propuesta'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     fetchProposal();
   }, [sharedUrl]);
+
+  if (isPasswordDialogOpen) {
+    return (
+      <PasswordProtectionDialog 
+        onSubmit={verifyPassword}
+        onCancel={() => setError('Acceso denegado')}
+        type="proposal"
+      />
+    );
+  }
 
   if (isLoading) {
     return (
@@ -129,7 +185,7 @@ const SharedProposal = () => {
                 </p>
               </div>
               <div className="flex flex-col items-start md:items-end gap-1">
-                <Badge className={`px-3 py-1 ${proposal.status === 'accepted' ? 'bg-green-500/20 text-green-600' : proposal.status === 'rejected' ? 'bg-red-500/20 text-red-600' : 'bg-yellow-500/20 text-yellow-600'}`}>
+                <Badge className={`px-3 py-1 ${proposal.status === 'accepted' ? 'bg-green-500/20 text-green-600' : proposal.status === 'rejected' ? 'bg-red-500/20 text-red-600' : proposal.status === 'draft' ? 'bg-yellow-500/20 text-yellow-600' : 'bg-yellow-500/20 text-yellow-600'}`}>
                   {proposal.status === 'accepted' ? 'Aceptada' : 
                    proposal.status === 'rejected' ? 'Rechazada' : 
                    proposal.status === 'draft' ? 'Borrador' : 'Pendiente'}

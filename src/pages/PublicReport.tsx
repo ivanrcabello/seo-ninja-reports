@@ -9,6 +9,7 @@ import PublicReportContent from '@/components/public-reports/PublicReportContent
 import PublicReportError from '@/components/public-reports/PublicReportError';
 import PublicReportLoading from '@/components/public-reports/PublicReportLoading';
 import PublicReportEmpty from '@/components/public-reports/PublicReportEmpty';
+import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 
 interface PublicReportData extends Report {
   client_name?: string;
@@ -20,100 +21,154 @@ const PublicReport = () => {
   const [report, setReport] = useState<PublicReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
 
-  useEffect(() => {
-    const fetchReport = async () => {
-      try {
-        setLoading(true);
-        
-        if (!id) {
-          throw new Error('ID de informe no especificado');
-        }
-        
-        console.log('Fetching public report with ID:', id);
-        
-        // Use the public_reports view that doesn't require authentication
-        const { data: publicReportData, error: fetchError } = await supabase
-          .from('public_reports')
-          .select('*')
-          .eq('id', id);
-        
-        if (fetchError) {
-          console.error('Error fetching public report:', fetchError);
-          throw new Error(`Error al cargar informe: ${fetchError.message}`);
-        }
-        
-        if (!publicReportData || publicReportData.length === 0) {
-          console.error('No data returned for public report ID:', id);
-          throw new Error(`Informe con ID ${id} no encontrado`);
-        }
-        
-        console.log('Public report data retrieved successfully:', publicReportData[0]);
-        
-        const data = publicReportData[0];
-        
-        // Safely type check the content from the database
-        let reportContent;
-        if (data.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
-          reportContent = {
-            executiveSummary: data.content.executiveSummary || '',
-            technicalAnalysis: data.content.technicalAnalysis || '',
-            contentAnalysis: data.content.contentAnalysis || '',
-            backlinksAnalysis: data.content.backlinksAnalysis || '',
-            recommendations: data.content.recommendations || '',
-            localSeo: data.content.localSeo || '',
-            serviceProposal: data.content.serviceProposal || '',
-            keywords: data.content.keywords || '',
-            businessProfile: data.content.businessProfile || null
-          };
-        } else {
-          // Initialize with empty values if content is not in expected format
-          reportContent = {
-            executiveSummary: '',
-            technicalAnalysis: '',
-            contentAnalysis: '',
-            backlinksAnalysis: '',
-            recommendations: '',
-            localSeo: '',
-            serviceProposal: '',
-            keywords: ''
-          };
-        }
-        
-        const formattedReport: PublicReportData = {
-          id: data.id,
-          clientId: '', // No client_id in the view but not needed for public display
-          title: data.title,
-          date: data.date,
-          status: data.status as 'processing' | 'completed' | 'failed',
-          url: data.url,
-          summary: data.summary,
-          content: reportContent,
-          client_name: data.client_name,
-          client_website: data.client_website
-        };
-        
-        setReport(formattedReport);
-        
-        // Show success toast when report is loaded
-        toast.success('Informe cargado correctamente');
-      } catch (err: any) {
-        console.error('Error loading public report:', err);
-        setError(err.message || 'No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
-        
-        // Show error toast
-        toast.error('Error', {
-          description: err.message || 'No se pudo cargar el informe'
+  const verifyPassword = async (password: string) => {
+    try {
+      // Call function to verify password
+      const { data, error: verifyError } = await supabase
+        .rpc('verify_shared_report_password', { 
+          report_id_param: id || '',
+          password_param: password
         });
-      } finally {
-        setLoading(false);
+      
+      if (verifyError) throw new Error(verifyError.message);
+      
+      if (data === true) {
+        setAccessGranted(true);
+        setIsPasswordDialogOpen(false);
+        toast.success('Acceso concedido');
+        fetchReport();
+      } else {
+        toast.error('Contraseña incorrecta');
       }
-    };
-    
+    } catch (err: any) {
+      console.error("Error verifying password:", err);
+      toast.error('Error al verificar la contraseña');
+    }
+  };
+
+  const fetchReport = async () => {
+    try {
+      setLoading(true);
+      
+      if (!id) {
+        throw new Error('ID de informe no especificado');
+      }
+      
+      console.log('Fetching public report with ID:', id);
+      
+      // Check if report is password protected without requiring the password
+      const { data: protectionData, error: protectionError } = await supabase
+        .rpc('check_report_password_protection', { 
+          report_id_param: id 
+        });
+      
+      if (protectionError) throw new Error(protectionError.message);
+      
+      // If password protected and access not granted yet, show password dialog
+      if (protectionData === true && !accessGranted) {
+        setIsPasswordProtected(true);
+        setIsPasswordDialogOpen(true);
+        setLoading(false);
+        return;
+      }
+      
+      // Use the public_reports view that doesn't require authentication
+      const { data: publicReportData, error: fetchError } = await supabase
+        .from('public_reports')
+        .select('*')
+        .eq('id', id);
+      
+      if (fetchError) {
+        console.error('Error fetching public report:', fetchError);
+        throw new Error(`Error al cargar informe: ${fetchError.message}`);
+      }
+      
+      if (!publicReportData || publicReportData.length === 0) {
+        console.error('No data returned for public report ID:', id);
+        throw new Error(`Informe con ID ${id} no encontrado`);
+      }
+      
+      console.log('Public report data retrieved successfully:', publicReportData[0]);
+      
+      const data = publicReportData[0];
+      
+      // Safely type check the content from the database
+      let reportContent;
+      if (data.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
+        reportContent = {
+          executiveSummary: data.content.executiveSummary || '',
+          technicalAnalysis: data.content.technicalAnalysis || '',
+          contentAnalysis: data.content.contentAnalysis || '',
+          backlinksAnalysis: data.content.backlinksAnalysis || '',
+          recommendations: data.content.recommendations || '',
+          localSeo: data.content.localSeo || '',
+          serviceProposal: data.content.serviceProposal || '',
+          keywords: data.content.keywords || '',
+          businessProfile: data.content.businessProfile || null
+        };
+      } else {
+        // Initialize with empty values if content is not in expected format
+        reportContent = {
+          executiveSummary: '',
+          technicalAnalysis: '',
+          contentAnalysis: '',
+          backlinksAnalysis: '',
+          recommendations: '',
+          localSeo: '',
+          serviceProposal: '',
+          keywords: ''
+        };
+      }
+      
+      const formattedReport: PublicReportData = {
+        id: data.id,
+        clientId: '', // No client_id in the view but not needed for public display
+        title: data.title,
+        date: data.date,
+        status: data.status as 'processing' | 'completed' | 'failed',
+        url: data.url,
+        summary: data.summary,
+        content: reportContent,
+        client_name: data.client_name,
+        client_website: data.client_website
+      };
+      
+      setReport(formattedReport);
+      
+      // Show success toast when report is loaded
+      toast.success('Informe cargado correctamente');
+    } catch (err: any) {
+      console.error('Error loading public report:', err);
+      setError(err.message || 'No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
+      
+      // Show error toast
+      toast.error('Error', {
+        description: err.message || 'No se pudo cargar el informe'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     if (id) {
       fetchReport();
     }
   }, [id]);
+
+  if (isPasswordDialogOpen) {
+    return (
+      <PasswordProtectionDialog 
+        onSubmit={verifyPassword}
+        onCancel={() => setError('Acceso denegado')}
+        type="report"
+      />
+    );
+  }
 
   if (loading) {
     return <PublicReportLoading />;
