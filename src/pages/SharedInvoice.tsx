@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { InvoiceContent, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
-import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice';
+import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice/types';
 import { toast } from 'sonner';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 
@@ -75,7 +75,7 @@ const SharedInvoice = () => {
         return;
       }
       
-      // Fetch from public_invoices directly (no RLS, no authentication required)
+      // Fetch from public_invoices view
       const { data, error: fetchError } = await supabase
         .from('public_invoices')
         .select('*')
@@ -103,7 +103,7 @@ const SharedInvoice = () => {
       // de que todos los campos requeridos estén presentes
       const formattedInvoice: SharedInvoiceType = {
         id: data.id,
-        title: data.title,
+        title: data.title || '',
         description: data.description || '',
         amount: data.amount || 0,
         status: status,
@@ -114,7 +114,7 @@ const SharedInvoice = () => {
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,
-        client_name: data.client_name,
+        client_name: data.client_name || '',
         client_website: data.client_website
       };
       
