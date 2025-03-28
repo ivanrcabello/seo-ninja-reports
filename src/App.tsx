@@ -16,6 +16,7 @@ const LoadingSpinner = () => {
 const Auth = lazy(() => import('./pages/Auth'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Index = lazy(() => import('./pages/Index'));
 
 const ClientDetail = lazy(() => 
   import('./pages/ClientDetail')
@@ -229,7 +230,7 @@ function App() {
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
                     
-                    <Route path="/" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
+                    <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
                     <Route path="/clients/:id" element={<AuthGuard><ClientDetailWithErrorBoundary /></AuthGuard>} />
                     <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
@@ -245,7 +246,7 @@ function App() {
                     <Route path="/portal" element={<ClientPortal />} />
                     <Route path="/portal/dashboard" element={<ClientPortalDashboard />} />
 
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>
               </Router>
