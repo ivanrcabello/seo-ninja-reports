@@ -214,6 +214,9 @@ const PublicReport = lazy(() =>
     })
 );
 
+const ClientPortal = lazy(() => import('./pages/ClientPortal'));
+const ClientPortalDashboard = lazy(() => import('./pages/ClientPortalDashboard'));
+
 function App() {
   return (
     <>
@@ -238,6 +241,9 @@ function App() {
                     <Route path="/shared/proposals/:sharedUrl" element={<SharedProposal />} />
                     <Route path="/shared/contracts/:sharedUrl" element={<SharedContract />} />
                     <Route path="/shared/reports/:id" element={<PublicReport />} />
+                    
+                    <Route path="/portal" element={<ClientPortal />} />
+                    <Route path="/portal/dashboard" element={<ClientPortalDashboard />} />
 
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Routes>

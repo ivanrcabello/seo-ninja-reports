@@ -130,7 +130,15 @@ export async function authenticateClientPortal(email: string, password: string):
     if (error) throw error;
     
     // Asegurarse de que estamos devolviendo un objeto único, no un array
-    return data ? (Array.isArray(data) && data.length > 0 ? data[0] : data) as ClientPortalSession : null;
+    if (!data) return null;
+    
+    // Si es un array, tomamos el primer elemento
+    if (Array.isArray(data) && data.length > 0) {
+      return data[0] as ClientPortalSession;
+    }
+    
+    // Si no es un array, devolvemos el objeto directamente
+    return data as ClientPortalSession;
   } catch (error: any) {
     console.error('Error authenticating client portal:', error);
     throw error;
