@@ -205,7 +205,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   return (
     <BlurredCard animation="scale" className="w-full max-w-2xl mx-auto">
       <Card className="border-none shadow-none bg-transparent">
-        <ReportGeneratorHeader clientName={client?.name} />
+        <ReportGeneratorHeader clientName={client?.name} step={step} />
         
         {!hasOpenAIApiKey && (
           <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-md">

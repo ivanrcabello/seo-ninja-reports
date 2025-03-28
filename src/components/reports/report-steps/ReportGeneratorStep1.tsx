@@ -99,7 +99,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
       <CardContent className="space-y-6 pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="url">URL del sitio web</Label>
+            <Label htmlFor="url">URL del sitio web a auditar</Label>
             <Input
               id="url"
               placeholder="https://example.com"
@@ -108,7 +108,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
               className="w-full"
             />
             <p className="text-xs text-muted-foreground">
-              {debouncedUrl ? `Se analizará: ${normalizeUrl(debouncedUrl)}` : 'Introduce la URL del sitio web a analizar'}
+              {debouncedUrl ? `Se analizará: ${normalizeUrl(debouncedUrl)}` : 'Introduce la URL del sitio web a auditar'}
             </p>
           </div>
           
@@ -120,7 +120,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
                 onCheckedChange={setUsePageSpeedData}
               />
               <Label htmlFor="pagespeed" className="cursor-pointer">
-                Incluir datos de rendimiento web (Google PageSpeed)
+                Incluir análisis de rendimiento web (Google PageSpeed)
               </Label>
             </div>
           )}
@@ -131,6 +131,11 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
               <p>Para incluir datos de rendimiento web, configura una API key en la sección de Configuración.</p>
             </div>
           )}
+          
+          <div className="bg-blue-50 text-blue-800 p-3 rounded-md text-sm">
+            <p className="font-medium">Paso 1: Auditoría SEO Técnica</p>
+            <p>Analizaremos en detalle aspectos técnicos como la velocidad de carga, estructura HTML, encabezados, meta tags y otros factores clave para el SEO.</p>
+          </div>
         </form>
       </CardContent>
       <CardFooter className="flex justify-end">
@@ -139,7 +144,7 @@ const ReportGeneratorStep1: React.FC<ReportGeneratorStep1Props> = ({
           disabled={!inputUrl || isLoading}
           className="w-full sm:w-auto"
         >
-          {isLoading ? 'Obteniendo datos...' : 'Continuar'}
+          {isLoading ? 'Analizando sitio...' : 'Iniciar auditoría técnica'}
         </Button>
       </CardFooter>
     </>
