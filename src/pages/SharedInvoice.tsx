@@ -51,17 +51,18 @@ const SharedInvoice = () => {
           ? data.status as 'pending' | 'paid' | 'cancelled' | 'overdue'
           : 'pending'; // Valor por defecto si no es válido
         
-        // Convertimos los datos obtenidos al tipo SharedInvoiceType
+        // Convertimos los datos obtenidos al tipo SharedInvoiceType asegurándonos
+        // de que todos los campos requeridos estén presentes
         const formattedInvoice: SharedInvoiceType = {
           id: data.id,
           title: data.title,
-          description: data.description,
-          amount: data.amount,
+          description: data.description || '',
+          amount: data.amount || 0,
           status: status,
           due_date: data.due_date,
           payment_method: data.payment_method,
           payment_date: data.payment_date,
-          payment_instructions: data.payment_instructions || '', // Handle case when payment_instructions is undefined
+          payment_instructions: data.payment_instructions || '', // Aseguramos que siempre tenga un valor
           shared_url: data.shared_url,
           created_at: data.created_at,
           updated_at: data.updated_at,
