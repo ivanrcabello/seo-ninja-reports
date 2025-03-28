@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, Check, AlertCircle, Lock, Unlock, RefreshCw } from 'lucide-react';
+import { Copy, Check, AlertCircle, Lock, Unlock, RefreshCw, Mail, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Switch } from '@/components/ui/switch';
@@ -64,6 +64,9 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
         if (invoiceData.password) {
           setPasswordProtected(true);
           setPassword(invoiceData.password);
+        } else {
+          setPasswordProtected(false);
+          setPassword('');
         }
         
         // Si no tiene shared_url, generamos uno
@@ -181,6 +184,13 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
     }
   };
   
+  const handleEmailShare = () => {
+    const subject = encodeURIComponent(`Factura: ${invoiceTitle}`);
+    const body = encodeURIComponent(`Hola,\n\nComparto contigo esta factura${passwordProtected ? ' (protegida con contraseña)' : ''}.\n\nPuedes verla en: ${shareUrl}\n\n${passwordProtected ? `Contraseña: ${password}\n\n` : ''}Saludos.`);
+    
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  };
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -189,7 +199,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
         </DialogHeader>
         
         <div className="flex flex-col gap-4 py-4">
-          <p className="text-sm">
+          <p className="text-sm text-muted-foreground">
             Comparte esta factura con tu cliente utilizando este enlace único:
           </p>
           
@@ -201,24 +211,45 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
               <span>{error}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Input
-                value={shareUrl}
-                readOnly
-                className="flex-1"
-              />
-              <Button 
-                size="sm" 
-                onClick={handleCopyLink}
-                className="shrink-0"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+            <>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1"
+                />
+                <Button 
+                  size="sm" 
+                  onClick={handleCopyLink}
+                  className="shrink-0"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button 
+                  onClick={handleCopyLink} 
+                  className="w-full sm:w-auto gap-2 group"
+                  variant="outline"
+                >
+                  <Link className="h-4 w-4 group-hover:animate-pulse" />
+                  Copiar enlace
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleEmailShare} 
+                  className="w-full sm:w-auto gap-2 group transition-colors"
+                >
+                  <Mail className="h-4 w-4 group-hover:animate-pulse" />
+                  Compartir por email
+                </Button>
+              </div>
+            </>
           )}
           
           <div className="border-t border-border pt-4 mt-2">
