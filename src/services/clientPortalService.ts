@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -122,33 +121,23 @@ export async function getClientPortalActivity(accountId: string) {
 // Estas funciones serán utilizadas por la aplicación del portal del cliente (separada)
 export async function authenticateClientPortal(email: string, password: string): Promise<ClientPortalSession | null> {
   try {
-    // Fixed function call - explicitly use the version without session_hours parameter
     const { data, error } = await supabase.rpc('authenticate_client_portal_account', {
       p_email: email,
-      p_password: password
+      p_password: password,
+      p_session_hours: 24  // Explicitly provide session_hours parameter
     });
 
     if (error) throw error;
     
     if (!data || (Array.isArray(data) && data.length === 0)) return null;
     
-    // If it's an array, take the first element
-    if (Array.isArray(data) && data.length > 0) {
-      const sessionData = data[0];
-      return {
-        account_id: sessionData.account_id,
-        client_id: sessionData.client_id,
-        token: sessionData.token,
-        expires_at: sessionData.expires_at
-      };
-    }
-    
-    // If it's an object, ensure it has the correct structure
-    if (typeof data === 'object' && 'account_id' in data && 'client_id' in data && 'token' in data && 'expires_at' in data) {
-      return data as ClientPortalSession;
-    }
-    
-    return null;
+    // Process the response as a session object
+    return {
+      account_id: data.account_id,
+      client_id: data.client_id,
+      token: data.token,
+      expires_at: data.expires_at
+    };
   } catch (error: any) {
     console.error('Error authenticating client portal:', error);
     throw error;

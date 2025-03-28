@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authenticateClientPortal } from '@/services/clientPortalService';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,26 @@ const ClientPortal = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Check if already logged in
+  useEffect(() => {
+    const storedSession = localStorage.getItem('clientPortalSession');
+    if (storedSession) {
+      try {
+        const session = JSON.parse(storedSession);
+        // Check if session is not expired
+        if (new Date(session.expires_at) > new Date()) {
+          navigate('/portal/dashboard');
+        } else {
+          // Clear expired session
+          localStorage.removeItem('clientPortalSession');
+        }
+      } catch (err) {
+        // Invalid session format, clear it
+        localStorage.removeItem('clientPortalSession');
+      }
+    }
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
