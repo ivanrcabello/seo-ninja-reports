@@ -35,30 +35,37 @@ const Header = () => {
 
           <DesktopNavbar />
           
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             {user ? (
               <Button asChild size="sm">
                 <Link to="/dashboard">Panel de administración</Link>
               </Button>
             ) : (
               <>
-                <Button asChild variant="outline" size="sm" className="hidden md:flex">
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/auth">Iniciar sesión</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/registro">Registrarse</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
                   <Link to="/portal">Área de clientes</Link>
                 </Button>
-                <Button asChild size="sm" className="hidden md:flex">
+                <Button asChild size="sm">
                   <Link to="/auth">Acceso administración</Link>
                 </Button>
               </>
             )}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
           </div>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
         </div>
       </div>
       
