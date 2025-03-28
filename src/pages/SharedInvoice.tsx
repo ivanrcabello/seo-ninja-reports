@@ -2,13 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { InvoiceContent, InvoiceHeader, InvoiceActions, SharedInvoice } from '@/components/shared-invoice';
+import { InvoiceContent, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
+import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice';
 import { toast } from 'sonner';
 
-// Cambiamos la interfaz para que coincida con SharedInvoice
+// Component for displaying a shared invoice
 const SharedInvoice = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
-  const [invoice, setInvoice] = useState<SharedInvoice | null>(null);
+  const [invoice, setInvoice] = useState<SharedInvoiceType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,8 +51,8 @@ const SharedInvoice = () => {
           ? data.status as 'pending' | 'paid' | 'cancelled' | 'overdue'
           : 'pending'; // Valor por defecto si no es válido
         
-        // Convertimos los datos obtenidos al tipo SharedInvoice
-        const formattedInvoice: SharedInvoice = {
+        // Convertimos los datos obtenidos al tipo SharedInvoiceType
+        const formattedInvoice: SharedInvoiceType = {
           id: data.id,
           title: data.title,
           description: data.description,
@@ -60,7 +61,7 @@ const SharedInvoice = () => {
           due_date: data.due_date,
           payment_method: data.payment_method,
           payment_date: data.payment_date,
-          payment_instructions: data.payment_instructions,
+          payment_instructions: data.payment_instructions || '', // Handle case when payment_instructions is undefined
           shared_url: data.shared_url,
           created_at: data.created_at,
           updated_at: data.updated_at,
