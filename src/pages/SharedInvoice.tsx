@@ -25,11 +25,13 @@ const SharedInvoice = () => {
   const verifyPassword = async (password: string) => {
     try {
       // Call function to verify password
-      const { data, error: verifyError } = await supabase
-        .rpc('verify_shared_invoice_password', { 
+      const { data, error: verifyError } = await supabase.rpc(
+        'verify_shared_invoice_password', 
+        { 
           shared_url_param: sharedUrl || '',
           password_param: password
-        });
+        }
+      );
       
       if (verifyError) throw new Error(verifyError.message);
       
@@ -56,10 +58,12 @@ const SharedInvoice = () => {
       console.log("Fetching invoice with shared URL:", sharedUrl);
       
       // Check if invoice is password protected without requiring the password
-      const { data: protectionData, error: protectionError } = await supabase
-        .rpc('check_invoice_password_protection', { 
+      const { data: protectionData, error: protectionError } = await supabase.rpc(
+        'check_invoice_password_protection', 
+        { 
           shared_url_param: sharedUrl 
-        });
+        }
+      );
       
       if (protectionError) throw new Error(protectionError.message);
       
@@ -106,7 +110,7 @@ const SharedInvoice = () => {
         due_date: data.due_date,
         payment_method: data.payment_method,
         payment_date: data.payment_date,
-        payment_instructions: data.payment_instructions || '', // Aseguramos que siempre tenga un valor
+        payment_instructions: data.payment_instructions || '', // Ensure it has a default value
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,

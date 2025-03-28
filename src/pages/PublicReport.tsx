@@ -28,11 +28,13 @@ const PublicReport = () => {
   const verifyPassword = async (password: string) => {
     try {
       // Call function to verify password
-      const { data, error: verifyError } = await supabase
-        .rpc('verify_shared_report_password', { 
+      const { data, error: verifyError } = await supabase.rpc(
+        'verify_shared_report_password', 
+        { 
           report_id_param: id || '',
           password_param: password
-        });
+        }
+      );
       
       if (verifyError) throw new Error(verifyError.message);
       
@@ -61,10 +63,12 @@ const PublicReport = () => {
       console.log('Fetching public report with ID:', id);
       
       // Check if report is password protected without requiring the password
-      const { data: protectionData, error: protectionError } = await supabase
-        .rpc('check_report_password_protection', { 
+      const { data: protectionData, error: protectionError } = await supabase.rpc(
+        'check_report_password_protection', 
+        { 
           report_id_param: id 
-        });
+        }
+      );
       
       if (protectionError) throw new Error(protectionError.message);
       
