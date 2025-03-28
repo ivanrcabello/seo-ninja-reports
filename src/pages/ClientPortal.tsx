@@ -27,6 +27,7 @@ const ClientPortal = () => {
       
       if (!session) {
         setError('Credenciales inválidas. Por favor, verifica tu email y contraseña.');
+        setLoading(false);
         return;
       }
       
@@ -37,8 +38,8 @@ const ClientPortal = () => {
       toast.success('Inicio de sesión exitoso');
       navigate('/portal/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión. Intenta de nuevo más tarde.');
       console.error('Login error:', err);
+      setError(err.message || 'Error al iniciar sesión. Intenta de nuevo más tarde.');
     } finally {
       setLoading(false);
     }

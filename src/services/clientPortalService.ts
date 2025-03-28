@@ -122,6 +122,7 @@ export async function getClientPortalActivity(accountId: string) {
 // Estas funciones serán utilizadas por la aplicación del portal del cliente (separada)
 export async function authenticateClientPortal(email: string, password: string): Promise<ClientPortalSession | null> {
   try {
+    // Fixed function call - explicitly use the version without session_hours parameter
     const { data, error } = await supabase.rpc('authenticate_client_portal_account', {
       p_email: email,
       p_password: password
@@ -129,10 +130,9 @@ export async function authenticateClientPortal(email: string, password: string):
 
     if (error) throw error;
     
-    // Asegurarse de que estamos devolviendo un objeto único, no un array
-    if (!data) return null;
+    if (!data || (Array.isArray(data) && data.length === 0)) return null;
     
-    // Si es un array, tomamos el primer elemento
+    // If it's an array, take the first element
     if (Array.isArray(data) && data.length > 0) {
       const sessionData = data[0];
       return {
@@ -143,7 +143,7 @@ export async function authenticateClientPortal(email: string, password: string):
       };
     }
     
-    // Si no es un array, asegurarnos de que tiene la estructura correcta
+    // If it's an object, ensure it has the correct structure
     if (typeof data === 'object' && 'account_id' in data && 'client_id' in data && 'token' in data && 'expires_at' in data) {
       return data as ClientPortalSession;
     }
