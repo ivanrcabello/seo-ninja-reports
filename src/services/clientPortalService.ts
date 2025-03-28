@@ -134,11 +134,21 @@ export async function authenticateClientPortal(email: string, password: string):
     
     // Si es un array, tomamos el primer elemento
     if (Array.isArray(data) && data.length > 0) {
-      return data[0] as ClientPortalSession;
+      const sessionData = data[0];
+      return {
+        account_id: sessionData.account_id,
+        client_id: sessionData.client_id,
+        token: sessionData.token,
+        expires_at: sessionData.expires_at
+      };
     }
     
-    // Si no es un array, devolvemos el objeto directamente
-    return data as ClientPortalSession;
+    // Si no es un array, asegurarnos de que tiene la estructura correcta
+    if (typeof data === 'object' && 'account_id' in data && 'client_id' in data && 'token' in data && 'expires_at' in data) {
+      return data as ClientPortalSession;
+    }
+    
+    return null;
   } catch (error: any) {
     console.error('Error authenticating client portal:', error);
     throw error;
