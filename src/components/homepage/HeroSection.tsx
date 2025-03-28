@@ -15,7 +15,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isLoggedIn }) => {
       <div className="absolute top-0 left-0 w-full h-full bg-grid-pattern opacity-[0.03] -z-10"></div>
       
       <div className="container px-4 mx-auto max-w-6xl">
-        <AnimatedContainer animation="fade-up" className="text-center max-w-3xl mx-auto">
+        <AnimatedContainer animation="fade" className="text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center px-3 py-1 mb-6 text-sm font-medium rounded-full bg-primary/10 text-primary">
             <Medal className="w-4 h-4 mr-2" />
             <span>Especialistas en posicionamiento SEO</span>
