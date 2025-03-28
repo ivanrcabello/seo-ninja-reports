@@ -5,21 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, Copy, Link, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShareProposalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   proposalId: string;
   proposalTitle: string;
-  onGenerateShareUrl: () => Promise<string>;
 }
 
 const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   open,
   onOpenChange,
   proposalId,
-  proposalTitle,
-  onGenerateShareUrl
+  proposalTitle
 }) => {
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
@@ -29,28 +28,100 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   useEffect(() => {
     if (!open) {
       // Reset state when dialog closes
-      setShareUrl('');
       setCopied(false);
-      setIsLoading(false);
-    } else if (open && !shareUrl) {
-      // Generate URL when dialog opens
-      setIsLoading(true);
-      onGenerateShareUrl()
-        .then(url => {
-          console.log('Successfully generated URL:', url);
-          setShareUrl(url);
-        })
-        .catch(error => {
-          toast.error('Error al generar enlace');
-          console.error('Error generating share URL:', error);
-          // Close dialog on error
-          onOpenChange(false);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+      return;
     }
-  }, [open, onGenerateShareUrl, shareUrl, onOpenChange]);
+    
+    // Generate URL when dialog opens
+    const generateShareUrl = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Verificar si la propuesta ya tiene un shared_url
+        const { data: proposalData, error: proposalError } = await supabase
+          .from('client_proposals')
+          .select('shared_url, client_id, clients(name, website)')
+          .eq('id', proposalId)
+          .single();
+        
+        if (proposalError) {
+          throw new Error('Error al obtener la propuesta');
+        }
+        
+        let sharedUrl = proposalData.shared_url;
+        
+        // Si no tiene shared_url, generamos uno
+        if (!sharedUrl) {
+          const { data: updatedProposal, error: updateError } = await supabase
+            .from('client_proposals')
+            .update({ shared_url: crypto.randomUUID() })
+            .eq('id', proposalId)
+            .select('shared_url')
+            .single();
+          
+          if (updateError) {
+            throw new Error('Error al generar enlace compartido');
+          }
+          
+          sharedUrl = updatedProposal.shared_url;
+        }
+        
+        // Verificar si ya existe en public_proposals
+        const { data: existingPublic } = await supabase
+          .from('public_proposals')
+          .select('id')
+          .eq('shared_url', sharedUrl)
+          .single();
+        
+        // Si no existe en public_proposals, lo creamos
+        if (!existingPublic) {
+          // Obtenemos todos los datos de la propuesta
+          const { data: fullProposal, error: fullProposalError } = await supabase
+            .from('client_proposals')
+            .select('*')
+            .eq('id', proposalId)
+            .single();
+          
+          if (fullProposalError) {
+            throw new Error('Error al obtener datos completos de la propuesta');
+          }
+          
+          // Insertamos en public_proposals
+          const { error: insertError } = await supabase
+            .from('public_proposals')
+            .insert({
+              id: fullProposal.id,
+              title: fullProposal.title,
+              description: fullProposal.description,
+              status: fullProposal.status,
+              price: fullProposal.price,
+              services: fullProposal.services,
+              shared_url: sharedUrl,
+              created_at: fullProposal.created_at,
+              updated_at: fullProposal.updated_at,
+              client_name: proposalData.clients?.name,
+              client_website: proposalData.clients?.website
+            });
+          
+          if (insertError) {
+            throw new Error('Error al crear propuesta pública');
+          }
+        }
+        
+        // Construir la URL completa
+        const fullUrl = `${window.location.origin}/shared/proposals/${sharedUrl}`;
+        setShareUrl(fullUrl);
+        toast.success('Enlace generado correctamente');
+      } catch (error: any) {
+        console.error('Error generating share URL:', error);
+        toast.error('Error: ' + (error.message || 'Error al generar enlace'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    generateShareUrl();
+  }, [open, proposalId]);
   
   const handleCopyLink = async () => {
     try {
@@ -74,20 +145,8 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
     window.open(`mailto:?subject=${subject}&body=${body}`);
   };
   
-  // Explicit handle for dialog close
-  const handleDialogClose = (open: boolean) => {
-    if (!open) {
-      // Allow a small delay before actually closing
-      setTimeout(() => {
-        onOpenChange(false);
-      }, 100);
-    } else {
-      onOpenChange(true);
-    }
-  };
-  
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Compartir Propuesta</DialogTitle>

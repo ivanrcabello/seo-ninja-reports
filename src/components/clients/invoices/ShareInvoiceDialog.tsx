@@ -4,21 +4,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, Check, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShareInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoiceId: string;
   invoiceTitle: string;
-  onGenerateShareUrl: () => Promise<string>;
 }
 
 const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
   open,
   onOpenChange,
   invoiceId,
-  invoiceTitle,
-  onGenerateShareUrl
+  invoiceTitle
 }) => {
   const [shareUrl, setShareUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,28 +33,104 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
       setError(null);
       
       try {
-        const urlId = await onGenerateShareUrl();
-        const baseUrl = window.location.origin;
-        const fullUrl = `${baseUrl}/shared/invoices/${urlId}`;
+        // Verificar si la factura ya tiene un shared_url
+        const { data: invoiceData, error: invoiceError } = await supabase
+          .from('client_invoices')
+          .select('shared_url, client_id, clients(name, website)')
+          .eq('id', invoiceId)
+          .single();
+        
+        if (invoiceError) {
+          throw new Error('Error al obtener la factura');
+        }
+        
+        let sharedUrl = invoiceData.shared_url;
+        
+        // Si no tiene shared_url, generamos uno
+        if (!sharedUrl) {
+          const { data: updatedInvoice, error: updateError } = await supabase
+            .from('client_invoices')
+            .update({ shared_url: crypto.randomUUID() })
+            .eq('id', invoiceId)
+            .select('shared_url')
+            .single();
+          
+          if (updateError) {
+            throw new Error('Error al generar enlace compartido');
+          }
+          
+          sharedUrl = updatedInvoice.shared_url;
+        }
+        
+        // Verificar si ya existe en public_invoices
+        const { data: existingPublic } = await supabase
+          .from('public_invoices')
+          .select('id')
+          .eq('shared_url', sharedUrl)
+          .single();
+        
+        // Si no existe en public_invoices, lo creamos
+        if (!existingPublic) {
+          // Obtenemos todos los datos de la factura
+          const { data: fullInvoice, error: fullInvoiceError } = await supabase
+            .from('client_invoices')
+            .select('*')
+            .eq('id', invoiceId)
+            .single();
+          
+          if (fullInvoiceError) {
+            throw new Error('Error al obtener datos completos de la factura');
+          }
+          
+          // Insertamos en public_invoices
+          const { error: insertError } = await supabase
+            .from('public_invoices')
+            .insert({
+              id: fullInvoice.id,
+              title: fullInvoice.title,
+              description: fullInvoice.description,
+              amount: fullInvoice.amount,
+              status: fullInvoice.status,
+              due_date: fullInvoice.due_date,
+              payment_method: fullInvoice.payment_method,
+              payment_date: fullInvoice.payment_date,
+              payment_instructions: fullInvoice.payment_instructions,
+              shared_url: sharedUrl,
+              created_at: fullInvoice.created_at,
+              updated_at: fullInvoice.updated_at,
+              client_name: invoiceData.clients?.name,
+              client_website: invoiceData.clients?.website
+            });
+          
+          if (insertError) {
+            throw new Error('Error al crear factura pública');
+          }
+        }
+        
+        // Construir la URL completa
+        const fullUrl = `${window.location.origin}/shared/invoices/${sharedUrl}`;
         setShareUrl(fullUrl);
       } catch (err: any) {
         console.error('Error generating share URL:', err);
         setError(err.message || 'Error al generar enlace');
+        toast.error('Error: ' + (err.message || 'Error al generar enlace'));
       } finally {
         setIsLoading(false);
       }
     };
     
     generateLink();
-  }, [open, onGenerateShareUrl]);
+  }, [open, invoiceId]);
   
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      toast.success('Enlace copiado al portapapeles');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Error copying to clipboard:', err);
+      toast.error('No se pudo copiar el enlace');
     }
   };
   

@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, Copy, Link, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShareReportDialogProps {
   open: boolean;
@@ -20,9 +21,71 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   reportTitle
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
   
-  // Use the public sharing URL with the /shared/reports/ path
-  const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
+  // Generar y obtener el enlace público cuando se abre el diálogo
+  useEffect(() => {
+    if (!open) return;
+    
+    const generateShareUrl = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Primero, verificamos si el informe ya está en la tabla pública
+        const { data: existingReport } = await supabase
+          .from('public_reports')
+          .select('id')
+          .eq('id', reportId)
+          .single();
+        
+        if (!existingReport) {
+          // Si no existe, copiamos los datos del informe a la tabla pública
+          const { data: reportData, error: reportError } = await supabase
+            .from('reports')
+            .select('*, clients(name, website)')
+            .eq('id', reportId)
+            .single();
+          
+          if (reportError) {
+            throw new Error(`Error al obtener el informe: ${reportError.message}`);
+          }
+          
+          // Insertamos en la tabla pública
+          const { error: insertError } = await supabase
+            .from('public_reports')
+            .insert({
+              id: reportData.id,
+              title: reportData.title,
+              date: reportData.date,
+              status: reportData.status,
+              url: reportData.url,
+              summary: reportData.summary,
+              content: reportData.content,
+              client_name: reportData.clients?.name,
+              client_website: reportData.clients?.website
+            });
+          
+          if (insertError) {
+            throw new Error(`Error al compartir el informe: ${insertError.message}`);
+          }
+        }
+        
+        // Construimos la URL pública
+        const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
+        setShareUrl(shareUrl);
+        
+        toast.success('Enlace generado correctamente');
+      } catch (error) {
+        console.error('Error al generar enlace:', error);
+        toast.error('Error al generar enlace para compartir');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    generateShareUrl();
+  }, [open, reportId]);
   
   const handleCopyLink = async () => {
     try {
@@ -56,45 +119,54 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
-          <div className="flex items-center space-x-2">
-            <div className="grid flex-1 gap-2">
-              <Input
-                value={shareUrl}
-                readOnly
-                className="w-full"
-              />
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="w-8 h-8 rounded-full border-4 border-t-primary border-primary/30 animate-spin"></div>
+              <span className="ml-3">Generando enlace...</span>
             </div>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={handleCopyLink} 
-              className="transition-all group hover:bg-primary hover:text-primary-foreground"
-            >
-              {copied ? (
-                <Check className="h-4 w-4 text-green-500 group-hover:text-primary-foreground" />
-              ) : (
-                <Copy className="h-4 w-4 group-hover:text-primary-foreground" />
-              )}
-            </Button>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button 
-              onClick={handleCopyLink} 
-              className="w-full sm:w-auto gap-2 group"
-            >
-              <Link className="h-4 w-4 group-hover:animate-pulse" />
-              Copiar enlace
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleEmailShare} 
-              className="w-full sm:w-auto gap-2 group transition-colors hover:bg-primary hover:text-primary-foreground"
-            >
-              <Mail className="h-4 w-4 group-hover:animate-pulse" />
-              Compartir por email
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center space-x-2">
+                <div className="grid flex-1 gap-2">
+                  <Input
+                    value={shareUrl}
+                    readOnly
+                    className="w-full"
+                  />
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleCopyLink} 
+                  className="transition-all group hover:bg-primary hover:text-primary-foreground"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-500 group-hover:text-primary-foreground" />
+                  ) : (
+                    <Copy className="h-4 w-4 group-hover:text-primary-foreground" />
+                  )}
+                </Button>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button 
+                  onClick={handleCopyLink} 
+                  className="w-full sm:w-auto gap-2 group"
+                >
+                  <Link className="h-4 w-4 group-hover:animate-pulse" />
+                  Copiar enlace
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleEmailShare} 
+                  className="w-full sm:w-auto gap-2 group transition-colors hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Mail className="h-4 w-4 group-hover:animate-pulse" />
+                  Compartir por email
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
