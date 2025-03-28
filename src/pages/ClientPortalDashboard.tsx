@@ -79,26 +79,32 @@ const ClientPortalDashboard = () => {
       }
       
       setSession(parsedSession);
-      fetchClientData(parsedSession.client_id);
+      fetchClientData(parsedSession.client_id, parsedSession.token);
     } catch (err) {
       console.error('Error parsing session:', err);
       navigate('/portal');
     }
   }, [navigate]);
   
-  const fetchClientData = async (clientId: string) => {
+  const fetchClientData = async (clientId: string, token: string) => {
     setLoading(true);
     setError(null);
     
     try {
       console.log('Fetching data for client ID:', clientId);
       
-      // Fetch invoices
+      // Create a custom Supabase client with the token header
+      const customClient = supabase.from('client_invoices').select('*').eq('client_id', clientId);
+      
+      // Set the client token in the header for authorization
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('client_invoices')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .headers({
+          'x-client-token': token
+        });
       
       if (invoicesError) {
         console.error('Error fetching invoices:', invoicesError);
@@ -112,7 +118,10 @@ const ClientPortalDashboard = () => {
         .from('client_proposals')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .headers({
+          'x-client-token': token
+        });
       
       if (proposalsError) {
         console.error('Error fetching proposals:', proposalsError);
@@ -126,7 +135,10 @@ const ClientPortalDashboard = () => {
         .from('client_contracts')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .headers({
+          'x-client-token': token
+        });
       
       if (contractsError) {
         console.error('Error fetching contracts:', contractsError);
@@ -140,7 +152,10 @@ const ClientPortalDashboard = () => {
         .from('reports')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .headers({
+          'x-client-token': token
+        });
       
       if (reportsError) {
         console.error('Error fetching reports:', reportsError);
@@ -173,35 +188,6 @@ const ClientPortalDashboard = () => {
     localStorage.removeItem('clientPortalSession');
     navigate('/portal');
     toast.success('Sesión cerrada exitosamente');
-  };
-  
-  if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Redirigiendo al inicio de sesión...</p>
-      </div>
-    );
-  }
-  
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'paid':
-      case 'accepted':
-      case 'signed':
-      case 'completed':
-        return <Badge className="bg-green-500">Completado</Badge>;
-      case 'pending':
-      case 'sent':
-      case 'in_progress':
-        return <Badge className="bg-yellow-500">Pendiente</Badge>;
-      case 'overdue':
-      case 'delayed':
-        return <Badge className="bg-red-500">Vencido</Badge>;
-      case 'cancelled':
-        return <Badge className="bg-gray-500">Cancelado</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -394,7 +380,7 @@ const ClientPortalDashboard = () => {
               <CardContent>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">ID de cuenta:</p>
-                  <p className="text-sm text-muted-foreground">{session.account_id}</p>
+                  <p className="text-sm text-muted-foreground">{session?.account_id}</p>
                 </div>
               </CardContent>
               <CardFooter className="border-t pt-6">
@@ -409,6 +395,34 @@ const ClientPortalDashboard = () => {
       </main>
     </div>
   );
+  
+  function getStatusBadge(status: string) {
+    switch (status) {
+      case 'paid':
+      case 'accepted':
+      case 'signed':
+      case 'completed':
+        return <Badge className="bg-green-500">Completado</Badge>;
+      case 'pending':
+      case 'sent':
+      case 'in_progress':
+        return <Badge className="bg-yellow-500">Pendiente</Badge>;
+      case 'overdue':
+      case 'delayed':
+        return <Badge className="bg-red-500">Vencido</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-gray-500">Cancelado</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  }
+
+  function formatCurrency(amount: number) {
+    return new Intl.NumberFormat('es-ES', { 
+      style: 'currency', 
+      currency: 'EUR' 
+    }).format(amount);
+  }
 };
 
 export default ClientPortalDashboard;
