@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -129,15 +130,26 @@ export async function authenticateClientPortal(email: string, password: string):
 
     if (error) throw error;
     
+    // Check if data is empty or null
     if (!data || (Array.isArray(data) && data.length === 0)) return null;
     
-    // Process the response as a session object
-    return {
-      account_id: data.account_id,
-      client_id: data.client_id,
-      token: data.token,
-      expires_at: data.expires_at
-    };
+    // Handle array response - the function returns an array with a single object
+    if (Array.isArray(data) && data.length > 0) {
+      const sessionData = data[0];
+      return {
+        account_id: sessionData.account_id,
+        client_id: sessionData.client_id,
+        token: sessionData.token,
+        expires_at: sessionData.expires_at
+      };
+    }
+    
+    // If somehow it's not an array (unlikely based on the type definitions)
+    if (typeof data === 'object' && 'account_id' in data) {
+      return data as unknown as ClientPortalSession;
+    }
+    
+    return null;
   } catch (error: any) {
     console.error('Error authenticating client portal:', error);
     throw error;
