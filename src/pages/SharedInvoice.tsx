@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { InvoiceContents, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
+import { InvoiceContent, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
 import { toast } from 'sonner';
 
 interface SharedInvoiceData {
@@ -27,6 +27,11 @@ const SharedInvoice = () => {
   const [invoice, setInvoice] = useState<SharedInvoiceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Function to handle printing the invoice
+  const handlePrint = () => {
+    window.print();
+  };
 
   useEffect(() => {
     async function fetchInvoice() {
@@ -106,20 +111,17 @@ const SharedInvoice = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
       <div className="max-w-4xl mx-auto bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-primary/10 overflow-hidden">
         <InvoiceHeader 
-          title={invoice.title}
-          clientName={invoice.client_name}
-          clientWebsite={invoice.client_website || ''}
-          status={invoice.status}
-          createdAt={invoice.created_at}
+          invoice={invoice}
+          onPrint={handlePrint}
         />
         
-        <InvoiceContents 
-          invoice={invoice as any}
+        <InvoiceContent 
+          invoice={invoice}
         />
         
         <InvoiceActions 
-          invoice={invoice as any}
-          isSharedView={true}
+          invoice={invoice}
+          onPrint={handlePrint}
         />
       </div>
     </div>
