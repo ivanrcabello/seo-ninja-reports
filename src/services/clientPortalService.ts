@@ -120,7 +120,7 @@ export async function getClientPortalActivity(accountId: string) {
 }
 
 // Estas funciones serán utilizadas por la aplicación del portal del cliente (separada)
-export async function authenticateClientPortal(email: string, password: string) {
+export async function authenticateClientPortal(email: string, password: string): Promise<ClientPortalSession | null> {
   try {
     const { data, error } = await supabase.rpc('authenticate_client_portal_account', {
       p_email: email,
@@ -129,7 +129,8 @@ export async function authenticateClientPortal(email: string, password: string) 
 
     if (error) throw error;
     
-    return data as ClientPortalSession;
+    // Asegurarse de que estamos devolviendo un objeto único, no un array
+    return data ? (Array.isArray(data) && data.length > 0 ? data[0] : data) as ClientPortalSession : null;
   } catch (error: any) {
     console.error('Error authenticating client portal:', error);
     throw error;
