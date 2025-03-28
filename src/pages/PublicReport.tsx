@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Report } from '@/types/report.types';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import PublicReportHeader from '@/components/public-reports/PublicReportHeader';
 import PublicReportContent from '@/components/public-reports/PublicReportContent';
 import PublicReportError from '@/components/public-reports/PublicReportError';
@@ -20,7 +20,6 @@ const PublicReport = () => {
   const [report, setReport] = useState<PublicReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -33,7 +32,7 @@ const PublicReport = () => {
         
         console.log('Fetching public report with ID:', id);
         
-        // Use the public_reports view we created to avoid RLS issues
+        // Use the public_reports view that doesn't require authentication
         const { data: publicReportData, error: fetchError } = await supabase
           .from('public_reports')
           .select('*')
@@ -97,19 +96,14 @@ const PublicReport = () => {
         setReport(formattedReport);
         
         // Show success toast when report is loaded
-        toast({
-          title: 'Informe cargado',
-          description: 'El informe se ha cargado correctamente',
-        });
+        toast.success('Informe cargado correctamente');
       } catch (err: any) {
         console.error('Error loading public report:', err);
         setError(err.message || 'No se pudo cargar el informe. Es posible que no exista o que no tengas permisos para verlo.');
         
         // Show error toast
-        toast({
-          title: 'Error',
-          description: err.message || 'No se pudo cargar el informe',
-          variant: 'destructive',
+        toast.error('Error', {
+          description: err.message || 'No se pudo cargar el informe'
         });
       } finally {
         setLoading(false);
@@ -119,7 +113,7 @@ const PublicReport = () => {
     if (id) {
       fetchReport();
     }
-  }, [id, toast]);
+  }, [id]);
 
   if (loading) {
     return <PublicReportLoading />;

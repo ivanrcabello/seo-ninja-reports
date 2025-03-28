@@ -2,236 +2,163 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ClientProposal } from '@/types/client.types';
 import { toast } from 'sonner';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatDistance } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BadgeCheck, Clock, FileText, Loader2, Send, X } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
-interface PublicProposal extends Omit<ClientProposal, 'client_id'> {
-  client_name?: string;
+interface SharedProposalData {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  price?: number;
+  services?: string[];
+  shared_url: string;
+  created_at: string;
+  updated_at: string;
+  client_name: string;
   client_website?: string;
 }
 
+const formatPrice = (price?: number) => {
+  if (!price) return 'Precio no especificado';
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
+};
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
 const SharedProposal = () => {
-  const { id } = useParams<{ id: string }>();
-  const [proposal, setProposal] = useState<PublicProposal | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { sharedUrl } = useParams<{ sharedUrl: string }>();
+  const [proposal, setProposal] = useState<SharedProposalData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [logo, setLogo] = useState<string | null>(null);
-
-  // Fetch the company logo
-  useEffect(() => {
-    const fetchLogo = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('settings')
-          .select('logo_url')
-          .single();
-        
-        if (error) {
-          console.error('Error fetching logo:', error);
-          return;
-        }
-        
-        if (data && data.logo_url) {
-          setLogo(data.logo_url);
-        }
-      } catch (err) {
-        console.error('Failed to fetch logo:', err);
-      }
-    };
-    
-    fetchLogo();
-  }, []);
 
   useEffect(() => {
-    const fetchProposal = async () => {
+    async function fetchProposal() {
+      if (!sharedUrl) return;
+      
       try {
-        setLoading(true);
+        setIsLoading(true);
         
-        if (!id) {
-          throw new Error('ID de propuesta no especificado');
-        }
+        console.log("Fetching proposal with shared URL:", sharedUrl);
         
-        console.log('Fetching proposal with shared_url:', id);
-        
-        // Use the public_proposals view instead of the client_proposals table
+        // Fetch from public_proposals directly (no RLS, no authentication required)
         const { data, error: fetchError } = await supabase
           .from('public_proposals')
           .select('*')
-          .eq('shared_url', id)
+          .eq('shared_url', sharedUrl)
           .single();
         
         if (fetchError) {
-          console.error('Error fetching shared proposal:', fetchError);
-          throw new Error(`Error al cargar propuesta: ${fetchError.message}`);
+          console.error("Error fetching proposal:", fetchError);
+          throw new Error(fetchError.message);
         }
         
         if (!data) {
-          console.error('No proposal found with shared_url:', id);
-          throw new Error(`Propuesta no encontrada`);
+          throw new Error('Propuesta no encontrada');
         }
         
-        // Type the data as PublicProposal
-        const typedProposal: PublicProposal = {
-          ...data,
-          status: data.status as 'draft' | 'sent' | 'accepted' | 'rejected'
-        };
-        
-        console.log('Successfully fetched proposal:', typedProposal);
-        setProposal(typedProposal);
-        
+        console.log("Proposal data retrieved successfully:", data);
+        setProposal(data as SharedProposalData);
       } catch (err: any) {
-        console.error('Error loading shared proposal:', err);
+        console.error("Error in fetchProposal:", err);
         setError(err.message || 'No se pudo cargar la propuesta');
         
-        toast.error('Error: ' + (err.message || 'No se pudo cargar la propuesta'));
+        toast.error('Error', { 
+          description: err.message || 'No se pudo cargar la propuesta'
+        });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
-    };
+    }
     
     fetchProposal();
-  }, [id]);
+  }, [sharedUrl]);
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-lg font-medium">Cargando propuesta...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !proposal) {
     return (
-      <div className="min-h-screen flex justify-center items-center">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle className="text-xl text-center">Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-muted-foreground">
-              {error || 'No se pudo cargar la propuesta'}
-            </p>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button variant="outline" onClick={() => window.history.back()}>
-              Volver
-            </Button>
-          </CardFooter>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-md w-full p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-red-200">
+          <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar la propuesta</h1>
+          <p className="text-center text-muted-foreground mb-6">
+            {error || 'La propuesta solicitada no existe o ha sido eliminada.'}
+          </p>
+          <div className="flex justify-center">
+            <a
+              href="/"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Volver al inicio
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const formatDate = (dateString: string) => {
-    try {
-      return formatDistance(new Date(dateString), new Date(), { 
-        addSuffix: true,
-        locale: es
-      });
-    } catch (error) {
-      console.error('Error parsing date:', error);
-      return 'Fecha desconocida';
-    }
-  };
-
-  const getStatusIcon = () => {
-    switch (proposal.status) {
-      case 'draft':
-        return <FileText className="h-4 w-4 text-muted-foreground" />;
-      case 'sent':
-        return <Send className="h-4 w-4 text-blue-500" />;
-      case 'accepted':
-        return <BadgeCheck className="h-4 w-4 text-green-500" />;
-      case 'rejected':
-        return <X className="h-4 w-4 text-red-500" />;
-      default:
-        return <FileText className="h-4 w-4" />;
-    }
-  };
-  
-  const getStatusLabel = () => {
-    switch (proposal.status) {
-      case 'draft': return 'Borrador';
-      case 'sent': return 'Enviada';
-      case 'accepted': return 'Aceptada';
-      case 'rejected': return 'Rechazada';
-      default: return 'Desconocido';
-    }
-  };
-  
-  const getStatusColor = () => {
-    switch (proposal.status) {
-      case 'draft': return 'bg-muted text-muted-foreground';
-      case 'sent': return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
-      case 'accepted': return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
-      case 'rejected': return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-6">
+    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Logo Header */}
-        {logo && (
-          <div className="flex justify-center mb-8">
-            <img 
-              src={logo} 
-              alt="Logo de la empresa" 
-              className="h-16 object-contain"
-            />
-          </div>
-        )}
-        
-        {/* Proposal Header */}
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold mb-2">{proposal.title}</h1>
-          <div className="flex justify-center mb-4">
-            <span className={`text-xs px-3 py-1.5 rounded-full flex items-center ${getStatusColor()}`}>
-              {getStatusIcon()}
-              <span className="ml-1.5">{getStatusLabel()}</span>
-            </span>
-          </div>
-          <div className="text-sm text-muted-foreground flex items-center justify-center">
-            <Clock className="h-3.5 w-3.5 mr-1.5" />
-            Última actualización: {formatDate(proposal.updated_at)}
-          </div>
-          {proposal.client_name && (
-            <div className="text-sm text-muted-foreground mt-1">
-              Propuesta para: <span className="font-medium">{proposal.client_name}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Proposal Content */}
-        <Card className="mb-8 overflow-hidden border-t-4 border-t-primary shadow-md">
-          <CardHeader className="bg-muted/30">
-            <CardTitle>Detalles de la propuesta</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 p-6">
-            {proposal.description ? (
+        <Card className="bg-background/80 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden">
+          <CardHeader className="bg-primary/5 border-b border-primary/10">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
               <div>
-                <h3 className="text-lg font-medium mb-3 text-primary">Descripción</h3>
-                <div 
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: proposal.description }}
-                />
+                <h1 className="text-2xl font-bold">{proposal.title}</h1>
+                <p className="text-muted-foreground">
+                  {proposal.client_name} {proposal.client_website && (
+                    <span>• <a href={proposal.client_website.startsWith('http') ? proposal.client_website : `https://${proposal.client_website}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{proposal.client_website}</a></span>
+                  )}
+                </p>
               </div>
-            ) : null}
+              <div className="flex flex-col items-start md:items-end gap-1">
+                <Badge className={`px-3 py-1 ${proposal.status === 'accepted' ? 'bg-green-500/20 text-green-600' : proposal.status === 'rejected' ? 'bg-red-500/20 text-red-600' : 'bg-yellow-500/20 text-yellow-600'}`}>
+                  {proposal.status === 'accepted' ? 'Aceptada' : 
+                   proposal.status === 'rejected' ? 'Rechazada' : 
+                   proposal.status === 'draft' ? 'Borrador' : 'Pendiente'}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  Creada el {formatDate(proposal.created_at)}
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            {proposal.description && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-2">Descripción</h2>
+                <p className="text-muted-foreground whitespace-pre-line">{proposal.description}</p>
+              </div>
+            )}
             
             {proposal.services && proposal.services.length > 0 && (
-              <div>
-                <h3 className="text-lg font-medium mb-3 text-primary">Servicios incluidos</h3>
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-3">Servicios incluidos</h2>
                 <ul className="space-y-2">
                   {proposal.services.map((service, index) => (
-                    <li key={index} className="bg-muted/50 p-3 rounded-md flex items-start">
-                      <Badge variant="outline" className="mr-2 h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <li key={index} className="flex items-start gap-2">
+                      <div className="h-5 w-5 mt-0.5 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
                       <span>{service}</span>
                     </li>
                   ))}
@@ -239,25 +166,25 @@ const SharedProposal = () => {
               </div>
             )}
             
-            {proposal.price && (
-              <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
-                <h3 className="text-lg font-medium mb-2 text-primary">Precio</h3>
-                <p className="text-2xl font-bold">
-                  {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(proposal.price)}
-                </p>
+            <Separator className="my-6" />
+            
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold text-xl">Precio total</h3>
+                <p className="text-muted-foreground text-sm">Todos los precios incluyen IVA</p>
               </div>
-            )}
-          </CardContent>
-          <CardFooter className="p-6 bg-muted/10 border-t">
-            <div className="w-full text-center">
-              <p className="mb-4 text-muted-foreground">¿Interesado en esta propuesta?</p>
-              <Button asChild size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary">
-                <a href="https://soyseolocal.com/contacto" target="_blank" rel="noopener noreferrer">
-                  Contactar ahora
-                </a>
-              </Button>
+              <div className="text-2xl font-bold">
+                {formatPrice(proposal.price)}
+              </div>
             </div>
-          </CardFooter>
+            
+            <div className="mt-12 text-center">
+              <p className="text-sm text-muted-foreground">
+                Para cualquier consulta sobre esta propuesta, por favor contacta con nosotros en{' '}
+                <a href="mailto:info@soyseolocal.com" className="text-primary hover:underline">info@soyseolocal.com</a>
+              </p>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </div>
