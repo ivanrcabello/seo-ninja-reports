@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -210,7 +209,6 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onEdit, onDelete 
         onOpenChange={setIsShareDialogOpen}
         proposalId={proposal.id}
         proposalTitle={proposal.title}
-        onGenerateShareUrl={generateShareUrl}
       />
     </>
   );

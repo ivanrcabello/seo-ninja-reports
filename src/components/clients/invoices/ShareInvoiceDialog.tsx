@@ -85,7 +85,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
           // Insertamos en public_invoices
           const { error: insertError } = await supabase
             .from('public_invoices')
-            .insert({
+            .insert([{
               id: fullInvoice.id,
               title: fullInvoice.title,
               description: fullInvoice.description,
@@ -100,7 +100,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
               updated_at: fullInvoice.updated_at,
               client_name: invoiceData.clients?.name,
               client_website: invoiceData.clients?.website
-            });
+            }]);
           
           if (insertError) {
             throw new Error('Error al crear factura pública');

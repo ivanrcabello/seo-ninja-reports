@@ -89,7 +89,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
           // Insertamos en public_proposals
           const { error: insertError } = await supabase
             .from('public_proposals')
-            .insert({
+            .insert([{
               id: fullProposal.id,
               title: fullProposal.title,
               description: fullProposal.description,
@@ -101,7 +101,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
               updated_at: fullProposal.updated_at,
               client_name: proposalData.clients?.name,
               client_website: proposalData.clients?.website
-            });
+            }]);
           
           if (insertError) {
             throw new Error('Error al crear propuesta pública');

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
   onOpenChange,
   clientName
 }) => {
-  const { generateShareUrl, markAsPaid } = useClientInvoices();
+  const { markAsPaid } = useClientInvoices();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -124,16 +123,6 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
     console.log("Opening share dialog");
     setIsShareDialogOpen(true);
   }, []);
-
-  const handleGenerateShareUrl = useCallback(async () => {
-    try {
-      console.log("Generating share URL for invoice ID:", invoice.id);
-      return await generateShareUrl(invoice.id);
-    } catch (error) {
-      console.error('Error generating share URL:', error);
-      throw error;
-    }
-  }, [invoice.id, generateShareUrl]);
 
   const handleMarkAsPaid = useCallback(async () => {
     if (!paymentMethod) {
@@ -308,7 +297,6 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
           onOpenChange={setIsShareDialogOpen}
           invoiceId={invoice.id}
           invoiceTitle={invoice.title}
-          onGenerateShareUrl={handleGenerateShareUrl}
         />
       )}
     </>

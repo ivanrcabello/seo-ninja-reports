@@ -54,7 +54,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           // Insertamos en la tabla pública
           const { error: insertError } = await supabase
             .from('public_reports')
-            .insert({
+            .insert([{
               id: reportData.id,
               title: reportData.title,
               date: reportData.date,
@@ -64,7 +64,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
               content: reportData.content,
               client_name: reportData.clients?.name,
               client_website: reportData.clients?.website
-            });
+            }]);
           
           if (insertError) {
             throw new Error(`Error al compartir el informe: ${insertError.message}`);
