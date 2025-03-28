@@ -71,8 +71,8 @@ const MobileUserNav: React.FC<MobileUserNavProps> = ({
         <Button
           variant="ghost"
           className="justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-          onClick={() => {
-            handleSignOut();
+          onClick={async () => {
+            await handleSignOut();
             closeMenu();
           }}
         >

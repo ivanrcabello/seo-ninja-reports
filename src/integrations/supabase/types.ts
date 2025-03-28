@@ -1874,19 +1874,32 @@ export type Database = {
       }
     }
     Functions: {
-      authenticate_client_portal_account: {
-        Args: {
-          p_email: string
-          p_password: string
-          p_session_hours?: number
-        }
-        Returns: {
-          account_id: string
-          client_id: string
-          token: string
-          expires_at: string
-        }[]
-      }
+      authenticate_client_portal_account:
+        | {
+            Args: {
+              p_email: string
+              p_password: string
+            }
+            Returns: {
+              account_id: string
+              client_id: string
+              token: string
+              expires_at: string
+            }[]
+          }
+        | {
+            Args: {
+              p_email: string
+              p_password: string
+              p_session_hours?: number
+            }
+            Returns: {
+              account_id: string
+              client_id: string
+              token: string
+              expires_at: string
+            }[]
+          }
       check_invoice_password_protection: {
         Args: {
           shared_url_param: string
@@ -1920,6 +1933,10 @@ export type Database = {
       generate_secure_token: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_client_accounts_for_client_portal: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
       }
       get_crawl_headings: {
         Args: {

@@ -7,6 +7,7 @@ import { Menu } from 'lucide-react';
 import MobileNavbar from './MobileNavbar';
 import DesktopNavbar from './DesktopNavbar';
 import { toast } from 'sonner';
+import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -76,21 +77,23 @@ const Header = () => {
             )}
           </div>
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="md:hidden"
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <MobileNavbar
+              closeMenu={() => setIsMobileMenuOpen(false)}
+              handleSignOut={handleSignOut}
+            />
+          </Sheet>
         </div>
       </div>
-      
-      <MobileNavbar
-        closeMenu={() => setIsMobileMenuOpen(false)}
-        handleSignOut={handleSignOut}
-      />
     </header>
   );
 };

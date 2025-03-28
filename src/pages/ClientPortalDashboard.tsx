@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ClientPortalSession {
   account_id: string;
@@ -90,41 +91,63 @@ const ClientPortalDashboard = () => {
     setError(null);
     
     try {
+      console.log('Fetching data for client ID:', clientId);
+      
       // Fetch invoices
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('client_invoices')
-        .select('id, title, amount, status, due_date, created_at')
+        .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
       
-      if (invoicesError) throw invoicesError;
+      if (invoicesError) {
+        console.error('Error fetching invoices:', invoicesError);
+        throw invoicesError;
+      }
+      
+      console.log('Invoices fetched:', invoicesData);
       
       // Fetch proposals
       const { data: proposalsData, error: proposalsError } = await supabase
         .from('client_proposals')
-        .select('id, title, status, created_at')
+        .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
       
-      if (proposalsError) throw proposalsError;
+      if (proposalsError) {
+        console.error('Error fetching proposals:', proposalsError);
+        throw proposalsError;
+      }
+      
+      console.log('Proposals fetched:', proposalsData);
       
       // Fetch contracts
       const { data: contractsData, error: contractsError } = await supabase
         .from('client_contracts')
-        .select('id, title, status, created_at')
+        .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
       
-      if (contractsError) throw contractsError;
+      if (contractsError) {
+        console.error('Error fetching contracts:', contractsError);
+        throw contractsError;
+      }
+      
+      console.log('Contracts fetched:', contractsData);
       
       // Fetch reports
       const { data: reportsData, error: reportsError } = await supabase
         .from('reports')
-        .select('id, title, created_at')
+        .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
       
-      if (reportsError) throw reportsError;
+      if (reportsError) {
+        console.error('Error fetching reports:', reportsError);
+        throw reportsError;
+      }
+      
+      console.log('Reports fetched:', reportsData);
       
       setInvoices(invoicesData || []);
       setProposals(proposalsData || []);
@@ -155,7 +178,7 @@ const ClientPortalDashboard = () => {
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Cargando...</p>
+        <p>Redirigiendo al inicio de sesión...</p>
       </div>
     );
   }
@@ -237,7 +260,11 @@ const ClientPortalDashboard = () => {
             <Card>
               <CardContent className="pt-6">
                 {loading ? (
-                  <p className="text-center py-4">Cargando informes...</p>
+                  <div className="space-y-4">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
                 ) : reports.length > 0 ? (
                   <div className="space-y-4">
                     {reports.map(report => (
@@ -274,7 +301,11 @@ const ClientPortalDashboard = () => {
             <Card>
               <CardContent className="pt-6">
                 {loading ? (
-                  <p className="text-center py-4">Cargando facturas...</p>
+                  <div className="space-y-4">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
                 ) : invoices.length > 0 ? (
                   <div className="space-y-4">
                     {invoices.map(invoice => (
@@ -318,7 +349,11 @@ const ClientPortalDashboard = () => {
             <Card>
               <CardContent className="pt-6">
                 {loading ? (
-                  <p className="text-center py-4">Cargando propuestas...</p>
+                  <div className="space-y-4">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
                 ) : proposals.length > 0 ? (
                   <div className="space-y-4">
                     {proposals.map(proposal => (
