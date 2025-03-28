@@ -267,6 +267,111 @@ export type Database = {
           },
         ]
       }
+      client_portal_accounts: {
+        Row: {
+          client_id: string
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          last_login: string | null
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          last_login?: string | null
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          last_login?: string | null
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_activity_logs: {
+        Row: {
+          action: string
+          client_portal_account_id: string
+          created_at: string
+          details: Json | null
+          id: string
+        }
+        Insert: {
+          action: string
+          client_portal_account_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          client_portal_account_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_activity_logs_client_portal_account_id_fkey"
+            columns: ["client_portal_account_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_sessions: {
+        Row: {
+          client_portal_account_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+        }
+        Insert: {
+          client_portal_account_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+        }
+        Update: {
+          client_portal_account_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_sessions_client_portal_account_id_fkey"
+            columns: ["client_portal_account_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_proposals: {
         Row: {
           client_id: string
@@ -1769,6 +1874,19 @@ export type Database = {
       }
     }
     Functions: {
+      authenticate_client_portal_account: {
+        Args: {
+          p_email: string
+          p_password: string
+          p_session_hours?: number
+        }
+        Returns: {
+          account_id: string
+          client_id: string
+          token: string
+          expires_at: string
+        }[]
+      }
       check_invoice_password_protection: {
         Args: {
           shared_url_param: string
@@ -1787,9 +1905,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_client_portal_account: {
+        Args: {
+          p_client_id: string
+          p_email: string
+          p_password: string
+        }
+        Returns: string
+      }
       create_settings_table_if_not_exists: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_secure_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_crawl_headings: {
         Args: {
@@ -1862,6 +1992,12 @@ export type Database = {
           client_website: string
         }[]
       }
+      invalidate_client_portal_session: {
+        Args: {
+          p_token: string
+        }
+        Returns: boolean
+      }
       update_contract_by_shared_url: {
         Args: {
           shared_url_param: string
@@ -1871,6 +2007,17 @@ export type Database = {
           status_param?: string
         }
         Returns: string
+      }
+      validate_client_portal_session: {
+        Args: {
+          p_token: string
+        }
+        Returns: {
+          account_id: string
+          client_id: string
+          email: string
+          is_valid: boolean
+        }[]
       }
       verify_shared_invoice_password: {
         Args: {

@@ -6,7 +6,8 @@ import {
   ClipboardList, 
   CreditCard, 
   LayoutDashboard, 
-  CalendarClock 
+  CalendarClock,
+  UserCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const ClientTabNavigation: React.FC<ClientTabProps> = ({ activeTab, setActiveTab
     { id: 'contracts', label: 'Contratos', icon: <ClipboardList className="h-4 w-4 mr-2" /> },
     { id: 'invoices', label: 'Facturas', icon: <CreditCard className="h-4 w-4 mr-2" /> },
     { id: 'tasks', label: 'Cronograma', icon: <CalendarClock className="h-4 w-4 mr-2" /> },
+    { id: 'portal', label: 'Portal', icon: <UserCircle className="h-4 w-4 mr-2" /> },
   ];
 
   return (
