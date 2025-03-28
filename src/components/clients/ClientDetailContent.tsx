@@ -9,6 +9,7 @@ import ClientReportsList from './ClientReportsList';
 import ClientProposals from './proposals/ClientProposals';
 import ClientContracts from './contracts/ClientContracts';
 import ClientInvoices from './invoices/ClientInvoices';
+import ClientTasks from './timeline/ClientTasks';
 
 interface ClientDetailContentProps {
   client: Client;
@@ -76,6 +77,13 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         
         {activeTab === 'invoices' && (
           <ClientInvoices 
+            clientId={client.id} 
+            clientName={client.name} 
+          />
+        )}
+        
+        {activeTab === 'tasks' && (
+          <ClientTasks 
             clientId={client.id} 
             clientName={client.name} 
           />
