@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { authenticateClientPortal } from '@/services/clientPortalService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
@@ -48,8 +48,16 @@ const ClientPortal = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">Portal del Cliente</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">
+          <Link to="/" className="inline-block">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-700">
+              SoySeoLocal
+            </h1>
+          </Link>
+          <div className="flex items-center justify-center gap-2 mt-2 mb-2">
+            <Users className="w-4 h-4 text-primary" />
+            <p className="font-medium">Portal del Cliente</p>
+          </div>
+          <p className="text-gray-500 dark:text-gray-400">
             Accede a tus informes, facturas y contenido personalizado
           </p>
         </div>
@@ -91,10 +99,16 @@ const ClientPortal = () => {
                 />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col space-y-2">
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </Button>
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                ¿Eres administrador? 
+                <Link to="/auth" className="text-primary hover:underline mx-1">
+                  Acceso administración
+                </Link>
+              </p>
             </CardFooter>
           </form>
         </Card>

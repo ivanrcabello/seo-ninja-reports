@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import AuthForm from '@/components/auth/AuthForm';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { useAuth } from '@/context/AuthContext';
+import { Shield } from 'lucide-react';
 
 const Auth = () => {
   const { user, loading } = useAuth();
@@ -27,8 +28,12 @@ const Auth = () => {
               SoySeoLocal.com
             </span>
           </h1>
+          <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
+            <Shield className="w-4 h-4" />
+            <p>Área de administración</p>
+          </div>
           <p className="text-muted-foreground">
-            Inicia sesión o crea una nueva cuenta
+            Inicia sesión para gestionar clientes y proyectos
           </p>
         </AnimatedContainer>
         
@@ -36,6 +41,12 @@ const Auth = () => {
         
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
+            ¿Eres cliente? 
+            <Link to="/portal" className="text-primary hover:underline mx-1">
+              Accede al área de clientes
+            </Link>
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
             Al iniciar sesión, aceptas nuestros
             <a href="#" className="text-primary hover:underline mx-1">Términos de Servicio</a>
             y
