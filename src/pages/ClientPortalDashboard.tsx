@@ -93,18 +93,16 @@ const ClientPortalDashboard = () => {
     try {
       console.log('Fetching data for client ID:', clientId);
       
-      // Create a custom Supabase client with the token header
-      const customClient = supabase.from('client_invoices').select('*').eq('client_id', clientId);
+      // Set headers for all requests
+      const headers = { 'x-client-token': token };
       
-      // Set the client token in the header for authorization
+      // Fetch invoices
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('client_invoices')
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .headers({
-          'x-client-token': token
-        });
+        .select(undefined, { headers });
       
       if (invoicesError) {
         console.error('Error fetching invoices:', invoicesError);
@@ -119,9 +117,7 @@ const ClientPortalDashboard = () => {
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .headers({
-          'x-client-token': token
-        });
+        .select(undefined, { headers });
       
       if (proposalsError) {
         console.error('Error fetching proposals:', proposalsError);
@@ -136,9 +132,7 @@ const ClientPortalDashboard = () => {
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .headers({
-          'x-client-token': token
-        });
+        .select(undefined, { headers });
       
       if (contractsError) {
         console.error('Error fetching contracts:', contractsError);
@@ -153,9 +147,7 @@ const ClientPortalDashboard = () => {
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .headers({
-          'x-client-token': token
-        });
+        .select(undefined, { headers });
       
       if (reportsError) {
         console.error('Error fetching reports:', reportsError);
@@ -415,13 +407,6 @@ const ClientPortalDashboard = () => {
       default:
         return <Badge>{status}</Badge>;
     }
-  }
-
-  function formatCurrency(amount: number) {
-    return new Intl.NumberFormat('es-ES', { 
-      style: 'currency', 
-      currency: 'EUR' 
-    }).format(amount);
   }
 };
 
