@@ -184,6 +184,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          password: string | null
           payment_date: string | null
           payment_instructions: string | null
           payment_method: string | null
@@ -199,6 +200,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          password?: string | null
           payment_date?: string | null
           payment_instructions?: string | null
           payment_method?: string | null
@@ -214,6 +216,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          password?: string | null
           payment_date?: string | null
           payment_instructions?: string | null
           payment_method?: string | null
@@ -270,6 +273,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          password: string | null
           price: number | null
           services: string[] | null
           shared_url: string | null
@@ -282,6 +286,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          password?: string | null
           price?: number | null
           services?: string[] | null
           shared_url?: string | null
@@ -294,6 +299,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          password?: string | null
           price?: number | null
           services?: string[] | null
           shared_url?: string | null
@@ -581,6 +587,7 @@ export type Database = {
           has_business_profile: boolean | null
           id: string
           notes: string | null
+          password: string | null
           status: string
           summary: string | null
           title: string
@@ -596,6 +603,7 @@ export type Database = {
           has_business_profile?: boolean | null
           id?: string
           notes?: string | null
+          password?: string | null
           status?: string
           summary?: string | null
           title: string
@@ -611,6 +619,7 @@ export type Database = {
           has_business_profile?: boolean | null
           id?: string
           notes?: string | null
+          password?: string | null
           status?: string
           summary?: string | null
           title?: string
@@ -1713,6 +1722,24 @@ export type Database = {
       }
     }
     Functions: {
+      check_invoice_password_protection: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: boolean
+      }
+      check_proposal_password_protection: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: boolean
+      }
+      check_report_password_protection: {
+        Args: {
+          report_id_param: string
+        }
+        Returns: boolean
+      }
       create_settings_table_if_not_exists: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1797,6 +1824,27 @@ export type Database = {
           status_param?: string
         }
         Returns: string
+      }
+      verify_shared_invoice_password: {
+        Args: {
+          shared_url_param: string
+          password_param: string
+        }
+        Returns: boolean
+      }
+      verify_shared_proposal_password: {
+        Args: {
+          shared_url_param: string
+          password_param: string
+        }
+        Returns: boolean
+      }
+      verify_shared_report_password: {
+        Args: {
+          report_id_param: string
+          password_param: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
