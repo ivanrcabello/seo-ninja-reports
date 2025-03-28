@@ -110,7 +110,7 @@ const SharedInvoice = () => {
         due_date: data.due_date,
         payment_method: data.payment_method,
         payment_date: data.payment_date,
-        payment_instructions: data.payment_instructions || '', // Ensure it has a default value
+        payment_instructions: data.payment_instructions || '', // Providing default empty string if null
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,
