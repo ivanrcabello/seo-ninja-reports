@@ -110,7 +110,9 @@ const SharedInvoice = () => {
         due_date: data.due_date,
         payment_method: data.payment_method,
         payment_date: data.payment_date,
-        payment_instructions: data.payment_instructions || '', // Providing default empty string if null
+        // We need to use the optional chaining or type assertion here since TypeScript doesn't recognize this property
+        // Use of type assertion to handle the property that exists in runtime but not in TypeScript definition
+        payment_instructions: (data as any).payment_instructions || '',
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,
