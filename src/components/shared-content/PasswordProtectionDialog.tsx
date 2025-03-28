@@ -1,97 +1,96 @@
 
 import React, { useState } from 'react';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Lock } from 'lucide-react';
 
 interface PasswordProtectionDialogProps {
-  onSubmit: (password: string) => Promise<void>;
+  onSubmit: (password: string) => void;
   onCancel: () => void;
-  type: 'invoice' | 'proposal' | 'report' | 'contract';
+  type?: 'invoice' | 'proposal' | 'contract' | 'report';
 }
 
-const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({ 
-  onSubmit, 
+const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
+  onSubmit,
   onCancel,
-  type
+  type = 'invoice'
 }) => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const typeLabels = {
+    invoice: 'factura',
+    proposal: 'propuesta',
+    contract: 'contrato',
+    report: 'informe'
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    if (!password.trim()) return;
     
+    setIsSubmitting(true);
     try {
       await onSubmit(password);
-    } catch (error) {
-      console.error("Error submitting password:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const typeLabels = {
-    invoice: 'factura',
-    proposal: 'propuesta',
-    report: 'informe',
-    contract: 'contrato'
-  };
   
   return (
-    <AlertDialog open={true}>
-      <AlertDialogContent className="sm:max-w-md">
-        <AlertDialogHeader>
-          <div className="mx-auto rounded-full bg-primary/10 p-3 mb-4">
-            <Lock className="h-6 w-6 text-primary" />
-          </div>
-          <AlertDialogTitle className="text-center">
-            {`Este ${typeLabels[type]} está protegido con contraseña`}
-          </AlertDialogTitle>
-          <AlertDialogDescription className="text-center">
-            Por favor, ingrese la contraseña para ver el contenido.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="text-center"
-            autoFocus
-            required
-          />
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background/95">
+      <Dialog open={true} onOpenChange={() => onCancel()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-4 bg-primary/10 p-3 rounded-full">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <DialogTitle className="text-center">Contenido protegido</DialogTitle>
+          </DialogHeader>
           
-          <AlertDialogFooter className="sm:justify-center gap-2 flex-row">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="submit"
-              disabled={!password || isSubmitting}
-              className="min-w-[100px]"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
-                  Verificando...
-                </span>
-              ) : (
-                'Acceder'
-              )}
-            </Button>
-          </AlertDialogFooter>
-        </form>
-      </AlertDialogContent>
-    </AlertDialog>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="text-center space-y-2">
+              <p className="text-muted-foreground">
+                Esta {typeLabels[type]} está protegida con contraseña.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Por favor, introduce la contraseña proporcionada para acceder.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Contraseña"
+                className="text-center"
+                autoFocus
+              />
+            </div>
+            
+            <DialogFooter className="flex flex-col sm:flex-row-reverse gap-2 sm:justify-center">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || !password.trim()}
+                className="w-full sm:w-auto"
+              >
+                {isSubmitting ? 'Verificando...' : 'Acceder'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onCancel}
+                className="w-full sm:w-auto"
+              >
+                Cancelar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

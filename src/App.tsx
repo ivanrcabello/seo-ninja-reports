@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './context/AuthContext';
@@ -131,6 +130,90 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const SharedInvoice = lazy(() => 
+  import('./pages/SharedInvoice')
+    .catch(error => {
+      console.error("Error loading SharedInvoice component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading shared invoice</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const SharedProposal = lazy(() => 
+  import('./pages/SharedProposal')
+    .catch(error => {
+      console.error("Error loading SharedProposal component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading shared proposal</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const SharedContract = lazy(() => 
+  import('./pages/SharedContract')
+    .catch(error => {
+      console.error("Error loading SharedContract component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading shared contract</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const PublicReport = lazy(() => 
+  import('./pages/PublicReport')
+    .catch(error => {
+      console.error("Error loading PublicReport component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading public report</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
 function App() {
   return (
     <>
@@ -150,6 +233,11 @@ function App() {
                     <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
                     <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
                     <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+                    
+                    <Route path="/shared/invoices/:sharedUrl" element={<SharedInvoice />} />
+                    <Route path="/shared/proposals/:sharedUrl" element={<SharedProposal />} />
+                    <Route path="/shared/contracts/:sharedUrl" element={<SharedContract />} />
+                    <Route path="/shared/reports/:id" element={<PublicReport />} />
 
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Routes>
