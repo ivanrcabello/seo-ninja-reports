@@ -2,29 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { InvoiceContent, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
+import { InvoiceContent, InvoiceHeader, InvoiceActions, SharedInvoice } from '@/components/shared-invoice';
 import { toast } from 'sonner';
 
-interface SharedInvoiceData {
-  id: string;
-  title: string;
-  description?: string;
-  amount: number;
-  status: string;
-  due_date?: string;
-  payment_method?: string;
-  payment_date?: string;
-  payment_instructions?: string;
-  shared_url: string;
-  created_at: string;
-  updated_at: string;
-  client_name: string;
-  client_website?: string;
-}
-
+// Cambiamos la interfaz para que coincida con SharedInvoice
 const SharedInvoice = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
-  const [invoice, setInvoice] = useState<SharedInvoiceData | null>(null);
+  const [invoice, setInvoice] = useState<SharedInvoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +43,32 @@ const SharedInvoice = () => {
         }
         
         console.log("Invoice data retrieved successfully:", data);
-        setInvoice(data as SharedInvoiceData);
+        
+        // Aseguramos que el status sea uno de los valores permitidos
+        const validStatus = ['pending', 'paid', 'cancelled', 'overdue'] as const;
+        const status = validStatus.includes(data.status as any) 
+          ? data.status as 'pending' | 'paid' | 'cancelled' | 'overdue'
+          : 'pending'; // Valor por defecto si no es válido
+        
+        // Convertimos los datos obtenidos al tipo SharedInvoice
+        const formattedInvoice: SharedInvoice = {
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          amount: data.amount,
+          status: status,
+          due_date: data.due_date,
+          payment_method: data.payment_method,
+          payment_date: data.payment_date,
+          payment_instructions: data.payment_instructions,
+          shared_url: data.shared_url,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          client_name: data.client_name,
+          client_website: data.client_website
+        };
+        
+        setInvoice(formattedInvoice);
       } catch (err: any) {
         console.error("Error in fetchInvoice:", err);
         setError(err.message || 'No se pudo cargar la factura');
