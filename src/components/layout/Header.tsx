@@ -1,16 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Menu } from 'lucide-react';
 import MobileNavbar from './MobileNavbar';
 import DesktopNavbar from './DesktopNavbar';
+import { toast } from 'sonner';
 
 const Header = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,6 +22,17 @@ const Header = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Sesión cerrada correctamente');
+      navigate('/');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      toast.error('Error al cerrar sesión');
+    }
+  };
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -37,9 +50,14 @@ const Header = () => {
           
           <div className="hidden md:flex items-center gap-2">
             {user ? (
-              <Button asChild size="sm">
-                <Link to="/dashboard">Panel de administración</Link>
-              </Button>
+              <>
+                <Button asChild size="sm">
+                  <Link to="/dashboard">Panel de administración</Link>
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>
+                  Cerrar sesión
+                </Button>
+              </>
             ) : (
               <>
                 <Button asChild variant="ghost" size="sm">
@@ -71,6 +89,7 @@ const Header = () => {
       
       <MobileNavbar
         closeMenu={() => setIsMobileMenuOpen(false)}
+        handleSignOut={handleSignOut}
       />
     </header>
   );

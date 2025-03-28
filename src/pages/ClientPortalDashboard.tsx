@@ -4,9 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, FileText, CreditCard, ClipboardList, User } from 'lucide-react';
+import { LogOut, FileText, CreditCard, ClipboardList, User, AlertCircle, Calendar, ChevronRight } from 'lucide-react';
 import { logoutClientPortal } from '@/services/clientPortalService';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 
 interface ClientPortalSession {
   account_id: string;
@@ -15,8 +19,43 @@ interface ClientPortalSession {
   expires_at: string;
 }
 
+interface Invoice {
+  id: string;
+  title: string;
+  amount: number;
+  status: string;
+  due_date?: string;
+  created_at: string;
+}
+
+interface Proposal {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+}
+
+interface Contract {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+}
+
+interface Report {
+  id: string;
+  title: string;
+  created_at: string;
+}
+
 const ClientPortalDashboard = () => {
   const [session, setSession] = useState<ClientPortalSession | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -39,11 +78,65 @@ const ClientPortalDashboard = () => {
       }
       
       setSession(parsedSession);
+      fetchClientData(parsedSession.client_id);
     } catch (err) {
       console.error('Error parsing session:', err);
       navigate('/portal');
     }
   }, [navigate]);
+  
+  const fetchClientData = async (clientId: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch invoices
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('client_invoices')
+        .select('id, title, amount, status, due_date, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+      
+      if (invoicesError) throw invoicesError;
+      
+      // Fetch proposals
+      const { data: proposalsData, error: proposalsError } = await supabase
+        .from('client_proposals')
+        .select('id, title, status, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+      
+      if (proposalsError) throw proposalsError;
+      
+      // Fetch contracts
+      const { data: contractsData, error: contractsError } = await supabase
+        .from('client_contracts')
+        .select('id, title, status, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+      
+      if (contractsError) throw contractsError;
+      
+      // Fetch reports
+      const { data: reportsData, error: reportsError } = await supabase
+        .from('reports')
+        .select('id, title, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+      
+      if (reportsError) throw reportsError;
+      
+      setInvoices(invoicesData || []);
+      setProposals(proposalsData || []);
+      setContracts(contractsData || []);
+      setReports(reportsData || []);
+    } catch (err: any) {
+      console.error('Error fetching client data:', err);
+      setError(err.message || 'Error al cargar los datos del cliente');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const handleLogout = async () => {
     if (session?.token) {
@@ -67,6 +160,34 @@ const ClientPortalDashboard = () => {
     );
   }
   
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+      case 'accepted':
+      case 'signed':
+      case 'completed':
+        return <Badge className="bg-green-500">Completado</Badge>;
+      case 'pending':
+      case 'sent':
+      case 'in_progress':
+        return <Badge className="bg-yellow-500">Pendiente</Badge>;
+      case 'overdue':
+      case 'delayed':
+        return <Badge className="bg-red-500">Vencido</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-gray-500">Cancelado</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-ES', { 
+      style: 'currency', 
+      currency: 'EUR' 
+    }).format(amount);
+  };
+  
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 shadow">
@@ -80,6 +201,13 @@ const ClientPortalDashboard = () => {
       </header>
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="informes">
           <TabsList className="mb-8">
             <TabsTrigger value="informes">
@@ -108,9 +236,31 @@ const ClientPortalDashboard = () => {
             
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground py-8">
-                  No hay informes disponibles en este momento.
-                </p>
+                {loading ? (
+                  <p className="text-center py-4">Cargando informes...</p>
+                ) : reports.length > 0 ? (
+                  <div className="space-y-4">
+                    {reports.map(report => (
+                      <div key={report.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div>
+                          <h3 className="font-medium">{report.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            <Calendar className="inline h-3 w-3 mr-1" />
+                            {format(new Date(report.created_at), 'dd/MM/yyyy')}
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Ver informe
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    No hay informes disponibles en este momento.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -123,9 +273,38 @@ const ClientPortalDashboard = () => {
             
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground py-8">
-                  No hay facturas disponibles en este momento.
-                </p>
+                {loading ? (
+                  <p className="text-center py-4">Cargando facturas...</p>
+                ) : invoices.length > 0 ? (
+                  <div className="space-y-4">
+                    {invoices.map(invoice => (
+                      <div key={invoice.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div>
+                          <h3 className="font-medium">{invoice.title}</h3>
+                          <div className="flex space-x-3 text-sm text-muted-foreground">
+                            <span>{formatCurrency(invoice.amount)}</span>
+                            <span>•</span>
+                            <span>{getStatusBadge(invoice.status)}</span>
+                            {invoice.due_date && (
+                              <>
+                                <span>•</span>
+                                <span>Vence: {format(new Date(invoice.due_date), 'dd/MM/yyyy')}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Ver factura
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    No hay facturas disponibles en este momento.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -138,9 +317,31 @@ const ClientPortalDashboard = () => {
             
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground py-8">
-                  No hay propuestas disponibles en este momento.
-                </p>
+                {loading ? (
+                  <p className="text-center py-4">Cargando propuestas...</p>
+                ) : proposals.length > 0 ? (
+                  <div className="space-y-4">
+                    {proposals.map(proposal => (
+                      <div key={proposal.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div>
+                          <h3 className="font-medium">{proposal.title}</h3>
+                          <div className="flex space-x-3 text-sm text-muted-foreground">
+                            <span>{getStatusBadge(proposal.status)}</span>
+                            <span>•</span>
+                            <span>{format(new Date(proposal.created_at), 'dd/MM/yyyy')}</span>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    No hay propuestas disponibles en este momento.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

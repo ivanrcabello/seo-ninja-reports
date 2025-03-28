@@ -1,16 +1,18 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { X, Home, BookOpen, Briefcase, FileText, Phone, LogIn, UserPlus } from 'lucide-react';
+import { X, Home, BookOpen, Briefcase, FileText, Phone, LogIn, UserPlus, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import MobileUserNav from './mobile/MobileUserNav';
 
 interface MobileNavbarProps {
   closeMenu: () => void;
+  handleSignOut?: () => Promise<void>;
 }
 
-const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
+const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu, handleSignOut }) => {
   const { user } = useAuth();
   
   return (
@@ -80,9 +82,15 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
         
         <div className="mt-8 pt-8 border-t border-border">
           {user ? (
-            <Button asChild className="w-full mb-4" onClick={closeMenu}>
-              <Link to="/dashboard">Panel de administración</Link>
-            </Button>
+            <>
+              {user && handleSignOut && (
+                <MobileUserNav 
+                  user={user} 
+                  closeMenu={closeMenu} 
+                  handleSignOut={handleSignOut} 
+                />
+              )}
+            </>
           ) : (
             <>
               <div className="flex flex-col gap-3">
