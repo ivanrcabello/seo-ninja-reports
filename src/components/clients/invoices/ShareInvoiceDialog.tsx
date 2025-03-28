@@ -82,7 +82,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
             throw new Error('Error al obtener datos completos de la factura');
           }
           
-          // Insertamos en public_invoices
+          // Insertamos en public_invoices con type assertion
           const { error: insertError } = await supabase
             .from('public_invoices')
             .insert([{
@@ -100,7 +100,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
               updated_at: fullInvoice.updated_at,
               client_name: invoiceData.clients?.name,
               client_website: invoiceData.clients?.website
-            }]);
+            }] as any);
           
           if (insertError) {
             throw new Error('Error al crear factura pública');

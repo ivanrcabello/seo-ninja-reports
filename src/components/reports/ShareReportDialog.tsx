@@ -51,7 +51,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
             throw new Error(`Error al obtener el informe: ${reportError.message}`);
           }
           
-          // Insertamos en la tabla pública
+          // Insertamos en la tabla pública con type assertion
           const { error: insertError } = await supabase
             .from('public_reports')
             .insert([{
@@ -64,7 +64,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
               content: reportData.content,
               client_name: reportData.clients?.name,
               client_website: reportData.clients?.website
-            }]);
+            }] as any);
           
           if (insertError) {
             throw new Error(`Error al compartir el informe: ${insertError.message}`);

@@ -86,7 +86,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
             throw new Error('Error al obtener datos completos de la propuesta');
           }
           
-          // Insertamos en public_proposals
+          // Insertamos en public_proposals con type assertion
           const { error: insertError } = await supabase
             .from('public_proposals')
             .insert([{
@@ -101,7 +101,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
               updated_at: fullProposal.updated_at,
               client_name: proposalData.clients?.name,
               client_website: proposalData.clients?.website
-            }]);
+            }] as any);
           
           if (insertError) {
             throw new Error('Error al crear propuesta pública');
