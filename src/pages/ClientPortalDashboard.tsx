@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, FileText, CreditCard, ClipboardList, User, AlertCircle, Calendar, ChevronRight, Settings, ActivityLog } from 'lucide-react';
+import { LogOut, FileText, CreditCard, ClipboardList, User, AlertCircle, Calendar, ChevronRight, Settings, Activity } from 'lucide-react';
 import { logoutClientPortal } from '@/services/clientPortalService';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -94,7 +94,7 @@ const ClientPortalDashboard = () => {
           <h1 className="text-xl font-semibold">Portal del Cliente</h1>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={toggleLogs}>
-              <ActivityLog className="h-4 w-4 mr-2" />
+              <Activity className="h-4 w-4 mr-2" />
               {showLogs ? 'Ocultar Logs' : 'Ver Logs'}
             </Button>
             <Button variant="outline" size="sm" onClick={handleLogout}>

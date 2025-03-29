@@ -7,6 +7,7 @@ export interface LogEntry {
   message: string;
   details?: any;
   component?: string;
+  timestamp?: string; // Add timestamp property to LogEntry interface
 }
 
 /**
@@ -22,7 +23,8 @@ export const clientPortalLogger = {
       level: 'info', 
       message, 
       details, 
-      component 
+      component,
+      timestamp: new Date().toISOString() // Add timestamp
     };
     _saveLog(logEntry);
     return logEntry;
@@ -36,7 +38,8 @@ export const clientPortalLogger = {
       level: 'warn', 
       message, 
       details, 
-      component 
+      component,
+      timestamp: new Date().toISOString() // Add timestamp
     };
     _saveLog(logEntry);
     console.warn(`[${component || 'ClientPortal'}]`, message, details || '');
@@ -51,7 +54,8 @@ export const clientPortalLogger = {
       level: 'error', 
       message, 
       details, 
-      component 
+      component,
+      timestamp: new Date().toISOString() // Add timestamp
     };
     _saveLog(logEntry);
     console.error(`[${component || 'ClientPortal'}]`, message, details || '');
@@ -84,15 +88,14 @@ export const clientPortalLogger = {
  */
 function _saveLog(logEntry: LogEntry) {
   try {
-    // Añadir timestamp
-    const logWithTimestamp = {
-      ...logEntry,
-      timestamp: new Date().toISOString()
-    };
+    // Añadir timestamp si no existe
+    if (!logEntry.timestamp) {
+      logEntry.timestamp = new Date().toISOString();
+    }
     
     // Guardar en localStorage (mantenemos solo los últimos 100 logs)
     const existingLogs = clientPortalLogger.getLogs();
-    const updatedLogs = [logWithTimestamp, ...existingLogs].slice(0, 100);
+    const updatedLogs = [logEntry, ...existingLogs].slice(0, 100);
     localStorage.setItem('clientPortalLogs', JSON.stringify(updatedLogs));
     
     // Si hay un token de sesión, guardar también en la base de datos
@@ -101,7 +104,7 @@ function _saveLog(logEntry: LogEntry) {
       const { account_id } = JSON.parse(session);
       if (account_id && logEntry.level === 'error') {
         // Solo guardamos errores en la base de datos para no llenarla
-        _saveLogToDatabase(account_id, logWithTimestamp);
+        _saveLogToDatabase(account_id, logEntry);
       }
     }
   } catch (error) {
@@ -112,7 +115,7 @@ function _saveLog(logEntry: LogEntry) {
 /**
  * Guarda un log en la base de datos
  */
-async function _saveLogToDatabase(accountId: string, logEntry: LogEntry & { timestamp: string }) {
+async function _saveLogToDatabase(accountId: string, logEntry: LogEntry) {
   try {
     await supabase.from('client_portal_activity_logs').insert({
       client_portal_account_id: accountId,

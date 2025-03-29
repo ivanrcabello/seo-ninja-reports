@@ -29,10 +29,11 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
         setLoading(true);
         clientPortalLogger.info('Fetching reports for client', { clientId }, 'ClientPortalReports');
         
-        // En lugar de depender de RLS, vamos a filtrar desde aquí:
-        // Usamos la RPC para obtener informes públicos que están marcados explícitamente como compartidos con un cliente
+        // Instead of using RPC, perform a direct query with filtering
         const { data, error } = await supabase
-          .rpc('get_client_portal_reports', { client_id_param: clientId });
+          .from('reports')
+          .select('*')
+          .eq('client_id', clientId);
           
         if (error) {
           clientPortalLogger.error('Error fetching reports', error, 'ClientPortalReports');
