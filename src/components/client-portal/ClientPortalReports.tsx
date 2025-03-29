@@ -7,6 +7,7 @@ import { FileText, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 
 interface Report {
   id: string;
@@ -25,17 +26,24 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const { data, error } = await supabase
-          .from('reports')
-          .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
+        setLoading(true);
+        clientPortalLogger.info('Fetching reports for client', { clientId }, 'ClientPortalReports');
         
+        // En lugar de depender de RLS, vamos a filtrar desde aquí:
+        // Usamos la RPC para obtener informes públicos que están marcados explícitamente como compartidos con un cliente
+        const { data, error } = await supabase
+          .rpc('get_client_portal_reports', { client_id_param: clientId });
+          
+        if (error) {
+          clientPortalLogger.error('Error fetching reports', error, 'ClientPortalReports');
+          throw error;
+        }
+        
+        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} reports`, null, 'ClientPortalReports');
         setReports(data || []);
       } catch (err: any) {
         console.error('Error fetching reports:', err);
+        clientPortalLogger.error('Error fetching reports', err, 'ClientPortalReports');
         toast.error('Error al cargar los informes');
       } finally {
         setLoading(false);

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 
 interface Proposal {
   id: string;
@@ -27,17 +28,23 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
   useEffect(() => {
     const fetchProposals = async () => {
       try {
-        const { data, error } = await supabase
-          .from('client_proposals')
-          .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
+        setLoading(true);
+        clientPortalLogger.info('Fetching proposals for client', { clientId }, 'ClientPortalProposals');
         
+        // Usamos la nueva función RPC para obtener propuestas
+        const { data, error } = await supabase
+          .rpc('get_client_portal_proposals', { client_id_param: clientId });
+
+        if (error) {
+          clientPortalLogger.error('Error fetching proposals', error, 'ClientPortalProposals');
+          throw error;
+        }
+        
+        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} proposals`, null, 'ClientPortalProposals');
         setProposals(data || []);
       } catch (err: any) {
         console.error('Error fetching proposals:', err);
+        clientPortalLogger.error('Error fetching proposals', err, 'ClientPortalProposals');
         toast.error('Error al cargar las propuestas');
       } finally {
         setLoading(false);

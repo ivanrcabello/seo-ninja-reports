@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Mail } from 'lucide-react';
+import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 
 interface ClientAccount {
   id: string;
@@ -17,6 +18,12 @@ interface AccountInfoCardProps {
 }
 
 const AccountInfoCard: React.FC<AccountInfoCardProps> = ({ account, isLoading }) => {
+  React.useEffect(() => {
+    if (account) {
+      clientPortalLogger.info('AccountInfoCard loaded with account data', { accountId: account.id }, 'AccountInfoCard');
+    }
+  }, [account]);
+
   if (isLoading) {
     return (
       <Card>

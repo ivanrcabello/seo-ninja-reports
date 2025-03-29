@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 
 interface Contract {
   id: string;
@@ -28,17 +29,23 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
   useEffect(() => {
     const fetchContracts = async () => {
       try {
-        const { data, error } = await supabase
-          .from('client_contracts')
-          .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
+        setLoading(true);
+        clientPortalLogger.info('Fetching contracts for client', { clientId }, 'ClientPortalContracts');
         
+        // Usamos la nueva función RPC para obtener contratos
+        const { data, error } = await supabase
+          .rpc('get_client_portal_contracts', { client_id_param: clientId });
+
+        if (error) {
+          clientPortalLogger.error('Error fetching contracts', error, 'ClientPortalContracts');
+          throw error;
+        }
+        
+        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} contracts`, null, 'ClientPortalContracts');
         setContracts(data || []);
       } catch (err: any) {
         console.error('Error fetching contracts:', err);
+        clientPortalLogger.error('Error fetching contracts', err, 'ClientPortalContracts');
         toast.error('Error al cargar los contratos');
       } finally {
         setLoading(false);

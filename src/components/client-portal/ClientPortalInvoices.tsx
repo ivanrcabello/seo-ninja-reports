@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 
 interface Invoice {
   id: string;
@@ -29,17 +30,23 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const { data, error } = await supabase
-          .from('client_invoices')
-          .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
+        setLoading(true);
+        clientPortalLogger.info('Fetching invoices for client', { clientId }, 'ClientPortalInvoices');
         
+        // Usamos la nueva función RPC para obtener facturas
+        const { data, error } = await supabase
+          .rpc('get_client_portal_invoices', { client_id_param: clientId });
+
+        if (error) {
+          clientPortalLogger.error('Error fetching invoices', error, 'ClientPortalInvoices');
+          throw error;
+        }
+        
+        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} invoices`, null, 'ClientPortalInvoices');
         setInvoices(data || []);
       } catch (err: any) {
         console.error('Error fetching invoices:', err);
+        clientPortalLogger.error('Error fetching invoices', err, 'ClientPortalInvoices');
         toast.error('Error al cargar las facturas');
       } finally {
         setLoading(false);

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 
 interface Client {
   id: string;
@@ -30,27 +31,52 @@ export function useClientAccount(clientId: string, accountId: string) {
 
       try {
         // Get client token from localStorage
-        const clientToken = localStorage.getItem('clientPortalSession') 
-          ? JSON.parse(localStorage.getItem('clientPortalSession')!).token 
-          : null;
-          
+        const sessionString = localStorage.getItem('clientPortalSession');
+        
+        if (!sessionString) {
+          throw new Error('Session token not found. Please log in again.');
+        }
+        
+        const session = JSON.parse(sessionString);
+        const clientToken = session.token;
+        
+        clientPortalLogger.info('Fetching client and account data', { clientId, accountId }, 'useClientAccount');
+        
         if (!clientToken) {
           throw new Error('Session token not found. Please log in again.');
         }
         
-        // Execute requests with authentication in request headers
-        const [clientResponse, accountResponse] = await Promise.all([
-          supabase.from('clients').select('*').eq('id', clientId).single(),
-          supabase.from('client_portal_accounts').select('*').eq('id', accountId).single()
-        ]);
+        // Execute requests to get client data - use client_id parameter instead of Auth
+        const clientResponse = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', clientId)
+          .single();
+          
+        // Execute requests to get account data
+        const accountResponse = await supabase
+          .from('client_portal_accounts')
+          .select('*')
+          .eq('id', accountId)
+          .single();
 
-        if (clientResponse.error) throw clientResponse.error;
-        if (accountResponse.error) throw accountResponse.error;
+        if (clientResponse.error) {
+          clientPortalLogger.error('Error fetching client data', clientResponse.error, 'useClientAccount');
+          throw clientResponse.error;
+        }
+        
+        if (accountResponse.error) {
+          clientPortalLogger.error('Error fetching account data', accountResponse.error, 'useClientAccount');
+          throw accountResponse.error;
+        }
         
         setClient(clientResponse.data);
         setAccount(accountResponse.data);
+        
+        clientPortalLogger.info('Successfully fetched client and account data', null, 'useClientAccount');
       } catch (err: any) {
         console.error('Error fetching account data:', err);
+        clientPortalLogger.error('Error fetching account data', err, 'useClientAccount');
         setError('Error al cargar los datos de la cuenta. Por favor, inténtalo de nuevo más tarde.');
       } finally {
         setLoading(false);
