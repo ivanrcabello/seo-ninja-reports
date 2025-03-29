@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, Globe } from 'lucide-react';
+import { CalendarDays, Link2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PublicReport } from './useReportData';
@@ -10,43 +10,45 @@ interface PublicReportHeaderProps {
 }
 
 const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ report }) => {
-  // Format the date properly
-  const formattedDate = report.date ? 
-    format(new Date(report.date), 'dd MMMM yyyy', { locale: es }) : 
-    'Sin fecha';
-
   return (
-    <div className="text-center mb-12">
-      <h1 className="text-3xl md:text-4xl font-bold mb-4">
-        {report.title}
-      </h1>
-      
-      <div className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-6 text-muted-foreground">
-        {report.url && (
-          <div className="flex items-center">
-            <Globe className="h-4 w-4 mr-2" />
-            <a 
-              href={report.url.startsWith('http') ? report.url : `https://${report.url}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-            >
-              {report.url.replace(/^https?:\/\//i, '')}
-            </a>
+    <div className="w-full max-w-5xl mx-auto mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-primary/10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+          <h1 className="text-2xl font-bold mb-2 md:mb-0">{report.title}</h1>
+          <div className="flex items-center text-sm text-muted-foreground">
+            <CalendarDays className="h-4 w-4 mr-1" />
+            <span>{format(new Date(report.date), 'd MMMM yyyy', { locale: es })}</span>
+          </div>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          <div className="flex-1">
+            <h2 className="text-sm font-medium text-muted-foreground mb-1">Cliente</h2>
+            <p className="font-medium">{report.client_name}</p>
+          </div>
+          
+          {report.url && (
+            <div className="flex-1">
+              <h2 className="text-sm font-medium text-muted-foreground mb-1">URL analizada</h2>
+              <a 
+                href={report.url} 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline flex items-center"
+              >
+                {report.url}
+                <Link2 className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          )}
+        </div>
+        
+        {report.summary && (
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-muted-foreground">{report.summary}</p>
           </div>
         )}
-        
-        <div className="flex items-center">
-          <Calendar className="h-4 w-4 mr-2" />
-          {formattedDate}
-        </div>
       </div>
-      
-      {report.client_name && (
-        <div className="mt-4 text-sm bg-muted py-2 px-4 rounded-full inline-block">
-          Preparado para <span className="font-medium">{report.client_name}</span>
-        </div>
-      )}
     </div>
   );
 };
