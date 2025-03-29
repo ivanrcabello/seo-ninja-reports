@@ -38,13 +38,11 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
         const session = JSON.parse(sessionString);
         const clientToken = session.token;
         
-        // Set headers for the request
-        supabase.headers({ 'x-client-token': clientToken });
-        
-        // Make the RPC call
+        // Make the RPC call with custom headers
         const { data, error } = await supabase.rpc(
           'get_client_portal_reports',
-          { client_id_param: clientId }
+          { client_id_param: clientId },
+          { headers: { 'x-client-token': clientToken } }
         );
           
         if (error) {

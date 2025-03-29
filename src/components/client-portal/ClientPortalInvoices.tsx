@@ -42,13 +42,11 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
         const session = JSON.parse(sessionString);
         const clientToken = session.token;
         
-        // Set headers for the request
-        supabase.headers({ 'x-client-token': clientToken });
-        
-        // Make the RPC call
+        // Make the RPC call with custom headers
         const { data, error } = await supabase.rpc(
           'get_client_portal_invoices',
-          { client_id_param: clientId }
+          { client_id_param: clientId },
+          { headers: { 'x-client-token': clientToken } }
         );
 
         if (error) {

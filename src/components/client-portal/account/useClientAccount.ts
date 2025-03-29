@@ -58,16 +58,14 @@ export function useClientAccount(clientId: string, accountId: string) {
           throw new Error('Session token not found. Please log in again.');
         }
         
-        // Set headers for the request
-        supabase.headers({ 'x-client-token': clientToken });
-        
-        // Use the RPC function
+        // Make the RPC call with custom headers
         const { data, error } = await supabase.rpc(
           'get_client_portal_account_data',
           {
             client_id_param: clientId,
             account_id_param: accountId
-          }
+          },
+          { headers: { 'x-client-token': clientToken } }
         );
           
         if (error) {
