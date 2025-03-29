@@ -32,7 +32,7 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         setLoading(true);
         clientPortalLogger.info('Fetching contracts for client', { clientId }, 'ClientPortalContracts');
         
-        // Use the new RPC function
+        // Use the RPC function to get contracts from the dedicated table
         const { data, error } = await supabase
           .rpc('get_client_portal_contracts', {
             client_id_param: clientId

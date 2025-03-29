@@ -29,7 +29,7 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
         setLoading(true);
         clientPortalLogger.info('Fetching reports for client', { clientId }, 'ClientPortalReports');
         
-        // Use the new RPC function
+        // Use the RPC function to get reports from the dedicated table
         const { data, error } = await supabase
           .rpc('get_client_portal_reports', {
             client_id_param: clientId

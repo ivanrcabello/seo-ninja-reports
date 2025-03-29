@@ -340,6 +340,255 @@ export type Database = {
           },
         ]
       }
+      client_portal_contracts: {
+        Row: {
+          client_id: string
+          client_signature: string | null
+          client_signed: boolean
+          client_signed_at: string | null
+          content: string
+          created_at: string
+          id: string
+          original_contract_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          client_signature?: string | null
+          client_signed?: boolean
+          client_signed_at?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          original_contract_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          client_signature?: string | null
+          client_signed?: boolean
+          client_signed_at?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          original_contract_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_contracts_original_contract_id_fkey"
+            columns: ["original_contract_id"]
+            isOneToOne: false
+            referencedRelation: "client_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_invoices: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          original_invoice_id: string | null
+          payment_date: string | null
+          payment_instructions: string | null
+          payment_method: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          original_invoice_id?: string | null
+          payment_date?: string | null
+          payment_instructions?: string | null
+          payment_method?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          original_invoice_id?: string | null
+          payment_date?: string | null
+          payment_instructions?: string | null
+          payment_method?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_invoices_original_invoice_id_fkey"
+            columns: ["original_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "client_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_invoices_original_invoice_id_fkey"
+            columns: ["original_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "public_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_proposals: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          original_proposal_id: string | null
+          price: number | null
+          services: string[] | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          original_proposal_id?: string | null
+          price?: number | null
+          services?: string[] | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          original_proposal_id?: string | null
+          price?: number | null
+          services?: string[] | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_proposals_original_proposal_id_fkey"
+            columns: ["original_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "client_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_proposals_original_proposal_id_fkey"
+            columns: ["original_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "public_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_reports: {
+        Row: {
+          client_id: string
+          content: Json | null
+          created_at: string
+          id: string
+          original_report_id: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          client_id: string
+          content?: Json | null
+          created_at?: string
+          id?: string
+          original_report_id?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          client_id?: string
+          content?: Json | null
+          created_at?: string
+          id?: string
+          original_report_id?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_reports_original_report_id_fkey"
+            columns: ["original_report_id"]
+            isOneToOne: false
+            referencedRelation: "public_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_reports_original_report_id_fkey"
+            columns: ["original_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_portal_sessions: {
         Row: {
           client_portal_account_id: string
@@ -1954,9 +2203,6 @@ export type Database = {
           client_id_param: string
         }
         Returns: {
-          admin_signature: string | null
-          admin_signed: boolean
-          admin_signed_at: string | null
           client_id: string
           client_signature: string | null
           client_signed: boolean
@@ -1964,7 +2210,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
-          shared_url: string | null
+          original_contract_id: string | null
           status: string
           title: string
           updated_at: string
@@ -1988,11 +2234,10 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
-          password: string | null
+          original_invoice_id: string | null
           payment_date: string | null
           payment_instructions: string | null
           payment_method: string | null
-          shared_url: string | null
           status: string
           title: string
           updated_at: string
@@ -2007,10 +2252,9 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
-          password: string | null
+          original_proposal_id: string | null
           price: number | null
           services: string[] | null
-          shared_url: string | null
           status: string
           title: string
           updated_at: string
@@ -2024,12 +2268,8 @@ export type Database = {
           client_id: string
           content: Json | null
           created_at: string
-          custom_prompt: string | null
-          date: string
-          has_business_profile: boolean | null
           id: string
-          notes: string | null
-          password: string | null
+          original_report_id: string | null
           status: string
           summary: string | null
           title: string
@@ -2125,6 +2365,34 @@ export type Database = {
           client_id_param: string
         }
         Returns: boolean
+      }
+      sync_contract_to_client_portal: {
+        Args: {
+          contract_id_param: string
+          client_id_param: string
+        }
+        Returns: string
+      }
+      sync_invoice_to_client_portal: {
+        Args: {
+          invoice_id_param: string
+          client_id_param: string
+        }
+        Returns: string
+      }
+      sync_proposal_to_client_portal: {
+        Args: {
+          proposal_id_param: string
+          client_id_param: string
+        }
+        Returns: string
+      }
+      sync_report_to_client_portal: {
+        Args: {
+          report_id_param: string
+          client_id_param: string
+        }
+        Returns: string
       }
       update_contract_by_shared_url: {
         Args: {

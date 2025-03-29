@@ -33,7 +33,7 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
         setLoading(true);
         clientPortalLogger.info('Fetching invoices for client', { clientId }, 'ClientPortalInvoices');
         
-        // Use the new RPC function
+        // Use the RPC function to get invoices from the dedicated table
         const { data, error } = await supabase
           .rpc('get_client_portal_invoices', {
             client_id_param: clientId

@@ -31,7 +31,7 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
         setLoading(true);
         clientPortalLogger.info('Fetching proposals for client', { clientId }, 'ClientPortalProposals');
         
-        // Use the new RPC function
+        // Use the RPC function to get proposals from the dedicated table
         const { data, error } = await supabase
           .rpc('get_client_portal_proposals', {
             client_id_param: clientId
