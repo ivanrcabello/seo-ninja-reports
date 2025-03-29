@@ -1,31 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { PublicReportHeader, PublicReportContent, PublicReportError, PublicReportLoading, PublicReportEmpty } from '@/components/public-reports';
+import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import PublicReportContent from '@/components/public-reports/PublicReportContent';
-import PublicReportHeader from '@/components/public-reports/PublicReportHeader';
-import PublicReportLoading from '@/components/public-reports/PublicReportLoading';
-import PublicReportError from '@/components/public-reports/PublicReportError';
-import PublicReportEmpty from '@/components/public-reports/PublicReportEmpty';
-import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
+import useReportData from '@/components/public-reports/useReportData';
 
 const PublicReport = () => {
-  const { id } = useParams<{ id: string }>();
-  const [report, setReport] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const { reportId } = useParams<{ reportId: string }>();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
+  
+  const { 
+    report, 
+    isLoading, 
+    error, 
+    isPasswordProtected, 
+    refetch 
+  } = useReportData(reportId || '');
 
   const verifyPassword = async (password: string) => {
     try {
-      // Call function to verify password
+      if (!reportId) return;
+      
       const { data, error: verifyError } = await supabase.rpc(
-        'verify_shared_report_password', 
+        'verify_shared_report_password',
         { 
-          report_id_param: id || '',
+          report_id_param: reportId,
           password_param: password
         }
       );
@@ -36,7 +38,7 @@ const PublicReport = () => {
         setAccessGranted(true);
         setIsPasswordDialogOpen(false);
         toast.success('Acceso concedido');
-        fetchReport();
+        refetch();
       } else {
         toast.error('Contraseña incorrecta');
       }
@@ -46,96 +48,38 @@ const PublicReport = () => {
     }
   };
 
-  const fetchReport = async () => {
-    if (!id) return;
-    
-    try {
-      setIsLoading(true);
-      
-      // Check if report is password protected
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_report_password_protection', 
-        { report_id_param: id }
-      );
-      
-      if (protectionError) throw new Error(protectionError.message);
-      
-      // If password protected and access not granted yet, show password dialog
-      if (protectionData === true && !accessGranted) {
-        setIsPasswordProtected(true);
-        setIsPasswordDialogOpen(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Fetch from public_reports view
-      const { data, error: fetchError } = await supabase
-        .from('public_reports')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (fetchError) {
-        console.error("Error fetching report:", fetchError);
-        throw new Error(fetchError.message);
-      }
-      
-      if (!data) {
-        throw new Error('Informe no encontrado');
-      }
-      
-      setReport(data);
-    } catch (err: any) {
-      console.error("Error in fetchReport:", err);
-      setError(err.message || 'No se pudo cargar el informe');
-      
-      toast.error('Error', { 
-        description: err.message || 'No se pudo cargar el informe'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    fetchReport();
-  }, [id]);
-
-  if (isPasswordDialogOpen) {
+  // Show password dialog if protected and access not granted
+  if (isPasswordProtected && !accessGranted && !isLoading) {
     return (
       <PasswordProtectionDialog 
         onSubmit={verifyPassword}
-        onCancel={() => setError('Acceso denegado')}
+        onCancel={() => setIsPasswordDialogOpen(false)}
         type="report"
       />
     );
   }
-
+  
+  // Loading state
   if (isLoading) {
     return <PublicReportLoading />;
   }
-
+  
+  // Error state
   if (error || !report) {
-    return <PublicReportError errorMessage={error} />;
+    return <PublicReportError message={error || 'No se pudo cargar el informe'} />;
   }
 
+  // Report is empty
   if (!report.content) {
     return <PublicReportEmpty />;
   }
 
+  // Show report
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
-        <PublicReportHeader 
-          title={report.title} 
-          clientName={report.client_name}
-          clientWebsite={report.client_website}
-          date={report.date}
-        />
-        
-        <div className="mt-8">
-          <PublicReportContent content={report.content} />
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5">
+      <div className="container mx-auto py-8">
+        <PublicReportHeader report={report} />
+        <PublicReportContent report={report} />
       </div>
     </div>
   );
