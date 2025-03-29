@@ -32,11 +32,11 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         setLoading(true);
         clientPortalLogger.info('Fetching contracts for client', { clientId }, 'ClientPortalContracts');
         
-        // Direct query instead of RPC
+        // Use the new RPC function
         const { data, error } = await supabase
-          .from('client_contracts')
-          .select('*')
-          .eq('client_id', clientId);
+          .rpc('get_client_portal_contracts', {
+            client_id_param: clientId
+          });
 
         if (error) {
           clientPortalLogger.error('Error fetching contracts', error, 'ClientPortalContracts');

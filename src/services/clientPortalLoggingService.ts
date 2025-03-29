@@ -7,7 +7,7 @@ export interface LogEntry {
   message: string;
   details?: any;
   component?: string;
-  timestamp?: string; // Add timestamp property to LogEntry interface
+  timestamp: string; // Changed to be required
 }
 
 /**
@@ -24,7 +24,7 @@ export const clientPortalLogger = {
       message, 
       details, 
       component,
-      timestamp: new Date().toISOString() // Add timestamp
+      timestamp: new Date().toISOString()
     };
     _saveLog(logEntry);
     return logEntry;
@@ -39,7 +39,7 @@ export const clientPortalLogger = {
       message, 
       details, 
       component,
-      timestamp: new Date().toISOString() // Add timestamp
+      timestamp: new Date().toISOString()
     };
     _saveLog(logEntry);
     console.warn(`[${component || 'ClientPortal'}]`, message, details || '');
@@ -55,7 +55,7 @@ export const clientPortalLogger = {
       message, 
       details, 
       component,
-      timestamp: new Date().toISOString() // Add timestamp
+      timestamp: new Date().toISOString()
     };
     _saveLog(logEntry);
     console.error(`[${component || 'ClientPortal'}]`, message, details || '');
@@ -88,11 +88,6 @@ export const clientPortalLogger = {
  */
 function _saveLog(logEntry: LogEntry) {
   try {
-    // Añadir timestamp si no existe
-    if (!logEntry.timestamp) {
-      logEntry.timestamp = new Date().toISOString();
-    }
-    
     // Guardar en localStorage (mantenemos solo los últimos 100 logs)
     const existingLogs = clientPortalLogger.getLogs();
     const updatedLogs = [logEntry, ...existingLogs].slice(0, 100);

@@ -1933,6 +1933,110 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string[]
       }
+      get_client_portal_account_data: {
+        Args: {
+          client_id_param: string
+          account_id_param: string
+        }
+        Returns: {
+          client_id: string
+          client_name: string
+          client_website: string
+          client_phone_number: string
+          client_industry: string
+          account_id: string
+          account_email: string
+          account_last_login: string
+        }[]
+      }
+      get_client_portal_contracts: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: {
+          admin_signature: string | null
+          admin_signed: boolean
+          admin_signed_at: string | null
+          client_id: string
+          client_signature: string | null
+          client_signed: boolean
+          client_signed_at: string | null
+          content: string
+          created_at: string
+          id: string
+          shared_url: string | null
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      get_client_portal_data: {
+        Args: {
+          client_id_param: string
+          table_name: string
+        }
+        Returns: Record<string, unknown>[]
+      }
+      get_client_portal_invoices: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          password: string | null
+          payment_date: string | null
+          payment_instructions: string | null
+          payment_method: string | null
+          shared_url: string | null
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      get_client_portal_proposals: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: {
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          password: string | null
+          price: number | null
+          services: string[] | null
+          shared_url: string | null
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      get_client_portal_reports: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: {
+          client_id: string
+          content: Json | null
+          created_at: string
+          custom_prompt: string | null
+          date: string
+          has_business_profile: boolean | null
+          id: string
+          notes: string | null
+          password: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          url: string | null
+        }[]
+      }
       get_crawl_headings: {
         Args: {
           crawl_id_param: string

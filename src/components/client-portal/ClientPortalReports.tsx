@@ -29,11 +29,11 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
         setLoading(true);
         clientPortalLogger.info('Fetching reports for client', { clientId }, 'ClientPortalReports');
         
-        // Instead of using RPC, perform a direct query with filtering
+        // Use the new RPC function
         const { data, error } = await supabase
-          .from('reports')
-          .select('*')
-          .eq('client_id', clientId);
+          .rpc('get_client_portal_reports', {
+            client_id_param: clientId
+          });
           
         if (error) {
           clientPortalLogger.error('Error fetching reports', error, 'ClientPortalReports');

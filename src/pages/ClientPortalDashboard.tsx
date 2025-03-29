@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,6 @@ const ClientPortalDashboard = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if user is logged in
     const storedSession = localStorage.getItem('clientPortalSession');
     
     if (!storedSession) {
@@ -45,7 +43,6 @@ const ClientPortalDashboard = () => {
     try {
       const parsedSession = JSON.parse(storedSession) as ClientPortalSession;
       
-      // Check if session is expired
       if (new Date(parsedSession.expires_at) < new Date()) {
         clientPortalLogger.warn('Session expired', { expires_at: parsedSession.expires_at }, 'ClientPortalDashboard');
         handleLogout();
@@ -145,7 +142,6 @@ const ClientPortalDashboard = () => {
               </TabsTrigger>
             </TabsList>
             
-            {/* Content for each tab */}
             {session && (
               <>
                 <TabsContent value="informes">
