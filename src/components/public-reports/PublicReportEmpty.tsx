@@ -1,29 +1,21 @@
 
 import React from 'react';
+import BlurredCard from '@/components/ui/BlurredCard';
 import { FileX } from 'lucide-react';
 
 const PublicReportEmpty: React.FC = () => {
   return (
-    <div className="min-h-[50vh] flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-background/90 backdrop-blur-sm rounded-lg shadow-lg border border-muted p-6">
-        <div className="flex flex-col items-center text-center space-y-4">
-          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-            <FileX className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold">Informe vacío</h1>
-          <p className="text-muted-foreground">
-            Este informe no contiene datos. Por favor, contacta con el administrador para obtener más información.
+    <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+      <BlurredCard className="w-full max-w-4xl p-8 text-center">
+        <div className="flex flex-col items-center">
+          <FileX className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-xl font-medium mb-2">No hay contenido disponible</h3>
+          <p className="text-muted-foreground">Este informe aún no tiene contenido o está en proceso de generación.</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Si recibiste un enlace a este informe, contacta a la persona que te lo compartió.
           </p>
-          <div className="pt-4">
-            <a
-              href="/"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Volver al inicio
-            </a>
-          </div>
         </div>
-      </div>
+      </BlurredCard>
     </div>
   );
 };

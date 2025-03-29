@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -46,8 +47,6 @@ const SharedProposal = () => {
 
   const verifyPassword = async (password: string) => {
     try {
-      console.log("Verifying password for shared URL:", sharedUrl);
-      
       // Call function to verify password
       const { data, error: verifyError } = await supabase.rpc(
         'verify_shared_proposal_password', 
@@ -89,12 +88,7 @@ const SharedProposal = () => {
         }
       );
       
-      if (protectionError) {
-        console.error("Protection check error:", protectionError);
-        throw new Error(protectionError.message);
-      }
-      
-      console.log("Password protection check result:", protectionData);
+      if (protectionError) throw new Error(protectionError.message);
       
       // If password protected and access not granted yet, show password dialog
       if (protectionData === true && !accessGranted) {
@@ -109,7 +103,7 @@ const SharedProposal = () => {
         .from('public_proposals')
         .select('*')
         .eq('shared_url', sharedUrl)
-        .maybeSingle();
+        .single();
       
       if (fetchError) {
         console.error("Error fetching proposal:", fetchError);
@@ -117,29 +111,11 @@ const SharedProposal = () => {
       }
       
       if (!data) {
-        console.error("No proposal data found");
         throw new Error('Propuesta no encontrada');
       }
       
-      console.log("Raw proposal data:", data);
-      
-      // Convert to SharedProposalData with safe type handling
-      const typedProposal: SharedProposalData = {
-        id: data.id || '',
-        title: data.title || '',
-        description: data.description || '',
-        status: data.status || 'draft',
-        price: data.price || undefined,
-        services: Array.isArray(data.services) ? data.services : [],
-        shared_url: data.shared_url || '',
-        created_at: data.created_at || new Date().toISOString(),
-        updated_at: data.updated_at || new Date().toISOString(),
-        client_name: data.client_name || '',
-        client_website: data.client_website
-      };
-      
-      console.log("Typed proposal data:", typedProposal);
-      setProposal(typedProposal);
+      console.log("Proposal data retrieved successfully:", data);
+      setProposal(data as SharedProposalData);
     } catch (err: any) {
       console.error("Error in fetchProposal:", err);
       setError(err.message || 'No se pudo cargar la propuesta');
@@ -156,14 +132,12 @@ const SharedProposal = () => {
     fetchProposal();
   }, [sharedUrl]);
 
-  if (isPasswordDialogOpen && isPasswordProtected && !accessGranted) {
+  if (isPasswordDialogOpen) {
     return (
       <PasswordProtectionDialog 
         onSubmit={verifyPassword}
         onCancel={() => setError('Acceso denegado')}
         type="proposal"
-        open={isPasswordDialogOpen}
-        onOpenChange={setIsPasswordDialogOpen}
       />
     );
   }

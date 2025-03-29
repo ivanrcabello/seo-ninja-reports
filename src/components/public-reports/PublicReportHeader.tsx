@@ -1,44 +1,60 @@
 
 import React from 'react';
-import { PublicReport } from './useReportData';
-import { CalendarIcon, GlobeIcon } from 'lucide-react';
+import BlurredCard from '@/components/ui/BlurredCard';
+import { Calendar, Globe, ExternalLink, Building } from 'lucide-react';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface PublicReportHeaderProps {
-  report: PublicReport;
+  report: {
+    title: string;
+    date?: string;
+    url?: string;
+    client_name?: string;
+    client_website?: string;
+  };
 }
 
-export const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ report }) => {
+const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ report }) => {
+  const { title, date, url, client_name, client_website } = report;
+  
   return (
-    <div className="p-6 bg-gradient-to-b from-primary/10 to-background border-b border-primary/10">
-      <h1 className="text-2xl md:text-3xl font-bold mb-2">
-        {report.title}
-      </h1>
-      
-      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm">
-        <div className="flex items-center">
-          <span className="font-medium">Cliente:</span>
-          <span className="ml-2">{report.client_name}</span>
-        </div>
-        
-        {report.website && (
-          <div className="flex items-center">
-            <GlobeIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-            <a 
-              href={report.website.startsWith('http') ? report.website : `https://${report.website}`} 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline">
-              {report.website.replace(/^(https?:\/\/)?(www\.)?/i, '')}
-            </a>
+    <BlurredCard className="w-full max-w-4xl mb-8 bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gradient-primary">{title}</h1>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            {date && (
+              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+                <Calendar className="h-4 w-4" />
+                <span>{format(new Date(date), 'd MMM yyyy', { locale: es })}</span>
+              </div>
+            )}
+            {url && (
+              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full group hover:bg-primary/20 transition-all">
+                <Globe className="h-4 w-4" />
+                <a 
+                  href={url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors flex items-center gap-1"
+                >
+                  {url.replace(/^https?:\/\//, '').split('/')[0]}
+                  <ExternalLink className="h-3 w-3 opacity-70" />
+                </a>
+              </div>
+            )}
+            {client_name && (
+              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+                <Building className="h-4 w-4" />
+                <span>{client_name}</span>
+              </div>
+            )}
           </div>
-        )}
-        
-        <div className="flex items-center text-muted-foreground">
-          <CalendarIcon className="h-4 w-4 mr-1" />
-          <span>{format(new Date(report.created_at), 'dd/MM/yyyy')}</span>
         </div>
       </div>
-    </div>
+    </BlurredCard>
   );
 };
+
+export default PublicReportHeader;

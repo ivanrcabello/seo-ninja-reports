@@ -1,10 +1,11 @@
 
-export { PublicReportContent } from './PublicReportContent';
-export { PublicReportHeader } from './PublicReportHeader';
-export { ReportTabs } from './ReportTabs';
-export { ContentTab } from './ContentTab';
-export { TabItem } from './TabItem';
-export { useReportData } from './useReportData';
-export { default as PublicReportError } from './PublicReportError';
-export { default as PublicReportLoading } from './PublicReportLoading';
+export { default as PublicReportContent } from './PublicReportContent';
 export { default as PublicReportEmpty } from './PublicReportEmpty';
+export { default as PublicReportError } from './PublicReportError';
+export { default as PublicReportHeader } from './PublicReportHeader';
+export { default as PublicReportLoading } from './PublicReportLoading';
+export { default as ReportContents } from './ReportContents';
+export { default as ReportTabs } from './ReportTabs';
+export { default as ContentTab } from './ContentTab';
+export { default as TabItem } from './TabItem';
+export { default as useReportData } from './useReportData';

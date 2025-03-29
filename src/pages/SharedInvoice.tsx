@@ -17,7 +17,7 @@ const SharedInvoice = () => {
     isPasswordProtected, 
     refetch 
   } = useInvoiceData(sharedUrl || '');
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(true);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
 
   useEffect(() => {
@@ -58,14 +58,12 @@ const SharedInvoice = () => {
     }
   };
 
-  if (isPasswordDialogOpen && isPasswordProtected && !accessGranted) {
+  if (isPasswordDialogOpen) {
     return (
       <PasswordProtectionDialog 
         onSubmit={verifyPassword}
         onCancel={() => window.history.back()}
         type="invoice"
-        open={isPasswordDialogOpen}
-        onOpenChange={setIsPasswordDialogOpen}
       />
     );
   }
