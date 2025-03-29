@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import Markdown from 'react-markdown';
@@ -28,7 +27,6 @@ interface ContentTabProps {
 }
 
 const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords }) => {
-  // Function to render business profile fields
   const renderBusinessProfile = (profile?: BusinessProfile) => {
     if (!profile) return null;
     
@@ -117,10 +115,8 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords }) 
     );
   };
   
-  // Function to render keywords table
   const renderKeywords = () => {
     if (keywords.length === 0) {
-      // If no parsed keywords are available, just render the markdown
       return (
         <Markdown className="prose dark:prose-invert max-w-none">
           {content.keywords || ''}
@@ -161,47 +157,38 @@ const ContentTab: React.FC<ContentTabProps> = ({ tabValue, content, keywords }) 
   
   return (
     <>
-      {/* Executive Summary Tab */}
       <TabsContent value="executive-summary" className="prose dark:prose-invert max-w-none">
         <Markdown>{content.executiveSummary || ''}</Markdown>
       </TabsContent>
       
-      {/* Technical Analysis Tab */}
       <TabsContent value="technical" className="prose dark:prose-invert max-w-none">
         <Markdown>{content.technicalAnalysis || ''}</Markdown>
       </TabsContent>
       
-      {/* Content Analysis Tab */}
       <TabsContent value="content" className="prose dark:prose-invert max-w-none">
         <Markdown>{content.contentAnalysis || ''}</Markdown>
       </TabsContent>
       
-      {/* Backlinks Analysis Tab */}
       <TabsContent value="backlinks" className="prose dark:prose-invert max-w-none">
         <Markdown>{content.backlinksAnalysis || ''}</Markdown>
       </TabsContent>
       
-      {/* Recommendations Tab */}
       <TabsContent value="recommendations" className="prose dark:prose-invert max-w-none">
         <Markdown>{content.recommendations || ''}</Markdown>
       </TabsContent>
       
-      {/* Local SEO Tab */}
       <TabsContent value="local-seo" className="prose dark:prose-invert max-w-none">
         <Markdown>{content.localSeo || ''}</Markdown>
       </TabsContent>
       
-      {/* Proposal Tab */}
       <TabsContent value="proposal" className="prose dark:prose-invert max-w-none">
         <Markdown>{content.serviceProposal || ''}</Markdown>
       </TabsContent>
       
-      {/* Keywords Tab */}
       <TabsContent value="keywords">
         {renderKeywords()}
       </TabsContent>
       
-      {/* Business Profile Tab */}
       <TabsContent value="business-profile">
         {renderBusinessProfile(content.businessProfile)}
       </TabsContent>

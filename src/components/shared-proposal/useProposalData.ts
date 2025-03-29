@@ -44,7 +44,7 @@ const useProposalData = (sharedUrl: string) => {
         sharedContentLogger.success(`Password verification successful for proposal: ${sharedUrl}`);
         return true;
       } else {
-        sharedContentLogger.warning(`Incorrect password for proposal: ${sharedUrl}`);
+        sharedContentLogger.warn(`Incorrect password for proposal: ${sharedUrl}`);
         return false;
       }
     } catch (err: any) {
@@ -63,8 +63,8 @@ const useProposalData = (sharedUrl: string) => {
     setIsLoading(true);
     setError(null);
     
-    sharedContentLogger.group(`Fetching proposal: ${sharedUrl}`);
-    sharedContentLogger.timeStart('fetch-proposal');
+    sharedContentLogger.info(`Fetching proposal: ${sharedUrl}`);
+    sharedContentLogger.debug('Starting fetch operation');
 
     try {
       // Check if proposal is password protected
@@ -85,8 +85,7 @@ const useProposalData = (sharedUrl: string) => {
       if (protectionData === true && !accessGranted) {
         sharedContentLogger.info(`Password protection active and access not granted yet`);
         setIsLoading(false);
-        sharedContentLogger.timeEnd('fetch-proposal');
-        sharedContentLogger.groupEnd();
+        sharedContentLogger.debug('Fetch operation ended early due to password protection');
         return;
       }
       
@@ -107,9 +106,8 @@ const useProposalData = (sharedUrl: string) => {
         throw new Error('Propuesta no encontrada');
       } 
 
-      sharedContentLogger.group('Raw proposal data', true);
-      sharedContentLogger.table(data);
-      sharedContentLogger.groupEnd();
+      sharedContentLogger.info('Raw proposal data received');
+      sharedContentLogger.debug(data);
       
       // Format the data with safe type handling
       const formattedProposal: SharedProposal = {
@@ -133,8 +131,7 @@ const useProposalData = (sharedUrl: string) => {
       setError(err.message || 'Error al cargar la propuesta');
     } finally {
       setIsLoading(false);
-      sharedContentLogger.timeEnd('fetch-proposal');
-      sharedContentLogger.groupEnd();
+      sharedContentLogger.debug('Fetch operation completed');
     }
   }, [sharedUrl, accessGranted]);
 
