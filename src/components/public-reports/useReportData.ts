@@ -49,50 +49,86 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // Query the actual report data - prefer the reports table first
-      const { data: reportData, error: reportError } = await supabase
-        .from('reports')
+      // First try to get the report from client_portal_reports
+      const { data: portalReportData, error: portalReportError } = await supabase
+        .from('client_portal_reports')
         .select('*, clients(name, website)')
+        .eq('original_report_id', reportId)
+        .maybeSingle();
+
+      // If not found in client_portal_reports, try reports table
+      if (!portalReportData && !portalReportError) {
+        const { data: reportData, error: reportError } = await supabase
+          .from('reports')
+          .select('*, clients(name, website)')
+          .eq('id', reportId)
+          .maybeSingle();
+          
+        if (reportError) throw new Error(reportError.message);
+        
+        if (reportData) {
+          // Transform the report data to match the PublicReport interface
+          const formattedReport: PublicReport = {
+            id: reportData.id,
+            title: reportData.title,
+            summary: reportData.summary,
+            url: reportData.url,
+            status: reportData.status,
+            content: reportData.content,
+            date: reportData.date,
+            client_name: reportData.clients?.name,
+            client_website: reportData.clients?.website
+          };
+
+          setReport(formattedReport);
+          
+          // Log successful access
+          logSharedReportAccess(reportId, { successful: true });
+          setIsLoading(false);
+          return;
+        }
+      } else if (portalReportError) {
+        console.error('Error fetching portal report:', portalReportError);
+      } else if (portalReportData) {
+        // Transform portal report data to match PublicReport interface
+        const formattedPortalReport: PublicReport = {
+          id: portalReportData.id,
+          title: portalReportData.title,
+          summary: portalReportData.summary,
+          url: portalReportData.url,
+          status: portalReportData.status,
+          content: portalReportData.content,
+          date: portalReportData.created_at,
+          client_name: portalReportData.clients?.name,
+          client_website: portalReportData.clients?.website
+        };
+        
+        setReport(formattedPortalReport);
+        
+        // Log successful access
+        logSharedReportAccess(reportId, { successful: true });
+        setIsLoading(false);
+        return;
+      }
+  
+      // If all else fails, try the public_reports view as last resort
+      const { data: publicData, error: publicError } = await supabase
+        .from('public_reports')
+        .select('*')
         .eq('id', reportId)
         .maybeSingle();
 
-      // If not found in reports, try public_reports view
-      if (!reportData || reportError) {
-        const { data: publicData, error: publicError } = await supabase
-          .from('public_reports')
-          .select('*')
-          .eq('id', reportId)
-          .maybeSingle();
-
-        if (publicError) throw new Error(publicError.message);
-        
-        if (!publicData) {
-          throw new Error('Informe no encontrado');
-        }
-        
-        setReport(publicData as PublicReport);
-        
-        // Log successful access
-        logSharedReportAccess(reportId, { successful: true });
-      } else {
-        // Transform the report data to match the PublicReport interface
-        const formattedReport: PublicReport = {
-          id: reportData.id,
-          title: reportData.title,
-          summary: reportData.summary,
-          url: reportData.url,
-          status: reportData.status,
-          content: reportData.content,
-          date: reportData.date,
-          client_name: reportData.clients?.name,
-          client_website: reportData.clients?.website
-        };
-
-        setReport(formattedReport);
-        
-        // Log successful access
-        logSharedReportAccess(reportId, { successful: true });
+      if (publicError) throw new Error(publicError.message);
+      
+      if (!publicData) {
+        throw new Error('Informe no encontrado');
       }
+      
+      setReport(publicData as PublicReport);
+      
+      // Log successful access
+      logSharedReportAccess(reportId, { successful: true });
+      
     } catch (err: any) {
       console.error('Error fetching shared report:', err);
       setError(err.message || 'Error al cargar el informe');
