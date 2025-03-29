@@ -1,28 +1,30 @@
 
 import React from 'react';
-import BlurredCard from '@/components/ui/BlurredCard';
-import { AlertCircle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface PublicReportErrorProps {
-  errorMessage: string | null;
+  errorMessage: string;
 }
 
 const PublicReportError: React.FC<PublicReportErrorProps> = ({ errorMessage }) => {
+  const navigate = useNavigate();
+  
   return (
-    <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-      <BlurredCard className="w-full max-w-4xl p-8 text-center">
-        <div className="flex flex-col items-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold text-red-500 mb-4">Error</h2>
-          <p className="text-muted-foreground">{errorMessage || 'Informe no encontrado'}</p>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Si recibiste un enlace a este informe, contacta a la persona que te lo compartió.
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground/70">
-            Código: {typeof window !== 'undefined' && window.location.pathname.split('/').pop()}
-          </p>
+    <div className="w-full max-w-5xl mx-auto">
+      <div className="flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-gray-800 shadow-md rounded-lg">
+        <div className="bg-destructive/10 p-5 rounded-full mb-4">
+          <AlertTriangle className="h-10 w-10 text-destructive" />
         </div>
-      </BlurredCard>
+        <h1 className="text-2xl font-bold mb-2">Error al cargar el informe</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">
+          {errorMessage || 'No se ha podido cargar el informe. Por favor, inténtalo de nuevo más tarde.'}
+        </p>
+        <Button onClick={() => navigate('/')}>
+          Volver al inicio
+        </Button>
+      </div>
     </div>
   );
 };

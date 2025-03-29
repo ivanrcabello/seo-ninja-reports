@@ -10,6 +10,7 @@ import useReportData from '@/components/public-reports/useReportData';
 const PublicReport = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [accessGranted, setAccessGranted] = useState(false);
   
   const { 
@@ -23,6 +24,7 @@ const PublicReport = () => {
   const verifyPassword = async (password: string) => {
     try {
       if (!reportId) return;
+      setPasswordError(null);
       
       const { data, error: verifyError } = await supabase.rpc(
         'verify_shared_report_password',
@@ -40,11 +42,11 @@ const PublicReport = () => {
         toast.success('Acceso concedido');
         refetch();
       } else {
-        toast.error('Contraseña incorrecta');
+        setPasswordError('Contraseña incorrecta');
       }
     } catch (err: any) {
       console.error("Error verifying password:", err);
-      toast.error('Error al verificar la contraseña');
+      setPasswordError('Error al verificar la contraseña');
     }
   };
 
@@ -55,6 +57,7 @@ const PublicReport = () => {
         onSubmit={verifyPassword}
         onCancel={() => setIsPasswordDialogOpen(false)}
         type="report"
+        error={passwordError}
       />
     );
   }

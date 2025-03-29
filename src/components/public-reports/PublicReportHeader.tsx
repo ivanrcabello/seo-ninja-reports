@@ -1,59 +1,53 @@
 
 import React from 'react';
-import BlurredCard from '@/components/ui/BlurredCard';
-import { Calendar, Globe, ExternalLink, Building } from 'lucide-react';
+import { Calendar, Globe } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { PublicReport } from './useReportData';
 
 interface PublicReportHeaderProps {
-  report: {
-    title: string;
-    date?: string;
-    url?: string;
-    client_name?: string;
-    client_website?: string;
-  };
+  report: PublicReport;
 }
 
 const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ report }) => {
-  const { title, date, url, client_name, client_website } = report;
-  
+  // Format the date properly
+  const formattedDate = report.date ? 
+    format(new Date(report.date), 'dd MMMM yyyy', { locale: es }) : 
+    'Sin fecha';
+
   return (
-    <BlurredCard className="w-full max-w-4xl mb-8 bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gradient-primary">{title}</h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            {date && (
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-                <Calendar className="h-4 w-4" />
-                <span>{format(new Date(date), 'd MMM yyyy', { locale: es })}</span>
-              </div>
-            )}
-            {url && (
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full group hover:bg-primary/20 transition-all">
-                <Globe className="h-4 w-4" />
-                <a 
-                  href={url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:text-primary transition-colors flex items-center gap-1"
-                >
-                  {url.replace(/^https?:\/\//, '').split('/')[0]}
-                  <ExternalLink className="h-3 w-3 opacity-70" />
-                </a>
-              </div>
-            )}
-            {client_name && (
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-                <Building className="h-4 w-4" />
-                <span>{client_name}</span>
-              </div>
-            )}
+    <div className="text-center mb-12">
+      <h1 className="text-3xl md:text-4xl font-bold mb-4">
+        {report.title}
+      </h1>
+      
+      <div className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-6 text-muted-foreground">
+        {report.url && (
+          <div className="flex items-center">
+            <Globe className="h-4 w-4 mr-2" />
+            <a 
+              href={report.url.startsWith('http') ? report.url : `https://${report.url}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+            >
+              {report.url.replace(/^https?:\/\//i, '')}
+            </a>
           </div>
+        )}
+        
+        <div className="flex items-center">
+          <Calendar className="h-4 w-4 mr-2" />
+          {formattedDate}
         </div>
       </div>
-    </BlurredCard>
+      
+      {report.client_name && (
+        <div className="mt-4 text-sm bg-muted py-2 px-4 rounded-full inline-block">
+          Preparado para <span className="font-medium">{report.client_name}</span>
+        </div>
+      )}
+    </div>
   );
 };
 
