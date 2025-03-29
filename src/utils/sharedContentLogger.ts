@@ -1,58 +1,65 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const logSharedReportAccess = async (reportId: string, accessInfo: {
-  successful?: boolean;
+interface AccessLogOptions {
+  successful: boolean;
   passwordAttempt?: boolean;
   error?: string;
-}) => {
+}
+
+/**
+ * Log access to shared reports
+ */
+export const logSharedReportAccess = (reportId: string, options: AccessLogOptions): void => {
   try {
-    // Currently just logs to console, but could be expanded to log to a database table
-    console.info(`Report access attempt: ${reportId}`, accessInfo);
+    console.log(`Report access log: ${reportId}`, options);
+    
+    // Add analytics logging here in the future if needed
+    // For now, just console logging for debugging
+    
   } catch (error) {
-    console.error('Failed to log report access:', error);
+    console.error('Error logging shared report access:', error);
   }
 };
 
-export const logSharedProposalAccess = async (proposalId: string, accessInfo: {
-  successful?: boolean;
-  passwordAttempt?: boolean;
-  error?: string;
-}) => {
+/**
+ * Log access to shared proposals
+ */
+export const logSharedProposalAccess = (proposalId: string, options: AccessLogOptions): void => {
   try {
-    console.info(`Proposal access attempt: ${proposalId}`, accessInfo);
+    console.log(`Proposal access log: ${proposalId}`, options);
+    
+    // Add analytics logging here in the future if needed
+    
   } catch (error) {
-    console.error('Failed to log proposal access:', error);
+    console.error('Error logging shared proposal access:', error);
   }
 };
 
-export const logSharedInvoiceAccess = async (invoiceId: string, accessInfo: {
-  successful?: boolean;
-  passwordAttempt?: boolean;
-  error?: string;
-}) => {
+/**
+ * Log access to shared invoices
+ */
+export const logSharedInvoiceAccess = (invoiceId: string, options: AccessLogOptions): void => {
   try {
-    console.info(`Invoice access attempt: ${invoiceId}`, accessInfo);
+    console.log(`Invoice access log: ${invoiceId}`, options);
+    
+    // Add analytics logging here in the future if needed
+    
   } catch (error) {
-    console.error('Failed to log invoice access:', error);
+    console.error('Error logging shared invoice access:', error);
   }
 };
 
-export const logSharedContractAccess = async (contractId: string, accessInfo: {
-  successful?: boolean;
-  passwordAttempt?: boolean;
-  error?: string;
-}) => {
+/**
+ * Log access to shared contracts
+ */
+export const logSharedContractAccess = (contractId: string, options: AccessLogOptions): void => {
   try {
-    console.info(`Contract access attempt: ${contractId}`, accessInfo);
+    console.log(`Contract access log: ${contractId}`, options);
+    
+    // Add analytics logging here in the future if needed
+    
   } catch (error) {
-    console.error('Failed to log contract access:', error);
+    console.error('Error logging shared contract access:', error);
   }
-};
-
-export default {
-  logSharedReportAccess,
-  logSharedProposalAccess,
-  logSharedInvoiceAccess,
-  logSharedContractAccess
 };

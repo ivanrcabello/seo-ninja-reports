@@ -1,11 +1,10 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Lock } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Lock, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PasswordProtectionDialogProps {
   isOpen: boolean;
@@ -30,7 +29,7 @@ const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
   onVerify,
   isVerifying,
   showError,
-  errorMessage
+  errorMessage,
 }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,19 +40,23 @@ const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Lock className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-          <DialogTitle className="text-center">{title}</DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5 text-primary" />
+            {title}
+          </DialogTitle>
+          <DialogDescription>
             {description}
           </DialogDescription>
         </DialogHeader>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
+          {showError && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="grid gap-4">
             <Input
               id="password"
               type="password"
@@ -61,22 +64,19 @@ const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoFocus
-              autoComplete="off"
             />
-            {showError && (
-              <div className="text-red-500 text-sm flex items-center gap-1">
-                <AlertCircle className="h-4 w-4" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+            
+            <Button type="submit" disabled={isVerifying || !password}>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                'Acceder'
+              )}
+            </Button>
           </div>
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isVerifying || !password.trim()}
-          >
-            {isVerifying ? "Verificando..." : "Acceder"}
-          </Button>
         </form>
       </DialogContent>
     </Dialog>
