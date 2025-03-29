@@ -11,7 +11,7 @@ interface PublicReport {
   status: string;
   content?: any;
   date?: string;
-  client_name: string;
+  client_name?: string;
   client_website?: string;
 }
 
@@ -52,7 +52,7 @@ const useReportData = (reportId: string) => {
       // Query the actual report data - prefer the reports table first
       const { data: reportData, error: reportError } = await supabase
         .from('reports')
-        .select('*')
+        .select('*, clients(name, website)')
         .eq('id', reportId)
         .maybeSingle();
 
@@ -75,7 +75,20 @@ const useReportData = (reportId: string) => {
         // Log successful access
         logSharedReportAccess(reportId, { successful: true });
       } else {
-        setReport(reportData as PublicReport);
+        // Transform the report data to match the PublicReport interface
+        const formattedReport: PublicReport = {
+          id: reportData.id,
+          title: reportData.title,
+          summary: reportData.summary,
+          url: reportData.url,
+          status: reportData.status,
+          content: reportData.content,
+          date: reportData.date,
+          client_name: reportData.clients?.name,
+          client_website: reportData.clients?.website
+        };
+
+        setReport(formattedReport);
         
         // Log successful access
         logSharedReportAccess(reportId, { successful: true });

@@ -43,7 +43,7 @@ const PublicReport: React.FC = () => {
 
   // Show error state
   if (error) {
-    return <PublicReportError message={error} />;
+    return <PublicReportError errorMessage={error} />;
   }
 
   // Show password protection dialog
