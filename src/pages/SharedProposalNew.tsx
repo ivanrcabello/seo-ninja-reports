@@ -1,26 +1,13 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
-
-interface SharedProposalData {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  price?: number;
-  services?: string[];
-  shared_url: string;
-  created_at: string;
-  updated_at: string;
-  client_name: string;
-  client_website?: string;
-  password_protected?: boolean;
-}
+import { useProposalData } from '@/components/shared-proposal';
+import sharedContentLogger from '@/utils/sharedContentLogger';
 
 const formatPrice = (price?: number) => {
   if (!price) return 'Precio no especificado';
@@ -35,132 +22,49 @@ const formatDate = (date: string) => {
   });
 };
 
-const SharedProposal = () => {
+const SharedProposalNew = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
-  const [proposal, setProposal] = useState<SharedProposalData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
-
-  const verifyPassword = async (password: string) => {
-    try {
-      console.log("Verifying password for shared URL:", sharedUrl);
-      
-      // Call function to verify password
-      const { data, error: verifyError } = await supabase.rpc(
-        'verify_shared_proposal_password', 
-        { 
-          shared_url_param: sharedUrl || '',
-          password_param: password
-        }
-      );
-      
-      if (verifyError) throw new Error(verifyError.message);
-      
-      if (data === true) {
-        setAccessGranted(true);
-        setIsPasswordDialogOpen(false);
-        toast.success('Acceso concedido');
-        fetchProposal();
-      } else {
-        toast.error('Contraseña incorrecta');
-      }
-    } catch (err: any) {
-      console.error("Error verifying password:", err);
-      toast.error('Error al verificar la contraseña');
-    }
-  };
-
-  const fetchProposal = async () => {
-    if (!sharedUrl) return;
-    
-    try {
-      setIsLoading(true);
-      
-      console.log("Fetching proposal with shared URL:", sharedUrl);
-      
-      // Check if proposal is password protected without requiring the password
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_proposal_password_protection', 
-        { 
-          shared_url_param: sharedUrl 
-        }
-      );
-      
-      if (protectionError) {
-        console.error("Protection check error:", protectionError);
-        throw new Error(protectionError.message);
-      }
-      
-      console.log("Password protection check result:", protectionData);
-      
-      // If password protected and access not granted yet, show password dialog
-      if (protectionData === true && !accessGranted) {
-        setIsPasswordProtected(true);
-        setIsPasswordDialogOpen(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Fetch from public_proposals directly (no RLS, no authentication required)
-      const { data, error: fetchError } = await supabase
-        .from('public_proposals')
-        .select('*')
-        .eq('shared_url', sharedUrl)
-        .maybeSingle();
-      
-      if (fetchError) {
-        console.error("Error fetching proposal:", fetchError);
-        throw new Error(fetchError.message);
-      }
-      
-      if (!data) {
-        console.error("No proposal data found");
-        throw new Error('Propuesta no encontrada');
-      }
-      
-      console.log("Raw proposal data:", data);
-      
-      // Convert to SharedProposalData with safe type handling
-      const typedProposal: SharedProposalData = {
-        id: data.id || '',
-        title: data.title || '',
-        description: data.description || '',
-        status: data.status || 'draft',
-        price: data.price || undefined,
-        services: Array.isArray(data.services) ? data.services : [],
-        shared_url: data.shared_url || '',
-        created_at: data.created_at || new Date().toISOString(),
-        updated_at: data.updated_at || new Date().toISOString(),
-        client_name: data.client_name || '',
-        client_website: data.client_website
-      };
-      
-      console.log("Typed proposal data:", typedProposal);
-      setProposal(typedProposal);
-    } catch (err: any) {
-      console.error("Error in fetchProposal:", err);
-      setError(err.message || 'No se pudo cargar la propuesta');
-      
-      toast.error('Error', { 
-        description: err.message || 'No se pudo cargar la propuesta'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
   
-  useEffect(() => {
-    fetchProposal();
-  }, [sharedUrl]);
+  const {
+    proposal,
+    isLoading,
+    error,
+    isPasswordProtected,
+    accessGranted,
+    setAccessGranted,
+    verifyPassword,
+    refetch
+  } = useProposalData(sharedUrl || '');
+
+  // Show password dialog if needed
+  React.useEffect(() => {
+    if (isPasswordProtected && !accessGranted) {
+      setIsPasswordDialogOpen(true);
+    }
+  }, [isPasswordProtected, accessGranted]);
+
+  const handlePasswordSubmit = async (password: string) => {
+    const success = await verifyPassword(password);
+    
+    if (success) {
+      setAccessGranted(true);
+      setIsPasswordDialogOpen(false);
+      toast.success('Acceso concedido');
+      refetch();
+    } else {
+      toast.error('Contraseña incorrecta');
+    }
+  };
 
   if (isPasswordDialogOpen) {
     return (
       <PasswordProtectionDialog 
-        onSubmit={verifyPassword}
-        onCancel={() => setError('Acceso denegado')}
+        onSubmit={handlePasswordSubmit}
+        onCancel={() => {
+          setIsPasswordDialogOpen(false);
+          window.history.back();
+        }}
         type="proposal"
       />
     );
@@ -178,6 +82,7 @@ const SharedProposal = () => {
   }
 
   if (error || !proposal) {
+    sharedContentLogger.error(`Error showing proposal`, { error, proposal });
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-md w-full p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-red-200">
@@ -275,4 +180,4 @@ const SharedProposal = () => {
   );
 };
 
-export default SharedProposal;
+export default SharedProposalNew;
