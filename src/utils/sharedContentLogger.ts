@@ -1,42 +1,108 @@
 
-/**
- * Logger utility for shared content pages
- */
-const sharedContentLogger = {
-  info: (message: string, ...args: any[]) => {
-    console.info(`${new Date().toISOString()} info:`, message, ...args);
-  },
-  success: (message: string, ...args: any[]) => {
-    console.log(`${new Date().toISOString()} success:`, message, ...args);
-  },
-  error: (message: string, ...args: any[]) => {
-    console.error(`${new Date().toISOString()} error:`, message, ...args);
-  },
-  warn: (message: string, ...args: any[]) => {
-    console.warn(`${new Date().toISOString()} warn:`, message, ...args);
-  },
-  debug: (message: string, ...args: any[]) => {
-    console.debug(`${new Date().toISOString()} debug:`, message, ...args);
-  },
-  // Add compatibility methods for the proposal data component
-  warning: (message: string, ...args: any[]) => {
-    console.warn(`${new Date().toISOString()} warning:`, message, ...args);
-  },
-  group: (label: string) => {
-    console.group(label);
-  },
-  groupEnd: () => {
-    console.groupEnd();
-  },
-  timeStart: (label: string) => {
-    console.time(label);
-  },
-  timeEnd: (label: string) => {
-    console.timeEnd(label);
-  },
-  table: (data: any) => {
-    console.table(data);
+import { supabase } from '@/integrations/supabase/client';
+
+interface LogParams {
+  reportId?: string;
+  proposalId?: string;
+  invoiceId?: string;
+  contractId?: string;
+  action: string;
+  status: 'success' | 'error' | 'failed';
+  details?: string;
+}
+
+export const logSharedReportAccess = async (params: LogParams) => {
+  try {
+    const { data, error } = await supabase
+      .from('shared_content_access_logs')
+      .insert([{
+        report_id: params.reportId,
+        action: params.action,
+        status: params.status,
+        details: params.details || '',
+        user_agent: navigator.userAgent,
+        ip_address: null // Will be captured by server-side functions
+      }]);
+      
+    if (error) {
+      console.error('Error logging shared report access:', error);
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Failed to log shared report access:', err);
+    return null;
   }
 };
 
-export default sharedContentLogger;
+export const logSharedProposalAccess = async (params: LogParams) => {
+  try {
+    const { data, error } = await supabase
+      .from('shared_content_access_logs')
+      .insert([{
+        proposal_id: params.proposalId,
+        action: params.action,
+        status: params.status,
+        details: params.details || '',
+        user_agent: navigator.userAgent,
+        ip_address: null
+      }]);
+      
+    if (error) {
+      console.error('Error logging shared proposal access:', error);
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Failed to log shared proposal access:', err);
+    return null;
+  }
+};
+
+export const logSharedInvoiceAccess = async (params: LogParams) => {
+  try {
+    const { data, error } = await supabase
+      .from('shared_content_access_logs')
+      .insert([{
+        invoice_id: params.invoiceId,
+        action: params.action,
+        status: params.status,
+        details: params.details || '',
+        user_agent: navigator.userAgent,
+        ip_address: null
+      }]);
+      
+    if (error) {
+      console.error('Error logging shared invoice access:', error);
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Failed to log shared invoice access:', err);
+    return null;
+  }
+};
+
+export const logSharedContractAccess = async (params: LogParams) => {
+  try {
+    const { data, error } = await supabase
+      .from('shared_content_access_logs')
+      .insert([{
+        contract_id: params.contractId,
+        action: params.action,
+        status: params.status,
+        details: params.details || '',
+        user_agent: navigator.userAgent,
+        ip_address: null
+      }]);
+      
+    if (error) {
+      console.error('Error logging shared contract access:', error);
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Failed to log shared contract access:', err);
+    return null;
+  }
+};

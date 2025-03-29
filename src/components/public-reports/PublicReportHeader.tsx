@@ -1,56 +1,44 @@
 
 import React from 'react';
-import { CalendarDays, Link2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { PublicReport } from './useReportData';
+import { CalendarIcon, GlobeIcon } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface PublicReportHeaderProps {
   report: PublicReport;
 }
 
-const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ report }) => {
+export const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ report }) => {
   return (
-    <div className="w-full max-w-5xl mx-auto mb-8">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-primary/10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <h1 className="text-2xl font-bold mb-2 md:mb-0">{report.title}</h1>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <CalendarDays className="h-4 w-4 mr-1" />
-            <span>{format(new Date(report.date), 'd MMMM yyyy', { locale: es })}</span>
-          </div>
+    <div className="p-6 bg-gradient-to-b from-primary/10 to-background border-b border-primary/10">
+      <h1 className="text-2xl md:text-3xl font-bold mb-2">
+        {report.title}
+      </h1>
+      
+      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm">
+        <div className="flex items-center">
+          <span className="font-medium">Cliente:</span>
+          <span className="ml-2">{report.client_name}</span>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4 mt-4">
-          <div className="flex-1">
-            <h2 className="text-sm font-medium text-muted-foreground mb-1">Cliente</h2>
-            <p className="font-medium">{report.client_name}</p>
-          </div>
-          
-          {report.url && (
-            <div className="flex-1">
-              <h2 className="text-sm font-medium text-muted-foreground mb-1">URL analizada</h2>
-              <a 
-                href={report.url} 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline flex items-center"
-              >
-                {report.url}
-                <Link2 className="h-3 w-3 ml-1" />
-              </a>
-            </div>
-          )}
-        </div>
-        
-        {report.summary && (
-          <div className="mt-4 pt-4 border-t">
-            <p className="text-muted-foreground">{report.summary}</p>
+        {report.website && (
+          <div className="flex items-center">
+            <GlobeIcon className="h-4 w-4 mr-1 text-muted-foreground" />
+            <a 
+              href={report.website.startsWith('http') ? report.website : `https://${report.website}`} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline">
+              {report.website.replace(/^(https?:\/\/)?(www\.)?/i, '')}
+            </a>
           </div>
         )}
+        
+        <div className="flex items-center text-muted-foreground">
+          <CalendarIcon className="h-4 w-4 mr-1" />
+          <span>{format(new Date(report.created_at), 'dd/MM/yyyy')}</span>
+        </div>
       </div>
     </div>
   );
 };
-
-export default PublicReportHeader;
