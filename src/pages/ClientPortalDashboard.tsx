@@ -94,7 +94,7 @@ const ClientPortalDashboard = () => {
       console.log('Fetching data for client ID:', clientId);
       
       // Set headers for all requests
-      const headers = { 'x-client-token': token };
+      const customHeaders = { 'x-client-token': token };
       
       // Fetch invoices
       const { data: invoicesData, error: invoicesError } = await supabase
@@ -102,7 +102,7 @@ const ClientPortalDashboard = () => {
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .headers(headers);
+        .headers(customHeaders);
       
       if (invoicesError) {
         console.error('Error fetching invoices:', invoicesError);
@@ -117,7 +117,7 @@ const ClientPortalDashboard = () => {
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .headers(headers);
+        .headers(customHeaders);
       
       if (proposalsError) {
         console.error('Error fetching proposals:', proposalsError);
@@ -132,7 +132,7 @@ const ClientPortalDashboard = () => {
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .headers(headers);
+        .headers(customHeaders);
       
       if (contractsError) {
         console.error('Error fetching contracts:', contractsError);
@@ -147,7 +147,7 @@ const ClientPortalDashboard = () => {
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .headers(headers);
+        .headers(customHeaders);
       
       if (reportsError) {
         console.error('Error fetching reports:', reportsError);
