@@ -41,22 +41,20 @@ const useReportData = (reportId: string) => {
       
       setIsPasswordProtected(protectionData === true);
       
-      // Fetch report data using a standard query instead of RPC
-      // We need to query the public_reports view instead of using the RPC
+      // Query the public_reports view directly
       const { data, error } = await supabase
         .from('public_reports')
         .select('*')
         .eq('id', reportId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       if (!data) {
-        setError('Informe no encontrado');
-        setReport(null);
-      } else {
-        setReport(data as PublicReport);
+        throw new Error('Informe no encontrado');
       }
+      
+      setReport(data as PublicReport);
     } catch (err: any) {
       console.error('Error fetching shared report:', err);
       setError(err.message || 'Error al cargar el informe');

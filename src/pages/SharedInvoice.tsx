@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { InvoiceContent, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
+import { InvoiceContent, InvoiceHeader, InvoiceActions, useInvoiceData } from '@/components/shared-invoice';
 import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice/types';
 import { toast } from 'sonner';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
@@ -10,12 +10,21 @@ import PasswordProtectionDialog from '@/components/shared-content/PasswordProtec
 // Component for displaying a shared invoice
 const SharedInvoice = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
-  const [invoice, setInvoice] = useState<SharedInvoiceType | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const { 
+    invoice, 
+    isLoading, 
+    error, 
+    isPasswordProtected, 
+    refetch 
+  } = useInvoiceData(sharedUrl || '');
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
+
+  useEffect(() => {
+    if (isPasswordProtected && !accessGranted) {
+      setIsPasswordDialogOpen(true);
+    }
+  }, [isPasswordProtected, accessGranted]);
 
   // Function to handle printing the invoice
   const handlePrint = () => {
@@ -39,7 +48,7 @@ const SharedInvoice = () => {
         setAccessGranted(true);
         setIsPasswordDialogOpen(false);
         toast.success('Acceso concedido');
-        fetchInvoice();
+        refetch();
       } else {
         toast.error('Contraseña incorrecta');
       }
@@ -48,94 +57,6 @@ const SharedInvoice = () => {
       toast.error('Error al verificar la contraseña');
     }
   };
-
-  const fetchInvoice = async () => {
-    if (!sharedUrl) return;
-    
-    try {
-      setIsLoading(true);
-      
-      console.log("Fetching invoice with shared URL:", sharedUrl);
-      
-      // Check if invoice is password protected without requiring the password
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_invoice_password_protection', 
-        { 
-          shared_url_param: sharedUrl 
-        }
-      );
-      
-      if (protectionError) throw new Error(protectionError.message);
-      
-      // If password protected and access not granted yet, show password dialog
-      if (protectionData === true && !accessGranted) {
-        setIsPasswordProtected(true);
-        setIsPasswordDialogOpen(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Instead of using .single() which causes an error when no rows found,
-      // use the standard query and check if data exists
-      const { data, error: fetchError } = await supabase
-        .from('public_invoices')
-        .select('*')
-        .eq('shared_url', sharedUrl);
-      
-      if (fetchError) {
-        console.error("Error fetching invoice:", fetchError);
-        throw new Error(fetchError.message);
-      }
-      
-      if (!data || data.length === 0) {
-        throw new Error('Factura no encontrada');
-      }
-      
-      console.log("Invoice data retrieved successfully:", data[0]);
-      
-      // Aseguramos que el status sea uno de los valores permitidos
-      const validStatus = ['pending', 'paid', 'cancelled', 'overdue'] as const;
-      const status = validStatus.includes(data[0].status as any) 
-        ? data[0].status as 'pending' | 'paid' | 'cancelled' | 'overdue'
-        : 'pending'; // Valor por defecto si no es válido
-      
-      // Convertimos los datos obtenidos al tipo SharedInvoiceType asegurándonos
-      // de que todos los campos requeridos estén presentes
-      const formattedInvoice: SharedInvoiceType = {
-        id: data[0].id,
-        title: data[0].title || '',
-        description: data[0].description || '',
-        amount: data[0].amount || 0,
-        status: status,
-        due_date: data[0].due_date,
-        payment_method: data[0].payment_method,
-        payment_date: data[0].payment_date,
-        // We need to use the optional chaining or type assertion here since TypeScript doesn't recognize this property
-        // Use of type assertion to handle the property that exists in runtime but not in TypeScript definition
-        payment_instructions: (data[0] as any).payment_instructions || '',
-        shared_url: data[0].shared_url,
-        created_at: data[0].created_at,
-        updated_at: data[0].updated_at,
-        client_name: data[0].client_name || '',
-        client_website: data[0].client_website
-      };
-      
-      setInvoice(formattedInvoice);
-    } catch (err: any) {
-      console.error("Error in fetchInvoice:", err);
-      setError(err.message || 'No se pudo cargar la factura');
-      
-      toast.error('Error', { 
-        description: err.message || 'No se pudo cargar la factura'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    fetchInvoice();
-  }, [sharedUrl]);
 
   if (isPasswordDialogOpen) {
     return (
