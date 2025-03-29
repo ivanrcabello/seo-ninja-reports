@@ -58,13 +58,17 @@ class ClientPortalApiService {
     try {
       // For RPC calls, we need to use the auth header via fetch
       // We can't use the headers option directly with rpc()
+      // Instead of accessing protected properties, we use environment variables or constants
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ctidzqynewvqxguhhknp.supabase.co";
+      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0aWR6cXluZXd2cXhndWhoa25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzgzMDksImV4cCI6MjA1Nzk1NDMwOX0.duoo6n4oN7FV--pQrEKWQZlqoslDxr-6dshz83IV2w4";
+      
       const response = await fetch(
-        `${supabase.supabaseUrl}/rest/v1/rpc/${functionName}`,
+        `${SUPABASE_URL}/rest/v1/rpc/${functionName}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': supabase.supabaseKey,
+            'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${token}`,
             'x-client-token': token
           },
