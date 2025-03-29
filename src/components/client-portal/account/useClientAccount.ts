@@ -53,7 +53,13 @@ export function useClientAccount(clientId: string, accountId: string) {
         console.log('Account data retrieved:', data);
         
         // Extract the first item from the array if it's an array
-        const accountData = Array.isArray(data) ? data[0] as ClientPortalAccountData : data as ClientPortalAccountData;
+        const accountData = Array.isArray(data) && data.length > 0 
+          ? data[0] as ClientPortalAccountData 
+          : null;
+        
+        if (!accountData) {
+          throw new Error('No account data returned');
+        }
         
         const clientData: Client = {
           id: accountData.client_id,

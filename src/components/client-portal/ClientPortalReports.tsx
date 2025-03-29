@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,9 +31,10 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
         
         const data = await clientPortalApi.getReports(clientId);
         
-        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} reports`, { count: data?.length }, 'ClientPortalReports');
-        console.log('Reports data:', data);
-        setReports(data || []);
+        const reportsData = Array.isArray(data) ? data : [];
+        clientPortalLogger.info(`Successfully fetched ${reportsData.length} reports`, { count: reportsData.length }, 'ClientPortalReports');
+        console.log('Reports data:', reportsData);
+        setReports(reportsData as Report[]);
       } catch (err: any) {
         console.error('Error fetching reports:', err);
         clientPortalLogger.error('Error fetching reports', err, 'ClientPortalReports');

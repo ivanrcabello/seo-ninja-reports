@@ -57,7 +57,7 @@ class ClientPortalApiService {
     
     // Configuramos headers según documentación de Supabase
     const { data, error } = await supabase.rpc(
-      functionName,
+      functionName as any,
       params,
       {
         headers: {
@@ -78,36 +78,36 @@ class ClientPortalApiService {
   /**
    * Obtiene los informes del cliente
    */
-  async getReports(clientId: string) {
-    return this.callRpc('get_client_portal_reports', { client_id_param: clientId });
+  async getReports(clientId: string): Promise<any[]> {
+    return this.callRpc<any[]>('get_client_portal_reports', { client_id_param: clientId });
   }
 
   /**
    * Obtiene las propuestas del cliente
    */
-  async getProposals(clientId: string) {
-    return this.callRpc('get_client_portal_proposals', { client_id_param: clientId });
+  async getProposals(clientId: string): Promise<any[]> {
+    return this.callRpc<any[]>('get_client_portal_proposals', { client_id_param: clientId });
   }
 
   /**
    * Obtiene las facturas del cliente
    */
-  async getInvoices(clientId: string) {
-    return this.callRpc('get_client_portal_invoices', { client_id_param: clientId });
+  async getInvoices(clientId: string): Promise<any[]> {
+    return this.callRpc<any[]>('get_client_portal_invoices', { client_id_param: clientId });
   }
 
   /**
    * Obtiene los contratos del cliente
    */
-  async getContracts(clientId: string) {
-    return this.callRpc('get_client_portal_contracts', { client_id_param: clientId });
+  async getContracts(clientId: string): Promise<any[]> {
+    return this.callRpc<any[]>('get_client_portal_contracts', { client_id_param: clientId });
   }
 
   /**
    * Obtiene la información de cuenta del cliente
    */
-  async getAccountData(clientId: string, accountId: string) {
-    return this.callRpc('get_client_portal_account_data', { 
+  async getAccountData(clientId: string, accountId: string): Promise<any[]> {
+    return this.callRpc<any[]>('get_client_portal_account_data', { 
       client_id_param: clientId,
       account_id_param: accountId
     });

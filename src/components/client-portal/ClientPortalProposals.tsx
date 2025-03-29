@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,9 +33,10 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
         
         const data = await clientPortalApi.getProposals(clientId);
         
-        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} proposals`, { count: data?.length }, 'ClientPortalProposals');
-        console.log('Proposals data:', data);
-        setProposals(data || []);
+        const proposalsData = Array.isArray(data) ? data : [];
+        clientPortalLogger.info(`Successfully fetched ${proposalsData.length} proposals`, { count: proposalsData.length }, 'ClientPortalProposals');
+        console.log('Proposals data:', proposalsData);
+        setProposals(proposalsData as Proposal[]);
       } catch (err: any) {
         console.error('Error fetching proposals:', err);
         clientPortalLogger.error('Error fetching proposals', err, 'ClientPortalProposals');

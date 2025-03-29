@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,9 +34,10 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         
         const data = await clientPortalApi.getContracts(clientId);
         
-        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} contracts`, { count: data?.length }, 'ClientPortalContracts');
-        console.log('Contracts data:', data);
-        setContracts(data || []);
+        const contractsData = Array.isArray(data) ? data : [];
+        clientPortalLogger.info(`Successfully fetched ${contractsData.length} contracts`, { count: contractsData.length }, 'ClientPortalContracts');
+        console.log('Contracts data:', contractsData);
+        setContracts(contractsData as Contract[]);
       } catch (err: any) {
         console.error('Error fetching contracts:', err);
         clientPortalLogger.error('Error fetching contracts', err, 'ClientPortalContracts');

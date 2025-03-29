@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,9 +35,10 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
         
         const data = await clientPortalApi.getInvoices(clientId);
         
-        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} invoices`, { count: data?.length }, 'ClientPortalInvoices');
-        console.log('Invoices data:', data);
-        setInvoices(data || []);
+        const invoicesData = Array.isArray(data) ? data : [];
+        clientPortalLogger.info(`Successfully fetched ${invoicesData.length} invoices`, { count: invoicesData.length }, 'ClientPortalInvoices');
+        console.log('Invoices data:', invoicesData);
+        setInvoices(invoicesData as Invoice[]);
       } catch (err: any) {
         console.error('Error fetching invoices:', err);
         clientPortalLogger.error('Error fetching invoices', err, 'ClientPortalInvoices');
