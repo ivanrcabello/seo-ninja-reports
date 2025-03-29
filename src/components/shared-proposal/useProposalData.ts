@@ -107,7 +107,9 @@ const useProposalData = (sharedUrl: string) => {
       } 
 
       sharedContentLogger.info('Raw proposal data received');
-      sharedContentLogger.debug(data);
+      // Fix: Don't use table method that expects a string, instead just log the object
+      sharedContentLogger.debug('Proposal data:');
+      console.table(data); // Use native console.table instead
       
       // Format the data with safe type handling
       const formattedProposal: SharedProposal = {
