@@ -58,18 +58,15 @@ export function useClientAccount(clientId: string, accountId: string) {
           throw new Error('Session token not found. Please log in again.');
         }
         
-        // Use the RPC function with the token in the headers
-        const { data, error } = await supabase
-          .rpc('get_client_portal_account_data', {
+        // Use the RPC function with the token in the headers - correct approach
+        const { data, error } = await supabase.rpc(
+          'get_client_portal_account_data',
+          {
             client_id_param: clientId,
             account_id_param: accountId
-          })
-          .returns<ClientPortalAccountData>()
-          .abortSignal(new AbortController().signal)
-          .withHeaders({
-            'x-client-token': clientToken
-          })
-          .maybeSingle();
+          },
+          { headers: { 'x-client-token': clientToken } }
+        );
           
         if (error) {
           clientPortalLogger.error('Error fetching account data', error, 'useClientAccount');

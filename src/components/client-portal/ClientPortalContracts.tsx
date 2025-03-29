@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,14 +40,12 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         const session = JSON.parse(sessionString);
         const clientToken = session.token;
         
-        // Add the token to the request header using the correct method
-        const { data, error } = await supabase
-          .rpc('get_client_portal_contracts', {
-            client_id_param: clientId
-          })
-          .withHeaders({
-            'x-client-token': clientToken
-          });
+        // Using the headers object directly in the RPC call
+        const { data, error } = await supabase.rpc(
+          'get_client_portal_contracts',
+          { client_id_param: clientId },
+          { headers: { 'x-client-token': clientToken } }
+        );
 
         if (error) {
           clientPortalLogger.error('Error fetching contracts', error, 'ClientPortalContracts');
