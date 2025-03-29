@@ -55,26 +55,33 @@ class ClientPortalApiService {
     
     clientPortalLogger.info(`Calling RPC ${functionName}`, params, 'ClientPortalApiService');
     
-    // Configuramos headers según documentación de Supabase para RPC
-    // La sintaxis correcta es pasar un objeto con options.headers
-    const { data, error } = await supabase.rpc(
-      functionName as any,
-      params,
-      {
-        // Los headers se pasan como parte de las opciones globales, no dentro de un objeto 'headers'
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'x-client-token': token
-        }
+    // Configurar headers para la solicitud
+    const requestHeaders = {
+      'Authorization': `Bearer ${token}`,
+      'x-client-token': token
+    };
+    
+    // Set headers using Supabase's global headers method
+    const prevHeaders = supabase.headers;
+    supabase.headers = { ...prevHeaders, ...requestHeaders };
+    
+    try {
+      // Ejecutar la llamada RPC con los headers establecidos globalmente
+      const { data, error } = await supabase.rpc(
+        functionName as any,
+        params
+      );
+      
+      if (error) {
+        clientPortalLogger.error(`Error calling RPC ${functionName}`, error, 'ClientPortalApiService');
+        throw error;
       }
-    );
-    
-    if (error) {
-      clientPortalLogger.error(`Error calling RPC ${functionName}`, error, 'ClientPortalApiService');
-      throw error;
+      
+      return data as T;
+    } finally {
+      // Restaurar los headers originales
+      supabase.headers = prevHeaders;
     }
-    
-    return data as T;
   }
 
   /**

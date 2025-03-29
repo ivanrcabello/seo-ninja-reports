@@ -33,6 +33,7 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
         
         const data = await clientPortalApi.getProposals(clientId);
         
+        // Ensure data is an array before processing
         const proposalsData = Array.isArray(data) ? data : [];
         clientPortalLogger.info(`Successfully fetched ${proposalsData.length} proposals`, { count: proposalsData.length }, 'ClientPortalProposals');
         console.log('Proposals data:', proposalsData);

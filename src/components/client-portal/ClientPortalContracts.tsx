@@ -34,6 +34,7 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         
         const data = await clientPortalApi.getContracts(clientId);
         
+        // Ensure data is an array before processing
         const contractsData = Array.isArray(data) ? data : [];
         clientPortalLogger.info(`Successfully fetched ${contractsData.length} contracts`, { count: contractsData.length }, 'ClientPortalContracts');
         console.log('Contracts data:', contractsData);

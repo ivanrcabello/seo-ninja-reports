@@ -35,6 +35,7 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
         
         const data = await clientPortalApi.getInvoices(clientId);
         
+        // Ensure data is an array before processing
         const invoicesData = Array.isArray(data) ? data : [];
         clientPortalLogger.info(`Successfully fetched ${invoicesData.length} invoices`, { count: invoicesData.length }, 'ClientPortalInvoices');
         console.log('Invoices data:', invoicesData);
