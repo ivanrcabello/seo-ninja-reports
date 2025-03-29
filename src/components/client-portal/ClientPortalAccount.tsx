@@ -90,22 +90,27 @@ const ClientPortalAccount: React.FC<ClientPortalAccountProps> = ({ clientId, acc
     setIsChangingPassword(true);
     
     try {
-      // Use a function call to update password securely
-      const { data, error } = await supabase.rpc('change_client_portal_password', {
-        p_account_id: accountId,
-        p_current_password: currentPassword,
-        p_new_password: newPassword
+      // Since we can't use the RPC function directly yet, let's use a simple fetch to call our function
+      const { data, error } = await supabase.functions.invoke('change-client-password', {
+        body: {
+          accountId: accountId,
+          currentPassword: currentPassword,
+          newPassword: newPassword
+        }
       });
 
       if (error) throw error;
-
-      toast.success('Contraseña actualizada correctamente');
       
-      // Reset form
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      
+      if (data && data.success) {
+        toast.success('Contraseña actualizada correctamente');
+        
+        // Reset form
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast.error('Error al cambiar la contraseña. Verifica que la contraseña actual sea correcta.');
+      }
     } catch (err: any) {
       console.error('Error changing password:', err);
       toast.error('Error al cambiar la contraseña. Verifica que la contraseña actual sea correcta.');

@@ -1887,6 +1887,14 @@ export type Database = {
           expires_at: string
         }[]
       }
+      change_client_portal_password: {
+        Args: {
+          p_account_id: string
+          p_current_password: string
+          p_new_password: string
+        }
+        Returns: boolean
+      }
       check_invoice_password_protection: {
         Args: {
           shared_url_param: string
