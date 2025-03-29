@@ -6,20 +6,18 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface PublicReportHeaderProps {
-  title: string;
-  date?: string;
-  url?: string;
-  clientName?: string;
-  clientWebsite?: string;
+  report: {
+    title: string;
+    date?: string;
+    url?: string;
+    client_name?: string;
+    client_website?: string;
+  };
 }
 
-const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ 
-  title, 
-  date, 
-  url,
-  clientName,
-  clientWebsite
-}) => {
+const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ report }) => {
+  const { title, date, url, client_name, client_website } = report;
+  
   return (
     <BlurredCard className="w-full max-w-4xl mb-8 bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
@@ -46,10 +44,10 @@ const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({
                 </a>
               </div>
             )}
-            {clientName && (
+            {client_name && (
               <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
                 <Building className="h-4 w-4" />
-                <span>{clientName}</span>
+                <span>{client_name}</span>
               </div>
             )}
           </div>

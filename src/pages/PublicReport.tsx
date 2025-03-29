@@ -66,7 +66,7 @@ const PublicReport = () => {
   
   // Error state
   if (error || !report) {
-    return <PublicReportError message={error || 'No se pudo cargar el informe'} />;
+    return <PublicReportError errorMessage={error || 'No se pudo cargar el informe'} />;
   }
 
   // Report is empty

@@ -18,10 +18,20 @@ interface ReportContentType {
 }
 
 interface PublicReportContentProps {
-  content: ReportContentType;
+  report: {
+    content?: ReportContentType;
+  };
 }
 
-const PublicReportContent: React.FC<PublicReportContentProps> = ({ content }) => {
+const PublicReportContent: React.FC<PublicReportContentProps> = ({ report }) => {
+  const content = report.content || {
+    executiveSummary: '',
+    technicalAnalysis: '',
+    contentAnalysis: '',
+    backlinksAnalysis: '',
+    recommendations: ''
+  };
+  
   // Calculate how many tabs to show based on available content
   const hasLocalSeo = content.localSeo && content.localSeo.trim() !== '';
   const hasProposal = content.serviceProposal && content.serviceProposal.trim() !== '';

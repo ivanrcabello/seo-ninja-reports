@@ -36,3 +36,6 @@ BEGIN
     r.id = report_id_param;
 END;
 $$;
+
+-- Note: We're keeping this function for backward compatibility,
+-- but now using the public_reports view directly in the application code
