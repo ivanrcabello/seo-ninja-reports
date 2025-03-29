@@ -2083,6 +2083,7 @@ export type Database = {
           due_date: string | null
           id: string | null
           payment_date: string | null
+          payment_instructions: string | null
           payment_method: string | null
           shared_url: string | null
           status: string | null

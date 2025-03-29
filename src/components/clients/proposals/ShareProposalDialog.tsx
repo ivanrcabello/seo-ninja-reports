@@ -7,18 +7,18 @@ import { Check, Copy, Link, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-interface ShareProposalDialogProps {
+export interface ShareProposalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   proposalId: string;
-  proposalTitle: string;
+  proposalTitle?: string;
 }
 
 const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   open,
   onOpenChange,
   proposalId,
-  proposalTitle
+  proposalTitle = "Propuesta"
 }) => {
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState('');

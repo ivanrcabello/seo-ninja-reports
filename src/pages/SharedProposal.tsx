@@ -1,224 +1,202 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { useProposalData } from '@/components/shared-proposal';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
+import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface SharedProposalData {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  price?: number;
-  services?: string[];
-  shared_url: string;
-  created_at: string;
-  updated_at: string;
-  client_name: string;
-  client_website?: string;
-  password_protected?: boolean;
-}
-
-const formatPrice = (price?: number) => {
-  if (!price) return 'Precio no especificado';
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
-};
-
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-};
-
-const SharedProposal = () => {
-  const { sharedUrl } = useParams<{ sharedUrl: string }>();
-  const [proposal, setProposal] = useState<SharedProposalData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
-
-  const verifyPassword = async (password: string) => {
-    try {
-      // Call function to verify password
-      const { data, error: verifyError } = await supabase.rpc(
-        'verify_shared_proposal_password', 
-        { 
-          shared_url_param: sharedUrl || '',
-          password_param: password
-        }
-      );
-      
-      if (verifyError) throw new Error(verifyError.message);
-      
-      if (data === true) {
-        setAccessGranted(true);
-        setIsPasswordDialogOpen(false);
-        toast.success('Acceso concedido');
-        fetchProposal();
-      } else {
-        toast.error('Contraseña incorrecta');
-      }
-    } catch (err: any) {
-      console.error("Error verifying password:", err);
-      toast.error('Error al verificar la contraseña');
-    }
-  };
-
-  const fetchProposal = async () => {
-    if (!sharedUrl) return;
+const SharedProposal: React.FC = () => {
+  const { proposalId } = useParams<{ proposalId: string }>();
+  const [passwordInput, setPasswordInput] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [showError, setShowError] = useState(false);
+  
+  const {
+    proposal,
+    isLoading,
+    error,
+    isPasswordProtected,
+    accessGranted,
+    verifyPassword,
+    refetch
+  } = useProposalData(proposalId);
+  
+  const handleVerifyPassword = async () => {
+    setVerifying(true);
+    setShowError(false);
     
-    try {
-      setIsLoading(true);
-      
-      console.log("Fetching proposal with shared URL:", sharedUrl);
-      
-      // Check if proposal is password protected without requiring the password
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_proposal_password_protection', 
-        { 
-          shared_url_param: sharedUrl 
-        }
-      );
-      
-      if (protectionError) throw new Error(protectionError.message);
-      
-      // If password protected and access not granted yet, show password dialog
-      if (protectionData === true && !accessGranted) {
-        setIsPasswordProtected(true);
-        setIsPasswordDialogOpen(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Fetch from public_proposals directly (no RLS, no authentication required)
-      const { data, error: fetchError } = await supabase
-        .from('public_proposals')
-        .select('*')
-        .eq('shared_url', sharedUrl)
-        .single();
-      
-      if (fetchError) {
-        console.error("Error fetching proposal:", fetchError);
-        throw new Error(fetchError.message);
-      }
-      
-      if (!data) {
-        throw new Error('Propuesta no encontrada');
-      }
-      
-      console.log("Proposal data retrieved successfully:", data);
-      setProposal(data as SharedProposalData);
-    } catch (err: any) {
-      console.error("Error in fetchProposal:", err);
-      setError(err.message || 'No se pudo cargar la propuesta');
-      
-      toast.error('Error', { 
-        description: err.message || 'No se pudo cargar la propuesta'
-      });
-    } finally {
-      setIsLoading(false);
+    const success = await verifyPassword(passwordInput);
+    
+    if (success) {
+      await refetch();
+    } else {
+      setShowError(true);
+    }
+    
+    setVerifying(false);
+  };
+  
+  // Render status badge
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return (
+          <Badge className="bg-green-500 text-white">
+            <CheckCircle className="w-4 h-4 mr-1" /> Aceptada
+          </Badge>
+        );
+      case 'pending':
+        return (
+          <Badge className="bg-yellow-500 text-white">
+            <Clock className="w-4 h-4 mr-1" /> Pendiente
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge className="bg-red-500 text-white">
+            <AlertCircle className="w-4 h-4 mr-1" /> Rechazada
+          </Badge>
+        );
+      default:
+        return (
+          <Badge>
+            {status}
+          </Badge>
+        );
     }
   };
   
-  useEffect(() => {
-    fetchProposal();
-  }, [sharedUrl]);
-
-  if (isPasswordDialogOpen) {
-    return (
-      <PasswordProtectionDialog 
-        onSubmit={verifyPassword}
-        onCancel={() => setError('Acceso denegado')}
-        type="proposal"
-      />
-    );
-  }
-
+  // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-lg font-medium">Cargando propuesta...</p>
+      <div className="min-h-screen bg-background p-6">
+        <div className="container mx-auto max-w-4xl">
+          <Card className="p-8">
+            <div className="space-y-6">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Separator />
+              <div className="space-y-4">
+                <Skeleton className="h-6 w-1/4" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+              <div className="space-y-4">
+                <Skeleton className="h-6 w-1/4" />
+                <Skeleton className="h-48 w-full" />
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
     );
   }
-
-  if (error || !proposal) {
+  
+  // Show error state
+  if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md w-full p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-red-200">
-          <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar la propuesta</h1>
-          <p className="text-center text-muted-foreground mb-6">
-            {error || 'La propuesta solicitada no existe o ha sido eliminada.'}
-          </p>
-          <div className="flex justify-center">
-            <a
-              href="/"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Volver al inicio
-            </a>
-          </div>
+      <div className="min-h-screen bg-background p-6">
+        <div className="container mx-auto max-w-4xl">
+          <Card className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Ha ocurrido un error</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show password protection dialog
+  if (isPasswordProtected && !accessGranted) {
+    return (
+      <PasswordProtectionDialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Propuesta Protegida"
+        description="Esta propuesta está protegida con contraseña. Por favor, introduce la contraseña para acceder."
+        password={passwordInput}
+        setPassword={setPasswordInput}
+        onVerify={handleVerifyPassword}
+        isVerifying={verifying}
+        showError={showError}
+        errorMessage="Contraseña incorrecta. Por favor, inténtalo de nuevo."
+      />
+    );
+  }
+  
+  // Show empty state if no proposal found
+  if (!proposal) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="container mx-auto max-w-4xl">
+          <Card className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Propuesta no encontrada</h2>
+            <p className="text-muted-foreground">Esta propuesta no existe o no está disponible.</p>
+          </Card>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <Card className="bg-background/80 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden">
-          <CardHeader className="bg-primary/5 border-b border-primary/10">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">{proposal.title}</h1>
-                <p className="text-muted-foreground">
-                  {proposal.client_name} {proposal.client_website && (
-                    <span>• <a href={proposal.client_website.startsWith('http') ? proposal.client_website : `https://${proposal.client_website}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{proposal.client_website}</a></span>
+    <div className="min-h-screen bg-background p-6">
+      <div className="container mx-auto max-w-4xl">
+        <Card className="p-6 md:p-8">
+          <div className="space-y-6">
+            <div>
+              <div className="flex justify-between items-start flex-wrap gap-4">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold">{proposal.title}</h1>
+                  <p className="text-muted-foreground mt-1">
+                    Propuesta para {proposal.client_name}
+                    {proposal.client_website && (
+                      <> — <a href={proposal.client_website.startsWith('http') ? proposal.client_website : `https://${proposal.client_website}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline">
+                        {proposal.client_website}
+                      </a>
+                      </>
+                    )}
+                  </p>
+                </div>
+                
+                <div className="flex flex-col items-end gap-2">
+                  {renderStatusBadge(proposal.status)}
+                  {proposal.price !== undefined && (
+                    <div className="text-xl font-bold">
+                      {formatCurrency(proposal.price)}
+                    </div>
                   )}
-                </p>
-              </div>
-              <div className="flex flex-col items-start md:items-end gap-1">
-                <Badge className={`px-3 py-1 ${proposal.status === 'accepted' ? 'bg-green-500/20 text-green-600' : proposal.status === 'rejected' ? 'bg-red-500/20 text-red-600' : proposal.status === 'draft' ? 'bg-yellow-500/20 text-yellow-600' : 'bg-yellow-500/20 text-yellow-600'}`}>
-                  {proposal.status === 'accepted' ? 'Aceptada' : 
-                   proposal.status === 'rejected' ? 'Rechazada' : 
-                   proposal.status === 'draft' ? 'Borrador' : 'Pendiente'}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Creada el {formatDate(proposal.created_at)}
-                </span>
+                </div>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-6">
+            
+            <Separator />
+            
             {proposal.description && (
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-2">Descripción</h2>
-                <p className="text-muted-foreground whitespace-pre-line">{proposal.description}</p>
+              <div>
+                <h2 className="text-xl font-semibold mb-3">Descripción</h2>
+                <div className="prose dark:prose-invert max-w-none">
+                  <p>{proposal.description}</p>
+                </div>
               </div>
             )}
             
-            {proposal.services && proposal.services.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-3">Servicios incluidos</h2>
-                <ul className="space-y-2">
-                  {proposal.services.map((service, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <div className="h-5 w-5 mt-0.5 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
+            {proposal.services && Array.isArray(proposal.services) && proposal.services.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold mb-3">Servicios incluidos</h2>
+                <ul className="grid grid-cols-1 gap-3 pl-0 list-none">
+                  {proposal.services.map((service: string, index: number) => (
+                    <li key={index} className="bg-muted p-3 rounded-md flex items-start">
+                      <CheckCircle className="w-5 h-5 mr-2 text-primary shrink-0 mt-0.5" />
                       <span>{service}</span>
                     </li>
                   ))}
@@ -226,25 +204,15 @@ const SharedProposal = () => {
               </div>
             )}
             
-            <Separator className="my-6" />
-            
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold text-xl">Precio total</h3>
-                <p className="text-muted-foreground text-sm">Todos los precios incluyen IVA</p>
-              </div>
-              <div className="text-2xl font-bold">
-                {formatPrice(proposal.price)}
-              </div>
+            <div className="flex justify-end gap-2 pt-6">
+              <Button variant="outline">
+                Descargar PDF
+              </Button>
+              <Button>
+                Aceptar propuesta
+              </Button>
             </div>
-            
-            <div className="mt-12 text-center">
-              <p className="text-sm text-muted-foreground">
-                Para cualquier consulta sobre esta propuesta, por favor contacta con nosotros en{' '}
-                <a href="mailto:info@soyseolocal.com" className="text-primary hover:underline">info@soyseolocal.com</a>
-              </p>
-            </div>
-          </CardContent>
+          </div>
         </Card>
       </div>
     </div>

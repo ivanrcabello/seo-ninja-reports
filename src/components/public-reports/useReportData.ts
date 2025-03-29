@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logSharedReportAccess } from '@/utils/sharedContentLogger';
 
 interface PublicReport {
   id: string;
@@ -19,6 +20,7 @@ const useReportData = (reportId: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
 
   const fetchReport = useCallback(async () => {
     if (!reportId) {
@@ -41,27 +43,83 @@ const useReportData = (reportId: string) => {
       
       setIsPasswordProtected(protectionData === true);
       
-      // Query the public_reports view directly
-      const { data, error } = await supabase
-        .from('public_reports')
+      // If password protected and access not granted, don't fetch content yet
+      if (protectionData === true && !accessGranted) {
+        setIsLoading(false);
+        return;
+      }
+      
+      // Query the actual report data - prefer the reports table first
+      const { data: reportData, error: reportError } = await supabase
+        .from('reports')
         .select('*')
         .eq('id', reportId)
         .maybeSingle();
 
-      if (error) throw new Error(error.message);
+      // If not found in reports, try public_reports view
+      if (!reportData || reportError) {
+        const { data: publicData, error: publicError } = await supabase
+          .from('public_reports')
+          .select('*')
+          .eq('id', reportId)
+          .maybeSingle();
 
-      if (!data) {
-        throw new Error('Informe no encontrado');
+        if (publicError) throw new Error(publicError.message);
+        
+        if (!publicData) {
+          throw new Error('Informe no encontrado');
+        }
+        
+        setReport(publicData as PublicReport);
+        
+        // Log successful access
+        logSharedReportAccess(reportId, { successful: true });
+      } else {
+        setReport(reportData as PublicReport);
+        
+        // Log successful access
+        logSharedReportAccess(reportId, { successful: true });
       }
-      
-      setReport(data as PublicReport);
     } catch (err: any) {
       console.error('Error fetching shared report:', err);
       setError(err.message || 'Error al cargar el informe');
+      
+      // Log error
+      logSharedReportAccess(reportId, { 
+        successful: false, 
+        error: err.message 
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [reportId]);
+  }, [reportId, accessGranted]);
+
+  const verifyPassword = async (password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc(
+        'verify_shared_report_password', 
+        { 
+          report_id_param: reportId,
+          password_param: password
+        }
+      );
+      
+      if (error) throw error;
+      
+      setAccessGranted(Boolean(data));
+      
+      // Log password attempt
+      logSharedReportAccess(reportId, {
+        passwordAttempt: true,
+        successful: Boolean(data)
+      });
+      
+      return Boolean(data);
+    } catch (error) {
+      console.error('Error verifying password:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     fetchReport();
@@ -72,6 +130,8 @@ const useReportData = (reportId: string) => {
     isLoading,
     error,
     isPasswordProtected,
+    accessGranted,
+    verifyPassword,
     refetch: fetchReport
   };
 };

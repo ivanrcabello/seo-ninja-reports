@@ -1,56 +1,46 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, Check, AlertCircle, Lock, Unlock, RefreshCw, Mail, Link } from 'lucide-react';
+import { Check, Copy, Link, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
-interface ShareInvoiceDialogProps {
+export interface ShareInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoiceId: string;
-  invoiceTitle: string;
+  invoiceTitle?: string;
 }
 
 const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
   open,
   onOpenChange,
   invoiceId,
-  invoiceTitle
+  invoiceTitle = "Factura"
 }) => {
-  const [shareUrl, setShareUrl] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [passwordProtected, setPasswordProtected] = useState(false);
-  const [password, setPassword] = useState('');
+  const [shareUrl, setShareUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
-  const generateRandomPassword = () => {
-    // Genera una contraseña aleatoria de 8 caracteres
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setPassword(result);
-  };
-  
+  // Reset state when dialog opens or closes
   useEffect(() => {
-    const generateLink = async () => {
-      if (!open) return;
-      
-      setIsLoading(true);
-      setError(null);
-      
+    if (!open) {
+      // Reset state when dialog closes
+      setCopied(false);
+      return;
+    }
+    
+    // Generate URL when dialog opens
+    const generateShareUrl = async () => {
       try {
+        setIsLoading(true);
+        
         // Verificar si la factura ya tiene un shared_url
         const { data: invoiceData, error: invoiceError } = await supabase
           .from('client_invoices')
-          .select('shared_url, client_id, clients(name, website), password')
+          .select('shared_url, client_id, clients(name, website)')
           .eq('id', invoiceId)
           .single();
         
@@ -59,15 +49,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
         }
         
         let sharedUrl = invoiceData.shared_url;
-        
-        // Si hay una contraseña existente, actualizar el estado
-        if (invoiceData.password) {
-          setPasswordProtected(true);
-          setPassword(invoiceData.password);
-        } else {
-          setPasswordProtected(false);
-          setPassword('');
-        }
         
         // Si no tiene shared_url, generamos uno
         if (!sharedUrl) {
@@ -133,16 +114,16 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
         // Construir la URL completa
         const fullUrl = `${window.location.origin}/shared/invoices/${sharedUrl}`;
         setShareUrl(fullUrl);
-      } catch (err: any) {
-        console.error('Error generating share URL:', err);
-        setError(err.message || 'Error al generar enlace');
-        toast.error('Error: ' + (err.message || 'Error al generar enlace'));
+        toast.success('Enlace generado correctamente');
+      } catch (error: any) {
+        console.error('Error generating share URL:', error);
+        toast.error('Error: ' + (error.message || 'Error al generar enlace'));
       } finally {
         setIsLoading(false);
       }
     };
     
-    generateLink();
+    generateShareUrl();
   }, [open, invoiceId]);
   
   const handleCopyLink = async () => {
@@ -150,43 +131,19 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Enlace copiado al portapapeles');
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Error copying to clipboard:', err);
+      
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
       toast.error('No se pudo copiar el enlace');
-    }
-  };
-  
-  const handleUpdatePassword = async () => {
-    if (!invoiceId) return;
-    
-    setIsLoading(true);
-    try {
-      // Actualizamos la contraseña en la tabla client_invoices
-      const passwordValue = passwordProtected ? password : null;
-      
-      const { error } = await supabase
-        .from('client_invoices')
-        .update({ password: passwordValue })
-        .eq('id', invoiceId);
-        
-      if (error) throw new Error('Error al actualizar la contraseña');
-      
-      toast.success(passwordProtected 
-        ? 'Enlace protegido con contraseña' 
-        : 'Protección de contraseña desactivada');
-      
-    } catch (err: any) {
-      console.error('Error updating password:', err);
-      toast.error(err.message || 'Error al actualizar la contraseña');
-    } finally {
-      setIsLoading(false);
+      console.error('Error copiando al portapapeles:', error);
     }
   };
   
   const handleEmailShare = () => {
     const subject = encodeURIComponent(`Factura: ${invoiceTitle}`);
-    const body = encodeURIComponent(`Hola,\n\nComparto contigo esta factura${passwordProtected ? ' (protegida con contraseña)' : ''}.\n\nPuedes verla en: ${shareUrl}\n\n${passwordProtected ? `Contraseña: ${password}\n\n` : ''}Saludos.`);
+    const body = encodeURIComponent(`Hola,\n\nQuiero compartir contigo esta factura.\n\nPuedes verla en: ${shareUrl}\n\nSaludos.`);
     
     window.open(`mailto:?subject=${subject}&body=${body}`);
   };
@@ -195,38 +152,36 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Compartir factura</DialogTitle>
+          <DialogTitle>Compartir Factura</DialogTitle>
+          <DialogDescription>
+            Comparte esta factura mediante un enlace directo.
+          </DialogDescription>
         </DialogHeader>
-        
-        <div className="flex flex-col gap-4 py-4">
-          <p className="text-sm text-muted-foreground">
-            Comparte esta factura con tu cliente utilizando este enlace único:
-          </p>
-          
+        <div className="space-y-6 py-4">
           {isLoading ? (
-            <div className="h-10 animate-pulse bg-muted rounded-md"></div>
-          ) : error ? (
-            <div className="flex items-center gap-2 text-destructive text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <span>{error}</span>
+            <div className="flex justify-center py-4">
+              <p>Generando enlace...</p>
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2">
-                <Input
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1"
-                />
+              <div className="flex items-center space-x-2">
+                <div className="grid flex-1 gap-2">
+                  <Input
+                    value={shareUrl}
+                    readOnly
+                    className="w-full"
+                  />
+                </div>
                 <Button 
-                  size="sm" 
-                  onClick={handleCopyLink}
-                  className="shrink-0"
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleCopyLink} 
+                  className="transition-all group hover:bg-primary hover:text-primary-foreground"
                 >
                   {copied ? (
-                    <Check className="h-4 w-4" />
+                    <Check className="h-4 w-4 text-green-500 group-hover:text-primary-foreground" />
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-4 w-4 group-hover:text-primary-foreground" />
                   )}
                 </Button>
               </div>
@@ -235,7 +190,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
                 <Button 
                   onClick={handleCopyLink} 
                   className="w-full sm:w-auto gap-2 group"
-                  variant="outline"
                 >
                   <Link className="h-4 w-4 group-hover:animate-pulse" />
                   Copiar enlace
@@ -243,7 +197,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
                 <Button 
                   variant="outline" 
                   onClick={handleEmailShare} 
-                  className="w-full sm:w-auto gap-2 group transition-colors"
+                  className="w-full sm:w-auto gap-2 group transition-colors hover:bg-primary hover:text-primary-foreground"
                 >
                   <Mail className="h-4 w-4 group-hover:animate-pulse" />
                   Compartir por email
@@ -251,72 +205,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
               </div>
             </>
           )}
-          
-          <div className="border-t border-border pt-4 mt-2">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="password-protection"
-                  checked={passwordProtected}
-                  onCheckedChange={setPasswordProtected}
-                />
-                <Label htmlFor="password-protection" className="flex items-center gap-1">
-                  {passwordProtected ? (
-                    <Lock className="h-4 w-4 text-amber-500" />
-                  ) : (
-                    <Unlock className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  Proteger con contraseña
-                </Label>
-              </div>
-            </div>
-            
-            {passwordProtected && (
-              <div className="flex flex-col space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="text"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Introduce una contraseña"
-                    className="flex-1"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={generateRandomPassword}
-                    title="Generar contraseña aleatoria"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  El cliente necesitará esta contraseña para ver la factura
-                </p>
-              </div>
-            )}
-            
-            <Button 
-              className="mt-4 w-full"
-              onClick={handleUpdatePassword}
-              disabled={isLoading || (passwordProtected && !password)}
-            >
-              {passwordProtected ? 'Actualizar protección' : 'Quitar protección'}
-            </Button>
-          </div>
-          
-          <div className="text-sm text-muted-foreground mt-4">
-            <h4 className="font-medium text-foreground">Información importante:</h4>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Cualquier persona con este enlace podrá ver la factura{passwordProtected ? ' (requiere contraseña)' : ''}</li>
-              <li>El enlace no expira automáticamente</li>
-              <li>Puedes revocar el acceso generando un nuevo enlace</li>
-            </ul>
-          </div>
-        </div>
-        
-        <div className="flex justify-end">
-          <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
         </div>
       </DialogContent>
     </Dialog>
