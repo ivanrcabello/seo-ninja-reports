@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 import { clientPortalApi } from '@/services/clientPortalApiService';
+import { useNavigate } from 'react-router-dom';
 
 interface Report {
   id: string;
@@ -22,6 +23,7 @@ interface ClientPortalReportsProps {
 const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -46,8 +48,8 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
   }, [clientId]);
 
   const viewReport = (id: string) => {
-    // Open report in new tab
-    window.open(`/reports/${id}`, '_blank');
+    // Instead of opening in a new tab, navigate to the shared report URL
+    navigate(`/shared/reports/${id}`);
   };
 
   return (

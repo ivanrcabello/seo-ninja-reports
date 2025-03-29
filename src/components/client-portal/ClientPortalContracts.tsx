@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 import { clientPortalApi } from '@/services/clientPortalApiService';
+import { useNavigate } from 'react-router-dom';
 
 interface Contract {
   id: string;
@@ -16,6 +17,7 @@ interface Contract {
   status: string;
   created_at: string;
   client_signed: boolean;
+  shared_url: string;
 }
 
 interface ClientPortalContractsProps {
@@ -25,6 +27,7 @@ interface ClientPortalContractsProps {
 const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId }) => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchContracts = async () => {
@@ -67,8 +70,13 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
     }
   };
 
-  const viewContract = (id: string) => {
-    window.open(`/contracts/${id}`, '_blank');
+  const viewContract = (contract: Contract) => {
+    // Navigate to the shared contract URL if available, or the ID-based URL
+    if (contract.shared_url) {
+      navigate(`/shared/contracts/${contract.shared_url}`);
+    } else {
+      navigate(`/shared/contracts/${contract.id}`);
+    }
   };
 
   return (
@@ -104,7 +112,7 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => viewContract(contract.id)}
+                    onClick={() => viewContract(contract)}
                   >
                     <ClipboardList className="h-4 w-4 mr-2" />
                     Ver contrato

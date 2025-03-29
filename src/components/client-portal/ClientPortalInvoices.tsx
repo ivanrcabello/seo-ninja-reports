@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 import { clientPortalApi } from '@/services/clientPortalApiService';
+import { useNavigate } from 'react-router-dom';
 
 interface Invoice {
   id: string;
@@ -17,6 +18,7 @@ interface Invoice {
   status: string;
   due_date?: string;
   created_at: string;
+  shared_url: string;
 }
 
 interface ClientPortalInvoicesProps {
@@ -26,6 +28,7 @@ interface ClientPortalInvoicesProps {
 const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId }) => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchInvoices = async () => {
@@ -71,8 +74,13 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
     }
   };
 
-  const viewInvoice = (id: string) => {
-    window.open(`/invoices/${id}`, '_blank');
+  const viewInvoice = (invoice: Invoice) => {
+    // Navigate to the shared invoice URL if available, or the ID-based URL
+    if (invoice.shared_url) {
+      navigate(`/shared/invoices/${invoice.shared_url}`);
+    } else {
+      navigate(`/shared/invoices/${invoice.id}`);
+    }
   };
 
   return (
@@ -111,7 +119,7 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => viewInvoice(invoice.id)}
+                    onClick={() => viewInvoice(invoice)}
                   >
                     <CreditCard className="h-4 w-4 mr-2" />
                     Ver factura

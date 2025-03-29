@@ -9,12 +9,14 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 import { clientPortalApi } from '@/services/clientPortalApiService';
+import { useNavigate } from 'react-router-dom';
 
 interface Proposal {
   id: string;
   title: string;
   status: string;
   created_at: string;
+  shared_url: string;
 }
 
 interface ClientPortalProposalsProps {
@@ -24,6 +26,7 @@ interface ClientPortalProposalsProps {
 const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProposals = async () => {
@@ -62,8 +65,13 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
     }
   };
 
-  const viewProposal = (id: string) => {
-    window.open(`/proposals/${id}`, '_blank');
+  const viewProposal = (proposal: Proposal) => {
+    // Navigate to the shared proposal URL if available, or the ID-based URL
+    if (proposal.shared_url) {
+      navigate(`/shared/proposals/${proposal.shared_url}`);
+    } else {
+      navigate(`/shared/proposals/${proposal.id}`);
+    }
   };
 
   return (
@@ -96,7 +104,7 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => viewProposal(proposal.id)}
+                    onClick={() => viewProposal(proposal)}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
