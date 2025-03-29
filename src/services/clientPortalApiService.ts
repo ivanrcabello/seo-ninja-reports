@@ -56,20 +56,18 @@ class ClientPortalApiService {
     clientPortalLogger.info(`Calling RPC ${functionName}`, params, 'ClientPortalApiService');
     
     try {
-      // Configure authorization headers
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'x-client-token': token
-      };
-
-      // Ejecutar la llamada RPC pasando los headers como opción separada
-      // Supabase expects headers to be passed separately, not in the options object
+      // Configure authorization headers using the headers map of the request
+      // instead of the options() method which doesn't exist on PostgrestFilterBuilder
       const { data, error } = await supabase.rpc(
         functionName as any,
-        params
-      ).options({
-        headers: headers
-      });
+        params,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-client-token': token
+          }
+        }
+      );
       
       if (error) {
         clientPortalLogger.error(`Error calling RPC ${functionName}`, error, 'ClientPortalApiService');
