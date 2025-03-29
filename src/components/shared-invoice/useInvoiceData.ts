@@ -43,6 +43,7 @@ const useInvoiceData = (sharedUrl: string) => {
         throw new Error('Factura no encontrada');
       } 
 
+      // Type assertion to ensure TypeScript understands the structure
       // Convert to SharedInvoice type
       const formattedInvoice: SharedInvoice = {
         id: data.id,
@@ -53,7 +54,8 @@ const useInvoiceData = (sharedUrl: string) => {
         due_date: data.due_date,
         payment_method: data.payment_method,
         payment_date: data.payment_date,
-        payment_instructions: data.payment_instructions || '', // Handle missing property safely
+        // Handle the case where payment_instructions might be missing in the database view
+        payment_instructions: 'payment_instructions' in data ? data.payment_instructions : '',
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,
