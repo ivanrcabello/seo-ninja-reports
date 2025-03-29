@@ -2002,6 +2002,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_client_portal_session_valid: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: boolean
+      }
       is_client_portal_user: {
         Args: {
           client_id_param: string

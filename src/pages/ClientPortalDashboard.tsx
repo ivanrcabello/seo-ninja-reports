@@ -101,7 +101,8 @@ const ClientPortalDashboard = () => {
         .from('client_invoices')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .headers(headers);
       
       if (invoicesError) {
         console.error('Error fetching invoices:', invoicesError);
@@ -115,7 +116,8 @@ const ClientPortalDashboard = () => {
         .from('client_proposals')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .headers(headers);
       
       if (proposalsError) {
         console.error('Error fetching proposals:', proposalsError);
@@ -129,7 +131,8 @@ const ClientPortalDashboard = () => {
         .from('client_contracts')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .headers(headers);
       
       if (contractsError) {
         console.error('Error fetching contracts:', contractsError);
@@ -143,7 +146,8 @@ const ClientPortalDashboard = () => {
         .from('reports')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .headers(headers);
       
       if (reportsError) {
         console.error('Error fetching reports:', reportsError);
