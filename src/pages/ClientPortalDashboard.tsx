@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -93,16 +92,12 @@ const ClientPortalDashboard = () => {
     try {
       console.log('Fetching data for client ID:', clientId);
       
-      // Create Supabase instance with headers
-      const supabaseWithAuth = supabase.from('client_invoices').select('*');
-      
       // Fetch invoices
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('client_invoices')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .headers({ 'x-client-token': token });
+        .order('created_at', { ascending: false });
       
       if (invoicesError) {
         console.error('Error fetching invoices:', invoicesError);
@@ -116,8 +111,7 @@ const ClientPortalDashboard = () => {
         .from('client_proposals')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .headers({ 'x-client-token': token });
+        .order('created_at', { ascending: false });
       
       if (proposalsError) {
         console.error('Error fetching proposals:', proposalsError);
@@ -131,8 +125,7 @@ const ClientPortalDashboard = () => {
         .from('client_contracts')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .headers({ 'x-client-token': token });
+        .order('created_at', { ascending: false });
       
       if (contractsError) {
         console.error('Error fetching contracts:', contractsError);
@@ -146,8 +139,7 @@ const ClientPortalDashboard = () => {
         .from('reports')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .headers({ 'x-client-token': token });
+        .order('created_at', { ascending: false });
       
       if (reportsError) {
         console.error('Error fetching reports:', reportsError);
