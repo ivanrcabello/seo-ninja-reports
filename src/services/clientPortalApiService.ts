@@ -56,24 +56,29 @@ class ClientPortalApiService {
     clientPortalLogger.info(`Calling RPC ${functionName}`, params, 'ClientPortalApiService');
     
     try {
-      // Configure authorization headers using the headers map of the request
-      // instead of the options() method which doesn't exist on PostgrestFilterBuilder
-      const { data, error } = await supabase.rpc(
-        functionName as any,
-        params,
+      // For RPC calls, we need to use the auth header via fetch
+      // We can't use the headers option directly with rpc()
+      const response = await fetch(
+        `${supabase.supabaseUrl}/rest/v1/rpc/${functionName}`,
         {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabase.supabaseKey,
             'Authorization': `Bearer ${token}`,
             'x-client-token': token
-          }
+          },
+          body: JSON.stringify(params)
         }
       );
       
-      if (error) {
-        clientPortalLogger.error(`Error calling RPC ${functionName}`, error, 'ClientPortalApiService');
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        clientPortalLogger.error(`Error calling RPC ${functionName}`, errorData, 'ClientPortalApiService');
+        throw new Error(errorData.message || 'Error en la llamada RPC');
       }
       
+      const data = await response.json();
       return data as T;
     } catch (err) {
       clientPortalLogger.error(`Error calling RPC ${functionName}`, err, 'ClientPortalApiService');
