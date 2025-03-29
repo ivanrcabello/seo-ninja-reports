@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import sharedContentLogger from '@/utils/sharedContentLogger';
 
 export interface PublicReport {
   id: string;
@@ -28,7 +29,7 @@ export default function useReportData(reportId: string) {
       
       setIsLoading(true);
       setError(null);
-      console.log('Fetching report:', reportId);
+      sharedContentLogger.info('Fetching report:', reportId);
       
       // First check if report is password protected
       const { data: protectedData, error: protectedError } = await supabase.rpc(
@@ -37,24 +38,24 @@ export default function useReportData(reportId: string) {
       );
       
       if (protectedError) {
-        console.error('Error checking password protection:', protectedError);
+        sharedContentLogger.error('Error checking password protection:', protectedError);
         setError('Error al verificar la protección de contraseña');
         setIsLoading(false);
         return;
       }
       
       setIsPasswordProtected(protectedData);
-      console.log('Is password protected:', protectedData);
+      sharedContentLogger.info('Is password protected:', protectedData);
       
       // If password protected and not validated yet, don't fetch the report data
       if (protectedData && !accessGranted) {
-        console.log('Report is password protected and access not granted yet');
+        sharedContentLogger.info('Report is password protected and access not granted yet');
         setIsLoading(false);
         return;
       }
       
       // Fetch the report data from public_reports view
-      console.log('Fetching report data from public_reports');
+      sharedContentLogger.info('Fetching report data from public_reports');
       const { data: reportData, error: reportError } = await supabase
         .from('public_reports')
         .select('*')
@@ -62,24 +63,24 @@ export default function useReportData(reportId: string) {
         .maybeSingle();
       
       if (reportError) {
-        console.error('Error fetching report:', reportError);
+        sharedContentLogger.error('Error fetching report:', reportError);
         setError('No se pudo cargar el informe');
         setIsLoading(false);
         return;
       }
       
       if (!reportData) {
-        console.error('Report not found');
+        sharedContentLogger.error('Report not found');
         setError('Informe no encontrado');
         setIsLoading(false);
         return;
       }
       
-      console.log('Report data retrieved successfully:', reportData.title);
+      sharedContentLogger.info('Report data retrieved successfully:', reportData.title);
       setReport(reportData as PublicReport);
       setIsLoading(false);
     } catch (err) {
-      console.error('Error in useReportData:', err);
+      sharedContentLogger.error('Error in useReportData:', err);
       setError('Error al cargar el informe');
       setIsLoading(false);
     }
@@ -114,7 +115,7 @@ export default function useReportData(reportId: string) {
         return false;
       }
     } catch (err: any) {
-      console.error("Error verifying password:", err);
+      sharedContentLogger.error("Error verifying password:", err);
       return false;
     }
   };

@@ -1,85 +1,97 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Lock } from 'lucide-react';
 
 interface PasswordProtectionDialogProps {
-  onSubmit: (password: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (password: string) => Promise<string | void>;
   onCancel: () => void;
-  type?: 'report' | 'invoice' | 'proposal' | 'contract';
-  error?: string | null;
+  type: 'report' | 'proposal' | 'invoice' | 'contract';
 }
 
-const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({ 
-  onSubmit, 
-  onCancel, 
-  type = 'report',
-  error
-}) => {
+const types = {
+  report: 'informe',
+  proposal: 'propuesta',
+  invoice: 'factura',
+  contract: 'contrato'
+};
+
+const PasswordProtectionDialog = ({
+  open,
+  onOpenChange,
+  onSubmit,
+  onCancel,
+  type
+}: PasswordProtectionDialogProps) => {
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const typeText = types[type];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(password);
-  };
+    if (!password.trim()) {
+      setError('Contraseña requerida');
+      return;
+    }
 
-  const getTitle = () => {
-    switch(type) {
-      case 'invoice': return 'Factura Protegida';
-      case 'proposal': return 'Propuesta Protegida';
-      case 'contract': return 'Contrato Protegido';
-      default: return 'Informe Protegido';
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await onSubmit(password);
+      if (result) {
+        setError(result);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error al verificar la contraseña');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-card border rounded-lg shadow-lg w-full max-w-md p-6">
-        <div className="text-center mb-6">
-          <div className="bg-primary/10 p-3 rounded-full inline-flex items-center justify-center mb-4">
-            <Lock className="h-6 w-6 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">{getTitle()}</h2>
-          <p className="text-muted-foreground mt-2">
-            Este contenido está protegido por contraseña. Por favor, introduce la contraseña para acceder.
-          </p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!newOpen) onCancel();
+      onOpenChange(newOpen);
+    }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Lock className="w-5 h-5" />
+            <span>Contenido protegido</span>
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="space-y-2">
+            <p>Este {typeText} está protegido por contraseña. Por favor, introduce la contraseña para acceder.</p>
             <Input
               type="password"
               placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full"
+              className={error ? "border-red-500" : ""}
               autoFocus
             />
-            {error && (
-              <p className="text-sm text-red-500 mt-1">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button 
-              variant="outline"
-              type="button" 
-              onClick={onCancel}
-              className="sm:flex-1"
-            >
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={onCancel}>
               Cancelar
             </Button>
-            <Button 
-              type="submit"
-              className="sm:flex-1"
-            >
-              Acceder
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Verificando...' : 'Acceder'}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
