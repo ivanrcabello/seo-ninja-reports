@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -50,6 +49,10 @@ const ClientPortalDashboard = () => {
         return;
       }
       
+      // Set up the client token in the global Supabase instance
+      // This will be used for all requests to the Supabase API
+      supabase.headers({ 'x-client-token': parsedSession.token });
+      
       setSession(parsedSession);
       setLoading(false);
     } catch (err) {
@@ -66,6 +69,9 @@ const ClientPortalDashboard = () => {
         console.error('Error logging out:', err);
       }
     }
+    
+    // Remove client token from Supabase headers
+    supabase.headers({ 'x-client-token': null });
     
     localStorage.removeItem('clientPortalSession');
     navigate('/portal');

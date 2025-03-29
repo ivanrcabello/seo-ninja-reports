@@ -136,6 +136,10 @@ export async function authenticateClientPortal(email: string, password: string):
     // Handle array response - the function returns an array with a single object
     if (Array.isArray(data) && data.length > 0) {
       const sessionData = data[0];
+      
+      // Set the token in the Supabase client headers for subsequent requests
+      supabase.headers({ 'x-client-token': sessionData.token });
+      
       return {
         account_id: sessionData.account_id,
         client_id: sessionData.client_id,
@@ -146,6 +150,9 @@ export async function authenticateClientPortal(email: string, password: string):
     
     // If somehow it's not an array (unlikely based on the type definitions)
     if (typeof data === 'object' && 'account_id' in data) {
+      // Set the token in the Supabase client headers for subsequent requests
+      supabase.headers({ 'x-client-token': data.token });
+      
       return data as unknown as ClientPortalSession;
     }
     
@@ -158,6 +165,9 @@ export async function authenticateClientPortal(email: string, password: string):
 
 export async function logoutClientPortal(token: string) {
   try {
+    // Remove client token from headers
+    supabase.headers({ 'x-client-token': null });
+    
     const { data, error } = await supabase.rpc('invalidate_client_portal_session', {
       p_token: token
     });

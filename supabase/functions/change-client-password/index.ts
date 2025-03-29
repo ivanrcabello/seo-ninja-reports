@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
 // Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-client-token',
 }
 
 Deno.serve(async (req) => {
@@ -16,6 +16,22 @@ Deno.serve(async (req) => {
   try {
     // Get request data
     const { accountId, currentPassword, newPassword } = await req.json()
+    
+    // Get the client token from the request headers
+    const clientToken = req.headers.get('x-client-token')
+    
+    if (!clientToken) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Missing client token'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
+      )
+    }
     
     // Validate input
     if (!accountId || !currentPassword || !newPassword) {
@@ -43,28 +59,42 @@ Deno.serve(async (req) => {
       }
     )
     
-    // Query the client_portal_accounts table directly
-    const { data: accountData, error: accountError } = await supabaseClient
-      .from('client_portal_accounts')
-      .select('*')
-      .eq('id', accountId)
-      .single()
+    // Verify that the client token is valid and matches the account
+    const { data: tokenData, error: tokenError } = await supabaseClient
+      .rpc('validate_client_portal_session', {
+        p_token: clientToken
+      })
       
-    if (accountError || !accountData) {
-      console.error('Error fetching account:', accountError)
+    if (tokenError || !tokenData || tokenData.length === 0 || !tokenData[0].is_valid) {
+      console.error('Token validation error:', tokenError || 'Invalid token')
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Account not found' 
+          error: 'Invalid or expired session' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 404 
+          status: 401 
         }
       )
     }
     
-    // Use SQL to update the password directly with proper hashing
+    // Verify that the account ID matches the token's account ID
+    if (tokenData[0].account_id !== accountId) {
+      console.error('Account ID mismatch')
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Unauthorized access to this account' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403 
+        }
+      )
+    }
+    
+    // Use the secured RPC function to change the password
     const { data, error } = await supabaseClient.rpc(
       'change_client_portal_password', 
       {
@@ -80,6 +110,20 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'Failed to change password. Please check your current password.' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+    
+    // If the function returns false, it means the current password was incorrect
+    if (data === false) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Current password is incorrect' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

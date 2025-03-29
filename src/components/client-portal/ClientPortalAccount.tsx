@@ -48,26 +48,33 @@ const ClientPortalAccount: React.FC<ClientPortalAccountProps> = ({ clientId, acc
       setError(null);
 
       try {
-        // Fetch client data
-        const { data: clientData, error: clientError } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('id', clientId)
-          .single();
-
-        if (clientError) throw clientError;
+        // Set client token in headers for this request
+        const clientToken = localStorage.getItem('clientPortalSession') 
+          ? JSON.parse(localStorage.getItem('clientPortalSession')!).token 
+          : null;
+          
+        if (!clientToken) {
+          throw new Error('Session token not found. Please log in again.');
+        }
         
-        // Fetch account data
-        const { data: accountData, error: accountError } = await supabase
-          .from('client_portal_accounts')
-          .select('*')
-          .eq('id', accountId)
-          .single();
+        const clientSupabase = supabase.from('clients').select('*').eq('id', clientId).single();
+        const accountSupabase = supabase.from('client_portal_accounts').select('*').eq('id', accountId).single();
+        
+        // Add client token to both requests
+        clientSupabase.headers({ 'x-client-token': clientToken });
+        accountSupabase.headers({ 'x-client-token': clientToken });
+        
+        // Execute requests
+        const [clientResponse, accountResponse] = await Promise.all([
+          clientSupabase,
+          accountSupabase
+        ]);
 
-        if (accountError) throw accountError;
-
-        setClient(clientData);
-        setAccount(accountData);
+        if (clientResponse.error) throw clientResponse.error;
+        if (accountResponse.error) throw accountResponse.error;
+        
+        setClient(clientResponse.data);
+        setAccount(accountResponse.data);
       } catch (err: any) {
         console.error('Error fetching account data:', err);
         setError('Error al cargar los datos de la cuenta. Por favor, inténtalo de nuevo más tarde.');
@@ -90,12 +97,24 @@ const ClientPortalAccount: React.FC<ClientPortalAccountProps> = ({ clientId, acc
     setIsChangingPassword(true);
     
     try {
-      // Since we can't use the RPC function directly yet, let's use a simple fetch to call our function
+      // Get client token from localStorage
+      const clientToken = localStorage.getItem('clientPortalSession') 
+        ? JSON.parse(localStorage.getItem('clientPortalSession')!).token 
+        : null;
+        
+      if (!clientToken) {
+        throw new Error('Session token not found. Please log in again.');
+      }
+      
+      // Call the edge function with the client token in headers
       const { data, error } = await supabase.functions.invoke('change-client-password', {
         body: {
           accountId: accountId,
           currentPassword: currentPassword,
           newPassword: newPassword
+        },
+        headers: {
+          'x-client-token': clientToken
         }
       });
 
