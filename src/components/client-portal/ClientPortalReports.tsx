@@ -29,18 +29,33 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
         setLoading(true);
         clientPortalLogger.info('Fetching reports for client', { clientId }, 'ClientPortalReports');
         
-        // Use the RPC function to get reports from the dedicated table
+        // Fetch the client token from localStorage
+        const sessionString = localStorage.getItem('clientPortalSession');
+        if (!sessionString) {
+          throw new Error('No active session found');
+        }
+        
+        const session = JSON.parse(sessionString);
+        const clientToken = session.token;
+        
+        // Add the token to the request header
         const { data, error } = await supabase
           .rpc('get_client_portal_reports', {
             client_id_param: clientId
+          }, {
+            headers: {
+              'x-client-token': clientToken
+            }
           });
           
         if (error) {
           clientPortalLogger.error('Error fetching reports', error, 'ClientPortalReports');
+          console.error('Error fetching reports:', error);
           throw error;
         }
         
-        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} reports`, null, 'ClientPortalReports');
+        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} reports`, { count: data?.length }, 'ClientPortalReports');
+        console.log('Reports data:', data);
         setReports(data || []);
       } catch (err: any) {
         console.error('Error fetching reports:', err);

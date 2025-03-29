@@ -31,18 +31,33 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
         setLoading(true);
         clientPortalLogger.info('Fetching proposals for client', { clientId }, 'ClientPortalProposals');
         
-        // Use the RPC function to get proposals from the dedicated table
+        // Fetch the client token from localStorage
+        const sessionString = localStorage.getItem('clientPortalSession');
+        if (!sessionString) {
+          throw new Error('No active session found');
+        }
+        
+        const session = JSON.parse(sessionString);
+        const clientToken = session.token;
+        
+        // Add the token to the request header
         const { data, error } = await supabase
           .rpc('get_client_portal_proposals', {
             client_id_param: clientId
+          }, {
+            headers: {
+              'x-client-token': clientToken
+            }
           });
 
         if (error) {
           clientPortalLogger.error('Error fetching proposals', error, 'ClientPortalProposals');
+          console.error('Error fetching proposals:', error);
           throw error;
         }
         
-        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} proposals`, null, 'ClientPortalProposals');
+        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} proposals`, { count: data?.length }, 'ClientPortalProposals');
+        console.log('Proposals data:', data);
         setProposals(data || []);
       } catch (err: any) {
         console.error('Error fetching proposals:', err);

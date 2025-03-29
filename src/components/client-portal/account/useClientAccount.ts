@@ -52,27 +52,36 @@ export function useClientAccount(clientId: string, accountId: string) {
         const clientToken = session.token;
         
         clientPortalLogger.info('Fetching client and account data', { clientId, accountId }, 'useClientAccount');
+        console.log('Fetching with token:', clientToken);
         
         if (!clientToken) {
           throw new Error('Session token not found. Please log in again.');
         }
         
-        // Use the new RPC function
+        // Use the RPC function with the token in the headers
         const { data, error } = await supabase
           .rpc('get_client_portal_account_data', {
             client_id_param: clientId,
             account_id_param: accountId
+          }, {
+            headers: {
+              'x-client-token': clientToken
+            }
           })
           .maybeSingle();
           
         if (error) {
           clientPortalLogger.error('Error fetching account data', error, 'useClientAccount');
+          console.error('Supabase error:', error);
           throw error;
         }
         
         if (!data) {
+          console.error('No data returned from get_client_portal_account_data');
           throw new Error('No data found for this account.');
         }
+        
+        console.log('Account data retrieved:', data);
         
         // Transform the data to match our interface
         const accountData = data as ClientPortalAccountData;

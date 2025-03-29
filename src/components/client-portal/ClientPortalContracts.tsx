@@ -32,18 +32,33 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         setLoading(true);
         clientPortalLogger.info('Fetching contracts for client', { clientId }, 'ClientPortalContracts');
         
-        // Use the RPC function to get contracts from the dedicated table
+        // Fetch the client token from localStorage
+        const sessionString = localStorage.getItem('clientPortalSession');
+        if (!sessionString) {
+          throw new Error('No active session found');
+        }
+        
+        const session = JSON.parse(sessionString);
+        const clientToken = session.token;
+        
+        // Add the token to the request header
         const { data, error } = await supabase
           .rpc('get_client_portal_contracts', {
             client_id_param: clientId
+          }, {
+            headers: {
+              'x-client-token': clientToken
+            }
           });
 
         if (error) {
           clientPortalLogger.error('Error fetching contracts', error, 'ClientPortalContracts');
+          console.error('Error fetching contracts:', error);
           throw error;
         }
         
-        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} contracts`, null, 'ClientPortalContracts');
+        clientPortalLogger.info(`Successfully fetched ${data?.length || 0} contracts`, { count: data?.length }, 'ClientPortalContracts');
+        console.log('Contracts data:', data);
         setContracts(data || []);
       } catch (err: any) {
         console.error('Error fetching contracts:', err);
