@@ -56,17 +56,20 @@ class ClientPortalApiService {
     clientPortalLogger.info(`Calling RPC ${functionName}`, params, 'ClientPortalApiService');
     
     try {
-      // Ejecutar la llamada RPC con los headers en las opciones correctas
+      // Configure authorization headers
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'x-client-token': token
+      };
+
+      // Ejecutar la llamada RPC pasando los headers como opción separada
+      // Supabase expects headers to be passed separately, not in the options object
       const { data, error } = await supabase.rpc(
         functionName as any,
-        params,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'x-client-token': token
-          }
-        }
-      );
+        params
+      ).options({
+        headers: headers
+      });
       
       if (error) {
         clientPortalLogger.error(`Error calling RPC ${functionName}`, error, 'ClientPortalApiService');
@@ -84,15 +87,14 @@ class ClientPortalApiService {
    * Obtiene los informes del cliente directamente de la tabla
    */
   async getReports(clientId: string): Promise<any[]> {
-    const token = this.ensureToken();
+    this.ensureToken();
     
     try {
       const { data, error } = await supabase
         .from('client_portal_reports')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .throwOnError();
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data || [];
@@ -106,15 +108,14 @@ class ClientPortalApiService {
    * Obtiene las propuestas del cliente directamente de la tabla
    */
   async getProposals(clientId: string): Promise<any[]> {
-    const token = this.ensureToken();
+    this.ensureToken();
     
     try {
       const { data, error } = await supabase
         .from('client_portal_proposals')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .throwOnError();
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data || [];
@@ -128,15 +129,14 @@ class ClientPortalApiService {
    * Obtiene las facturas del cliente directamente de la tabla
    */
   async getInvoices(clientId: string): Promise<any[]> {
-    const token = this.ensureToken();
+    this.ensureToken();
     
     try {
       const { data, error } = await supabase
         .from('client_portal_invoices')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .throwOnError();
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data || [];
@@ -150,15 +150,14 @@ class ClientPortalApiService {
    * Obtiene los contratos del cliente directamente de la tabla
    */
   async getContracts(clientId: string): Promise<any[]> {
-    const token = this.ensureToken();
+    this.ensureToken();
     
     try {
       const { data, error } = await supabase
         .from('client_portal_contracts')
         .select('*')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .throwOnError();
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data || [];
@@ -172,7 +171,7 @@ class ClientPortalApiService {
    * Obtiene la información de cuenta del cliente
    */
   async getAccountData(clientId: string, accountId: string): Promise<any> {
-    const token = this.ensureToken();
+    this.ensureToken();
     
     try {
       // Obtener datos de la cuenta del cliente
