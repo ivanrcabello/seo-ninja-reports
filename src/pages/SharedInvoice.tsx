@@ -75,49 +75,49 @@ const SharedInvoice = () => {
         return;
       }
       
-      // Fetch from public_invoices view
+      // Instead of using .single() which causes an error when no rows found,
+      // use the standard query and check if data exists
       const { data, error: fetchError } = await supabase
         .from('public_invoices')
         .select('*')
-        .eq('shared_url', sharedUrl)
-        .single();
+        .eq('shared_url', sharedUrl);
       
       if (fetchError) {
         console.error("Error fetching invoice:", fetchError);
         throw new Error(fetchError.message);
       }
       
-      if (!data) {
+      if (!data || data.length === 0) {
         throw new Error('Factura no encontrada');
       }
       
-      console.log("Invoice data retrieved successfully:", data);
+      console.log("Invoice data retrieved successfully:", data[0]);
       
       // Aseguramos que el status sea uno de los valores permitidos
       const validStatus = ['pending', 'paid', 'cancelled', 'overdue'] as const;
-      const status = validStatus.includes(data.status as any) 
-        ? data.status as 'pending' | 'paid' | 'cancelled' | 'overdue'
+      const status = validStatus.includes(data[0].status as any) 
+        ? data[0].status as 'pending' | 'paid' | 'cancelled' | 'overdue'
         : 'pending'; // Valor por defecto si no es válido
       
       // Convertimos los datos obtenidos al tipo SharedInvoiceType asegurándonos
       // de que todos los campos requeridos estén presentes
       const formattedInvoice: SharedInvoiceType = {
-        id: data.id,
-        title: data.title || '',
-        description: data.description || '',
-        amount: data.amount || 0,
+        id: data[0].id,
+        title: data[0].title || '',
+        description: data[0].description || '',
+        amount: data[0].amount || 0,
         status: status,
-        due_date: data.due_date,
-        payment_method: data.payment_method,
-        payment_date: data.payment_date,
+        due_date: data[0].due_date,
+        payment_method: data[0].payment_method,
+        payment_date: data[0].payment_date,
         // We need to use the optional chaining or type assertion here since TypeScript doesn't recognize this property
         // Use of type assertion to handle the property that exists in runtime but not in TypeScript definition
-        payment_instructions: (data as any).payment_instructions || '',
-        shared_url: data.shared_url,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        client_name: data.client_name || '',
-        client_website: data.client_website
+        payment_instructions: (data[0] as any).payment_instructions || '',
+        shared_url: data[0].shared_url,
+        created_at: data[0].created_at,
+        updated_at: data[0].updated_at,
+        client_name: data[0].client_name || '',
+        client_website: data[0].client_website
       };
       
       setInvoice(formattedInvoice);
