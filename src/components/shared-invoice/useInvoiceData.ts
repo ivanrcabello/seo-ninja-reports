@@ -54,8 +54,7 @@ const useInvoiceData = (sharedUrl: string) => {
         due_date: data.due_date,
         payment_method: data.payment_method,
         payment_date: data.payment_date,
-        // Handle the case where payment_instructions might be missing by using type assertion and providing a fallback
-        payment_instructions: (data as any).payment_instructions || '',
+        payment_instructions: data.payment_instructions || '',
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,
