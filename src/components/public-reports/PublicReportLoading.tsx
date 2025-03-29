@@ -1,16 +1,34 @@
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const PublicReportLoading: React.FC = () => {
+const PublicReportLoading = () => {
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      <div className="flex flex-col items-center justify-center text-center p-12">
-        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-        <h2 className="text-xl font-medium mb-2">Cargando informe...</h2>
-        <p className="text-muted-foreground">
-          El informe está siendo cargado. Por favor, espera un momento.
-        </p>
+    <div className="container mx-auto max-w-5xl p-4 md:p-8">
+      <div className="bg-background/80 border border-primary/10 rounded-lg shadow-lg p-6 space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        
+        <div className="space-y-4">
+          <Skeleton className="h-20 w-full" />
+          
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+          
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+          
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </div>
       </div>
     </div>
   );

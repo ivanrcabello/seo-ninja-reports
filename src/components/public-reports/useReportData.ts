@@ -1,131 +1,126 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import sharedContentLogger from '@/utils/sharedContentLogger';
 
 export interface PublicReport {
   id: string;
   title: string;
-  summary: string | null;
-  url: string | null;
-  status: string;
+  summary?: string;
   content: any;
-  date: string;
   client_name: string;
-  client_website: string | null;
+  client_website?: string;
+  url?: string;
+  status?: string;
+  date?: string;
 }
 
-export default function useReportData(reportId: string) {
+const useReportData = (reportId: string) => {
   const [report, setReport] = useState<PublicReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
-  
-  const fetchReport = useCallback(async () => {
-    try {
-      if (!reportId) return;
-      
-      setIsLoading(true);
-      setError(null);
-      sharedContentLogger.info('Fetching report:', reportId);
-      
-      // First check if report is password protected
-      const { data: protectedData, error: protectedError } = await supabase.rpc(
-        'check_report_password_protection',
-        { report_id_param: reportId }
-      );
-      
-      if (protectedError) {
-        sharedContentLogger.error('Error checking password protection:', protectedError);
-        setError('Error al verificar la protección de contraseña');
-        setIsLoading(false);
-        return;
-      }
-      
-      setIsPasswordProtected(protectedData);
-      sharedContentLogger.info('Is password protected:', protectedData);
-      
-      // If password protected and not validated yet, don't fetch the report data
-      if (protectedData && !accessGranted) {
-        sharedContentLogger.info('Report is password protected and access not granted yet');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Fetch the report data from public_reports view
-      sharedContentLogger.info('Fetching report data from public_reports');
-      const { data: reportData, error: reportError } = await supabase
-        .from('public_reports')
-        .select('*')
-        .eq('id', reportId)
-        .maybeSingle();
-      
-      if (reportError) {
-        sharedContentLogger.error('Error fetching report:', reportError);
-        setError('No se pudo cargar el informe');
-        setIsLoading(false);
-        return;
-      }
-      
-      if (!reportData) {
-        sharedContentLogger.error('Report not found');
-        setError('Informe no encontrado');
-        setIsLoading(false);
-        return;
-      }
-      
-      sharedContentLogger.info('Report data retrieved successfully:', reportData.title);
-      setReport(reportData as PublicReport);
-      setIsLoading(false);
-    } catch (err) {
-      sharedContentLogger.error('Error in useReportData:', err);
-      setError('Error al cargar el informe');
-      setIsLoading(false);
-    }
-  }, [reportId, accessGranted]);
-  
-  // Initial fetch
-  useEffect(() => {
-    if (reportId) {
-      fetchReport();
-    }
-  }, [fetchReport]);
-  
-  // Function to verify password
+
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
-      if (!reportId) return false;
+      sharedContentLogger.info('Verifying password for report:', reportId);
       
-      const { data, error } = await supabase.rpc(
+      const { data, error: verifyError } = await supabase.rpc(
         'verify_shared_report_password',
-        { 
+        {
           report_id_param: reportId,
           password_param: password
         }
       );
       
-      if (error) throw new Error(error.message);
+      if (verifyError) {
+        sharedContentLogger.error('Password verification error:', verifyError);
+        throw new Error(verifyError.message);
+      }
       
       if (data === true) {
         setAccessGranted(true);
+        sharedContentLogger.success('Password verification successful');
+        await fetchReport(true); // Fetch report after successful password verification
         return true;
       } else {
+        sharedContentLogger.warn('Incorrect password');
         return false;
       }
     } catch (err: any) {
-      sharedContentLogger.error("Error verifying password:", err);
+      sharedContentLogger.error('Error during password verification:', err);
       return false;
     }
   };
-  
-  // Function to refetch report data
-  const refetch = () => {
-    if (reportId) {
-      fetchReport();
+
+  const fetchReport = useCallback(async (passwordVerified = false) => {
+    if (!reportId) {
+      setError('ID del informe no especificado');
+      setIsLoading(false);
+      return;
     }
-  };
+
+    setIsLoading(true);
+    
+    try {
+      sharedContentLogger.info('Checking if report is password protected:', reportId);
+      
+      // First check if report is password protected
+      const { data: protectionData, error: protectionError } = await supabase.rpc(
+        'check_report_password_protection', 
+        { report_id_param: reportId }
+      );
+      
+      if (protectionError) {
+        sharedContentLogger.error('Error checking password protection:', protectionError);
+        throw new Error(protectionError.message);
+      }
+      
+      setIsPasswordProtected(protectionData === true);
+      
+      // If report is password protected and user hasn't verified the password yet, don't fetch the report
+      if (protectionData === true && !passwordVerified && !accessGranted) {
+        sharedContentLogger.info('Report is password protected and not yet verified');
+        setIsLoading(false);
+        return;
+      }
+      
+      sharedContentLogger.info('Fetching report data:', reportId);
+      
+      // Fetch the report from the public_reports view
+      const { data, error } = await supabase
+        .from('public_reports')
+        .select('*')
+        .eq('id', reportId)
+        .maybeSingle();
+      
+      if (error) {
+        sharedContentLogger.error('Database error fetching report:', error);
+        throw new Error(`Error cargando el informe: ${error.message}`);
+      }
+      
+      if (!data) {
+        sharedContentLogger.error('Report not found:', reportId);
+        throw new Error('Informe no encontrado');
+      }
+      
+      sharedContentLogger.success('Report data fetched successfully');
+      sharedContentLogger.debug('Report data:', data);
+      
+      setReport(data as PublicReport);
+      
+    } catch (err: any) {
+      sharedContentLogger.error('Error fetching report:', err);
+      setError(err.message || 'Error al cargar el informe');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [reportId, accessGranted]);
+  
+  useEffect(() => {
+    fetchReport(accessGranted);
+  }, [fetchReport, accessGranted]);
   
   return {
     report,
@@ -133,8 +128,9 @@ export default function useReportData(reportId: string) {
     error,
     isPasswordProtected,
     accessGranted,
-    setAccessGranted,
     verifyPassword,
-    refetch
+    refetch: () => fetchReport(accessGranted)
   };
-}
+};
+
+export default useReportData;

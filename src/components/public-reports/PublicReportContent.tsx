@@ -1,74 +1,56 @@
 
 import React from 'react';
-import { Tabs } from '@/components/ui/tabs';
-import ReportTabs from './ReportTabs';
-import ReportContents from './ReportContents';
-import { BusinessProfile } from '@/types/report.types';
-
-interface ReportContentType {
-  executiveSummary: string;
-  technicalAnalysis: string;
-  contentAnalysis: string;
-  backlinksAnalysis: string;
-  recommendations: string;
-  localSeo?: string;
-  serviceProposal?: string;
-  keywords?: string;
-  businessProfile?: BusinessProfile;
-}
+import { PublicReport } from './useReportData';
 
 interface PublicReportContentProps {
-  report: {
-    content?: ReportContentType;
-  };
+  report: PublicReport;
 }
 
 const PublicReportContent: React.FC<PublicReportContentProps> = ({ report }) => {
-  const content = report.content || {
-    executiveSummary: '',
-    technicalAnalysis: '',
-    contentAnalysis: '',
-    backlinksAnalysis: '',
-    recommendations: ''
-  };
-  
-  // Calculate how many tabs to show based on available content
-  const hasLocalSeo = content.localSeo && content.localSeo.trim() !== '';
-  const hasProposal = content.serviceProposal && content.serviceProposal.trim() !== '';
-  const hasKeywords = content.keywords && content.keywords.trim() !== '';
-  const hasBusinessProfile = !!content.businessProfile && !!content.businessProfile.businessUrl;
-  
-  // Count standard tabs (always show these 5)
-  const tabCount = 5 + 
-    (hasLocalSeo ? 1 : 0) + 
-    (hasProposal ? 1 : 0) + 
-    (hasKeywords ? 1 : 0) + 
-    (hasBusinessProfile ? 1 : 0);
-  
-  return (
-    <div className="w-full max-w-5xl mx-auto">
-      <div className="bg-gradient-to-br from-primary/5 to-background/50 backdrop-blur-sm p-6 rounded-lg border border-primary/10 shadow-lg mb-8">
-        <h2 className="text-2xl font-bold text-center mb-4 text-gradient-primary">Informe SEO Completo</h2>
-        <p className="text-center text-muted-foreground">Navega por las diferentes secciones para ver el análisis detallado.</p>
+  // Function to render content sections from JSON
+  const renderContent = (content: any) => {
+    if (!content) return null;
+    
+    return (
+      <div className="space-y-8">
+        {Array.isArray(content) ? (
+          content.map((section, index) => (
+            <div key={index} className="space-y-4">
+              <h2 className="text-xl font-bold">{section.title || 'Sección'}</h2>
+              {section.content && (
+                <div className="prose max-w-none dark:prose-invert">
+                  {typeof section.content === 'string' ? (
+                    <p>{section.content}</p>
+                  ) : (
+                    <pre className="text-sm overflow-x-auto p-4 bg-muted rounded-md">
+                      {JSON.stringify(section.content, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="prose max-w-none dark:prose-invert">
+            <pre className="text-sm overflow-x-auto p-4 bg-muted rounded-md">
+              {JSON.stringify(content, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {report.summary && (
+        <div className="bg-primary/5 p-4 rounded-lg">
+          <h2 className="text-lg font-bold mb-2">Resumen Ejecutivo</h2>
+          <p>{report.summary}</p>
+        </div>
+      )}
       
-      <Tabs defaultValue="executive-summary" className="w-full">
-        <ReportTabs 
-          tabCount={tabCount} 
-          hasLocalSeo={hasLocalSeo} 
-          hasProposal={hasProposal} 
-          hasKeywords={hasKeywords}
-          hasBusinessProfile={hasBusinessProfile}
-        />
-        
-        <ReportContents 
-          content={content} 
-          hasLocalSeo={hasLocalSeo} 
-          hasProposal={hasProposal} 
-          hasKeywords={hasKeywords}
-          hasBusinessProfile={hasBusinessProfile}
-        />
-      </Tabs>
+      {renderContent(report.content)}
     </div>
   );
 };

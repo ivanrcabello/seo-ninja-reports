@@ -2,14 +2,14 @@
 import React from 'react';
 import { FileQuestion } from 'lucide-react';
 
-const PublicReportEmpty: React.FC = () => {
+const PublicReportEmpty = () => {
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      <div className="flex flex-col items-center justify-center text-center p-12">
-        <FileQuestion className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-medium mb-2">Informe vacío</h2>
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="max-w-md w-full p-6 rounded-lg text-center">
+        <FileQuestion className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+        <h2 className="text-xl font-bold mb-2">Informe no disponible</h2>
         <p className="text-muted-foreground">
-          Este informe no tiene contenido o está en proceso de creación.
+          El informe solicitado no existe o no tiene contenido disponible.
         </p>
       </div>
     </div>
