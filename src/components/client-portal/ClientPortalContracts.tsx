@@ -41,14 +41,13 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         const session = JSON.parse(sessionString);
         const clientToken = session.token;
         
-        // Add the token to the request header
+        // Add the token to the request header using the correct method
         const { data, error } = await supabase
           .rpc('get_client_portal_contracts', {
             client_id_param: clientId
-          }, {
-            headers: {
-              'x-client-token': clientToken
-            }
+          })
+          .withHeaders({
+            'x-client-token': clientToken
           });
 
         if (error) {

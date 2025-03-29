@@ -63,10 +63,11 @@ export function useClientAccount(clientId: string, accountId: string) {
           .rpc('get_client_portal_account_data', {
             client_id_param: clientId,
             account_id_param: accountId
-          }, {
-            headers: {
-              'x-client-token': clientToken
-            }
+          })
+          .returns<ClientPortalAccountData>()
+          .abortSignal(new AbortController().signal)
+          .withHeaders({
+            'x-client-token': clientToken
           })
           .maybeSingle();
           
