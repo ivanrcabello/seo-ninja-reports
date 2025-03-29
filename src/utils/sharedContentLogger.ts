@@ -17,6 +17,25 @@ const sharedContentLogger = {
   },
   debug: (message: string, ...args: any[]) => {
     console.debug(`${new Date().toISOString()} debug:`, message, ...args);
+  },
+  // Add compatibility methods for the proposal data component
+  warning: (message: string, ...args: any[]) => {
+    console.warn(`${new Date().toISOString()} warning:`, message, ...args);
+  },
+  group: (label: string) => {
+    console.group(label);
+  },
+  groupEnd: () => {
+    console.groupEnd();
+  },
+  timeStart: (label: string) => {
+    console.time(label);
+  },
+  timeEnd: (label: string) => {
+    console.timeEnd(label);
+  },
+  table: (data: any) => {
+    console.table(data);
   }
 };
 

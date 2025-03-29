@@ -12,6 +12,7 @@ import sharedContentLogger from '@/utils/sharedContentLogger';
 const SharedReport = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   
   const {
     report,
@@ -33,11 +34,19 @@ const SharedReport = () => {
 
   // Handle password verification
   const handlePasswordSubmit = async (password: string) => {
-    const isValid = await verifyPassword(password);
-    if (isValid) {
-      setIsPasswordDialogOpen(false);
-    } else {
-      return 'Contraseña incorrecta';
+    try {
+      const isValid = await verifyPassword(password);
+      if (isValid) {
+        setIsPasswordDialogOpen(false);
+        setPasswordError(null);
+        return;
+      } else {
+        setPasswordError('Contraseña incorrecta');
+        return 'Contraseña incorrecta';
+      }
+    } catch (err) {
+      setPasswordError('Error al verificar la contraseña');
+      return 'Error al verificar la contraseña';
     }
   };
 
@@ -63,8 +72,9 @@ const SharedReport = () => {
         open={isPasswordDialogOpen}
         onOpenChange={setIsPasswordDialogOpen}
         onSubmit={handlePasswordSubmit}
-        onCancel={() => {}}
+        onCancel={() => {}} // No-op, handled by onOpenChange
         type="report"
+        error={passwordError}
       />
     );
   }

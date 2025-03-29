@@ -11,6 +11,7 @@ interface PasswordProtectionDialogProps {
   onSubmit: (password: string) => Promise<string | void>;
   onCancel: () => void;
   type: 'report' | 'proposal' | 'invoice' | 'contract';
+  error?: string | null;
 }
 
 const types = {
@@ -25,12 +26,18 @@ const PasswordProtectionDialog = ({
   onOpenChange,
   onSubmit,
   onCancel,
-  type
+  type,
+  error: externalError
 }: PasswordProtectionDialogProps) => {
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(externalError || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const typeText = types[type];
+
+  // Update error when external error changes
+  React.useEffect(() => {
+    setError(externalError);
+  }, [externalError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
