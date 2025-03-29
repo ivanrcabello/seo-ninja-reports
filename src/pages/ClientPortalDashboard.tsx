@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,8 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut, FileText, CreditCard, ClipboardList, User, AlertCircle, Calendar, ChevronRight, Settings } from 'lucide-react';
 import { logoutClientPortal } from '@/services/clientPortalService';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -49,10 +48,6 @@ const ClientPortalDashboard = () => {
         return;
       }
       
-      // Set up the client token in the global Supabase instance
-      // This will be used for all requests to the Supabase API
-      supabase.headers({ 'x-client-token': parsedSession.token });
-      
       setSession(parsedSession);
       setLoading(false);
     } catch (err) {
@@ -69,9 +64,6 @@ const ClientPortalDashboard = () => {
         console.error('Error logging out:', err);
       }
     }
-    
-    // Remove client token from Supabase headers
-    supabase.headers({ 'x-client-token': null });
     
     localStorage.removeItem('clientPortalSession');
     navigate('/portal');

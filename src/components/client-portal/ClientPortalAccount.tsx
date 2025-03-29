@@ -48,7 +48,7 @@ const ClientPortalAccount: React.FC<ClientPortalAccountProps> = ({ clientId, acc
       setError(null);
 
       try {
-        // Set client token in headers for this request
+        // Get client token from localStorage
         const clientToken = localStorage.getItem('clientPortalSession') 
           ? JSON.parse(localStorage.getItem('clientPortalSession')!).token 
           : null;
@@ -57,17 +57,10 @@ const ClientPortalAccount: React.FC<ClientPortalAccountProps> = ({ clientId, acc
           throw new Error('Session token not found. Please log in again.');
         }
         
-        const clientSupabase = supabase.from('clients').select('*').eq('id', clientId).single();
-        const accountSupabase = supabase.from('client_portal_accounts').select('*').eq('id', accountId).single();
-        
-        // Add client token to both requests
-        clientSupabase.headers({ 'x-client-token': clientToken });
-        accountSupabase.headers({ 'x-client-token': clientToken });
-        
-        // Execute requests
+        // Execute requests with authentication in request headers
         const [clientResponse, accountResponse] = await Promise.all([
-          clientSupabase,
-          accountSupabase
+          supabase.from('clients').select('*').eq('id', clientId).single(),
+          supabase.from('client_portal_accounts').select('*').eq('id', accountId).single()
         ]);
 
         if (clientResponse.error) throw clientResponse.error;
