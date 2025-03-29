@@ -62,7 +62,7 @@ const SharedInvoice = () => {
     return (
       <PasswordProtectionDialog 
         onSubmit={verifyPassword}
-        onCancel={() => setError('Acceso denegado')}
+        onCancel={() => window.history.back()}
         type="invoice"
       />
     );
