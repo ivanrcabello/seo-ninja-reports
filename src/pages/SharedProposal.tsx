@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -156,12 +156,14 @@ const SharedProposal = () => {
     fetchProposal();
   }, [sharedUrl]);
 
-  if (isPasswordDialogOpen) {
+  if (isPasswordDialogOpen && isPasswordProtected && !accessGranted) {
     return (
       <PasswordProtectionDialog 
         onSubmit={verifyPassword}
         onCancel={() => setError('Acceso denegado')}
         type="proposal"
+        open={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
       />
     );
   }

@@ -24,7 +24,7 @@ const formatDate = (date: string) => {
 
 const SharedProposalNew = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(true);
   
   const {
     proposal,
@@ -57,7 +57,7 @@ const SharedProposalNew = () => {
     }
   };
 
-  if (isPasswordDialogOpen) {
+  if (isPasswordDialogOpen && isPasswordProtected && !accessGranted) {
     return (
       <PasswordProtectionDialog 
         onSubmit={handlePasswordSubmit}
@@ -66,6 +66,8 @@ const SharedProposalNew = () => {
           window.history.back();
         }}
         type="proposal"
+        open={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
       />
     );
   }

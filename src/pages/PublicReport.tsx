@@ -1,14 +1,21 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { PublicReportHeader, PublicReportContent, PublicReportError, PublicReportLoading, PublicReportEmpty } from '@/components/public-reports';
+import { 
+  PublicReportHeader, 
+  PublicReportContent,
+  PublicReportError,
+  PublicReportLoading,
+  PublicReportEmpty
+} from '@/components/public-reports';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 import { toast } from 'sonner';
-import useReportData from '@/components/public-reports/useReportData';
+import { useReportData } from '@/components/public-reports/useReportData';
 
 const PublicReport = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(true);
   
   const { 
     report, 
@@ -29,6 +36,7 @@ const PublicReport = () => {
       
       if (success) {
         setAccessGranted(true);
+        setPasswordDialogOpen(false);
         toast.success('Acceso concedido');
         refetch();
       } else {
@@ -57,6 +65,8 @@ const PublicReport = () => {
         onCancel={() => window.history.back()}
         type="report"
         error={passwordError}
+        open={passwordDialogOpen}
+        onOpenChange={setPasswordDialogOpen}
       />
     );
   }
@@ -81,7 +91,15 @@ const PublicReport = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/5">
       <div className="container mx-auto py-8">
         <PublicReportHeader report={report} />
-        <PublicReportContent report={report} />
+        <PublicReportContent 
+          report={report} 
+          passwordRequired={false}
+          onPasswordRequested={() => {}}
+          errorMessage=""
+          passwordInputOpen={false}
+          onPasswordSubmit={() => {}}
+          onPasswordCancel={() => {}}
+        />
       </div>
     </div>
   );

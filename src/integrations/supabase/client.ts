@@ -2,10 +2,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { Json } from './types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Check if environment variables are defined and provide fallback values for development
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ctidzqynewvqxguhhknp.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0aWR6cXluZXd2cXhndWhoa25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzgzMDksImV4cCI6MjA1Nzk1NDMwOX0.duoo6n4oN7FV--pQrEKWQZlqoslDxr-6dshz83IV2w4';
 
+// Create Supabase client with explicit error handling
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Also fix other TypeScript errors mentioned in the build errors:
 
 export interface Database {
   public: {

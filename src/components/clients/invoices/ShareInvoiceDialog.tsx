@@ -1,323 +1,238 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Copy, Check, AlertCircle, Lock, Unlock, RefreshCw, Mail, Link } from 'lucide-react';
-import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Clipboard, Copy, ExternalLink } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface ShareInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoiceId: string;
-  invoiceTitle: string;
+  clientId: string;
+  title: string;
 }
 
 const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
   open,
   onOpenChange,
   invoiceId,
-  invoiceTitle
+  clientId,
+  title
 }) => {
-  const [shareUrl, setShareUrl] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [passwordProtected, setPasswordProtected] = useState(false);
+  const [isProtected, setIsProtected] = useState(false);
   const [password, setPassword] = useState('');
-  
-  const generateRandomPassword = () => {
-    // Genera una contraseña aleatoria de 8 caracteres
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setPassword(result);
-  };
-  
+  const [sharedUrl, setSharedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [clientDetails, setClientDetails] = useState<{ name: string, website: string } | null>(null);
+
+  const baseUrl = window.location.origin;
+
+  // Fetch any existing shared URL and client details when dialog opens
   useEffect(() => {
-    const generateLink = async () => {
-      if (!open) return;
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // Verificar si la factura ya tiene un shared_url
-        const { data: invoiceData, error: invoiceError } = await supabase
-          .from('client_invoices')
-          .select('shared_url, client_id, clients(name, website), password')
-          .eq('id', invoiceId)
-          .single();
-        
-        if (invoiceError) {
-          throw new Error('Error al obtener la factura');
-        }
-        
-        let sharedUrl = invoiceData.shared_url;
-        
-        // Si hay una contraseña existente, actualizar el estado
-        if (invoiceData.password) {
-          setPasswordProtected(true);
-          setPassword(invoiceData.password);
-        } else {
-          setPasswordProtected(false);
-          setPassword('');
-        }
-        
-        // Si no tiene shared_url, generamos uno
-        if (!sharedUrl) {
-          const { data: updatedInvoice, error: updateError } = await supabase
-            .from('client_invoices')
-            .update({ shared_url: crypto.randomUUID() })
-            .eq('id', invoiceId)
-            .select('shared_url')
-            .single();
-          
-          if (updateError) {
-            throw new Error('Error al generar enlace compartido');
-          }
-          
-          sharedUrl = updatedInvoice.shared_url;
-        }
-        
-        // Verificar si ya existe en public_invoices
-        const { data: existingPublic } = await supabase
-          .from('public_invoices')
-          .select('id')
-          .eq('shared_url', sharedUrl)
-          .single();
-        
-        // Si no existe en public_invoices, lo creamos
-        if (!existingPublic) {
-          // Obtenemos todos los datos de la factura
-          const { data: fullInvoice, error: fullInvoiceError } = await supabase
-            .from('client_invoices')
-            .select('*')
-            .eq('id', invoiceId)
-            .single();
-          
-          if (fullInvoiceError) {
-            throw new Error('Error al obtener datos completos de la factura');
-          }
-          
-          // Insertamos en public_invoices con type assertion
-          const { error: insertError } = await supabase
-            .from('public_invoices')
-            .insert([{
-              id: fullInvoice.id,
-              title: fullInvoice.title,
-              description: fullInvoice.description,
-              amount: fullInvoice.amount,
-              status: fullInvoice.status,
-              due_date: fullInvoice.due_date,
-              payment_method: fullInvoice.payment_method,
-              payment_date: fullInvoice.payment_date,
-              payment_instructions: fullInvoice.payment_instructions,
-              shared_url: sharedUrl,
-              created_at: fullInvoice.created_at,
-              updated_at: fullInvoice.updated_at,
-              client_name: invoiceData.clients?.name,
-              client_website: invoiceData.clients?.website
-            }] as any);
-          
-          if (insertError) {
-            throw new Error('Error al crear factura pública');
-          }
-        }
-        
-        // Construir la URL completa
-        const fullUrl = `${window.location.origin}/shared/invoices/${sharedUrl}`;
-        setShareUrl(fullUrl);
-      } catch (err: any) {
-        console.error('Error generating share URL:', err);
-        setError(err.message || 'Error al generar enlace');
-        toast.error('Error: ' + (err.message || 'Error al generar enlace'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    generateLink();
+    if (open && invoiceId) {
+      fetchExistingShareDetails();
+      fetchClientDetails();
+    }
   }, [open, invoiceId]);
-  
-  const handleCopyLink = async () => {
+
+  const fetchExistingShareDetails = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      toast.success('Enlace copiado al portapapeles');
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Error copying to clipboard:', err);
-      toast.error('No se pudo copiar el enlace');
+      const { data, error } = await supabase
+        .from('client_invoices')
+        .select('shared_url, password')
+        .eq('id', invoiceId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setSharedUrl(data.shared_url || null);
+        setIsProtected(!!data.password);
+        if (data.password) {
+          setPassword(""); // Don't show the actual password for security
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching share details:', error);
+      toast.error('Error al cargar los detalles de compartición');
     }
   };
-  
-  const handleUpdatePassword = async () => {
-    if (!invoiceId) return;
-    
-    setIsLoading(true);
+
+  const fetchClientDetails = async () => {
     try {
-      // Actualizamos la contraseña en la tabla client_invoices
-      const passwordValue = passwordProtected ? password : null;
+      const { data, error } = await supabase
+        .from('clients')
+        .select('name, website')
+        .eq('id', clientId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setClientDetails(data);
+      }
+    } catch (error) {
+      console.error('Error fetching client details:', error);
+    }
+  };
+
+  const handleShareInvoice = async () => {
+    setIsLoading(true);
+    
+    try {
+      const sharedUrlValue = sharedUrl || crypto.randomUUID();
       
       const { error } = await supabase
         .from('client_invoices')
-        .update({ password: passwordValue })
+        .update({
+          shared_url: sharedUrlValue,
+          password: isProtected ? password : null
+        })
         .eq('id', invoiceId);
         
-      if (error) throw new Error('Error al actualizar la contraseña');
+      if (error) throw error;
       
-      toast.success(passwordProtected 
-        ? 'Enlace protegido con contraseña' 
-        : 'Protección de contraseña desactivada');
+      setSharedUrl(sharedUrlValue);
+      toast.success('Enlace de la factura actualizado');
       
-    } catch (err: any) {
-      console.error('Error updating password:', err);
-      toast.error(err.message || 'Error al actualizar la contraseña');
+      // Also update public_invoices view
+      await updatePublicInvoices(sharedUrlValue);
+      
+    } catch (error) {
+      console.error('Error sharing invoice:', error);
+      toast.error('Error al compartir la factura');
     } finally {
       setIsLoading(false);
     }
   };
   
-  const handleEmailShare = () => {
-    const subject = encodeURIComponent(`Factura: ${invoiceTitle}`);
-    const body = encodeURIComponent(`Hola,\n\nComparto contigo esta factura${passwordProtected ? ' (protegida con contraseña)' : ''}.\n\nPuedes verla en: ${shareUrl}\n\n${passwordProtected ? `Contraseña: ${password}\n\n` : ''}Saludos.`);
-    
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+  const updatePublicInvoices = async (sharedUrlValue: string) => {
+    try {
+      if (!clientDetails) return;
+      
+      // Find if there's already a public invoice with this shared_url
+      const { data: existingPublicInvoice, error: checkError } = await supabase
+        .from('public_invoices')
+        .select('id')
+        .eq('shared_url', sharedUrlValue)
+        .maybeSingle();
+      
+      if (checkError) throw checkError;
+      
+      if (existingPublicInvoice) {
+        // Update existing record
+        await supabase
+          .from('public_invoices')
+          .update({
+            client_name: clientDetails.name,
+            client_website: clientDetails.website,
+            updated_at: new Date().toISOString()
+          })
+          .eq('shared_url', sharedUrlValue);
+      }
+      
+    } catch (error) {
+      console.error('Error updating public invoices:', error);
+    }
   };
-  
+
+  const copyLinkToClipboard = () => {
+    if (!sharedUrl) return;
+    
+    const shareLink = `${baseUrl}/invoices/shared/${sharedUrl}`;
+    navigator.clipboard.writeText(shareLink);
+    toast.success('Enlace copiado al portapapeles');
+  };
+
+  const openSharedLink = () => {
+    if (!sharedUrl) return;
+    
+    const shareLink = `${baseUrl}/invoices/shared/${sharedUrl}`;
+    window.open(shareLink, '_blank');
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Compartir factura</DialogTitle>
+          <DialogTitle>Compartir Factura</DialogTitle>
+          <DialogDescription>
+            Compartir factura: {title}
+          </DialogDescription>
         </DialogHeader>
-        
-        <div className="flex flex-col gap-4 py-4">
-          <p className="text-sm text-muted-foreground">
-            Comparte esta factura con tu cliente utilizando este enlace único:
-          </p>
-          
-          {isLoading ? (
-            <div className="h-10 animate-pulse bg-muted rounded-md"></div>
-          ) : error ? (
-            <div className="flex items-center gap-2 text-destructive text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <span>{error}</span>
+
+        <div className="space-y-4 py-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="protected"
+              checked={isProtected}
+              onCheckedChange={setIsProtected}
+            />
+            <Label htmlFor="protected">Proteger con contraseña</Label>
+          </div>
+
+          {isProtected && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Ingrese una contraseña"
+              />
             </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
+          )}
+
+          {sharedUrl && (
+            <div className="space-y-2">
+              <Label>Enlace compartido</Label>
+              <div className="flex">
                 <Input
-                  value={shareUrl}
+                  value={`${baseUrl}/invoices/shared/${sharedUrl}`}
                   readOnly
-                  className="flex-1"
                 />
-                <Button 
-                  size="sm" 
-                  onClick={handleCopyLink}
-                  className="shrink-0"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button 
-                  onClick={handleCopyLink} 
-                  className="w-full sm:w-auto gap-2 group"
-                  variant="outline"
-                >
-                  <Link className="h-4 w-4 group-hover:animate-pulse" />
-                  Copiar enlace
-                </Button>
                 <Button 
                   variant="outline" 
-                  onClick={handleEmailShare} 
-                  className="w-full sm:w-auto gap-2 group transition-colors"
+                  size="icon" 
+                  className="ml-2" 
+                  onClick={copyLinkToClipboard}
                 >
-                  <Mail className="h-4 w-4 group-hover:animate-pulse" />
-                  Compartir por email
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="ml-2"
+                  onClick={openSharedLink}
+                >
+                  <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>
-            </>
-          )}
-          
-          <div className="border-t border-border pt-4 mt-2">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="password-protection"
-                  checked={passwordProtected}
-                  onCheckedChange={setPasswordProtected}
-                />
-                <Label htmlFor="password-protection" className="flex items-center gap-1">
-                  {passwordProtected ? (
-                    <Lock className="h-4 w-4 text-amber-500" />
-                  ) : (
-                    <Unlock className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  Proteger con contraseña
-                </Label>
-              </div>
             </div>
-            
-            {passwordProtected && (
-              <div className="flex flex-col space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="text"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Introduce una contraseña"
-                    className="flex-1"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={generateRandomPassword}
-                    title="Generar contraseña aleatoria"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  El cliente necesitará esta contraseña para ver la factura
-                </p>
-              </div>
-            )}
-            
-            <Button 
-              className="mt-4 w-full"
-              onClick={handleUpdatePassword}
-              disabled={isLoading || (passwordProtected && !password)}
-            >
-              {passwordProtected ? 'Actualizar protección' : 'Quitar protección'}
-            </Button>
-          </div>
-          
-          <div className="text-sm text-muted-foreground mt-4">
-            <h4 className="font-medium text-foreground">Información importante:</h4>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Cualquier persona con este enlace podrá ver la factura{passwordProtected ? ' (requiere contraseña)' : ''}</li>
-              <li>El enlace no expira automáticamente</li>
-              <li>Puedes revocar el acceso generando un nuevo enlace</li>
-            </ul>
-          </div>
+          )}
         </div>
-        
-        <div className="flex justify-end">
-          <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
-        </div>
+
+        <DialogFooter className="sm:justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cerrar
+          </Button>
+          <Button 
+            onClick={handleShareInvoice} 
+            disabled={isProtected && !password || isLoading}
+          >
+            {isLoading ? 'Compartiendo...' : (sharedUrl ? 'Actualizar enlace' : 'Generar enlace')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
