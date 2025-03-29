@@ -78,14 +78,14 @@ const ClientPortalDashboard = () => {
       }
       
       setSession(parsedSession);
-      fetchClientData(parsedSession.client_id, parsedSession.token);
+      fetchClientData(parsedSession.client_id);
     } catch (err) {
       console.error('Error parsing session:', err);
       navigate('/portal');
     }
   }, [navigate]);
   
-  const fetchClientData = async (clientId: string, token: string) => {
+  const fetchClientData = async (clientId: string) => {
     setLoading(true);
     setError(null);
     
