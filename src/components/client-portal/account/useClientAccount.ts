@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
+import { clientPortalApi } from '@/services/clientPortalApiService';
 
 interface Client {
   id: string;
@@ -41,48 +41,19 @@ export function useClientAccount(clientId: string, accountId: string) {
       setError(null);
 
       try {
-        // Get client token from localStorage
-        const sessionString = localStorage.getItem('clientPortalSession');
-        
-        if (!sessionString) {
-          throw new Error('Session token not found. Please log in again.');
-        }
-        
-        const session = JSON.parse(sessionString);
-        const clientToken = session.token;
-        
         clientPortalLogger.info('Fetching client and account data', { clientId, accountId }, 'useClientAccount');
-        console.log('Fetching with token:', clientToken);
         
-        if (!clientToken) {
-          throw new Error('Session token not found. Please log in again.');
-        }
+        const data = await clientPortalApi.getAccountData(clientId, accountId);
         
-        // Make the RPC call with custom headers
-        const { data, error } = await supabase.rpc(
-          'get_client_portal_account_data',
-          {
-            client_id_param: clientId,
-            account_id_param: accountId
-          },
-          { headers: { 'x-client-token': clientToken } }
-        );
-          
-        if (error) {
-          clientPortalLogger.error('Error fetching account data', error, 'useClientAccount');
-          console.error('Supabase error:', error);
-          throw error;
-        }
-        
-        if (!data || data.length === 0) {
+        if (!data || (Array.isArray(data) && data.length === 0)) {
           console.error('No data returned from get_client_portal_account_data');
           throw new Error('No data found for this account.');
         }
         
         console.log('Account data retrieved:', data);
         
-        // Extract the first item from the array
-        const accountData = data[0] as ClientPortalAccountData;
+        // Extract the first item from the array if it's an array
+        const accountData = Array.isArray(data) ? data[0] as ClientPortalAccountData : data as ClientPortalAccountData;
         
         const clientData: Client = {
           id: accountData.client_id,

@@ -1,6 +1,4 @@
-
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, Calendar } from 'lucide-react';
@@ -9,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
+import { clientPortalApi } from '@/services/clientPortalApiService';
 
 interface Contract {
   id: string;
@@ -32,27 +31,7 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         setLoading(true);
         clientPortalLogger.info('Fetching contracts for client', { clientId }, 'ClientPortalContracts');
         
-        // Fetch the client token from localStorage
-        const sessionString = localStorage.getItem('clientPortalSession');
-        if (!sessionString) {
-          throw new Error('No active session found');
-        }
-        
-        const session = JSON.parse(sessionString);
-        const clientToken = session.token;
-        
-        // Make the RPC call with custom headers
-        const { data, error } = await supabase.rpc(
-          'get_client_portal_contracts',
-          { client_id_param: clientId },
-          { headers: { 'x-client-token': clientToken } }
-        );
-
-        if (error) {
-          clientPortalLogger.error('Error fetching contracts', error, 'ClientPortalContracts');
-          console.error('Error fetching contracts:', error);
-          throw error;
-        }
+        const data = await clientPortalApi.getContracts(clientId);
         
         clientPortalLogger.info(`Successfully fetched ${data?.length || 0} contracts`, { count: data?.length }, 'ClientPortalContracts');
         console.log('Contracts data:', data);
@@ -89,7 +68,6 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
   };
 
   const viewContract = (id: string) => {
-    // Open contract in new tab or modal
     window.open(`/contracts/${id}`, '_blank');
   };
 

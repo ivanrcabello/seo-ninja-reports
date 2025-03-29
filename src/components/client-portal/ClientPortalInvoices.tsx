@@ -1,6 +1,4 @@
-
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CreditCard } from 'lucide-react';
@@ -9,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
+import { clientPortalApi } from '@/services/clientPortalApiService';
 
 interface Invoice {
   id: string;
@@ -33,27 +32,7 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
         setLoading(true);
         clientPortalLogger.info('Fetching invoices for client', { clientId }, 'ClientPortalInvoices');
         
-        // Fetch the client token from localStorage
-        const sessionString = localStorage.getItem('clientPortalSession');
-        if (!sessionString) {
-          throw new Error('No active session found');
-        }
-        
-        const session = JSON.parse(sessionString);
-        const clientToken = session.token;
-        
-        // Make the RPC call with custom headers
-        const { data, error } = await supabase.rpc(
-          'get_client_portal_invoices',
-          { client_id_param: clientId },
-          { headers: { 'x-client-token': clientToken } }
-        );
-
-        if (error) {
-          clientPortalLogger.error('Error fetching invoices', error, 'ClientPortalInvoices');
-          console.error('Error fetching invoices:', error);
-          throw error;
-        }
+        const data = await clientPortalApi.getInvoices(clientId);
         
         clientPortalLogger.info(`Successfully fetched ${data?.length || 0} invoices`, { count: data?.length }, 'ClientPortalInvoices');
         console.log('Invoices data:', data);
@@ -93,7 +72,6 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
   };
 
   const viewInvoice = (id: string) => {
-    // Open invoice in new tab or modal
     window.open(`/invoices/${id}`, '_blank');
   };
 
