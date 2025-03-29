@@ -3,42 +3,32 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PublicReportHeader, PublicReportContent, PublicReportError, PublicReportLoading, PublicReportEmpty } from '@/components/public-reports';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import useReportData from '@/components/public-reports/useReportData';
 
 const PublicReport = () => {
   const { reportId } = useParams<{ reportId: string }>();
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [accessGranted, setAccessGranted] = useState(false);
   
   const { 
     report, 
     isLoading, 
     error, 
-    isPasswordProtected, 
+    isPasswordProtected,
+    accessGranted,
+    setAccessGranted,
+    verifyPassword,
     refetch 
   } = useReportData(reportId || '');
 
-  const verifyPassword = async (password: string) => {
+  const handlePasswordSubmit = async (password: string) => {
     try {
-      if (!reportId) return;
       setPasswordError(null);
       
-      const { data, error: verifyError } = await supabase.rpc(
-        'verify_shared_report_password',
-        { 
-          report_id_param: reportId,
-          password_param: password
-        }
-      );
+      const success = await verifyPassword(password);
       
-      if (verifyError) throw new Error(verifyError.message);
-      
-      if (data === true) {
+      if (success) {
         setAccessGranted(true);
-        setIsPasswordDialogOpen(false);
         toast.success('Acceso concedido');
         refetch();
       } else {
@@ -50,12 +40,21 @@ const PublicReport = () => {
     }
   };
 
+  console.log('Public Report State:', { 
+    reportId, 
+    isLoading, 
+    error, 
+    isPasswordProtected, 
+    accessGranted,
+    hasReport: !!report
+  });
+
   // Show password dialog if protected and access not granted
   if (isPasswordProtected && !accessGranted && !isLoading) {
     return (
       <PasswordProtectionDialog 
-        onSubmit={verifyPassword}
-        onCancel={() => setIsPasswordDialogOpen(false)}
+        onSubmit={handlePasswordSubmit}
+        onCancel={() => window.history.back()}
         type="report"
         error={passwordError}
       />

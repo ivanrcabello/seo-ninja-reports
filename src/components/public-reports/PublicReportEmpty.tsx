@@ -1,25 +1,16 @@
 
 import React from 'react';
 import { FileQuestion } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 
 const PublicReportEmpty: React.FC = () => {
-  const navigate = useNavigate();
-  
   return (
     <div className="w-full max-w-5xl mx-auto">
-      <div className="flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-gray-800 shadow-md rounded-lg">
-        <div className="bg-primary/10 p-5 rounded-full mb-4">
-          <FileQuestion className="h-10 w-10 text-primary" />
-        </div>
-        <h1 className="text-2xl font-bold mb-2">Informe sin contenido</h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">
-          Este informe no tiene contenido o está en proceso de generación.
+      <div className="flex flex-col items-center justify-center text-center p-12">
+        <FileQuestion className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-medium mb-2">Informe vacío</h2>
+        <p className="text-muted-foreground">
+          Este informe no tiene contenido o está en proceso de creación.
         </p>
-        <Button onClick={() => navigate('/')}>
-          Volver al inicio
-        </Button>
       </div>
     </div>
   );

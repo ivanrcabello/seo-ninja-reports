@@ -1,95 +1,71 @@
 
 /**
- * Utility for logging shared content related operations with consistent formatting
+ * Logger utility for shared content access
+ * This helps debug issues with client portal and shared content
  */
 
-const DEBUG_MODE = true; // Set to false in production
-
-type LogLevel = 'info' | 'warning' | 'error' | 'success';
-
-const sharedContentLogger = {
-  /**
-   * Log an informational message
-   */
-  info: (message: string, data?: any) => {
-    if (!DEBUG_MODE) return;
-    console.log(`%c[SHARED CONTENT] ${message}`, 'color: #3b82f6', data || '');
-  },
-
-  /**
-   * Log a warning message
-   */
-  warning: (message: string, data?: any) => {
-    if (!DEBUG_MODE) return;
-    console.warn(`%c[SHARED CONTENT] ${message}`, 'color: #f59e0b', data || '');
-  },
-
-  /**
-   * Log an error message
-   */
-  error: (message: string, error?: any) => {
-    if (!DEBUG_MODE) return;
-    console.error(
-      `%c[SHARED CONTENT] ${message}`, 
-      'color: #ef4444; font-weight: bold', 
-      error || ''
-    );
-  },
-
-  /**
-   * Log a success message
-   */
-  success: (message: string, data?: any) => {
-    if (!DEBUG_MODE) return;
-    console.log(`%c[SHARED CONTENT] ${message}`, 'color: #10b981', data || '');
-  },
-
-  /**
-   * Log data as a table for better visualization
-   */
-  table: (data: any, title?: string) => {
-    if (!DEBUG_MODE) return;
-    if (title) {
-      console.log(`%c[SHARED CONTENT] ${title}`, 'color: #3b82f6');
-    }
-    console.table(data);
-  },
-
-  /**
-   * Create a labeled group of logs
-   */
-  group: (label: string, collapsed: boolean = false) => {
-    if (!DEBUG_MODE) return;
-    if (collapsed) {
-      console.groupCollapsed(`%c[SHARED CONTENT] ${label}`, 'color: #3b82f6; font-weight: bold');
-    } else {
-      console.group(`%c[SHARED CONTENT] ${label}`, 'color: #3b82f6; font-weight: bold');
-    }
-  },
-
-  /**
-   * End the current log group
-   */
-  groupEnd: () => {
-    if (!DEBUG_MODE) return;
-    console.groupEnd();
-  },
-
-  /**
-   * Start timing a process
-   */
-  timeStart: (label: string) => {
-    if (!DEBUG_MODE) return;
-    console.time(`[SHARED CONTENT] ${label}`);
-  },
-
-  /**
-   * End timing and display the result
-   */
-  timeEnd: (label: string) => {
-    if (!DEBUG_MODE) return;
-    console.timeEnd(`[SHARED CONTENT] ${label}`);
-  }
+const logStyles = {
+  error: 'background: #f44336; color: white; padding: 2px 4px; border-radius: 2px;',
+  warn: 'background: #ff9800; color: white; padding: 2px 4px; border-radius: 2px;',
+  info: 'background: #2196f3; color: white; padding: 2px 4px; border-radius: 2px;',
+  success: 'background: #4caf50; color: white; padding: 2px 4px; border-radius: 2px;',
+  debug: 'background: #9e9e9e; color: white; padding: 2px 4px; border-radius: 2px;',
 };
 
+class SharedContentLogger {
+  private enabled: boolean;
+  
+  constructor() {
+    this.enabled = process.env.NODE_ENV === 'development' || localStorage.getItem('ENABLE_SHARED_CONTENT_LOGS') === 'true';
+  }
+  
+  enable() {
+    this.enabled = true;
+    localStorage.setItem('ENABLE_SHARED_CONTENT_LOGS', 'true');
+    console.log('%c[SharedContentLogger] Logging enabled', logStyles.success);
+  }
+  
+  disable() {
+    this.enabled = false;
+    localStorage.removeItem('ENABLE_SHARED_CONTENT_LOGS');
+    console.log('%c[SharedContentLogger] Logging disabled', logStyles.warn);
+  }
+  
+  error(message: string, data?: any, context?: string) {
+    if (!this.enabled) return;
+    
+    const contextStr = context ? ` [${context}]` : '';
+    console.error(`%c[ERROR${contextStr}]%c ${message}`, logStyles.error, '', data || '');
+  }
+  
+  warn(message: string, data?: any, context?: string) {
+    if (!this.enabled) return;
+    
+    const contextStr = context ? ` [${context}]` : '';
+    console.warn(`%c[WARN${contextStr}]%c ${message}`, logStyles.warn, '', data || '');
+  }
+  
+  info(message: string, data?: any, context?: string) {
+    if (!this.enabled) return;
+    
+    const contextStr = context ? ` [${context}]` : '';
+    console.info(`%c[INFO${contextStr}]%c ${message}`, logStyles.info, '', data || '');
+  }
+  
+  success(message: string, data?: any, context?: string) {
+    if (!this.enabled) return;
+    
+    const contextStr = context ? ` [${context}]` : '';
+    console.log(`%c[SUCCESS${contextStr}]%c ${message}`, logStyles.success, '', data || '');
+  }
+  
+  debug(message: string, data?: any, context?: string) {
+    if (!this.enabled) return;
+    
+    const contextStr = context ? ` [${context}]` : '';
+    console.log(`%c[DEBUG${contextStr}]%c ${message}`, logStyles.debug, '', data || '');
+  }
+}
+
+const sharedContentLogger = new SharedContentLogger();
 export default sharedContentLogger;
