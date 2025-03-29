@@ -1,9 +1,8 @@
 
 import React from 'react';
-import BlurredCard from '@/components/ui/BlurredCard';
-import { Calendar, Globe, ExternalLink, Building } from 'lucide-react';
+import { CalendarIcon, Globe } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import BlurredCard from '@/components/ui/BlurredCard';
 
 interface PublicReportHeaderProps {
   title: string;
@@ -12,41 +11,42 @@ interface PublicReportHeaderProps {
   date?: string;
 }
 
-const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ title, client, website, date }) => {
+const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ 
+  title,
+  client,
+  website,
+  date
+}) => {
+  const formattedDate = date ? format(new Date(date), 'dd/MM/yyyy') : '';
+
   return (
-    <BlurredCard className="w-full max-w-4xl mb-8 bg-gradient-to-r from-primary/5 to-primary/10 backdrop-blur-lg border-primary/10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
+    <BlurredCard className="mb-8 p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gradient-primary">{title}</h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            {date && (
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-                <Calendar className="h-4 w-4" />
-                <span>{format(new Date(date), 'd MMM yyyy', { locale: es })}</span>
-              </div>
-            )}
-            {website && (
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full group hover:bg-primary/20 transition-all">
-                <Globe className="h-4 w-4" />
-                <a 
-                  href={website.startsWith('http') ? website : `https://${website}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:text-primary transition-colors flex items-center gap-1"
-                >
-                  {website.replace(/^https?:\/\//, '').split('/')[0]}
-                  <ExternalLink className="h-3 w-3 opacity-70" />
-                </a>
-              </div>
-            )}
-            {client && (
-              <div className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-                <Building className="h-4 w-4" />
-                <span>{client}</span>
-              </div>
-            )}
-          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">{title}</h1>
+          {client && (
+            <div className="mt-2 text-muted-foreground">
+              Cliente: {client}
+            </div>
+          )}
+          {date && (
+            <div className="mt-1 flex items-center text-sm text-muted-foreground">
+              <CalendarIcon className="mr-1 h-4 w-4" />
+              {formattedDate}
+            </div>
+          )}
         </div>
+        {website && (
+          <a 
+            href={website.startsWith('http') ? website : `https://${website}`}
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-md transition-colors"
+          >
+            <Globe className="h-4 w-4" />
+            {website}
+          </a>
+        )}
       </div>
     </BlurredCard>
   );

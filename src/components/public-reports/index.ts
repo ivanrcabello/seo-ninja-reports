@@ -1,18 +1,9 @@
 
-import PublicReportContent from './PublicReportContent';
-import PublicReportEmpty from './PublicReportEmpty';
-import PublicReportError from './PublicReportError';
-import PublicReportHeader from './PublicReportHeader';
-import PublicReportLoading from './PublicReportLoading';
-import ReportTabs from './ReportTabs';
-import TabItem from './TabItem';
-
-export {
-  PublicReportContent,
-  PublicReportEmpty,
-  PublicReportError,
-  PublicReportHeader,
-  PublicReportLoading,
-  ReportTabs,
-  TabItem
-};
+export { default as PublicReportContent } from './PublicReportContent';
+export { default as PublicReportEmpty } from './PublicReportEmpty';
+export { default as PublicReportError } from './PublicReportError';
+export { default as PublicReportHeader } from './PublicReportHeader';
+export { default as PublicReportLoading } from './PublicReportLoading';
+export { default as ReportTabs } from './ReportTabs';
+export { default as ReportContents } from './ReportContents';
+export { default as TabItem } from './TabItem';
