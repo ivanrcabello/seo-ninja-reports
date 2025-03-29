@@ -33,12 +33,9 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         clientPortalLogger.info('Fetching contracts for client', { clientId }, 'ClientPortalContracts');
         
         const data = await clientPortalApi.getContracts(clientId);
-        
-        // Ensure data is an array before processing
-        const contractsData = Array.isArray(data) ? data : [];
-        clientPortalLogger.info(`Successfully fetched ${contractsData.length} contracts`, { count: contractsData.length }, 'ClientPortalContracts');
-        console.log('Contracts data:', contractsData);
-        setContracts(contractsData as Contract[]);
+        clientPortalLogger.info(`Successfully fetched ${data.length} contracts`, { count: data.length }, 'ClientPortalContracts');
+        console.log('Contracts data:', data);
+        setContracts(data);
       } catch (err: any) {
         console.error('Error fetching contracts:', err);
         clientPortalLogger.error('Error fetching contracts', err, 'ClientPortalContracts');

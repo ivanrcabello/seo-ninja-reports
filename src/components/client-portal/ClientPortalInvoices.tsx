@@ -34,12 +34,9 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
         clientPortalLogger.info('Fetching invoices for client', { clientId }, 'ClientPortalInvoices');
         
         const data = await clientPortalApi.getInvoices(clientId);
-        
-        // Ensure data is an array before processing
-        const invoicesData = Array.isArray(data) ? data : [];
-        clientPortalLogger.info(`Successfully fetched ${invoicesData.length} invoices`, { count: invoicesData.length }, 'ClientPortalInvoices');
-        console.log('Invoices data:', invoicesData);
-        setInvoices(invoicesData as Invoice[]);
+        clientPortalLogger.info(`Successfully fetched ${data.length} invoices`, { count: data.length }, 'ClientPortalInvoices');
+        console.log('Invoices data:', data);
+        setInvoices(data);
       } catch (err: any) {
         console.error('Error fetching invoices:', err);
         clientPortalLogger.error('Error fetching invoices', err, 'ClientPortalInvoices');

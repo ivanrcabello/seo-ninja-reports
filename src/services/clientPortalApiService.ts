@@ -55,18 +55,17 @@ class ClientPortalApiService {
     
     clientPortalLogger.info(`Calling RPC ${functionName}`, params, 'ClientPortalApiService');
     
-    // Configurar headers para la solicitud
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'x-client-token': token
-    };
-    
     try {
-      // Ejecutar la llamada RPC con los headers incluidos en la llamada
+      // Ejecutar la llamada RPC con los headers en las opciones correctas
       const { data, error } = await supabase.rpc(
         functionName as any,
         params,
-        { headers }
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-client-token': token
+          }
+        }
       );
       
       if (error) {
@@ -82,41 +81,128 @@ class ClientPortalApiService {
   }
 
   /**
-   * Obtiene los informes del cliente
+   * Obtiene los informes del cliente directamente de la tabla
    */
   async getReports(clientId: string): Promise<any[]> {
-    return this.callRpc<any[]>('get_client_portal_reports', { client_id_param: clientId });
+    const token = this.ensureToken();
+    
+    try {
+      const { data, error } = await supabase
+        .from('client_portal_reports')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .throwOnError();
+      
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      clientPortalLogger.error('Error fetching reports', err, 'ClientPortalApiService');
+      throw err;
+    }
   }
 
   /**
-   * Obtiene las propuestas del cliente
+   * Obtiene las propuestas del cliente directamente de la tabla
    */
   async getProposals(clientId: string): Promise<any[]> {
-    return this.callRpc<any[]>('get_client_portal_proposals', { client_id_param: clientId });
+    const token = this.ensureToken();
+    
+    try {
+      const { data, error } = await supabase
+        .from('client_portal_proposals')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .throwOnError();
+      
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      clientPortalLogger.error('Error fetching proposals', err, 'ClientPortalApiService');
+      throw err;
+    }
   }
 
   /**
-   * Obtiene las facturas del cliente
+   * Obtiene las facturas del cliente directamente de la tabla
    */
   async getInvoices(clientId: string): Promise<any[]> {
-    return this.callRpc<any[]>('get_client_portal_invoices', { client_id_param: clientId });
+    const token = this.ensureToken();
+    
+    try {
+      const { data, error } = await supabase
+        .from('client_portal_invoices')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .throwOnError();
+      
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      clientPortalLogger.error('Error fetching invoices', err, 'ClientPortalApiService');
+      throw err;
+    }
   }
 
   /**
-   * Obtiene los contratos del cliente
+   * Obtiene los contratos del cliente directamente de la tabla
    */
   async getContracts(clientId: string): Promise<any[]> {
-    return this.callRpc<any[]>('get_client_portal_contracts', { client_id_param: clientId });
+    const token = this.ensureToken();
+    
+    try {
+      const { data, error } = await supabase
+        .from('client_portal_contracts')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .throwOnError();
+      
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      clientPortalLogger.error('Error fetching contracts', err, 'ClientPortalApiService');
+      throw err;
+    }
   }
 
   /**
    * Obtiene la información de cuenta del cliente
    */
-  async getAccountData(clientId: string, accountId: string): Promise<any[]> {
-    return this.callRpc<any[]>('get_client_portal_account_data', { 
-      client_id_param: clientId,
-      account_id_param: accountId
-    });
+  async getAccountData(clientId: string, accountId: string): Promise<any> {
+    const token = this.ensureToken();
+    
+    try {
+      // Obtener datos de la cuenta del cliente
+      const { data: accountData, error: accountError } = await supabase
+        .from('client_portal_accounts')
+        .select('id, email, last_login')
+        .eq('id', accountId)
+        .eq('client_id', clientId)
+        .single();
+      
+      if (accountError) throw accountError;
+      
+      // Obtener datos del cliente
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('id, name, website, phone_number, industry')
+        .eq('id', clientId)
+        .single();
+      
+      if (clientError) throw clientError;
+      
+      // Combinar datos
+      return {
+        client: clientData,
+        account: accountData
+      };
+    } catch (err) {
+      clientPortalLogger.error('Error fetching account data', err, 'ClientPortalApiService');
+      throw err;
+    }
   }
 }
 

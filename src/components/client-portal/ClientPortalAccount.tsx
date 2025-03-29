@@ -1,11 +1,17 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import ClientInfoCard from './account/ClientInfoCard';
-import AccountInfoCard from './account/AccountInfoCard';
-import PasswordChangeCard from './account/PasswordChangeCard';
-import { useClientAccount } from './account/useClientAccount';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { User, Mail, Lock } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { clientPortalApi } from '@/services/clientPortalApiService';
+import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 
 interface ClientPortalAccountProps {
   clientId: string;
@@ -13,7 +19,89 @@ interface ClientPortalAccountProps {
 }
 
 const ClientPortalAccount: React.FC<ClientPortalAccountProps> = ({ clientId, accountId }) => {
-  const { client, account, loading, error } = useClientAccount(clientId, accountId);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [client, setClient] = useState<any>(null);
+  const [account, setAccount] = useState<any>(null);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const data = await clientPortalApi.getAccountData(clientId, accountId);
+        setClient(data.client);
+        setAccount(data.account);
+        
+        clientPortalLogger.info('Account data loaded successfully', { accountId }, 'ClientPortalAccount');
+      } catch (err: any) {
+        console.error('Error loading account data:', err);
+        clientPortalLogger.error('Error loading account data', err, 'ClientPortalAccount');
+        setError('Error al cargar los datos de la cuenta. Por favor, inténtalo de nuevo más tarde.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [clientId, accountId]);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('Las contraseñas nuevas no coinciden');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    
+    try {
+      // Get client token from localStorage
+      const clientToken = localStorage.getItem('clientPortalSession') 
+        ? JSON.parse(localStorage.getItem('clientPortalSession')!).token 
+        : null;
+        
+      if (!clientToken) {
+        throw new Error('Session token not found. Please log in again.');
+      }
+      
+      // Call the edge function with the client token in headers
+      const { data, error } = await supabase.functions.invoke('change-client-password', {
+        body: {
+          accountId: accountId,
+          currentPassword: currentPassword,
+          newPassword: newPassword
+        },
+        headers: {
+          'x-client-token': clientToken
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data && data.success) {
+        toast.success('Contraseña actualizada correctamente');
+        
+        // Reset form
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast.error('Error al cambiar la contraseña. Verifica que la contraseña actual sea correcta.');
+      }
+    } catch (err: any) {
+      console.error('Error changing password:', err);
+      toast.error('Error al cambiar la contraseña. Verifica que la contraseña actual sea correcta.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -46,13 +134,130 @@ const ClientPortalAccount: React.FC<ClientPortalAccountProps> = ({ clientId, acc
       </p>
       
       {/* Client Information Card */}
-      <ClientInfoCard client={client} isLoading={loading} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <User className="mr-2 h-5 w-5" /> Información de la Empresa
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {client && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nombre</Label>
+                  <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    {client.name}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Sitio Web</Label>
+                  <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    {client.website}
+                  </div>
+                </div>
+                {client.phone_number && (
+                  <div className="space-y-2">
+                    <Label>Teléfono</Label>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      {client.phone_number}
+                    </div>
+                  </div>
+                )}
+                {client.industry && (
+                  <div className="space-y-2">
+                    <Label>Industria</Label>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      {client.industry}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Para actualizar esta información, contacta con nosotros.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
       
       {/* Account Information Card */}
-      <AccountInfoCard account={account} isLoading={loading} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Mail className="mr-2 h-5 w-5" /> Información de la Cuenta
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {account && (
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                {account.email}
+              </div>
+              {account.last_login && (
+                <p className="text-sm text-muted-foreground">
+                  Último acceso: {new Date(account.last_login).toLocaleDateString()} {new Date(account.last_login).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       {/* Change Password Card */}
-      <PasswordChangeCard accountId={accountId} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Lock className="mr-2 h-5 w-5" /> Cambiar Contraseña
+          </CardTitle>
+          <CardDescription>
+            Actualiza tu contraseña de acceso al portal
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="current-password">Contraseña Actual</Label>
+              <Input 
+                id="current-password" 
+                type="password" 
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </div>
+            
+            <Separator />
+            
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Nueva Contraseña</Label>
+              <Input 
+                id="new-password" 
+                type="password" 
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar Contraseña</Label>
+              <Input 
+                id="confirm-password" 
+                type="password" 
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+            
+            <Button type="submit" disabled={isChangingPassword} className="w-full">
+              {isChangingPassword ? 'Actualizando...' : 'Actualizar Contraseña'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

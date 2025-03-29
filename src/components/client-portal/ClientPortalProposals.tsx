@@ -32,12 +32,9 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
         clientPortalLogger.info('Fetching proposals for client', { clientId }, 'ClientPortalProposals');
         
         const data = await clientPortalApi.getProposals(clientId);
-        
-        // Ensure data is an array before processing
-        const proposalsData = Array.isArray(data) ? data : [];
-        clientPortalLogger.info(`Successfully fetched ${proposalsData.length} proposals`, { count: proposalsData.length }, 'ClientPortalProposals');
-        console.log('Proposals data:', proposalsData);
-        setProposals(proposalsData as Proposal[]);
+        clientPortalLogger.info(`Successfully fetched ${data.length} proposals`, { count: data.length }, 'ClientPortalProposals');
+        console.log('Proposals data:', data);
+        setProposals(data);
       } catch (err: any) {
         console.error('Error fetching proposals:', err);
         clientPortalLogger.error('Error fetching proposals', err, 'ClientPortalProposals');

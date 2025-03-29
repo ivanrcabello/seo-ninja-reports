@@ -30,12 +30,9 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
         clientPortalLogger.info('Fetching reports for client', { clientId }, 'ClientPortalReports');
         
         const data = await clientPortalApi.getReports(clientId);
-        
-        // Ensure data is an array before processing
-        const reportsData = Array.isArray(data) ? data : [];
-        clientPortalLogger.info(`Successfully fetched ${reportsData.length} reports`, { count: reportsData.length }, 'ClientPortalReports');
-        console.log('Reports data:', reportsData);
-        setReports(reportsData as Report[]);
+        clientPortalLogger.info(`Successfully fetched ${data.length} reports`, { count: data.length }, 'ClientPortalReports');
+        console.log('Reports data:', data);
+        setReports(data);
       } catch (err: any) {
         console.error('Error fetching reports:', err);
         clientPortalLogger.error('Error fetching reports', err, 'ClientPortalReports');
