@@ -11,6 +11,8 @@ const PublicReport: React.FC = () => {
   const [verifying, setVerifying] = useState(false);
   const [showError, setShowError] = useState(false);
   
+  console.log('PublicReport page loaded with reportId:', reportId);
+  
   const { 
     report, 
     isLoading, 
@@ -25,11 +27,14 @@ const PublicReport: React.FC = () => {
     setVerifying(true);
     setShowError(false);
     
+    console.log('Verifying password for report:', reportId);
     const success = await verifyPassword(passwordInput);
     
     if (success) {
+      console.log('Password verification successful');
       await refetch();
     } else {
+      console.log('Password verification failed');
       setShowError(true);
     }
     
@@ -43,11 +48,13 @@ const PublicReport: React.FC = () => {
 
   // Show error state
   if (error) {
+    console.error('Error loading report:', error);
     return <PublicReportError errorMessage={error} />;
   }
 
   // Show password protection dialog
   if (isPasswordProtected && !accessGranted) {
+    console.log('Report is password protected and access not granted');
     return (
       <PasswordProtectionDialog
         isOpen={true}
@@ -66,9 +73,12 @@ const PublicReport: React.FC = () => {
 
   // Show empty state if no report found
   if (!report) {
+    console.log('No report found');
     return <PublicReportEmpty />;
   }
 
+  console.log('Rendering report:', report);
+  
   // Show report content
   return (
     <div className="min-h-screen bg-background">

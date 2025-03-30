@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -38,13 +37,14 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
     setPassword(result);
   };
   
-  // Generar y obtener el enlace público cuando se abre el diálogo
+  // Generate and get public link when dialog opens
   useEffect(() => {
     if (!open) return;
     
     const generateShareUrl = async () => {
       try {
         setIsLoading(true);
+        console.log('Generating share URL for report:', reportId);
         
         // Check if the report has an existing password
         const { data: reportData, error: reportError } = await supabase
@@ -54,6 +54,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           .single();
         
         if (reportError) {
+          console.error('Error fetching report data:', reportError);
           throw new Error(`Error al obtener el informe: ${reportError.message}`);
         }
         
@@ -66,53 +67,95 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           setPassword('');
         }
         
-        // Primero, verificamos si el informe ya está en la tabla pública
-        const { data: existingReport } = await supabase
-          .from('public_reports')
-          .select('id')
+        // Get the full report data to ensure we have everything needed for public_reports
+        const { data: fullReportData, error: fullReportError } = await supabase
+          .from('reports')
+          .select('*, clients(name, website)')
           .eq('id', reportId)
           .single();
         
-        if (!existingReport) {
-          // Si no existe, copiamos los datos del informe a la tabla pública
-          const { data: fullReportData, error: fullReportError } = await supabase
-            .from('reports')
-            .select('*, clients(name, website)')
-            .eq('id', reportId)
-            .single();
+        if (fullReportError) {
+          console.error('Error fetching full report:', fullReportError);
+          throw new Error(`Error al obtener el informe completo: ${fullReportError.message}`);
+        }
+
+        console.log('Full report data:', fullReportData);
+        
+        // Check if already exists in public_reports
+        const { data: existingPublicReport, error: checkError } = await supabase
+          .from('public_reports')
+          .select('id')
+          .eq('id', reportId)
+          .maybeSingle();
           
-          if (fullReportError) {
-            throw new Error(`Error al obtener el informe: ${fullReportError.message}`);
-          }
-          
-          // Insertamos en la tabla pública con type assertion
-          const { error: insertError } = await supabase
-            .from('public_reports')
-            .insert([{
-              id: fullReportData.id,
-              title: fullReportData.title,
-              date: fullReportData.date,
-              status: fullReportData.status,
-              url: fullReportData.url,
-              summary: fullReportData.summary,
-              content: fullReportData.content,
-              client_name: fullReportData.clients?.name,
-              client_website: fullReportData.clients?.website
-            }] as any);
-          
-          if (insertError) {
-            throw new Error(`Error al compartir el informe: ${insertError.message}`);
-          }
+        console.log('Existing in public_reports:', existingPublicReport);
+        
+        if (checkError) {
+          console.error('Error checking existing public report:', checkError);
         }
         
-        // Construimos la URL pública
+        // If it doesn't exist in public_reports, insert it
+        if (!existingPublicReport) {
+          console.log('Report not found in public_reports, inserting...');
+          
+          const publicReportData = {
+            id: fullReportData.id,
+            title: fullReportData.title,
+            summary: fullReportData.summary,
+            url: fullReportData.url,
+            status: fullReportData.status,
+            content: fullReportData.content,
+            date: fullReportData.date,
+            client_name: fullReportData.clients?.name,
+            client_website: fullReportData.clients?.website
+          };
+          
+          console.log('Inserting into public_reports:', publicReportData);
+          
+          const { error: insertError } = await supabase
+            .from('public_reports')
+            .insert([publicReportData]);
+          
+          if (insertError) {
+            console.error('Error inserting into public_reports:', insertError);
+            throw new Error(`Error al crear el informe público: ${insertError.message}`);
+          }
+          
+          console.log('Successfully inserted into public_reports');
+        } else {
+          console.log('Report already exists in public_reports, updating...');
+          
+          // Update the existing entry to ensure data is fresh
+          const { error: updateError } = await supabase
+            .from('public_reports')
+            .update({
+              title: fullReportData.title,
+              summary: fullReportData.summary,
+              url: fullReportData.url,
+              status: fullReportData.status,
+              content: fullReportData.content,
+              date: fullReportData.date,
+              client_name: fullReportData.clients?.name,
+              client_website: fullReportData.clients?.website
+            })
+            .eq('id', reportId);
+            
+          if (updateError) {
+            console.error('Error updating public_reports:', updateError);
+            throw new Error(`Error al actualizar el informe público: ${updateError.message}`);
+          }
+          
+          console.log('Successfully updated public_reports');
+        }
+        
+        // Build the share URL and return it
         const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
         setShareUrl(shareUrl);
         
         toast.success('Enlace generado correctamente');
-      } catch (error) {
-        console.error('Error al generar enlace:', error);
-        toast.error('Error al generar enlace para compartir');
+      } catch (error: any) {
+        console.error('Error generating share URL:', error);
+        toast.error('Error: ' + (error.message || 'Error al generar enlace'));
       } finally {
         setIsLoading(false);
       }
@@ -148,7 +191,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
     
     setIsLoading(true);
     try {
-      // Actualizamos la contraseña en la tabla reports
+      // Update the password in the reports table
       const passwordValue = passwordProtected ? password : null;
       
       const { error } = await supabase
