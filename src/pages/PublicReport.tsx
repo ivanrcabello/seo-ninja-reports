@@ -6,7 +6,7 @@ import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReport
 import useReportData from '@/components/public-reports/useReportData';
 
 const PublicReport: React.FC = () => {
-  const { reportId } = useParams<{ reportId: string }>();
+  const { reportId = '' } = useParams<{ reportId: string }>();
   const [passwordInput, setPasswordInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -21,7 +21,7 @@ const PublicReport: React.FC = () => {
     accessGranted, 
     verifyPassword,
     refetch 
-  } = useReportData(reportId || '');
+  } = useReportData(reportId);
 
   useEffect(() => {
     if (reportId) {

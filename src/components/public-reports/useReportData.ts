@@ -51,48 +51,8 @@ const useReportData = (reportId: string) => {
     try {
       console.log(`Fetching report with ID: ${reportId}`);
       
-      // STEP 1: First check if the report exists using direct query
-      const { data: existCheck, error: existCheckError } = await supabase
-        .from('reports')
-        .select('id')
-        .eq('id', reportId)
-        .maybeSingle();
-      
-      if (existCheckError) {
-        console.error('Error checking if report exists:', existCheckError);
-        throw new Error('Error al verificar si el informe existe');
-      }
-      
-      if (!existCheck) {
-        console.error('Report does not exist - ID:', reportId);
-        throw new Error('ID de reporte no válido');
-      }
-      
-      console.log('Report exists check passed:', existCheck);
-      
-      // STEP 2: Check if report is password protected
-      const { data: protectionData, error: protectionError } = await supabase
-        .from('reports')
-        .select('password')
-        .eq('id', reportId)
-        .maybeSingle();
-      
-      if (protectionError) {
-        console.error('Error checking password protection:', protectionError);
-      } else if (protectionData) {
-        const isProtected = Boolean(protectionData.password);
-        setIsPasswordProtected(isProtected);
-        console.log(`Report is password protected: ${isProtected}`);
-        
-        // If password protected and access not granted, don't fetch content yet
-        if (isProtected && !accessGranted) {
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // PRIORITY STEP: Focus on public_reports view - this is the primary source
-      console.log('Attempting to fetch from public_reports view...');
+      // PRIORITY STEP: Focus directly on public_reports view first
+      console.log('Attempting to fetch from public_reports view first...');
       const { data: publicReportData, error: publicReportError } = await supabase
         .from('public_reports')
         .select('*')
@@ -107,9 +67,40 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      console.log('Error or no data from public_reports view:', publicReportError);
+      console.log('Public reports view attempt result:', { data: publicReportData, error: publicReportError });
       
-      // Fallback to direct join query if the view fails
+      // If we could not get data from public_reports, check if report exists at all
+      console.log('Checking if report exists...');
+      const { data: existCheck, error: existCheckError } = await supabase
+        .from('reports')
+        .select('id, password')
+        .eq('id', reportId)
+        .maybeSingle();
+      
+      if (existCheckError) {
+        console.error('Error checking if report exists:', existCheckError);
+        throw new Error('Error al verificar si el informe existe');
+      }
+      
+      if (!existCheck) {
+        console.error('Report does not exist - ID:', reportId);
+        throw new Error('ID de reporte no válido o el informe no existe');
+      }
+      
+      console.log('Report exists check passed:', existCheck);
+      
+      // Check if report is password protected
+      const isProtected = Boolean(existCheck.password);
+      setIsPasswordProtected(isProtected);
+      console.log(`Report is password protected: ${isProtected}`);
+      
+      // If password protected and access not granted, don't fetch content yet
+      if (isProtected && !accessGranted) {
+        setIsLoading(false);
+        return;
+      }
+      
+      // Fallback to direct join query
       console.log('Falling back to direct join query...');
       const { data: joinData, error: joinError } = await supabase
         .from('reports')
@@ -190,7 +181,7 @@ const useReportData = (reportId: string) => {
       // Log error
       logSharedReportAccess(reportId, { 
         successful: false, 
-        error: err.message,
+        error: err.message || 'Unknown error',
         source: 'error'
       });
     } finally {
