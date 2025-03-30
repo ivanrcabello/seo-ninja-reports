@@ -51,7 +51,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         // First verify the report exists
         const { data: existsData, error: existsError } = await supabase
           .from('reports')
-          .select('*')
+          .select('shared_url, password')
           .eq('id', reportId)
           .single();
         
@@ -60,14 +60,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           throw new Error(`Error al verificar si el informe existe: ${existsError.message}`);
         }
         
-        if (!existsData) {
-          console.error('Report does not exist');
-          throw new Error('El informe no existe');
-        }
-        
-        // Safely access shared_url property with type assertion
-        const reportData = existsData as any;
-        let sharedUrl = reportData.shared_url;
+        let sharedUrl = existsData?.shared_url;
         
         // If there's no shared_url yet, generate one
         if (!sharedUrl) {
@@ -75,9 +68,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           
           const { error: updateError } = await supabase
             .from('reports')
-            .update({ 
-              shared_url: newSharedUrl 
-            } as any)
+            .update({ shared_url: newSharedUrl })
             .eq('id', reportId);
             
           if (updateError) {
@@ -90,8 +81,8 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         
         setSharedUrlId(sharedUrl);
         
-        // Safely check for password with type assertion
-        const existingPassword = reportData.password;
+        // Check for password
+        const existingPassword = existsData?.password;
         if (existingPassword) {
           setPasswordProtected(true);
           setPassword(existingPassword);
@@ -148,7 +139,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       
       const { error } = await supabase
         .from('reports')
-        .update({ password: passwordValue } as any)
+        .update({ password: passwordValue })
         .eq('id', reportId);
         
       if (error) throw new Error('Error al actualizar la contraseña');
