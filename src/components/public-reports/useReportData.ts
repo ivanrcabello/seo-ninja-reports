@@ -15,6 +15,13 @@ interface PublicReport {
   client_website?: string;
 }
 
+interface AccessLogOptions {
+  successful: boolean;
+  passwordAttempt?: boolean;
+  error?: string;
+  source?: string;
+}
+
 const useReportData = (reportId: string) => {
   const [report, setReport] = useState<PublicReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +51,7 @@ const useReportData = (reportId: string) => {
     try {
       console.log(`Fetching report with ID: ${reportId}`);
       
-      // STEP 1: First check if the report exists - using direct query
+      // STEP 1: First check if the report exists using direct query
       const { data: existCheck, error: existCheckError } = await supabase
         .from('reports')
         .select('id')
@@ -83,8 +90,8 @@ const useReportData = (reportId: string) => {
           return;
         }
       }
-      
-      // STEP 3: Try public_reports view
+
+      // PRIORITY STEP: Focus on public_reports view - this is the primary source
       console.log('Attempting to fetch from public_reports view...');
       const { data: publicReportData, error: publicReportError } = await supabase
         .from('public_reports')
@@ -102,8 +109,8 @@ const useReportData = (reportId: string) => {
       
       console.log('Error or no data from public_reports view:', publicReportError);
       
-      // STEP 4: Direct join query
-      console.log('Attempting direct join query...');
+      // Fallback to direct join query if the view fails
+      console.log('Falling back to direct join query...');
       const { data: joinData, error: joinError } = await supabase
         .from('reports')
         .select(`
@@ -146,8 +153,8 @@ const useReportData = (reportId: string) => {
       
       console.log('Error or no data from direct join:', joinError);
       
-      // STEP 5: Reports table only as fallback
-      console.log('Attempting to fetch report only...');
+      // Last resort: Reports table only as fallback
+      console.log('Final attempt to fetch report only...');
       const { data: reportOnlyData, error: reportOnlyError } = await supabase
         .from('reports')
         .select('*')

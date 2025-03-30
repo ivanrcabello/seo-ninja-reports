@@ -5,7 +5,7 @@ interface AccessLogOptions {
   successful: boolean;
   passwordAttempt?: boolean;
   error?: string;
-  source?: string; // Add the source property to fix the type error
+  source?: string;
 }
 
 /**
