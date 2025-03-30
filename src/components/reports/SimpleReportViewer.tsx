@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import useReports from '@/hooks/useReports';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import ReportViewer from './ReportViewer';
 
 interface SimpleReportViewerProps {
   reportId?: string;
@@ -71,92 +72,12 @@ const SimpleReportViewer: React.FC<SimpleReportViewerProps> = ({ reportId, repor
         <p className="text-center text-muted-foreground mt-4">
           No se pudo cargar el informe solicitado (ID: {effectiveId || 'no ID'})
         </p>
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          Compruebe que el informe existe y vuelva a intentarlo.
-        </p>
       </div>
     );
   }
   
-  if (reportToDisplay.status === 'processing') {
-    return (
-      <div className="p-6 bg-card border border-border rounded-lg">
-        <h2 className="text-xl font-bold text-center">Generando informe</h2>
-        <div className="flex justify-center mt-4">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-        <p className="text-center text-muted-foreground mt-4">
-          El informe está siendo generado. Por favor, espere unos momentos.
-        </p>
-      </div>
-    );
-  }
-  
-  if (reportToDisplay.status === 'failed') {
-    return (
-      <div className="p-6 bg-card border border-border rounded-lg">
-        <h2 className="text-xl font-bold text-center text-red-500">Error al generar el informe</h2>
-        <p className="text-center mt-4">
-          {reportToDisplay.summary || 'No se pudo completar la generación del informe.'}
-        </p>
-      </div>
-    );
-  }
-  
-  if (!reportToDisplay.content) {
-    return (
-      <div className="p-6 bg-card border border-border rounded-lg">
-        <h2 className="text-xl font-bold text-center text-red-500">Informe sin contenido</h2>
-        <p className="text-center text-muted-foreground mt-4">
-          El informe existe pero no contiene datos.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 bg-card border border-border rounded-lg">
-      <h2 className="text-2xl font-bold mb-6">{reportToDisplay.title}</h2>
-      
-      <div className="prose prose-sm max-w-none dark:prose-invert">
-        <h3>Resumen Ejecutivo</h3>
-        <div dangerouslySetInnerHTML={{ __html: reportToDisplay.content.executiveSummary.replace(/\n/g, '<br />') }} />
-        
-        <h3 className="mt-8">Análisis Técnico</h3>
-        <div dangerouslySetInnerHTML={{ __html: reportToDisplay.content.technicalAnalysis.replace(/\n/g, '<br />') }} />
-        
-        <h3 className="mt-8">Análisis de Contenido</h3>
-        <div dangerouslySetInnerHTML={{ __html: reportToDisplay.content.contentAnalysis.replace(/\n/g, '<br />') }} />
-        
-        <h3 className="mt-8">Análisis de Backlinks</h3>
-        <div dangerouslySetInnerHTML={{ __html: reportToDisplay.content.backlinksAnalysis.replace(/\n/g, '<br />') }} />
-        
-        <h3 className="mt-8">Recomendaciones</h3>
-        <div dangerouslySetInnerHTML={{ __html: reportToDisplay.content.recommendations.replace(/\n/g, '<br />') }} />
-        
-        {reportToDisplay.content.localSeo && (
-          <>
-            <h3 className="mt-8">SEO Local</h3>
-            <div dangerouslySetInnerHTML={{ __html: reportToDisplay.content.localSeo.replace(/\n/g, '<br />') }} />
-          </>
-        )}
-        
-        {reportToDisplay.content.serviceProposal && (
-          <>
-            <h3 className="mt-8">Propuesta de Servicios</h3>
-            <div dangerouslySetInnerHTML={{ __html: reportToDisplay.content.serviceProposal.replace(/\n/g, '<br />') }} />
-          </>
-        )}
-        
-        {reportToDisplay.content.keywords && (
-          <>
-            <h3 className="mt-8">Palabras Clave</h3>
-            <div dangerouslySetInnerHTML={{ __html: reportToDisplay.content.keywords.replace(/\n/g, '<br />') }} />
-          </>
-        )}
-      </div>
-    </div>
-  );
+  // Use the ReportViewer component to maintain original visualization
+  return <ReportViewer report={reportToDisplay} />;
 };
 
 export default SimpleReportViewer;
