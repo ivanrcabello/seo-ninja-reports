@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestError } from '@supabase/supabase-js';
 
 export interface PublicReport {
   id: string;
@@ -16,7 +15,7 @@ export interface PublicReport {
   password?: string;
 }
 
-// Simplified response types to avoid deep recursion
+// Simplified response types without recursive type references
 export interface ReportCheckResult {
   exists: boolean;
   error: string | null;
@@ -59,20 +58,18 @@ export async function checkReportExists(reportId: string): Promise<ReportCheckRe
     }
 
     // If no report found by shared_url, try direct id
-    // Use a simplified approach with explicit typing
-    const result = await supabase
-      .rpc('check_report_exists', { report_id_param: reportId });
+    const { data, error } = await supabase
+      .rpc('check_report_exists', { 
+        report_id_param: reportId 
+      });
       
-    if (result.error) {
-      console.error('Error checking report existence:', result.error);
-      return { exists: false, error: result.error.message };
+    if (error) {
+      console.error('Error checking report existence:', error);
+      return { exists: false, error: error.message };
     }
     
-    // Handle different possible response formats with explicit checks
-    const data = result.data;
-    const exists = typeof data === 'boolean' ? data : 
-                  (data && typeof data === 'object' && 'exists' in data) ? (data as {exists: boolean}).exists : 
-                  false;
+    // Handle response with explicit type checking
+    const exists = typeof data === 'boolean' ? data : false;
     
     return { exists, error: null };
   } catch (error: any) {
@@ -99,22 +96,18 @@ export async function checkReportPassword(reportId: string): Promise<ReportPassw
     }
 
     // If not found by shared_url, try direct id
-    interface ReportWithPassword {
-      password: string | null;
-    }
-    
-    const result = await supabase
+    const { data, error } = await supabase
       .from('reports')
       .select('password')
       .eq('id', reportId)
       .single();
     
-    if (result.error) {
-      console.error('Error checking report password:', result.error);
-      return { isProtected: false, error: result.error.message };
+    if (error) {
+      console.error('Error checking report password:', error);
+      return { isProtected: false, error: error.message };
     }
     
-    return { isProtected: !!result.data.password, error: null };
+    return { isProtected: !!data.password, error: null };
   } catch (error: any) {
     console.error('Error in checkReportPassword:', error);
     return { isProtected: false, error: error.message };
@@ -133,17 +126,17 @@ export async function fetchFromPublicReportsView(reportId: string): Promise<Repo
       
     const actualReportId = reportBySharedUrl?.id || reportId;
     
-    const result = await supabase
+    const { data, error } = await supabase
       .from('public_reports')
       .select('*')
       .eq('id', actualReportId)
       .single();
       
-    if (result.error) {
-      return { report: null, error: result.error.message };
+    if (error) {
+      return { report: null, error: error.message };
     }
     
-    return { report: result.data as PublicReport, error: null };
+    return { report: data as PublicReport, error: null };
   } catch (error: any) {
     console.error('Error in fetchFromPublicReportsView:', error);
     return { report: null, error: error.message };
@@ -162,32 +155,15 @@ export async function fetchReportWithRpc(reportId: string): Promise<ReportFetchR
       
     const actualReportId = reportBySharedUrl?.id || reportId;
     
-    // Define a clear interface for the RPC response
-    interface RpcReportResponse {
-      id: string;
-      title?: string;
-      summary?: string;
-      url?: string;
-      status?: string;
-      content?: any;
-      date?: string;
-      client_name?: string;
-      client_website?: string;
-      shared_url?: string;
-      password?: string;
-    }
-    
-    // Use explicit typing for RPC call to avoid excessive instantiation
-    const result = await supabase
+    // Use any type for RPC response to avoid deep type instantiation
+    const { data, error } = await supabase
       .rpc('get_public_report_by_id', { 
         report_id_param: actualReportId 
       });
       
-    if (result.error) {
-      return { report: null, error: result.error.message };
+    if (error) {
+      return { report: null, error: error.message };
     }
-    
-    const data = result.data;
     
     // Handle response whether it's an array or single item
     if (Array.isArray(data) && data.length > 0) {
@@ -215,8 +191,8 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
       
     const actualReportId = reportBySharedUrl?.id || reportId;
     
-    // Define interface for join result to avoid type errors
-    interface JoinResult {
+    // Define a simple type for join result
+    type JoinResult = {
       id: string;
       title: string;
       summary: string;
@@ -230,52 +206,47 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
         name: string;
         website: string;
       };
-    }
+    };
     
-    try {
-      const result = await supabase
-        .from('reports')
-        .select(`
-          id, 
-          title, 
-          summary, 
-          url, 
-          status, 
-          content,
-          date,
-          shared_url,
-          password,
-          clients!inner(name, website)
-        `)
-        .eq('id', actualReportId)
-        .single();
+    const { data, error } = await supabase
+      .from('reports')
+      .select(`
+        id, 
+        title, 
+        summary, 
+        url, 
+        status, 
+        content,
+        date,
+        shared_url,
+        password,
+        clients!inner(name, website)
+      `)
+      .eq('id', actualReportId)
+      .single();
         
-      if (result.error) {
-        return { report: null, error: result.error.message };
-      }
-      
-      // Transform the data to match the PublicReport interface
-      const data = result.data as unknown as JoinResult;
-      
-      const report: PublicReport = {
-        id: data.id,
-        title: data.title,
-        summary: data.summary,
-        url: data.url,
-        status: data.status,
-        content: data.content,
-        date: data.date,
-        client_name: data.clients.name,
-        client_website: data.clients.website,
-        shared_url: data.shared_url,
-        password: data.password
-      };
-      
-      return { report, error: null };
-    } catch (error: any) {
-      console.error('Error in fetchReportWithJoin:', error);
+    if (error) {
       return { report: null, error: error.message };
     }
+      
+    // Transform the data to match the PublicReport interface
+    const joinData = data as unknown as JoinResult;
+      
+    const report: PublicReport = {
+      id: joinData.id,
+      title: joinData.title,
+      summary: joinData.summary,
+      url: joinData.url,
+      status: joinData.status,
+      content: joinData.content,
+      date: joinData.date,
+      client_name: joinData.clients.name,
+      client_website: joinData.clients.website,
+      shared_url: joinData.shared_url,
+      password: joinData.password
+    };
+      
+    return { report, error: null };
   } catch (error: any) {
     console.error('Error in fetchReportWithJoin:', error);
     return { report: null, error: error.message };
@@ -294,7 +265,7 @@ export async function fetchReportOnly(reportId: string): Promise<ReportFetchResu
       
     const actualReportId = reportBySharedUrl?.id || reportId;
     
-    interface ReportOnlyResult {
+    type ReportOnlyData = {
       id: string;
       title?: string;
       summary?: string;
@@ -304,33 +275,33 @@ export async function fetchReportOnly(reportId: string): Promise<ReportFetchResu
       date?: string;
       shared_url?: string;
       password?: string;
-    }
+    };
     
-    const result = await supabase
+    const { data, error } = await supabase
       .from('reports')
       .select('*')
       .eq('id', actualReportId)
       .single();
       
-    if (result.error) {
-      return { report: null, error: result.error.message };
+    if (error) {
+      return { report: null, error: error.message };
     }
     
-    const data = result.data as ReportOnlyResult;
+    const reportData = data as ReportOnlyData;
     
     // Create a partial report with available data
     const report: PublicReport = {
-      id: data.id,
-      title: data.title || 'Informe SEO',
-      summary: data.summary || '',
-      url: data.url || '',
-      status: data.status || '',
-      content: data.content || {},
-      date: data.date || '',
+      id: reportData.id,
+      title: reportData.title || 'Informe SEO',
+      summary: reportData.summary || '',
+      url: reportData.url || '',
+      status: reportData.status || '',
+      content: reportData.content || {},
+      date: reportData.date || '',
       client_name: 'Cliente',  // Default value if no client data
-      client_website: data.url || '',
-      shared_url: data.shared_url,
-      password: data.password
+      client_website: reportData.url || '',
+      shared_url: reportData.shared_url,
+      password: reportData.password
     };
     
     return { report, error: null };
@@ -343,10 +314,10 @@ export async function fetchReportOnly(reportId: string): Promise<ReportFetchResu
 // Verify report password
 export async function verifyReportPassword(reportId: string, password: string): Promise<PasswordVerifyResult> {
   try {
-    interface ReportWithPassword {
+    type ReportWithPassword = {
       id: string;
       password: string | null;
-    }
+    };
     
     let reportToCheck: ReportWithPassword | null = null;
     
@@ -361,18 +332,18 @@ export async function verifyReportPassword(reportId: string, password: string): 
       reportToCheck = reportBySharedUrl as ReportWithPassword;
     } else {
       // If not found by shared_url, try direct id
-      const result = await supabase
+      const { data, error } = await supabase
         .from('reports')
         .select('id, password')
         .eq('id', reportId)
         .single();
       
-      if (result.error) {
-        console.error('Error fetching report for password verification:', result.error);
-        return { success: false, error: result.error.message };
+      if (error) {
+        console.error('Error fetching report for password verification:', error);
+        return { success: false, error: error.message };
       }
       
-      reportToCheck = result.data as ReportWithPassword;
+      reportToCheck = data as ReportWithPassword;
     }
     
     // Verify the password
