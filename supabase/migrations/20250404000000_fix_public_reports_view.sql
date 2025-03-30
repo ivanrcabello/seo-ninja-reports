@@ -30,3 +30,29 @@ ON public.reports
 FOR SELECT
 TO anon, authenticated
 USING (true);
+
+-- Create a policy for the public_reports view to ensure it's accessible
+DROP POLICY IF EXISTS "Allow public access to public_reports" ON public_reports;
+
+CREATE POLICY "Allow public access to public_reports"
+ON public_reports
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+-- Fix the check_report_exists function to be more robust
+CREATE OR REPLACE FUNCTION public.check_report_exists(report_id_param uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  report_exists boolean;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM reports WHERE id = report_id_param
+  ) INTO report_exists;
+  
+  RETURN report_exists;
+END;
+$$;

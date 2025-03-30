@@ -53,19 +53,21 @@ const useReportData = (reportId: string) => {
       }
       
       // Check if report is password protected
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_report_password_protection', 
-        { report_id_param: reportId }
-      );
+      const { data: protectionData, error: protectionError } = await supabase
+        .from('reports')
+        .select('password')
+        .eq('id', reportId)
+        .maybeSingle();
       
       if (protectionError) {
         console.error('Error checking password protection:', protectionError);
-      } else {
-        setIsPasswordProtected(protectionData === true);
-        console.log(`Report is password protected: ${protectionData}`);
+      } else if (protectionData) {
+        const isProtected = Boolean(protectionData.password);
+        setIsPasswordProtected(isProtected);
+        console.log(`Report is password protected: ${isProtected}`);
         
         // If password protected and access not granted, don't fetch content yet
-        if (protectionData === true && !accessGranted) {
+        if (isProtected && !accessGranted) {
           setIsLoading(false);
           return;
         }
@@ -188,15 +190,16 @@ const useReportData = (reportId: string) => {
       
       if (error) throw error;
       
-      setAccessGranted(Boolean(data));
+      const success = Boolean(data);
+      setAccessGranted(success);
       
       // Log password attempt
       logSharedReportAccess(reportId, {
         passwordAttempt: true,
-        successful: Boolean(data)
+        successful: success
       });
       
-      return Boolean(data);
+      return success;
     } catch (error) {
       console.error('Error verifying password:', error);
       return false;

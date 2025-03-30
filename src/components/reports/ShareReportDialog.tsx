@@ -95,62 +95,19 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
 
         console.log('Full report data:', fullReportData);
         
-        // Prepare the public report data with correct types
-        const publicReportData: PublicReportData = {
-          id: fullReportData.id,
-          title: fullReportData.title,
-          summary: fullReportData.summary,
-          url: fullReportData.url,
-          status: fullReportData.status,
-          content: fullReportData.content,
-          date: fullReportData.date,
-          client_name: fullReportData.clients?.name,
-          client_website: fullReportData.clients?.website
-        };
+        // Verify if the report already exists in the public_reports view
+        const { data: existingPublicReport, error: viewCheckError } = await supabase
+          .from('public_reports')
+          .select('id')
+          .eq('id', reportId)
+          .maybeSingle();
         
-        // Use the RPC function to update or insert the report data to the public reports
-        try {
-          // First, try to get data from public_reports to see if the report already exists there
-          const { data: existingPublicReport } = await supabase
-            .from('public_reports')
-            .select('id')
-            .eq('id', reportId)
-            .maybeSingle();
-          
-          if (existingPublicReport) {
-            // Report exists in public_reports, update it using RPC function
-            const { error: rpcError } = await supabase.rpc(
-              'update_public_report',
-              {
-                report_id: reportId,
-                report_data: publicReportData
-              }
-            );
-            
-            if (rpcError) {
-              console.error('Error using update RPC function:', rpcError);
-              throw rpcError;
-            }
-          } else {
-            // Report doesn't exist in public_reports, insert it using RPC function
-            const { error: rpcError } = await supabase.rpc(
-              'insert_public_report',
-              {
-                report_data: publicReportData
-              }
-            );
-            
-            if (rpcError) {
-              console.error('Error using insert RPC function:', rpcError);
-              throw rpcError;
-            }
-          }
-          
-          console.log('Successfully processed report data');
-        } catch (processingError) {
-          console.error('Error processing report data:', processingError);
-          throw new Error(`Error al procesar datos del informe: ${processingError.message || 'Error desconocido'}`);
+        if (viewCheckError) {
+          console.error('Error checking public_reports view:', viewCheckError);
+          // Continue with the process even if there was an error checking the view
         }
+        
+        console.log('Public report check result:', existingPublicReport);
         
         // Build the share URL
         const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
