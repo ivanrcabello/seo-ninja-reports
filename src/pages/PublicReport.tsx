@@ -20,7 +20,8 @@ const PublicReport: React.FC = () => {
     isPasswordProtected, 
     accessGranted, 
     verifyPassword,
-    refetch 
+    refetch,
+    notFound
   } = useReportData(reportId);
 
   useEffect(() => {
@@ -69,6 +70,12 @@ const PublicReport: React.FC = () => {
   if (error) {
     console.error('PublicReport: Error loading report:', error);
     return <PublicReportError errorMessage={error} />;
+  }
+
+  // Show not found state
+  if (notFound) {
+    console.log('PublicReport: Report not found, showing empty state');
+    return <PublicReportEmpty />;
   }
 
   // Show password protection dialog

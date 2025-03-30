@@ -28,69 +28,99 @@ const useReportData = (reportId: string) => {
   const [error, setError] = useState<string | null>(null);
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const fetchReport = useCallback(async () => {
-    if (!reportId) {
-      setError('ID de reporte no válido');
+    if (!reportId || reportId.trim() === '') {
+      console.error('No reportId provided');
+      setError('ID de reporte no proporcionado');
       setIsLoading(false);
+      setNotFound(true);
       return;
     }
 
-    // Validate UUID format to avoid unnecessary DB queries with invalid formats
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(reportId)) {
-      console.error('Invalid UUID format:', reportId);
-      setError('ID de reporte no válido (formato incorrecto)');
-      setIsLoading(false);
-      return;
-    }
-
+    console.log(`Starting fetch for report with ID: ${reportId}`);
     setIsLoading(true);
     setError(null);
+    setNotFound(false);
 
     try {
-      console.log(`Fetching report with ID: ${reportId}`);
+      // Basic UUID format validation to avoid unnecessary DB queries
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(reportId)) {
+        console.error('Invalid UUID format:', reportId);
+        setError('ID de reporte no válido (formato incorrecto)');
+        setIsLoading(false);
+        setNotFound(true);
+        return;
+      }
       
-      // PRIORITY STEP: Focus directly on public_reports view first
-      console.log('Attempting to fetch from public_reports view first...');
+      // APPROACH 1: Try to get report from public_reports view first (most direct)
+      console.log('APPROACH 1: Fetching from public_reports view...');
       const { data: publicReportData, error: publicReportError } = await supabase
         .from('public_reports')
         .select('*')
         .eq('id', reportId)
         .maybeSingle();
       
+      console.log('Public reports view result:', { 
+        data: publicReportData ? 'Data exists' : 'No data', 
+        error: publicReportError 
+      });
+      
       if (!publicReportError && publicReportData) {
-        console.log('Successfully fetched from public_reports view:', publicReportData);
+        console.log('Successfully fetched from public_reports view');
         setReport(publicReportData);
         logSharedReportAccess(reportId, { successful: true, source: 'public_reports_view' });
         setIsLoading(false);
         return;
       }
       
-      console.log('Public reports view attempt result:', { data: publicReportData, error: publicReportError });
+      // APPROACH 2: Check if report exists and check password protection
+      console.log('APPROACH 2: Checking if report exists and password protection...');
+      const { data: reportCheck, error: reportCheckError } = await supabase
+        .rpc('check_report_exists', { report_id_param: reportId });
       
-      // If we could not get data from public_reports, check if report exists at all
-      console.log('Checking if report exists...');
-      const { data: existCheck, error: existCheckError } = await supabase
+      console.log('Report exists check:', { exists: reportCheck, error: reportCheckError });
+      
+      if (reportCheckError) {
+        console.error('Error checking if report exists (RPC):', reportCheckError);
+        // Continue to try other methods if RPC fails
+      } else if (reportCheck === false) {
+        console.error('Report does not exist (confirmed by RPC) - ID:', reportId);
+        setError('El informe no existe');
+        setIsLoading(false);
+        setNotFound(true);
+        logSharedReportAccess(reportId, { successful: false, error: 'Report not found', source: 'rpc_check' });
+        return;
+      }
+      
+      // Direct check in reports table
+      console.log('Checking if report exists in reports table...');
+      const { data: reportData, error: reportDataError } = await supabase
         .from('reports')
         .select('id, password')
         .eq('id', reportId)
         .maybeSingle();
       
-      if (existCheckError) {
-        console.error('Error checking if report exists:', existCheckError);
-        throw new Error('Error al verificar si el informe existe');
-      }
+      console.log('Direct reports table check:', { 
+        data: reportData ? 'Found' : 'Not found', 
+        error: reportDataError 
+      });
       
-      if (!existCheck) {
-        console.error('Report does not exist - ID:', reportId);
-        throw new Error('ID de reporte no válido o el informe no existe');
+      if (reportDataError) {
+        console.error('Error checking if report exists in reports table:', reportDataError);
+      } else if (!reportData) {
+        console.error('Report does not exist in reports table - ID:', reportId);
+        setError('El informe no existe');
+        setIsLoading(false);
+        setNotFound(true);
+        logSharedReportAccess(reportId, { successful: false, error: 'Report not found', source: 'direct_check' });
+        return;
       }
-      
-      console.log('Report exists check passed:', existCheck);
       
       // Check if report is password protected
-      const isProtected = Boolean(existCheck.password);
+      const isProtected = Boolean(reportData && reportData.password);
       setIsPasswordProtected(isProtected);
       console.log(`Report is password protected: ${isProtected}`);
       
@@ -100,8 +130,26 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // Fallback to direct join query
-      console.log('Falling back to direct join query...');
+      // APPROACH 3: Use get_public_report_by_id RPC
+      console.log('APPROACH 3: Using get_public_report_by_id RPC...');
+      const { data: rpcReportData, error: rpcError } = await supabase
+        .rpc('get_public_report_by_id', { report_id_param: reportId });
+      
+      console.log('RPC result:', { 
+        data: rpcReportData && rpcReportData.length > 0 ? 'Data exists' : 'No data', 
+        error: rpcError 
+      });
+      
+      if (!rpcError && rpcReportData && rpcReportData.length > 0) {
+        console.log('Successfully fetched via RPC');
+        setReport(rpcReportData[0]);
+        logSharedReportAccess(reportId, { successful: true, source: 'rpc' });
+        setIsLoading(false);
+        return;
+      }
+      
+      // APPROACH 4: Fallback to direct join query
+      console.log('APPROACH 4: Using direct join query...');
       const { data: joinData, error: joinError } = await supabase
         .from('reports')
         .select(`
@@ -112,7 +160,7 @@ const useReportData = (reportId: string) => {
           status,
           content,
           date,
-          clients!inner (
+          clients (
             name,
             website
           )
@@ -120,8 +168,13 @@ const useReportData = (reportId: string) => {
         .eq('id', reportId)
         .maybeSingle();
       
+      console.log('Join query result:', { 
+        data: joinData ? 'Data exists' : 'No data', 
+        error: joinError 
+      });
+      
       if (!joinError && joinData) {
-        console.log('Successfully fetched with join query:', joinData);
+        console.log('Successfully fetched with join query');
         
         // Format the data to match PublicReport interface
         const formattedReport: PublicReport = {
@@ -142,18 +195,21 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      console.log('Error or no data from direct join:', joinError);
-      
-      // Last resort: Reports table only as fallback
-      console.log('Final attempt to fetch report only...');
+      // APPROACH 5: Last resort - Reports table only
+      console.log('APPROACH 5: Fetching report only (no joins)...');
       const { data: reportOnlyData, error: reportOnlyError } = await supabase
         .from('reports')
         .select('*')
         .eq('id', reportId)
         .maybeSingle();
       
+      console.log('Report only query result:', { 
+        data: reportOnlyData ? 'Data exists' : 'No data', 
+        error: reportOnlyError 
+      });
+      
       if (!reportOnlyError && reportOnlyData) {
-        console.log('Successfully fetched report only:', reportOnlyData);
+        console.log('Successfully fetched report only');
         
         const formattedReport: PublicReport = {
           id: reportOnlyData.id,
@@ -171,12 +227,20 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      console.log('All attempts failed. Report not found.');
-      throw new Error('No se pudo encontrar el informe solicitado');
+      // If we got here, we have exhausted all options
+      console.error('All attempts failed. Report not found or not accessible.');
+      setError('No se pudo encontrar el informe solicitado');
+      setNotFound(true);
+      logSharedReportAccess(reportId, { 
+        successful: false, 
+        error: 'All attempts failed',
+        source: 'exhausted_options'
+      });
       
     } catch (err: any) {
       console.error('Error fetching shared report:', err);
       setError(err.message || 'Error al cargar el informe');
+      setNotFound(true);
       
       // Log error
       logSharedReportAccess(reportId, { 
@@ -224,7 +288,9 @@ const useReportData = (reportId: string) => {
   };
 
   useEffect(() => {
-    fetchReport();
+    if (reportId) {
+      fetchReport();
+    }
   }, [fetchReport]);
 
   return {
@@ -234,7 +300,8 @@ const useReportData = (reportId: string) => {
     isPasswordProtected,
     accessGranted,
     verifyPassword,
-    refetch: fetchReport
+    refetch: fetchReport,
+    notFound
   };
 };
 
