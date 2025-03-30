@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -65,14 +64,18 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           throw new Error('El informe no existe');
         }
         
-        let sharedUrl = existsData.shared_url;
+        // TypeScript fix: safely access shared_url property
+        let sharedUrl = existsData?.shared_url;
         
         // If there's no shared_url yet, generate one
         if (!sharedUrl) {
           const newSharedUrl = crypto.randomUUID();
+          // Use explicit type assertion or cast for the update operation
           const { error: updateError } = await supabase
             .from('reports')
-            .update({ shared_url: newSharedUrl })
+            .update({ 
+              shared_url: newSharedUrl 
+            } as any)
             .eq('id', reportId);
             
           if (updateError) {
@@ -85,10 +88,11 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         
         setSharedUrlId(sharedUrl);
         
-        // Set password state based on existing data
-        if (existsData.password) {
+        // Set password state based on existing data - safely access password property
+        const existingPassword = existsData?.password;
+        if (existingPassword) {
           setPasswordProtected(true);
-          setPassword(existsData.password);
+          setPassword(existingPassword);
         } else {
           setPasswordProtected(false);
           setPassword('');
@@ -142,7 +146,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       
       const { error } = await supabase
         .from('reports')
-        .update({ password: passwordValue })
+        .update({ password: passwordValue } as any) // Use type assertion to fix TypeScript error
         .eq('id', reportId);
         
       if (error) throw new Error('Error al actualizar la contraseña');

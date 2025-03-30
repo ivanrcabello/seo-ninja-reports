@@ -11,6 +11,8 @@ export interface PublicReport {
   date: string;
   client_name: string;
   client_website: string;
+  shared_url?: string;
+  password?: string;
 }
 
 export interface AccessLogOptions {
