@@ -313,41 +313,56 @@ export async function verifyReportPassword(reportId: string, password: string): 
   try {
     console.log(`Verifying report password: ${reportId}`);
     
-    let reportToCheck;
-    
-    // First try with shared_url
-    const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
-      .from('reports')
-      .select('id, password')
-      .eq('shared_url', reportId)
-      .maybeSingle();
+    // Try to use the database function for password verification
+    try {
+      const { data, error } = await supabase.rpc('verify_shared_report_password', {
+        report_id_param: reportId,
+        password_param: password
+      });
       
-    if (reportBySharedUrl) {
-      reportToCheck = reportBySharedUrl;
-    } else {
-      // If not found by shared_url, try direct id
-      const { data, error } = await supabase
+      if (error) throw error;
+      
+      return { success: !!data, error: null };
+    } catch (rpcError: any) {
+      console.error('RPC password verification failed, using fallback method:', rpcError);
+      
+      // Fallback: Manual verification
+      let reportToCheck;
+      
+      // First try with shared_url
+      const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
         .from('reports')
         .select('id, password')
-        .eq('id', reportId)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching report for password verification:', error);
-        return { success: false, error: error.message };
+        .eq('shared_url', reportId)
+        .maybeSingle();
+        
+      if (reportBySharedUrl) {
+        reportToCheck = reportBySharedUrl;
+      } else {
+        // If not found by shared_url, try direct id
+        const { data, error } = await supabase
+          .from('reports')
+          .select('id, password')
+          .eq('id', reportId)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching report for password verification:', error);
+          return { success: false, error: error.message };
+        }
+        
+        reportToCheck = data;
       }
       
-      reportToCheck = data;
+      // Verify the password
+      if (!reportToCheck || !reportToCheck.password) {
+        // Report is not password protected
+        return { success: true, error: null };
+      }
+      
+      const success = reportToCheck.password === password;
+      return { success, error: null };
     }
-    
-    // Verify the password
-    if (!reportToCheck || !reportToCheck.password) {
-      // Report is not password protected
-      return { success: true, error: null };
-    }
-    
-    const success = reportToCheck.password === password;
-    return { success, error: null };
   } catch (error: any) {
     console.error('Error in verifyReportPassword:', error);
     return { success: false, error: error.message };

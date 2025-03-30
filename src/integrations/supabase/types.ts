@@ -989,6 +989,7 @@ export type Database = {
           id: string
           notes: string | null
           password: string | null
+          shared_url: string | null
           status: string
           summary: string | null
           title: string
@@ -1005,6 +1006,7 @@ export type Database = {
           id?: string
           notes?: string | null
           password?: string | null
+          shared_url?: string | null
           status?: string
           summary?: string | null
           title: string
@@ -1021,6 +1023,7 @@ export type Database = {
           id?: string
           notes?: string | null
           password?: string | null
+          shared_url?: string | null
           status?: string
           summary?: string | null
           title?: string
@@ -2115,6 +2118,8 @@ export type Database = {
           content: Json | null
           date: string | null
           id: string | null
+          password: string | null
+          shared_url: string | null
           status: string | null
           summary: string | null
           title: string | null
@@ -2154,6 +2159,12 @@ export type Database = {
       check_proposal_password_protection: {
         Args: {
           shared_url_param: string
+        }
+        Returns: boolean
+      }
+      check_report_exists: {
+        Args: {
+          report_id_param: string
         }
         Returns: boolean
       }
@@ -2347,6 +2358,24 @@ export type Database = {
           updated_at: string
           client_name: string
           client_website: string
+        }[]
+      }
+      get_report_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          summary: string
+          url: string
+          status: string
+          content: Json
+          date: string
+          client_name: string
+          client_website: string
+          shared_url: string
+          password: string
         }[]
       }
       insert_public_report: {

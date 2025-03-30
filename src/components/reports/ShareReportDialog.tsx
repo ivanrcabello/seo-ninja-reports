@@ -48,24 +48,26 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         setIsLoading(true);
         console.log('Generating share URL for report:', reportId);
         
-        // First verify the report exists
-        const { data: existsData, error: existsError } = await supabase
+        // Check if the report exists and if it already has a shared URL
+        const { data: reportData, error: reportError } = await supabase
           .from('reports')
           .select('shared_url, password')
           .eq('id', reportId)
           .single();
         
-        if (existsError) {
-          console.error('Error checking if report exists:', existsError);
-          throw new Error(`Error al verificar si el informe existe: ${existsError.message}`);
+        if (reportError) {
+          console.error('Error checking report:', reportError);
+          throw new Error(`Error checking report: ${reportError.message}`);
         }
         
-        let sharedUrl = existsData?.shared_url;
+        let sharedUrl = reportData?.shared_url;
         
         // If there's no shared_url yet, generate one
         if (!sharedUrl) {
+          // Generate UUID on the client side
           const newSharedUrl = crypto.randomUUID();
           
+          // Update the report with the new shared URL
           const { error: updateError } = await supabase
             .from('reports')
             .update({ shared_url: newSharedUrl })
@@ -73,16 +75,17 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
             
           if (updateError) {
             console.error('Error generating shared URL:', updateError);
-            throw new Error(`Error al generar URL compartida: ${updateError.message}`);
+            throw new Error(`Error generating shared URL: ${updateError.message}`);
           }
           
           sharedUrl = newSharedUrl;
+          console.log('Generated new shared URL:', sharedUrl);
         }
         
         setSharedUrlId(sharedUrl);
         
         // Check for password
-        const existingPassword = existsData?.password;
+        const existingPassword = reportData?.password;
         if (existingPassword) {
           setPasswordProtected(true);
           setPassword(existingPassword);
