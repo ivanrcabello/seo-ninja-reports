@@ -38,26 +38,10 @@ export async function logSharedReportAccess(
     
     console.log('Logging shared report access:', logData);
     
-    // Try to log to the database if possible
-    try {
-      const { error } = await supabase
-        .from('shared_report_access_logs')
-        .insert(logData);
-        
-      if (error) {
-        console.error('Error logging to database:', error);
-        // Save to local storage as fallback
-        const localLogs = JSON.parse(localStorage.getItem('report_access_logs') || '[]');
-        localLogs.push(logData);
-        localStorage.setItem('report_access_logs', JSON.stringify(localLogs));
-      }
-    } catch (dbError) {
-      console.warn('Database logging failed, using local storage instead:', dbError);
-      // Save to local storage as fallback
-      const localLogs = JSON.parse(localStorage.getItem('report_access_logs') || '[]');
-      localLogs.push(logData);
-      localStorage.setItem('report_access_logs', JSON.stringify(localLogs));
-    }
+    // Save logs to local storage since shared_report_access_logs table doesn't exist
+    const localLogs = JSON.parse(localStorage.getItem('report_access_logs') || '[]');
+    localLogs.push(logData);
+    localStorage.setItem('report_access_logs', JSON.stringify(localLogs));
   } catch (error) {
     console.error('Failed to log report access:', error);
   }

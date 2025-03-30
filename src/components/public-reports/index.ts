@@ -11,4 +11,6 @@ export { default as TabItem } from './TabItem';
 // Export hooks and utilities
 export { default as useReportData } from './hooks/useReportData';
 export * from './utils/reportDataUtils';
-export * from './services/sharedReportLogger';
+
+// Re-export the logging function without the interface (to avoid conflict)
+export { logSharedReportAccess } from './services/sharedReportLogger';
