@@ -7,3 +7,8 @@ export { default as PublicReportLoading } from './PublicReportLoading';
 export { default as ReportTabs } from './ReportTabs';
 export { default as ReportContents } from './ReportContents';
 export { default as TabItem } from './TabItem';
+
+// Export hooks and utilities
+export { default as useReportData } from './hooks/useReportData';
+export * from './utils/reportDataUtils';
+export * from './services/sharedReportLogger';
