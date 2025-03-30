@@ -19,7 +19,7 @@ export interface PublicReportData {
   client_website: string | null;
 }
 
-export interface RpcResponseGetPublicReportById {
+export interface RpcResponseGetPublicReportById extends PublicReportData {
   id: string;
   title: string | null;
   summary: string | null;
