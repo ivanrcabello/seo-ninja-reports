@@ -36,17 +36,7 @@ const useReportData = (reportId: string) => {
     setNotFound(false);
 
     try {
-      // APPROACH 1: Try to get report from public_reports view
-      const { report: publicReport, error: publicReportError } = await fetchFromPublicReportsView(reportId);
-      
-      if (!publicReportError && publicReport) {
-        setReport(publicReport);
-        logSharedReportAccess(reportId, { successful: true }, 'public_reports_view');
-        setIsLoading(false);
-        return;
-      }
-      
-      // APPROACH 2: Check if report exists and check password protection
+      // First check if report exists and check password protection
       const { exists, error: reportCheckError } = await checkReportExists(reportId);
       
       if (reportCheckError) {
@@ -75,7 +65,19 @@ const useReportData = (reportId: string) => {
         }
       }
       
-      // APPROACH 3: Use RPC method
+      // Try to get report using different methods in order of preference
+      
+      // APPROACH 1: Try to get report from public_reports view
+      const { report: publicReport, error: publicReportError } = await fetchFromPublicReportsView(reportId);
+      
+      if (!publicReportError && publicReport) {
+        setReport(publicReport);
+        logSharedReportAccess(reportId, { successful: true }, 'public_reports_view');
+        setIsLoading(false);
+        return;
+      }
+      
+      // APPROACH 2: Use RPC method
       const { report: rpcReport, error: rpcError } = await fetchReportWithRpc(reportId);
       
       if (!rpcError && rpcReport) {
@@ -85,7 +87,7 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // APPROACH 4: Direct join query
+      // APPROACH 3: Direct join query
       const { report: joinReport, error: joinError } = await fetchReportWithJoin(reportId);
       
       if (!joinError && joinReport) {
@@ -95,7 +97,7 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // APPROACH 5: Reports table only
+      // APPROACH 4: Reports table only
       const { report: reportOnly, error: reportOnlyError } = await fetchReportOnly(reportId);
       
       if (!reportOnlyError && reportOnly) {

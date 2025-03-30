@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
-import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading } from '@/components/public-reports';
-import useReportData from '@/components/public-reports/useReportData';
+import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading, useReportData } from '@/components/public-reports';
+import { logSharedReportAccess } from '@/components/public-reports/services/sharedReportLogger';
 
 const PublicReport: React.FC = () => {
   const { reportId = '' } = useParams<{ reportId: string }>();
@@ -27,6 +27,11 @@ const PublicReport: React.FC = () => {
   useEffect(() => {
     if (reportId) {
       console.log(`PublicReport page initialized with reportId: ${reportId}`);
+      // Log page view
+      logSharedReportAccess(reportId, { 
+        successful: true,
+        view: 'page_load' 
+      }, 'page_view');
     } else {
       console.error('No reportId parameter found in URL');
     }
