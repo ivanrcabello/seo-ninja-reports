@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestError } from '@supabase/supabase-js';
+import { PostgrestError, PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js';
 
 export interface PublicReport {
   id: string;
@@ -60,10 +60,12 @@ export async function checkReportExists(reportId: string): Promise<ReportCheckRe
 
     // If no report found by shared_url, try direct id
     // Use explicit typing to avoid deep recursion
-    type RpcResponse = { exists: boolean } | boolean | null;
+    interface CheckReportResult {
+      exists: boolean;
+    }
     
     const { data, error } = await supabase
-      .rpc<RpcResponse>('check_report_exists', { report_id_param: reportId });
+      .rpc<CheckReportResult>('check_report_exists', { report_id_param: reportId });
       
     if (error) {
       console.error('Error checking report existence:', error);
@@ -163,11 +165,23 @@ export async function fetchReportWithRpc(reportId: string): Promise<ReportFetchR
       
     const actualReportId = reportBySharedUrl?.id || reportId;
     
-    // Use explicit type annotation for the RPC response
-    type RpcResponseItem = Partial<PublicReport>;
+    // Define a clear interface for the RPC response
+    interface RpcReportResponse {
+      id: string;
+      title?: string;
+      summary?: string;
+      url?: string;
+      status?: string;
+      content?: any;
+      date?: string;
+      client_name?: string;
+      client_website?: string;
+      shared_url?: string;
+      password?: string;
+    }
     
     const { data, error } = await supabase
-      .rpc<RpcResponseItem[] | RpcResponseItem>('get_public_report_by_id', { 
+      .rpc<RpcReportResponse[] | RpcReportResponse>('get_public_report_by_id', { 
         report_id_param: actualReportId 
       });
       
@@ -213,6 +227,8 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
         name: string;
         website: string;
       };
+      shared_url?: string;
+      password?: string;
     }
     
     const { data, error } = await supabase
@@ -225,6 +241,8 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
         status, 
         content, 
         date,
+        shared_url,
+        password,
         clients!inner(name, website)
       `)
       .eq('id', actualReportId)
@@ -245,7 +263,9 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
       content: typedData.content,
       date: typedData.date,
       client_name: typedData.clients.name,
-      client_website: typedData.clients.website
+      client_website: typedData.clients.website,
+      shared_url: typedData.shared_url,
+      password: typedData.password
     };
     
     return { report, error: null };
@@ -275,6 +295,8 @@ export async function fetchReportOnly(reportId: string): Promise<ReportFetchResu
       status?: string;
       content?: any;
       date?: string;
+      shared_url?: string;
+      password?: string;
     }
     
     const { data, error } = await supabase
@@ -299,7 +321,9 @@ export async function fetchReportOnly(reportId: string): Promise<ReportFetchResu
       content: typedData.content || {},
       date: typedData.date || '',
       client_name: 'Cliente',  // Default value if no client data
-      client_website: typedData.url || ''
+      client_website: typedData.url || '',
+      shared_url: typedData.shared_url,
+      password: typedData.password
     };
     
     return { report, error: null };
