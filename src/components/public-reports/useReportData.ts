@@ -57,25 +57,7 @@ const useReportData = (reportId: string) => {
       
       // Try 3 different approaches to get the report data
       
-      // Approach 1: Try to get report data using the get_public_report_by_id function
-      try {
-        const { data: functionData, error: functionError } = await supabase.rpc(
-          'get_public_report_by_id',
-          { report_id_param: reportId }
-        );
-        
-        if (!functionError && functionData && functionData.length > 0) {
-          console.log('Found via RPC function:', functionData[0]);
-          setReport(functionData[0] as PublicReport);
-          logSharedReportAccess(reportId, { successful: true });
-          setIsLoading(false);
-          return;
-        }
-      } catch (functionErr) {
-        console.log('RPC function approach failed:', functionErr);
-      }
-      
-      // Approach 2: Try to fetch from public_reports view
+      // Approach 1: Try to fetch from public_reports view directly
       console.log('Attempting to fetch from public_reports view...');
       const { data: publicData, error: publicError } = await supabase
         .from('public_reports')
@@ -106,11 +88,55 @@ const useReportData = (reportId: string) => {
         console.error('Error fetching from public_reports:', publicError);
       }
       
-      // Approach 3: Try to fetch directly from reports table with client info
-      console.log('Attempting to fetch directly from reports table...');
+      // Approach 2: Try custom SQL function to get report by ID
+      // Note: This function needs to exist in the database
+      try {
+        const { data: functionData, error: functionError } = await supabase
+          .from('reports')
+          .select(`
+            id,
+            title,
+            summary,
+            url,
+            status,
+            content,
+            date,
+            clients (
+              name,
+              website
+            )
+          `)
+          .eq('id', reportId)
+          .maybeSingle();
+        
+        if (!functionError && functionData) {
+          console.log('Found via reports query:', functionData);
+          const formattedReport: PublicReport = {
+            id: functionData.id,
+            title: functionData.title || 'Informe sin título',
+            summary: functionData.summary,
+            url: functionData.url,
+            status: functionData.status,
+            content: functionData.content,
+            date: functionData.date,
+            client_name: functionData.clients?.name,
+            client_website: functionData.clients?.website
+          };
+          
+          setReport(formattedReport);
+          logSharedReportAccess(reportId, { successful: true });
+          setIsLoading(false);
+          return;
+        }
+      } catch (functionErr) {
+        console.log('SQL function approach failed:', functionErr);
+      }
+      
+      // Approach 3: Try to fetch directly from reports table without client info
+      console.log('Attempting to fetch directly from reports table without joins...');
       const { data: reportData, error: reportError } = await supabase
         .from('reports')
-        .select('*, clients(name, website)')
+        .select('*')
         .eq('id', reportId)
         .maybeSingle();
         
@@ -123,9 +149,8 @@ const useReportData = (reportId: string) => {
           url: reportData.url,
           status: reportData.status,
           content: reportData.content,
-          date: reportData.date,
-          client_name: reportData.clients?.name,
-          client_website: reportData.clients?.website
+          date: reportData.date
+          // Note: client info will be missing with this approach
         };
         
         setReport(formattedReport);
