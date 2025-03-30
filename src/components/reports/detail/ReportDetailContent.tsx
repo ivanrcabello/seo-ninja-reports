@@ -71,7 +71,11 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
             setIsEditing={setIsEditing}
             reportId={report.id}
           />
-          <ReportDetailActions onDeleteReport={handleDeleteReport} />
+          <ReportDetailActions 
+            onDeleteReport={handleDeleteReport} 
+            reportId={report.id}
+            reportTitle={report.title}
+          />
         </div>
       </AnimatedContainer>
       

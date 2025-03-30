@@ -1,22 +1,30 @@
 
 import React from 'react';
-import BlurredCard from '@/components/ui/BlurredCard';
-import { AlertTriangle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 interface PublicReportErrorProps {
-  errorMessage: string;
+  errorMessage?: string;
 }
 
 const PublicReportError: React.FC<PublicReportErrorProps> = ({ errorMessage }) => {
   return (
-    <div className="container mx-auto py-12">
-      <BlurredCard className="max-w-lg mx-auto p-6 bg-red-50/50 dark:bg-red-950/30 backdrop-blur-md border-red-200/50 dark:border-red-800/50">
-        <div className="flex flex-col items-center text-center">
-          <AlertTriangle size={48} className="text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2 text-red-600 dark:text-red-400">Error al cargar el informe</h2>
-          <p className="text-gray-600 dark:text-gray-300">{errorMessage}</p>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="w-full max-w-md text-center p-8">
+        <div className="w-24 h-24 rounded-full bg-red-100 mx-auto mb-6 flex items-center justify-center">
+          <AlertCircle className="h-12 w-12 text-red-500" />
         </div>
-      </BlurredCard>
+        <h2 className="text-2xl font-bold mb-2">Error al cargar el informe</h2>
+        {errorMessage ? (
+          <p className="text-muted-foreground mb-4">{errorMessage}</p>
+        ) : (
+          <p className="text-muted-foreground mb-4">
+            Se produjo un error al cargar el informe. Por favor, inténtalo de nuevo más tarde.
+          </p>
+        )}
+        <p className="text-sm text-muted-foreground">
+          Si el problema persiste, contacta con la persona que compartió este enlace contigo.
+        </p>
+      </div>
     </div>
   );
 };

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading, useReportData } from '@/components/public-reports';
-import { logSharedReportAccess } from '@/components/public-reports/services/sharedReportLogger';
+import { logSharedReportAccess } from '@/utils/sharedContentLogger';
 
 const PublicReport: React.FC = () => {
   const { reportId = '' } = useParams<{ reportId: string }>();

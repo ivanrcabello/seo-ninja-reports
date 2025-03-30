@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { CalendarIcon, Globe } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { format } from 'date-fns';
-import BlurredCard from '@/components/ui/BlurredCard';
+import { es } from 'date-fns/locale';
 
 interface PublicReportHeaderProps {
   title: string;
@@ -11,44 +11,26 @@ interface PublicReportHeaderProps {
   date?: string;
 }
 
-const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ 
-  title,
-  client,
-  website,
-  date
-}) => {
-  const formattedDate = date ? format(new Date(date), 'dd/MM/yyyy') : '';
-
+const PublicReportHeader: React.FC<PublicReportHeaderProps> = ({ title, client, website, date }) => {
   return (
-    <BlurredCard className="mb-8 p-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">{title}</h1>
-          {client && (
-            <div className="mt-2 text-muted-foreground">
-              Cliente: {client}
-            </div>
-          )}
-          {date && (
-            <div className="mt-1 flex items-center text-sm text-muted-foreground">
-              <CalendarIcon className="mr-1 h-4 w-4" />
-              {formattedDate}
-            </div>
-          )}
-        </div>
-        {website && (
-          <a 
-            href={website.startsWith('http') ? website : `https://${website}`}
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-md transition-colors"
-          >
-            <Globe className="h-4 w-4" />
-            {website}
-          </a>
+    <div className="w-full bg-gradient-to-br from-primary/5 to-background/50 backdrop-blur-sm p-6 rounded-lg border border-primary/10 shadow-lg">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight text-primary/90">{title}</h1>
+        
+        {client && (
+          <div className="text-lg text-muted-foreground">
+            {client} {website && <span className="text-sm">({website})</span>}
+          </div>
+        )}
+        
+        {date && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            {format(new Date(date), 'd MMMM yyyy', { locale: es })}
+          </div>
         )}
       </div>
-    </BlurredCard>
+    </div>
   );
 };
 
