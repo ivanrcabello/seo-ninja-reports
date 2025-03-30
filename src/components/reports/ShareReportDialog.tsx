@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         // First verify the report exists
         const { data: existsData, error: existsError } = await supabase
           .from('reports')
-          .select('id, password, shared_url')
+          .select('*')
           .eq('id', reportId)
           .single();
         
@@ -64,13 +65,14 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           throw new Error('El informe no existe');
         }
         
-        // TypeScript fix: safely access shared_url property
-        let sharedUrl = existsData?.shared_url;
+        // Safely access shared_url property with type assertion
+        const reportData = existsData as any;
+        let sharedUrl = reportData.shared_url;
         
         // If there's no shared_url yet, generate one
         if (!sharedUrl) {
           const newSharedUrl = crypto.randomUUID();
-          // Use explicit type assertion or cast for the update operation
+          
           const { error: updateError } = await supabase
             .from('reports')
             .update({ 
@@ -88,8 +90,8 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         
         setSharedUrlId(sharedUrl);
         
-        // Set password state based on existing data - safely access password property
-        const existingPassword = existsData?.password;
+        // Safely check for password with type assertion
+        const existingPassword = reportData.password;
         if (existingPassword) {
           setPasswordProtected(true);
           setPassword(existingPassword);
@@ -146,7 +148,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       
       const { error } = await supabase
         .from('reports')
-        .update({ password: passwordValue } as any) // Use type assertion to fix TypeScript error
+        .update({ password: passwordValue } as any)
         .eq('id', reportId);
         
       if (error) throw new Error('Error al actualizar la contraseña');

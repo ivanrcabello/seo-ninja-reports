@@ -26,7 +26,7 @@ export interface AccessLogOptions {
 export async function checkReportExists(reportId: string) {
   try {
     // First try using the shared_url field
-    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+    const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
       .from('reports')
       .select('id')
       .eq('shared_url', reportId)
@@ -37,7 +37,7 @@ export async function checkReportExists(reportId: string) {
     }
 
     // If no report found by shared_url, try direct id
-    const { data, error } = await supabase
+    const { data: result, error } = await supabase
       .rpc('check_report_exists', { report_id_param: reportId });
       
     if (error) {
@@ -45,7 +45,7 @@ export async function checkReportExists(reportId: string) {
       return { exists: false, error: error.message };
     }
     
-    return { exists: !!data, error: null };
+    return { exists: !!result, error: null };
   } catch (error: any) {
     console.error('Error in checkReportExists:', error);
     return { exists: false, error: error.message };
@@ -56,7 +56,7 @@ export async function checkReportExists(reportId: string) {
 export async function checkReportPassword(reportId: string) {
   try {
     // First try using shared_url
-    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+    const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
       .from('reports')
       .select('id, password')
       .eq('shared_url', reportId)
@@ -92,7 +92,7 @@ export async function checkReportPassword(reportId: string) {
 export async function fetchFromPublicReportsView(reportId: string) {
   try {
     // First try with shared_url
-    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+    const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
       .from('reports')
       .select('id')
       .eq('shared_url', reportId)
@@ -121,7 +121,7 @@ export async function fetchFromPublicReportsView(reportId: string) {
 export async function fetchReportWithRpc(reportId: string) {
   try {
     // First check if this is a shared_url and get the actual report ID
-    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+    const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
       .from('reports')
       .select('id')
       .eq('shared_url', reportId)
@@ -149,7 +149,7 @@ export async function fetchReportWithRpc(reportId: string) {
 export async function fetchReportWithJoin(reportId: string) {
   try {
     // First check if this is a shared_url and get the actual report ID
-    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+    const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
       .from('reports')
       .select('id')
       .eq('shared_url', reportId)
@@ -200,7 +200,7 @@ export async function fetchReportWithJoin(reportId: string) {
 export async function fetchReportOnly(reportId: string) {
   try {
     // First check if this is a shared_url and get the actual report ID
-    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+    const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
       .from('reports')
       .select('id')
       .eq('shared_url', reportId)
