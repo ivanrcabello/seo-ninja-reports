@@ -30,7 +30,10 @@ export default function useReportsHook() {
   useEffect(() => {
     const loadReports = async () => {
       try {
+        console.log("Loading reports...");
+        setIsLoading(true);
         const data = await fetchReports();
+        console.log("Reports loaded:", data.length);
         setReports(data);
       } catch (error) {
         console.error('Error fetching reports:', error);
@@ -45,7 +48,15 @@ export default function useReportsHook() {
 
   // Get a specific report by ID
   const getReport = useCallback((id: string): Report | undefined => {
-    return reports.find(report => report.id === id);
+    console.log(`Looking for report with ID: ${id} among ${reports.length} reports`);
+    const report = reports.find(report => report.id === id);
+    if (report) {
+      console.log("Report found:", report.title);
+    } else {
+      console.log("Report not found with ID:", id);
+      console.log("Available report IDs:", reports.map(r => r.id).join(", "));
+    }
+    return report;
   }, [reports]);
 
   // Get reports for a specific client

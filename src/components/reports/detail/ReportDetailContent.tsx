@@ -50,6 +50,8 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
     );
   }
 
+  console.log("Rendering ReportDetailContent for report:", report.id);
+
   return (
     <>
       <AnimatedContainer animation="slide-down" className="mb-6">
@@ -69,11 +71,9 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
       </AnimatedContainer>
       
       <AnimatedContainer animation="fade" delay={100}>
-        {report && (
-          <div className="w-full">
-            <ReportViewer />
-          </div>
-        )}
+        <div className="w-full">
+          <ReportViewer />
+        </div>
       </AnimatedContainer>
     </>
   );

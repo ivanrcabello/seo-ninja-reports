@@ -17,7 +17,7 @@ import { BusinessProfile } from '@/types/report.types';
 import ReportEditDialog from '../ReportEditDialog';
 
 const ReportViewer = () => {
-  const { id, clientId } = useParams();
+  const { id } = useParams();
   const { getReport, updateReport, isLoading: reportsLoading } = useReports();
   const navigate = useNavigate();
   
@@ -39,11 +39,15 @@ const ReportViewer = () => {
   
   // If no ID is provided, redirect to reports page
   if (!id) {
+    console.error("No report ID provided");
     navigate('/dashboard');
     return null;
   }
-  
+
+  // Get report data
   const report = getReport(id);
+  console.log("Current report ID:", id);
+  console.log("Report data:", report);
 
   // Load PageSpeed data
   useEffect(() => {
@@ -83,18 +87,6 @@ const ReportViewer = () => {
     }
   }, [id, report]);
   
-  console.log('Report data:', report);
-  console.log('PageSpeed data:', pageSpeedData);
-  console.log('Business profile:', businessProfile);
-  
-  if (reportsLoading) {
-    return <SkeletonReport />;
-  }
-
-  if (!report) {
-    return <NotFoundPage />;
-  }
-  
   // Function to get section title from section key
   const getSectionTitle = (section: string): string => {
     const titles: Record<string, string> = {
@@ -121,7 +113,7 @@ const ReportViewer = () => {
   };
   
   const handleSaveEdit = async () => {
-    if (!report.content || !activeSection) return;
+    if (!report?.content || !activeSection) return;
     
     try {
       // Create updated content
@@ -170,7 +162,7 @@ const ReportViewer = () => {
       
       if (success) {
         // Update local report state to reflect the presence of a business profile
-        if (!report.hasBusinessProfile) {
+        if (!report?.hasBusinessProfile) {
           await updateReport(id, { hasBusinessProfile: true });
         }
         
@@ -185,6 +177,15 @@ const ReportViewer = () => {
       setIsSavingBusinessProfile(false);
     }
   };
+  
+  if (reportsLoading) {
+    return <SkeletonReport />;
+  }
+
+  if (!report) {
+    console.error("Report not found:", id);
+    return <NotFoundPage />;
+  }
   
   if (report.status === 'processing') {
     return (
