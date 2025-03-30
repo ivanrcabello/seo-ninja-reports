@@ -46,23 +46,36 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
   const effectiveId = reportId || id;
   const report = providedReport || (effectiveId ? getReport(effectiveId) : undefined);
   
-  // If no ID is provided and no report is provided, redirect to dashboard
+  console.log("ReportViewer component received:", { 
+    providedReport: !!providedReport, 
+    reportId, 
+    urlId: id, 
+    effectiveId,
+    hasReport: !!report
+  });
+  
+  if (report) {
+    console.log("Report content exists:", !!report.content);
+  }
+  
+  // If no ID is provided and no report is provided, show error
   if (!effectiveId && !providedReport) {
     console.error("No report ID or report object provided");
-    navigate('/dashboard');
-    return null;
+    return (
+      <div className="p-4 text-center">
+        <h2 className="text-xl font-semibold text-red-500">Error: Falta información del informe</h2>
+        <p className="mt-2 text-muted-foreground">No se pudo cargar el informe debido a información insuficiente.</p>
+      </div>
+    );
   }
-
-  console.log("ReportViewer rendering with ID:", effectiveId);
-  console.log("Report data:", report);
 
   // Load PageSpeed data
   useEffect(() => {
-    if (effectiveId && report?.status === 'completed' && report?.url) {
+    if (report?.id && report?.status === 'completed' && report?.url) {
       const loadPageSpeedData = async () => {
         try {
           setIsLoadingPageSpeed(true);
-          const data = await fetchPageSpeedData(effectiveId);
+          const data = await fetchPageSpeedData(report.id);
           setPageSpeedData(data);
         } catch (error) {
           console.error('Error loading PageSpeed data:', error);
@@ -73,15 +86,15 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
       
       loadPageSpeedData();
     }
-  }, [effectiveId, report]);
+  }, [report?.id, report?.status, report?.url]);
   
   // Load Business Profile data
   useEffect(() => {
-    if (effectiveId && report?.status === 'completed' && report?.hasBusinessProfile === true) {
+    if (report?.id && report?.status === 'completed' && report?.hasBusinessProfile === true) {
       const loadBusinessProfile = async () => {
         try {
           setIsLoadingBusinessProfile(true);
-          const data = await fetchBusinessProfile(effectiveId);
+          const data = await fetchBusinessProfile(report.id);
           setBusinessProfile(data);
         } catch (error) {
           console.error('Error loading Business Profile:', error);
@@ -92,7 +105,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
       
       loadBusinessProfile();
     }
-  }, [effectiveId, report]);
+  }, [report?.id, report?.status, report?.hasBusinessProfile]);
   
   // Function to get section title from section key
   const getSectionTitle = (section: string): string => {
@@ -120,7 +133,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
   };
   
   const handleSaveEdit = async () => {
-    if (!report?.content || !activeSection || !effectiveId) return;
+    if (!report?.content || !activeSection || !report.id) return;
     
     try {
       // Create updated content
@@ -130,7 +143,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
       };
       
       // Update report with new content
-      await updateReport(effectiveId, { content: updatedContent });
+      await updateReport(report.id, { content: updatedContent });
       
       setIsEditDialogOpen(false);
       
@@ -146,7 +159,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
   };
   
   const handleSaveBusinessProfile = async (profileData: Partial<BusinessProfile>) => {
-    if (!effectiveId) return;
+    if (!report?.id) return;
     
     try {
       setIsSavingBusinessProfile(true);
@@ -165,12 +178,12 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
       };
       
       // Save business profile
-      const success = await saveBusinessProfile(effectiveId, profileToSave);
+      const success = await saveBusinessProfile(report.id, profileToSave);
       
       if (success) {
         // Update local report state to reflect the presence of a business profile
         if (!report?.hasBusinessProfile) {
-          await updateReport(effectiveId, { hasBusinessProfile: true });
+          await updateReport(report.id, { hasBusinessProfile: true });
         }
         
         toast.success('Perfil de negocio guardado correctamente');
@@ -185,15 +198,33 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     }
   };
   
+  // If we're still loading reports and don't have a provided report, show skeleton
   if (reportsLoading && !providedReport) {
     return <SkeletonReport />;
   }
 
+  // If report not found
   if (!report) {
     console.error("Report not found:", effectiveId);
-    return <NotFoundPage />;
+    return (
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="bg-card p-8 rounded-lg border border-border shadow">
+          <h2 className="text-2xl font-bold mb-4 text-center">Informe no encontrado</h2>
+          <p className="text-muted-foreground text-center mb-6">No se pudo encontrar el informe solicitado.</p>
+          <div className="flex justify-center">
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
+            >
+              Volver al Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
   
+  // Show processing state
   if (report.status === 'processing') {
     return (
       <div className="w-full max-w-5xl mx-auto">
@@ -221,7 +252,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
                 date={report.date}
                 url={report.url || ''}
                 isEditing={isEditing}
-                reportId={effectiveId}
+                reportId={report.id}
                 setIsEditing={setIsEditing}
               />
               

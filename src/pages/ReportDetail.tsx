@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -29,7 +30,25 @@ const ReportDetail = () => {
   
   const { user, loading: authLoading } = useAuth();
   const { getClient } = useClients();
-  const { getReport, isLoading: reportsLoading, deleteReport } = useReports();
+  const { getReport, reports, isLoading: reportsLoading, deleteReport } = useReports();
+
+  // Check if reports are loaded
+  useEffect(() => {
+    if (id && reports.length > 0) {
+      console.log(`Reports loaded (${reports.length}), checking for report ${id}`);
+      const foundReport = reports.find(r => r.id === id);
+      console.log("Report found:", foundReport ? "YES" : "NO");
+      
+      if (foundReport) {
+        console.log("Report details:", {
+          id: foundReport.id,
+          title: foundReport.title,
+          status: foundReport.status,
+          hasContent: !!foundReport.content
+        });
+      }
+    }
+  }, [id, reports]);
   
   // Load crawl data if needed
   useEffect(() => {
@@ -248,6 +267,12 @@ const ReportDetail = () => {
   }
 
   const report = getReport(id);
+  console.log("Report detail page getting report:", id);
+  console.log("Report data:", report ? "Found" : "Not found");
+  if (report) {
+    console.log("Report content exists:", !!report.content);
+  }
+  
   const isLoading = authLoading || reportsLoading;
   const client = report ? getClient(report.clientId) : null;
 
@@ -287,4 +312,3 @@ const ReportDetail = () => {
 };
 
 export default ReportDetail;
-

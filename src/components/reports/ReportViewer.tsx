@@ -9,6 +9,13 @@ interface ReportViewerProps {
 }
 
 const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report }) => {
+  console.log("ReportViewer wrapper rendering with:", { reportId, hasReport: !!report });
+  
+  if (!reportId && !report) {
+    console.error("ReportViewer: No reportId or report provided");
+    return <div className="text-red-500 p-4">Error: No report data available</div>;
+  }
+  
   return <ReportViewerComponent reportId={reportId} report={report} />;
 };
 

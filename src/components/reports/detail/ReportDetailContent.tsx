@@ -50,7 +50,12 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
     );
   }
 
-  console.log("Rendering ReportDetailContent for report:", report.id);
+  console.log("Rendering ReportDetailContent with report:", { 
+    id: report.id, 
+    title: report.title, 
+    status: report.status,
+    hasContent: !!report.content
+  });
 
   return (
     <>
@@ -72,7 +77,7 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
       
       <AnimatedContainer animation="fade" delay={100}>
         <div className="w-full">
-          <ReportViewer report={report} reportId={report.id} />
+          <ReportViewer report={report} />
         </div>
       </AnimatedContainer>
     </>

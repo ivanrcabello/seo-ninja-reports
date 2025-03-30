@@ -52,16 +52,19 @@ export default function useReportsHook() {
     const report = reports.find(report => report.id === id);
     if (report) {
       console.log("Report found:", report.title);
+      console.log("Report status:", report.status);
+      console.log("Report has content:", !!report.content);
     } else {
       console.log("Report not found with ID:", id);
-      console.log("Available report IDs:", reports.map(r => r.id).join(", "));
     }
     return report;
   }, [reports]);
 
   // Get reports for a specific client
   const getClientReports = useCallback((clientId: string): Report[] => {
-    return reports.filter(report => report.clientId === clientId);
+    const clientReports = reports.filter(report => report.clientId === clientId);
+    console.log(`Found ${clientReports.length} reports for client ${clientId}`);
+    return clientReports;
   }, [reports]);
 
   // Generate a new report
@@ -91,6 +94,7 @@ export default function useReportsHook() {
       
       // Add the new report to our local state
       setReports(prev => [report, ...prev]);
+      console.log("New report generated:", report.id);
       
       return report;
     } catch (error) {
@@ -104,6 +108,7 @@ export default function useReportsHook() {
     try {
       const newReport = await createNewReport(data);
       setReports(prev => [newReport, ...prev]);
+      console.log("New report created:", newReport.id);
       return newReport;
     } catch (error) {
       console.error('Error creating report:', error);
@@ -114,6 +119,8 @@ export default function useReportsHook() {
   // Update an existing report
   const updateReport = useCallback(async (id: string, data: Partial<Report>): Promise<Report> => {
     try {
+      console.log(`Updating report ${id} with:`, data);
+      
       // Ensure data has required fields for the Omit type constraint
       if (data && typeof data === 'object') {
         const reportToUpdate = reports.find(r => r.id === id);
@@ -123,9 +130,12 @@ export default function useReportsHook() {
       }
       
       const updatedReport = await updateExistingReport(id, data as any);
+      
       setReports(prev => prev.map(report => 
         report.id === id ? { ...report, ...updatedReport } : report
       ));
+      
+      console.log("Report updated successfully:", id);
       return updatedReport;
     } catch (error) {
       console.error('Error updating report:', error);
@@ -138,6 +148,7 @@ export default function useReportsHook() {
     try {
       await deleteReportById(id);
       setReports(prev => prev.filter(report => report.id !== id));
+      console.log("Report deleted:", id);
       toast.success('Informe eliminado');
     } catch (error) {
       console.error('Error deleting report:', error);
