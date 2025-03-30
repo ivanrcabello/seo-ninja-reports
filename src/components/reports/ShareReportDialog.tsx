@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -121,61 +120,44 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           client_website: fullReportData.clients?.website
         };
         
-        // If it doesn't exist in public_reports, insert it
-        if (!existingPublicReport) {
-          console.log('Report not found in public_reports, inserting...');
-          
-          // Use the fix_public_report_operations.sql function to handle insertion
-          const { error: insertError } = await supabase.rpc('insert_public_report', {
-            report_data: publicReportData
-          });
-              
-          if (insertError) {
-            console.error('Error inserting into public_reports:', insertError);
+        // If it doesn't exist in public_reports or we need to update it
+        try {
+          // Use our updated database functions that work on the reports table
+          if (!existingPublicReport) {
+            console.log('Inserting/updating report using RPC function');
             
-            // Fallback to direct insert if RPC fails
-            const { error: directInsertError } = await supabase
-              .from('public_reports')
-              .insert(publicReportData as any);
-              
-            if (directInsertError) {
-              console.error('Error on fallback direct insert:', directInsertError);
-              throw new Error(`Error al crear el informe público: ${directInsertError.message}`);
+            const { error: rpcError } = await supabase.rpc('insert_public_report', {
+              report_data: publicReportData
+            });
+            
+            if (rpcError) {
+              console.error('Error using RPC function:', rpcError);
+              throw rpcError;
+            }
+          } else {
+            console.log('Updating report using RPC function');
+            
+            // Remove id from update data to avoid issues
+            const { id, ...updateData } = publicReportData;
+            
+            const { error: rpcError } = await supabase.rpc('update_public_report', {
+              report_id: reportId,
+              report_data: updateData
+            });
+            
+            if (rpcError) {
+              console.error('Error using RPC function:', rpcError);
+              throw rpcError;
             }
           }
           
-          console.log('Successfully inserted into public_reports');
-        } else {
-          console.log('Report already exists in public_reports, updating...');
-          
-          // Remove id from update data
-          const { id, ...updateData } = publicReportData;
-          
-          // Use the update function from the SQL migration
-          const { error: updateError } = await supabase.rpc('update_public_report', {
-            report_id: reportId,
-            report_data: updateData
-          });
-              
-          if (updateError) {
-            console.error('Error updating public_reports via RPC:', updateError);
-            
-            // Fallback to direct update if RPC fails
-            const { error: directUpdateError } = await supabase
-              .from('public_reports')
-              .update(updateData as any)
-              .eq('id', reportId);
-              
-            if (directUpdateError) {
-              console.error('Error on fallback direct update:', directUpdateError);
-              throw new Error(`Error al actualizar el informe público: ${directUpdateError.message}`);
-            }
-          }
-          
-          console.log('Successfully updated public_reports');
+          console.log('Successfully processed report data');
+        } catch (processingError) {
+          console.error('Error processing report data:', processingError);
+          throw new Error(`Error al procesar datos del informe: ${processingError.message || 'Error desconocido'}`);
         }
         
-        // Build the share URL and return it
+        // Build the share URL
         const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
         setShareUrl(shareUrl);
         

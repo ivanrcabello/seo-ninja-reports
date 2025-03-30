@@ -2349,6 +2349,12 @@ export type Database = {
           client_website: string
         }[]
       }
+      insert_public_report: {
+        Args: {
+          report_data: Json
+        }
+        Returns: undefined
+      }
       invalidate_client_portal_session: {
         Args: {
           p_token: string
@@ -2404,6 +2410,13 @@ export type Database = {
           status_param?: string
         }
         Returns: string
+      }
+      update_public_report: {
+        Args: {
+          report_id: string
+          report_data: Json
+        }
+        Returns: undefined
       }
       validate_client_portal_session: {
         Args: {
