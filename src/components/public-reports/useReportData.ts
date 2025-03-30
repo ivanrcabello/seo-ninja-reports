@@ -95,51 +95,51 @@ const useReportData = (reportId: string) => {
       
       // STEP 4: SECOND ATTEMPT - Direct query with join
       console.log('Attempting direct join query...');
+      
+      // Fix: Replace RPC call with a direct query that mimics the function
       const { data: joinData, error: joinError } = await supabase
-        .rpc('get_public_report_by_id', { report_id_param: reportId });
-      
-      if (!joinError && joinData && joinData.length > 0) {
-        console.log('Successfully fetched with rpc function:', joinData[0]);
-        setReport(joinData[0]);
-        logSharedReportAccess(reportId, { successful: true, source: 'rpc_function' });
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('Error or no data from rpc:', joinError);
-      
-      // STEP 5: THIRD ATTEMPT - Manual join query
-      console.log('Attempting manual join query...');
-      const { data: reportData, error: reportError } = await supabase
         .from('reports')
-        .select('*, clients(name, website)')
+        .select(`
+          id, 
+          title, 
+          summary,
+          url,
+          status,
+          content,
+          date,
+          clients!inner (
+            name,
+            website
+          )
+        `)
         .eq('id', reportId)
         .single();
       
-      if (!reportError && reportData) {
-        console.log('Successfully fetched with manual join:', reportData);
+      if (!joinError && joinData) {
+        console.log('Successfully fetched with join query:', joinData);
         
+        // Format the data to match PublicReport interface
         const formattedReport: PublicReport = {
-          id: reportData.id,
-          title: reportData.title || 'Informe sin título',
-          summary: reportData.summary,
-          url: reportData.url,
-          status: reportData.status,
-          content: reportData.content,
-          date: reportData.date,
-          client_name: reportData.clients?.name,
-          client_website: reportData.clients?.website
+          id: joinData.id,
+          title: joinData.title || 'Informe sin título',
+          summary: joinData.summary,
+          url: joinData.url,
+          status: joinData.status,
+          content: joinData.content,
+          date: joinData.date,
+          client_name: joinData.clients?.name,
+          client_website: joinData.clients?.website
         };
         
         setReport(formattedReport);
-        logSharedReportAccess(reportId, { successful: true, source: 'manual_join' });
+        logSharedReportAccess(reportId, { successful: true, source: 'direct_join' });
         setIsLoading(false);
         return;
       }
       
-      console.log('Error or no data from manual join:', reportError);
+      console.log('Error or no data from direct join:', joinError);
       
-      // STEP 6: FINAL ATTEMPT - Reports table only
+      // STEP 5: THIRD ATTEMPT - Reports table only
       console.log('Attempting to fetch report only...');
       const { data: reportOnlyData, error: reportOnlyError } = await supabase
         .from('reports')
@@ -176,7 +176,8 @@ const useReportData = (reportId: string) => {
       // Log error
       logSharedReportAccess(reportId, { 
         successful: false, 
-        error: err.message 
+        error: err.message,
+        source: 'error'
       });
     } finally {
       setIsLoading(false);
@@ -206,7 +207,8 @@ const useReportData = (reportId: string) => {
       // Log password attempt
       logSharedReportAccess(reportId, {
         passwordAttempt: true,
-        successful: success
+        successful: success,
+        source: 'password_verification'
       });
       
       return success;
