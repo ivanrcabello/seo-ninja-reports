@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestError, PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js';
+import { PostgrestError } from '@supabase/supabase-js';
 
 export interface PublicReport {
   id: string;
@@ -59,7 +59,7 @@ export async function checkReportExists(reportId: string): Promise<ReportCheckRe
     }
 
     // If no report found by shared_url, try direct id
-    // Fixed: Use explicit interface instead of generic type parameter
+    // Using any type here to avoid excessive type instantiation
     const { data, error } = await supabase
       .rpc('check_report_exists', { report_id_param: reportId });
       
@@ -176,7 +176,7 @@ export async function fetchReportWithRpc(reportId: string): Promise<ReportFetchR
       password?: string;
     }
     
-    // Fixed: Remove generic type parameter to avoid deep instantiation
+    // Using any type here to avoid excessive type instantiation
     const { data, error } = await supabase
       .rpc('get_public_report_by_id', { 
         report_id_param: actualReportId 
@@ -212,7 +212,7 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
       
     const actualReportId = reportBySharedUrl?.id || reportId;
     
-    // Fixed: Added interface with all required fields to avoid type errors
+    // Define interface for join result to avoid type errors
     interface JoinResult {
       id: string;
       title: string;
@@ -221,15 +221,12 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
       status: string;
       content: any;
       date: string;
-      shared_url?: string;
-      password?: string;
       clients: {
         name: string;
         website: string;
       };
     }
     
-    // Check if the shared_url column exists in the reports table
     try {
       const { data, error } = await supabase
         .from('reports')
