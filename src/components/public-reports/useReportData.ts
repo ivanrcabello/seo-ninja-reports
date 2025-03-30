@@ -84,7 +84,7 @@ const useReportData = (reportId: string) => {
       // APPROACH 2: Check if report exists and check password protection
       console.log('APPROACH 2: Checking if report exists and password protection...');
       const { data, error: reportCheckError } = await supabase
-        .rpc('check_report_exists', { report_id_param: reportId });
+        .rpc<RpcResponseCheckReportExists>('check_report_exists', { report_id_param: reportId });
       
       // Parse the response correctly
       const reportCheck: RpcResponseCheckReportExists = 
@@ -144,7 +144,7 @@ const useReportData = (reportId: string) => {
       // APPROACH 3: Use get_public_report_by_id RPC
       console.log('APPROACH 3: Using get_public_report_by_id RPC...');
       const { data: rpcData, error: rpcError } = await supabase
-        .rpc('get_public_report_by_id', { report_id_param: reportId });
+        .rpc<RpcResponseGetPublicReportById[]>('get_public_report_by_id', { report_id_param: reportId });
       
       // Process RPC data correctly
       let rpcReportData: RpcResponseGetPublicReportById[] = [];
@@ -152,7 +152,7 @@ const useReportData = (reportId: string) => {
         if (Array.isArray(rpcData)) {
           rpcReportData = rpcData as RpcResponseGetPublicReportById[];
         } else if (typeof rpcData === 'object') {
-          rpcReportData = [rpcData as RpcResponseGetPublicReportById];
+          rpcReportData = [rpcData as unknown as RpcResponseGetPublicReportById];
         }
       }
       
@@ -289,7 +289,7 @@ const useReportData = (reportId: string) => {
     try {
       console.log(`Verifying password for report: ${reportId}`);
       const { data, error } = await supabase
-        .rpc('verify_shared_report_password', { 
+        .rpc<boolean>('verify_shared_report_password', { 
           report_id_param: reportId,
           password_param: password
         });
