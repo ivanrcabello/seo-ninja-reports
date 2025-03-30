@@ -29,13 +29,22 @@ const useReportData = (reportId: string) => {
       return;
     }
 
+    // Validate UUID format to avoid unnecessary DB queries with invalid formats
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(reportId)) {
+      console.error('Invalid UUID format:', reportId);
+      setError('ID de reporte no válido (formato incorrecto)');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
       console.log(`Fetching report with ID: ${reportId}`);
       
-      // STEP 1: First check if the report exists - using direct query instead of RPC
+      // STEP 1: First check if the report exists - using direct query
       const { data: existCheck, error: existCheckError } = await supabase
         .from('reports')
         .select('id')
@@ -75,7 +84,7 @@ const useReportData = (reportId: string) => {
         }
       }
       
-      // STEP 3: FIRST ATTEMPT - Try public_reports view
+      // STEP 3: Try public_reports view
       console.log('Attempting to fetch from public_reports view...');
       const { data: publicReportData, error: publicReportError } = await supabase
         .from('public_reports')
@@ -93,10 +102,8 @@ const useReportData = (reportId: string) => {
       
       console.log('Error or no data from public_reports view:', publicReportError);
       
-      // STEP 4: SECOND ATTEMPT - Direct query with join
+      // STEP 4: Direct join query
       console.log('Attempting direct join query...');
-      
-      // Fix: Replace RPC call with a direct query that mimics the function
       const { data: joinData, error: joinError } = await supabase
         .from('reports')
         .select(`
@@ -113,7 +120,7 @@ const useReportData = (reportId: string) => {
           )
         `)
         .eq('id', reportId)
-        .single();
+        .maybeSingle();
       
       if (!joinError && joinData) {
         console.log('Successfully fetched with join query:', joinData);
@@ -139,13 +146,13 @@ const useReportData = (reportId: string) => {
       
       console.log('Error or no data from direct join:', joinError);
       
-      // STEP 5: THIRD ATTEMPT - Reports table only
+      // STEP 5: Reports table only as fallback
       console.log('Attempting to fetch report only...');
       const { data: reportOnlyData, error: reportOnlyError } = await supabase
         .from('reports')
         .select('*')
         .eq('id', reportId)
-        .single();
+        .maybeSingle();
       
       if (!reportOnlyError && reportOnlyData) {
         console.log('Successfully fetched report only:', reportOnlyData);

@@ -40,18 +40,23 @@ const PublicReport: React.FC = () => {
     setVerifying(true);
     setShowError(false);
     
-    console.log('Verifying password for report:', reportId);
-    const success = await verifyPassword(passwordInput);
-    
-    if (success) {
-      console.log('Password verification successful, refetching report data');
-      await refetch();
-    } else {
-      console.log('Password verification failed');
+    try {
+      console.log('Verifying password for report:', reportId);
+      const success = await verifyPassword(passwordInput);
+      
+      if (success) {
+        console.log('Password verification successful, refetching report data');
+        await refetch();
+      } else {
+        console.log('Password verification failed');
+        setShowError(true);
+      }
+    } catch (err) {
+      console.error('Error during password verification:', err);
       setShowError(true);
+    } finally {
+      setVerifying(false);
     }
-    
-    setVerifying(false);
   };
 
   // Show loading state
