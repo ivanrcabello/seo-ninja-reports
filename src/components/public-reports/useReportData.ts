@@ -87,7 +87,7 @@ const useReportData = (reportId: string) => {
       if (reportCheckError) {
         console.error('Error checking if report exists (RPC):', reportCheckError);
         // Continue to try other methods if RPC fails
-      } else if (reportCheck === false || reportCheck?.exists === false) {
+      } else if (reportCheck === false || (reportCheck as RpcResponseCheckReportExists)?.exists === false) {
         console.error('Report does not exist (confirmed by RPC) - ID:', reportId);
         setError('El informe no existe');
         setIsLoading(false);
