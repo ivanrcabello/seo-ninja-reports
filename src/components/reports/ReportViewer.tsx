@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Report } from '@/types/report.types';
-import ReportViewerComponent from './report-viewer/ReportViewer';
+import SimpleReportViewer from './SimpleReportViewer';
 
 interface ReportViewerProps {
   reportId?: string;
@@ -16,7 +16,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report }) => {
     return <div className="text-red-500 p-4">Error: No report data available</div>;
   }
   
-  return <ReportViewerComponent reportId={reportId} report={report} />;
+  return <SimpleReportViewer reportId={reportId} report={report} />;
 };
 
 export default ReportViewer;

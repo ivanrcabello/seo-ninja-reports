@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import ReportDetailHeader from './ReportDetailHeader';
 import ReportDetailActions from './ReportDetailActions';
-import ReportViewer from '@/components/reports/ReportViewer';
+import SimpleReportViewer from '@/components/reports/SimpleReportViewer';
 
 interface ReportDetailContentProps {
   report: Report | undefined;
@@ -77,7 +77,7 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
       
       <AnimatedContainer animation="fade" delay={100}>
         <div className="w-full">
-          <ReportViewer report={report} />
+          <SimpleReportViewer report={report} />
         </div>
       </AnimatedContainer>
     </>
