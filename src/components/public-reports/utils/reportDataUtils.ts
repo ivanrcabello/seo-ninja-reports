@@ -59,13 +59,9 @@ export async function checkReportExists(reportId: string): Promise<ReportCheckRe
     }
 
     // If no report found by shared_url, try direct id
-    // Use explicit typing to avoid deep recursion
-    interface CheckReportResult {
-      exists: boolean;
-    }
-    
+    // Fixed: Use explicit interface instead of generic type parameter
     const { data, error } = await supabase
-      .rpc<CheckReportResult>('check_report_exists', { report_id_param: reportId });
+      .rpc('check_report_exists', { report_id_param: reportId });
       
     if (error) {
       console.error('Error checking report existence:', error);
@@ -180,8 +176,9 @@ export async function fetchReportWithRpc(reportId: string): Promise<ReportFetchR
       password?: string;
     }
     
+    // Fixed: Remove generic type parameter to avoid deep instantiation
     const { data, error } = await supabase
-      .rpc<RpcReportResponse[] | RpcReportResponse>('get_public_report_by_id', { 
+      .rpc('get_public_report_by_id', { 
         report_id_param: actualReportId 
       });
       
@@ -215,6 +212,7 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
       
     const actualReportId = reportBySharedUrl?.id || reportId;
     
+    // Fixed: Added interface with all required fields to avoid type errors
     interface JoinResult {
       id: string;
       title: string;
@@ -223,52 +221,54 @@ export async function fetchReportWithJoin(reportId: string): Promise<ReportFetch
       status: string;
       content: any;
       date: string;
+      shared_url?: string;
+      password?: string;
       clients: {
         name: string;
         website: string;
       };
-      shared_url?: string;
-      password?: string;
     }
     
-    const { data, error } = await supabase
-      .from('reports')
-      .select(`
-        id, 
-        title, 
-        summary, 
-        url, 
-        status, 
-        content, 
-        date,
-        shared_url,
-        password,
-        clients!inner(name, website)
-      `)
-      .eq('id', actualReportId)
-      .single();
+    // Check if the shared_url column exists in the reports table
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select(`
+          id, 
+          title, 
+          summary, 
+          url, 
+          status, 
+          content, 
+          date,
+          clients!inner(name, website)
+        `)
+        .eq('id', actualReportId)
+        .single();
+        
+      if (error) {
+        return { report: null, error: error.message };
+      }
       
-    if (error) {
+      // Transform the data to match the PublicReport interface
+      const typedData = data as JoinResult;
+      const report: PublicReport = {
+        id: typedData.id,
+        title: typedData.title,
+        summary: typedData.summary,
+        url: typedData.url,
+        status: typedData.status,
+        content: typedData.content,
+        date: typedData.date,
+        client_name: typedData.clients.name,
+        client_website: typedData.clients.website
+      };
+      
+      return { report, error: null };
+    } catch (error: any) {
+      console.error('Error in fetchReportWithJoin:', error);
       return { report: null, error: error.message };
     }
-    
-    // Transform the data to match the PublicReport interface
-    const typedData = data as JoinResult;
-    const report: PublicReport = {
-      id: typedData.id,
-      title: typedData.title,
-      summary: typedData.summary,
-      url: typedData.url,
-      status: typedData.status,
-      content: typedData.content,
-      date: typedData.date,
-      client_name: typedData.clients.name,
-      client_website: typedData.clients.website,
-      shared_url: typedData.shared_url,
-      password: typedData.password
-    };
-    
-    return { report, error: null };
   } catch (error: any) {
     console.error('Error in fetchReportWithJoin:', error);
     return { report: null, error: error.message };
