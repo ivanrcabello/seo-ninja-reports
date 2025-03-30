@@ -35,6 +35,22 @@ const useReportData = (reportId: string) => {
     try {
       console.log(`Fetching report with ID: ${reportId}`);
       
+      // Check if report exists first
+      const { data: existsData, error: existsError } = await supabase.rpc(
+        'check_report_exists',
+        { report_id_param: reportId }
+      );
+      
+      if (existsError) {
+        console.error('Error checking if report exists:', existsError);
+        throw new Error('Error al verificar si el informe existe');
+      }
+      
+      if (!existsData) {
+        console.error('Report does not exist');
+        throw new Error('Informe no encontrado');
+      }
+      
       // Check if report is password protected
       const { data: protectionData, error: protectionError } = await supabase.rpc(
         'check_report_password_protection', 
@@ -43,7 +59,6 @@ const useReportData = (reportId: string) => {
       
       if (protectionError) {
         console.error('Error checking password protection:', protectionError);
-        // Continue anyway - if we can't check protection, we'll try to fetch the report
       } else {
         setIsPasswordProtected(protectionData === true);
         console.log(`Report is password protected: ${protectionData}`);
@@ -55,9 +70,7 @@ const useReportData = (reportId: string) => {
         }
       }
       
-      // Try 3 different approaches to get the report data
-      
-      // Approach 1: Try to fetch from public_reports view directly
+      // First try: Fetch from public_reports view
       console.log('Attempting to fetch from public_reports view...');
       const { data: publicData, error: publicError } = await supabase
         .from('public_reports')
@@ -67,81 +80,66 @@ const useReportData = (reportId: string) => {
       
       if (!publicError && publicData) {
         console.log('Found in public_reports:', publicData);
-        // Convert the data to our expected format
+        setReport(publicData);
+        logSharedReportAccess(reportId, { successful: true });
+        setIsLoading(false);
+        return;
+      } 
+      
+      console.log('Error or no data from public_reports:', publicError);
+      
+      // Second try: Direct query to reports with join
+      console.log('Attempting to fetch with direct join query...');
+      const { data: reportWithClientData, error: reportWithClientError } = await supabase
+        .from('reports')
+        .select(`
+          id,
+          title,
+          summary,
+          url,
+          status,
+          content,
+          date,
+          clients (
+            name,
+            website
+          )
+        `)
+        .eq('id', reportId)
+        .maybeSingle();
+      
+      if (!reportWithClientError && reportWithClientData) {
+        console.log('Found with direct join query:', reportWithClientData);
         const formattedReport: PublicReport = {
-          id: publicData.id,
-          title: publicData.title || 'Informe sin título',
-          summary: publicData.summary,
-          url: publicData.url,
-          status: publicData.status,
-          content: publicData.content,
-          date: publicData.date,
-          client_name: publicData.client_name,
-          client_website: publicData.client_website
+          id: reportWithClientData.id,
+          title: reportWithClientData.title || 'Informe sin título',
+          summary: reportWithClientData.summary,
+          url: reportWithClientData.url,
+          status: reportWithClientData.status,
+          content: reportWithClientData.content,
+          date: reportWithClientData.date,
+          client_name: reportWithClientData.clients?.name,
+          client_website: reportWithClientData.clients?.website
         };
         
         setReport(formattedReport);
         logSharedReportAccess(reportId, { successful: true });
         setIsLoading(false);
         return;
-      } else if (publicError) {
-        console.error('Error fetching from public_reports:', publicError);
       }
       
-      // Approach 2: Try custom SQL function to get report by ID
-      // Note: This function needs to exist in the database
-      try {
-        const { data: functionData, error: functionError } = await supabase
-          .from('reports')
-          .select(`
-            id,
-            title,
-            summary,
-            url,
-            status,
-            content,
-            date,
-            clients (
-              name,
-              website
-            )
-          `)
-          .eq('id', reportId)
-          .maybeSingle();
-        
-        if (!functionError && functionData) {
-          console.log('Found via reports query:', functionData);
-          const formattedReport: PublicReport = {
-            id: functionData.id,
-            title: functionData.title || 'Informe sin título',
-            summary: functionData.summary,
-            url: functionData.url,
-            status: functionData.status,
-            content: functionData.content,
-            date: functionData.date,
-            client_name: functionData.clients?.name,
-            client_website: functionData.clients?.website
-          };
-          
-          setReport(formattedReport);
-          logSharedReportAccess(reportId, { successful: true });
-          setIsLoading(false);
-          return;
-        }
-      } catch (functionErr) {
-        console.log('SQL function approach failed:', functionErr);
-      }
+      console.log('Error or no data from direct join:', reportWithClientError);
       
-      // Approach 3: Try to fetch directly from reports table without client info
-      console.log('Attempting to fetch directly from reports table without joins...');
+      // Last attempt: Fetch just the report without client info
+      console.log('Attempting to fetch report only...');
       const { data: reportData, error: reportError } = await supabase
         .from('reports')
         .select('*')
         .eq('id', reportId)
         .maybeSingle();
-        
+      
       if (!reportError && reportData) {
-        console.log('Found in reports table:', reportData);
+        console.log('Found report only:', reportData);
         const formattedReport: PublicReport = {
           id: reportData.id,
           title: reportData.title || 'Informe sin título',
@@ -150,19 +148,18 @@ const useReportData = (reportId: string) => {
           status: reportData.status,
           content: reportData.content,
           date: reportData.date
-          // Note: client info will be missing with this approach
         };
         
         setReport(formattedReport);
         logSharedReportAccess(reportId, { successful: true });
         setIsLoading(false);
         return;
-      } else if (reportError) {
-        console.error('Error fetching from reports:', reportError);
       }
       
-      // If we get here, no report was found in any table
-      throw new Error('Informe no encontrado en ninguna tabla');
+      console.log('Error or no data from final attempt:', reportError);
+      
+      // If we reach this point, no report was found
+      throw new Error('No se pudo encontrar el informe solicitado');
       
     } catch (err: any) {
       console.error('Error fetching shared report:', err);
