@@ -16,15 +16,15 @@ interface ShareReportDialogProps {
   reportTitle: string;
 }
 
-// Define explicit interface for public reports based on database schema
-interface PublicReport {
-  id: string;
-  title: string;
+// Define a type for public report data that matches the table structure
+type PublicReportData = {
+  id?: string;
+  title?: string | null;
   summary?: string | null;
   url?: string | null;
-  status?: string;
+  status?: string | null;
   content?: any;
-  date?: string;
+  date?: string | null;
   client_name?: string | null;
   client_website?: string | null;
 }
@@ -108,8 +108,8 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           console.error('Error checking existing public report:', checkError);
         }
         
-        // Create the public report object with proper typing
-        const publicReportData: PublicReport = {
+        // Prepare the public report data with correct types
+        const publicReportData: PublicReportData = {
           id: fullReportData.id,
           title: fullReportData.title,
           summary: fullReportData.summary,
@@ -125,48 +125,51 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         if (!existingPublicReport) {
           console.log('Report not found in public_reports, inserting...');
           
-          // Direct insert with explicit type casting
-          const { error: insertError } = await supabase
-            .from('public_reports')
-            .insert({
-              id: publicReportData.id,
-              title: publicReportData.title,
-              summary: publicReportData.summary,
-              url: publicReportData.url,
-              status: publicReportData.status,
-              content: publicReportData.content,
-              date: publicReportData.date,
-              client_name: publicReportData.client_name,
-              client_website: publicReportData.client_website
-            });
+          // Use the fix_public_report_operations.sql function to handle insertion
+          const { error: insertError } = await supabase.rpc('insert_public_report', {
+            report_data: publicReportData
+          });
               
           if (insertError) {
             console.error('Error inserting into public_reports:', insertError);
-            throw new Error(`Error al crear el informe público: ${insertError.message}`);
+            
+            // Fallback to direct insert if RPC fails
+            const { error: directInsertError } = await supabase
+              .from('public_reports')
+              .insert(publicReportData as any);
+              
+            if (directInsertError) {
+              console.error('Error on fallback direct insert:', directInsertError);
+              throw new Error(`Error al crear el informe público: ${directInsertError.message}`);
+            }
           }
           
           console.log('Successfully inserted into public_reports');
         } else {
           console.log('Report already exists in public_reports, updating...');
           
-          // Direct update with explicit fields
-          const { error: updateError } = await supabase
-            .from('public_reports')
-            .update({
-              title: publicReportData.title,
-              summary: publicReportData.summary,
-              url: publicReportData.url,
-              status: publicReportData.status,
-              content: publicReportData.content,
-              date: publicReportData.date,
-              client_name: publicReportData.client_name,
-              client_website: publicReportData.client_website
-            })
-            .eq('id', reportId);
+          // Remove id from update data
+          const { id, ...updateData } = publicReportData;
+          
+          // Use the update function from the SQL migration
+          const { error: updateError } = await supabase.rpc('update_public_report', {
+            report_id: reportId,
+            report_data: updateData
+          });
               
           if (updateError) {
-            console.error('Error updating public_reports:', updateError);
-            throw new Error(`Error al actualizar el informe público: ${updateError.message}`);
+            console.error('Error updating public_reports via RPC:', updateError);
+            
+            // Fallback to direct update if RPC fails
+            const { error: directUpdateError } = await supabase
+              .from('public_reports')
+              .update(updateData as any)
+              .eq('id', reportId);
+              
+            if (directUpdateError) {
+              console.error('Error on fallback direct update:', directUpdateError);
+              throw new Error(`Error al actualizar el informe público: ${directUpdateError.message}`);
+            }
           }
           
           console.log('Successfully updated public_reports');
