@@ -36,3 +36,31 @@ export const logSharedReportAccess = async (
     console.error('Error logging shared report access:', e);
   }
 };
+
+export const logSharedProposalAccess = async (
+  proposalId: string,
+  options: LogOptions,
+  eventType?: string
+) => {
+  try {
+    const { successful, passwordAttempt, error, action, source } = options;
+    
+    // Simplemente guardar un registro en la consola por ahora
+    console.log('Shared proposal access:', {
+      proposalId,
+      successful,
+      passwordAttempt,
+      error,
+      action: action || (passwordAttempt ? 'password_verification' : 'view'),
+      source,
+      timestamp: new Date().toISOString(),
+      eventType: eventType || 'proposal_access'
+    });
+    
+    // Aquí se podría implementar el envío a un servicio de analytics o guardar en Supabase
+    // si se quisiera hacer un seguimiento más detallado de los accesos
+  } catch (e) {
+    // No hacemos fallar la aplicación si falla el logging
+    console.error('Error logging shared proposal access:', e);
+  }
+};
