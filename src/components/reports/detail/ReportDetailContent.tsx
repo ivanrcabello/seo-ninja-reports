@@ -72,7 +72,7 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
       
       <AnimatedContainer animation="fade" delay={100}>
         <div className="w-full">
-          <ReportViewer />
+          <ReportViewer report={report} reportId={report.id} />
         </div>
       </AnimatedContainer>
     </>

@@ -13,10 +13,15 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchPageSpeedData } from '@/services/api/pagespeed/fetchPageSpeedData';
 import { fetchBusinessProfile } from '@/services/api/businessProfile/fetchBusinessProfile';
 import { saveBusinessProfile } from '@/services/api/businessProfile/saveBusinessProfile';
-import { BusinessProfile } from '@/types/report.types';
+import { BusinessProfile, Report } from '@/types/report.types';
 import ReportEditDialog from '../ReportEditDialog';
 
-const ReportViewer = () => {
+interface ReportViewerProps {
+  reportId?: string;
+  report?: Report;
+}
+
+const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedReport }) => {
   const { id } = useParams();
   const { getReport, updateReport, isLoading: reportsLoading } = useReports();
   const navigate = useNavigate();
@@ -36,26 +41,28 @@ const ReportViewer = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+
+  // Use the provided report or fetch it based on ID
+  const effectiveId = reportId || id;
+  const report = providedReport || (effectiveId ? getReport(effectiveId) : undefined);
   
-  // If no ID is provided, redirect to reports page
-  if (!id) {
-    console.error("No report ID provided");
+  // If no ID is provided and no report is provided, redirect to dashboard
+  if (!effectiveId && !providedReport) {
+    console.error("No report ID or report object provided");
     navigate('/dashboard');
     return null;
   }
 
-  // Get report data
-  const report = getReport(id);
-  console.log("Current report ID:", id);
+  console.log("ReportViewer rendering with ID:", effectiveId);
   console.log("Report data:", report);
 
   // Load PageSpeed data
   useEffect(() => {
-    if (id && report?.status === 'completed' && report?.url) {
+    if (effectiveId && report?.status === 'completed' && report?.url) {
       const loadPageSpeedData = async () => {
         try {
           setIsLoadingPageSpeed(true);
-          const data = await fetchPageSpeedData(id);
+          const data = await fetchPageSpeedData(effectiveId);
           setPageSpeedData(data);
         } catch (error) {
           console.error('Error loading PageSpeed data:', error);
@@ -66,15 +73,15 @@ const ReportViewer = () => {
       
       loadPageSpeedData();
     }
-  }, [id, report]);
+  }, [effectiveId, report]);
   
   // Load Business Profile data
   useEffect(() => {
-    if (id && report?.status === 'completed' && report?.hasBusinessProfile === true) {
+    if (effectiveId && report?.status === 'completed' && report?.hasBusinessProfile === true) {
       const loadBusinessProfile = async () => {
         try {
           setIsLoadingBusinessProfile(true);
-          const data = await fetchBusinessProfile(id);
+          const data = await fetchBusinessProfile(effectiveId);
           setBusinessProfile(data);
         } catch (error) {
           console.error('Error loading Business Profile:', error);
@@ -85,7 +92,7 @@ const ReportViewer = () => {
       
       loadBusinessProfile();
     }
-  }, [id, report]);
+  }, [effectiveId, report]);
   
   // Function to get section title from section key
   const getSectionTitle = (section: string): string => {
@@ -113,7 +120,7 @@ const ReportViewer = () => {
   };
   
   const handleSaveEdit = async () => {
-    if (!report?.content || !activeSection) return;
+    if (!report?.content || !activeSection || !effectiveId) return;
     
     try {
       // Create updated content
@@ -123,7 +130,7 @@ const ReportViewer = () => {
       };
       
       // Update report with new content
-      await updateReport(id, { content: updatedContent });
+      await updateReport(effectiveId, { content: updatedContent });
       
       setIsEditDialogOpen(false);
       
@@ -139,7 +146,7 @@ const ReportViewer = () => {
   };
   
   const handleSaveBusinessProfile = async (profileData: Partial<BusinessProfile>) => {
-    if (!id) return;
+    if (!effectiveId) return;
     
     try {
       setIsSavingBusinessProfile(true);
@@ -158,12 +165,12 @@ const ReportViewer = () => {
       };
       
       // Save business profile
-      const success = await saveBusinessProfile(id, profileToSave);
+      const success = await saveBusinessProfile(effectiveId, profileToSave);
       
       if (success) {
         // Update local report state to reflect the presence of a business profile
         if (!report?.hasBusinessProfile) {
-          await updateReport(id, { hasBusinessProfile: true });
+          await updateReport(effectiveId, { hasBusinessProfile: true });
         }
         
         toast.success('Perfil de negocio guardado correctamente');
@@ -178,12 +185,12 @@ const ReportViewer = () => {
     }
   };
   
-  if (reportsLoading) {
+  if (reportsLoading && !providedReport) {
     return <SkeletonReport />;
   }
 
   if (!report) {
-    console.error("Report not found:", id);
+    console.error("Report not found:", effectiveId);
     return <NotFoundPage />;
   }
   
@@ -214,7 +221,7 @@ const ReportViewer = () => {
                 date={report.date}
                 url={report.url || ''}
                 isEditing={isEditing}
-                reportId={id}
+                reportId={effectiveId}
                 setIsEditing={setIsEditing}
               />
               
