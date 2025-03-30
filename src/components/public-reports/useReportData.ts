@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
+import { RpcResponseCheckReportExists, RpcResponseGetPublicReportById, PublicReportData } from '@/types/supabase-rpc.types';
 
 interface PublicReport {
   id: string;
@@ -58,7 +59,7 @@ const useReportData = (reportId: string) => {
       // APPROACH 1: Try to get report from public_reports view first (most direct)
       console.log('APPROACH 1: Fetching from public_reports view...');
       const { data: publicReportData, error: publicReportError } = await supabase
-        .from('public_reports')
+        .from<PublicReportData>('public_reports')
         .select('*')
         .eq('id', reportId)
         .maybeSingle();
@@ -79,7 +80,7 @@ const useReportData = (reportId: string) => {
       // APPROACH 2: Check if report exists and check password protection
       console.log('APPROACH 2: Checking if report exists and password protection...');
       const { data: reportCheck, error: reportCheckError } = await supabase
-        .rpc('check_report_exists', { report_id_param: reportId });
+        .rpc<boolean>('check_report_exists', { report_id_param: reportId });
       
       console.log('Report exists check:', { exists: reportCheck, error: reportCheckError });
       
@@ -133,14 +134,14 @@ const useReportData = (reportId: string) => {
       // APPROACH 3: Use get_public_report_by_id RPC
       console.log('APPROACH 3: Using get_public_report_by_id RPC...');
       const { data: rpcReportData, error: rpcError } = await supabase
-        .rpc('get_public_report_by_id', { report_id_param: reportId });
+        .rpc<RpcResponseGetPublicReportById[]>('get_public_report_by_id', { report_id_param: reportId });
       
       console.log('RPC result:', { 
         data: rpcReportData && rpcReportData.length > 0 ? 'Data exists' : 'No data', 
         error: rpcError 
       });
       
-      if (!rpcError && rpcReportData && rpcReportData.length > 0) {
+      if (!rpcError && rpcReportData && Array.isArray(rpcReportData) && rpcReportData.length > 0) {
         console.log('Successfully fetched via RPC');
         setReport(rpcReportData[0]);
         logSharedReportAccess(reportId, { successful: true, source: 'rpc' });
@@ -256,7 +257,7 @@ const useReportData = (reportId: string) => {
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       console.log(`Verifying password for report: ${reportId}`);
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await supabase.rpc<boolean>(
         'verify_shared_report_password', 
         { 
           report_id_param: reportId,
