@@ -27,6 +27,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   const [shareUrl, setShareUrl] = useState('');
   const [passwordProtected, setPasswordProtected] = useState(false);
   const [password, setPassword] = useState('');
+  const [sharedUrlId, setSharedUrlId] = useState<string | null>(null);
   
   // Generate a random password when needed
   const generateRandomPassword = () => {
@@ -50,7 +51,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         // First verify the report exists
         const { data: existsData, error: existsError } = await supabase
           .from('reports')
-          .select('id')
+          .select('id, password, shared_url')
           .eq('id', reportId)
           .single();
         
@@ -64,39 +65,38 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           throw new Error('El informe no existe');
         }
         
-        // Check if the report has an existing password
-        const { data: reportData, error: reportError } = await supabase
-          .from('reports')
-          .select('password')
-          .eq('id', reportId)
-          .single();
+        let sharedUrl = existsData.shared_url;
         
-        if (reportError) {
-          console.error('Error fetching report data:', reportError);
-          throw new Error(`Error al obtener el informe: ${reportError.message}`);
+        // If there's no shared_url yet, generate one
+        if (!sharedUrl) {
+          const newSharedUrl = crypto.randomUUID();
+          const { error: updateError } = await supabase
+            .from('reports')
+            .update({ shared_url: newSharedUrl })
+            .eq('id', reportId);
+            
+          if (updateError) {
+            console.error('Error generating shared URL:', updateError);
+            throw new Error(`Error al generar URL compartida: ${updateError.message}`);
+          }
+          
+          sharedUrl = newSharedUrl;
         }
         
+        setSharedUrlId(sharedUrl);
+        
         // Set password state based on existing data
-        if (reportData.password) {
+        if (existsData.password) {
           setPasswordProtected(true);
-          setPassword(reportData.password);
+          setPassword(existsData.password);
         } else {
           setPasswordProtected(false);
           setPassword('');
         }
         
-        // Test if the public view is working correctly
-        const { data: publicReportData, error: publicViewError } = await supabase
-          .from('public_reports')
-          .select('id, title, client_name')
-          .eq('id', reportId)
-          .maybeSingle();
-          
-        console.log('Public reports view test:', { publicReportData, publicViewError });
-        
-        // Build the share URL - using the base URL from the current window
-        const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
-        setShareUrl(shareUrl);
+        // Build the share URL - using the shared_url as the identifier
+        const fullShareUrl = `${window.location.origin}/shared/reports/${sharedUrl}`;
+        setShareUrl(fullShareUrl);
         
         toast.success('Enlace generado correctamente');
       } catch (error: any) {

@@ -1,274 +1,281 @@
 
-import { PublicReportData, RpcResponseCheckReportExists, RpcResponseGetPublicReportById } from '@/types/supabase-rpc.types';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface PublicReport {
   id: string;
   title: string;
-  summary?: string;
-  url?: string;
+  summary: string;
+  url: string;
   status: string;
-  content?: any;
-  date?: string;
-  client_name?: string;
-  client_website?: string;
+  content: any;
+  date: string;
+  client_name: string;
+  client_website: string;
 }
 
 export interface AccessLogOptions {
   successful: boolean;
   passwordAttempt?: boolean;
   error?: string;
-  source?: string;
+  action?: string;
 }
 
-/**
- * Check if report exists using RPC
- */
-export async function checkReportExists(reportId: string): Promise<{ exists: boolean; error?: any }> {
-  console.log('Checking if report exists via RPC:', reportId);
-  
+// Check if a report exists and is accessible
+export async function checkReportExists(reportId: string) {
   try {
+    // First try using the shared_url field
+    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('shared_url', reportId)
+      .maybeSingle();
+
+    if (reportBySharedUrl) {
+      return { exists: true, error: null };
+    }
+
+    // If no report found by shared_url, try direct id
     const { data, error } = await supabase
-      .rpc<RpcResponseCheckReportExists>('check_report_exists', { report_id_param: reportId });
-    
-    // Parse the response correctly
-    const reportCheck: RpcResponseCheckReportExists = 
-      typeof data === 'boolean' ? { exists: data } : 
-      (data && typeof data === 'object' && 'exists' in data) ? data as RpcResponseCheckReportExists : 
-      { exists: false };
-    
-    console.log('Report exists check:', { exists: reportCheck.exists, error });
-    
+      .rpc('check_report_exists', { report_id_param: reportId });
+      
     if (error) {
-      console.error('Error checking if report exists (RPC):', error);
-      return { exists: false, error };
+      console.error('Error checking report existence:', error);
+      return { exists: false, error: error.message };
     }
     
-    return { exists: reportCheck.exists };
-  } catch (err) {
-    console.error('Exception in checkReportExists:', err);
-    return { exists: false, error: err };
+    return { exists: !!data, error: null };
+  } catch (error: any) {
+    console.error('Error in checkReportExists:', error);
+    return { exists: false, error: error.message };
   }
 }
 
-/**
- * Check if report is password protected
- */
-export async function checkReportPassword(reportId: string): Promise<{ isProtected: boolean; error?: any }> {
+// Check if a report is password-protected
+export async function checkReportPassword(reportId: string) {
   try {
-    const { data, error } = await supabase
+    // First try using shared_url
+    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
       .from('reports')
       .select('id, password')
-      .eq('id', reportId)
+      .eq('shared_url', reportId)
       .maybeSingle();
+
+    if (reportBySharedUrl) {
+      return { 
+        isProtected: !!reportBySharedUrl.password, 
+        error: null 
+      };
+    }
+
+    // If not found by shared_url, try direct id
+    const { data, error } = await supabase
+      .from('reports')
+      .select('password')
+      .eq('id', reportId)
+      .single();
     
     if (error) {
       console.error('Error checking report password:', error);
-      return { isProtected: false, error };
+      return { isProtected: false, error: error.message };
     }
     
-    const isProtected = Boolean(data && data.password);
-    return { isProtected };
-  } catch (err) {
-    console.error('Exception in checkReportPassword:', err);
-    return { isProtected: false, error: err };
+    return { isProtected: !!data.password, error: null };
+  } catch (error: any) {
+    console.error('Error in checkReportPassword:', error);
+    return { isProtected: false, error: error.message };
   }
 }
 
-/**
- * Fetch report from public_reports view
- */
-export async function fetchFromPublicReportsView(reportId: string): Promise<{ report?: PublicReport; error?: any }> {
-  console.log('Fetching from public_reports view...');
+// Try to get report from public_reports view
+export async function fetchFromPublicReportsView(reportId: string) {
   try {
+    // First try with shared_url
+    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('shared_url', reportId)
+      .maybeSingle();
+      
+    const actualReportId = reportBySharedUrl?.id || reportId;
+    
     const { data, error } = await supabase
       .from('public_reports')
       .select('*')
-      .eq('id', reportId)
+      .eq('id', actualReportId)
+      .single();
+      
+    if (error) {
+      return { report: null, error: error.message };
+    }
+    
+    return { report: data as PublicReport, error: null };
+  } catch (error: any) {
+    console.error('Error in fetchFromPublicReportsView:', error);
+    return { report: null, error: error.message };
+  }
+}
+
+// Try to get report using RPC function
+export async function fetchReportWithRpc(reportId: string) {
+  try {
+    // First check if this is a shared_url and get the actual report ID
+    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('shared_url', reportId)
       .maybeSingle();
+      
+    const actualReportId = reportBySharedUrl?.id || reportId;
     
-    console.log('Public reports view result:', { 
-      data: data ? 'Data exists' : 'No data', 
-      error 
-    });
-    
-    if (error || !data) {
-      return { error };
+    const { data, error } = await supabase
+      .rpc('get_public_report_by_id', { 
+        report_id_param: actualReportId 
+      });
+      
+    if (error) {
+      return { report: null, error: error.message };
     }
     
-    console.log('Successfully fetched from public_reports view');
-    return { report: data as unknown as PublicReport };
-  } catch (err) {
-    console.error('Exception in fetchFromPublicReportsView:', err);
-    return { error: err };
+    return { report: data[0] as PublicReport, error: null };
+  } catch (error: any) {
+    console.error('Error in fetchReportWithRpc:', error);
+    return { report: null, error: error.message };
   }
 }
 
-/**
- * Fetch report using RPC
- */
-export async function fetchReportWithRpc(reportId: string): Promise<{ report?: PublicReport; error?: any }> {
-  console.log('Using get_public_report_by_id RPC...');
+// Try to get report using direct join
+export async function fetchReportWithJoin(reportId: string) {
   try {
-    const { data: rpcData, error } = await supabase
-      .rpc<RpcResponseGetPublicReportById[]>('get_public_report_by_id', { report_id_param: reportId });
+    // First check if this is a shared_url and get the actual report ID
+    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('shared_url', reportId)
+      .maybeSingle();
+      
+    const actualReportId = reportBySharedUrl?.id || reportId;
     
-    // Process RPC data correctly
-    let rpcReportData: RpcResponseGetPublicReportById[] = [];
-    if (rpcData) {
-      if (Array.isArray(rpcData)) {
-        rpcReportData = rpcData as RpcResponseGetPublicReportById[];
-      } else if (typeof rpcData === 'object') {
-        rpcReportData = [rpcData as unknown as RpcResponseGetPublicReportById];
-      }
-    }
-    
-    console.log('RPC result:', { 
-      data: rpcReportData && rpcReportData.length > 0 ? 'Data exists' : 'No data', 
-      error 
-    });
-    
-    if (error || !rpcReportData || rpcReportData.length === 0) {
-      return { error: error || new Error('No data returned from RPC') };
-    }
-    
-    console.log('Successfully fetched via RPC');
-    const reportToSet: PublicReport = {
-      id: rpcReportData[0].id,
-      title: rpcReportData[0].title || 'Informe sin título',
-      summary: rpcReportData[0].summary || undefined,
-      url: rpcReportData[0].url || undefined,
-      status: rpcReportData[0].status || 'unknown',
-      content: rpcReportData[0].content,
-      date: rpcReportData[0].date || undefined,
-      client_name: rpcReportData[0].client_name || undefined,
-      client_website: rpcReportData[0].client_website || undefined,
-    };
-    
-    return { report: reportToSet };
-  } catch (err) {
-    console.error('Exception in fetchReportWithRpc:', err);
-    return { error: err };
-  }
-}
-
-/**
- * Fetch report using direct join query
- */
-export async function fetchReportWithJoin(reportId: string): Promise<{ report?: PublicReport; error?: any }> {
-  console.log('Using direct join query...');
-  try {
     const { data, error } = await supabase
       .from('reports')
       .select(`
         id, 
         title, 
-        summary,
-        url,
-        status,
-        content,
+        summary, 
+        url, 
+        status, 
+        content, 
         date,
-        clients (
-          name,
-          website
-        )
+        clients!inner(name, website)
       `)
-      .eq('id', reportId)
-      .maybeSingle();
-    
-    console.log('Join query result:', { 
-      data: data ? 'Data exists' : 'No data', 
-      error 
-    });
-    
-    if (error || !data) {
-      return { error };
+      .eq('id', actualReportId)
+      .single();
+      
+    if (error) {
+      return { report: null, error: error.message };
     }
     
-    console.log('Successfully fetched with join query');
-    
-    // Format the data to match PublicReport interface
-    const formattedReport: PublicReport = {
+    // Transform the data to match the PublicReport interface
+    const report: PublicReport = {
       id: data.id,
-      title: data.title || 'Informe sin título',
+      title: data.title,
       summary: data.summary,
       url: data.url,
       status: data.status,
       content: data.content,
       date: data.date,
-      client_name: data.clients?.name,
-      client_website: data.clients?.website
+      client_name: data.clients.name,
+      client_website: data.clients.website
     };
     
-    return { report: formattedReport };
-  } catch (err) {
-    console.error('Exception in fetchReportWithJoin:', err);
-    return { error: err };
+    return { report, error: null };
+  } catch (error: any) {
+    console.error('Error in fetchReportWithJoin:', error);
+    return { report: null, error: error.message };
   }
 }
 
-/**
- * Fetch report using reports table only
- */
-export async function fetchReportOnly(reportId: string): Promise<{ report?: PublicReport; error?: any }> {
-  console.log('Fetching report only (no joins)...');
+// Get report from reports table only
+export async function fetchReportOnly(reportId: string) {
   try {
+    // First check if this is a shared_url and get the actual report ID
+    let { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('shared_url', reportId)
+      .maybeSingle();
+      
+    const actualReportId = reportBySharedUrl?.id || reportId;
+    
     const { data, error } = await supabase
       .from('reports')
       .select('*')
-      .eq('id', reportId)
-      .maybeSingle();
-    
-    console.log('Report only query result:', { 
-      data: data ? 'Data exists' : 'No data', 
-      error 
-    });
-    
-    if (error || !data) {
-      return { error };
+      .eq('id', actualReportId)
+      .single();
+      
+    if (error) {
+      return { report: null, error: error.message };
     }
     
-    console.log('Successfully fetched report only');
-    
-    const formattedReport: PublicReport = {
+    // Create a partial report with available data
+    const report: PublicReport = {
       id: data.id,
-      title: data.title || 'Informe sin título',
-      summary: data.summary,
-      url: data.url,
+      title: data.title || 'Informe SEO',
+      summary: data.summary || '',
+      url: data.url || '',
       status: data.status,
       content: data.content,
-      date: data.date
+      date: data.date,
+      client_name: 'Cliente',  // Default value if no client data
+      client_website: data.url || ''
     };
     
-    return { report: formattedReport };
-  } catch (err) {
-    console.error('Exception in fetchReportOnly:', err);
-    return { error: err };
+    return { report, error: null };
+  } catch (error: any) {
+    console.error('Error in fetchReportOnly:', error);
+    return { report: null, error: error.message };
   }
 }
 
-/**
- * Verify report password
- */
-export async function verifyReportPassword(reportId: string, password: string): Promise<{ success: boolean; error?: any }> {
+// Verify report password
+export async function verifyReportPassword(reportId: string, password: string) {
   try {
-    console.log(`Verifying password for report: ${reportId}`);
-    const { data, error } = await supabase
-      .rpc<boolean>('verify_shared_report_password', { 
-        report_id_param: reportId,
-        password_param: password
-      });
+    let reportToCheck;
     
-    if (error) {
-      console.error('Error in verify_shared_report_password RPC:', error);
-      return { success: false, error };
+    // First try with shared_url
+    const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
+      .from('reports')
+      .select('id, password')
+      .eq('shared_url', reportId)
+      .maybeSingle();
+      
+    if (reportBySharedUrl) {
+      reportToCheck = reportBySharedUrl;
+    } else {
+      // If not found by shared_url, try direct id
+      const { data, error } = await supabase
+        .from('reports')
+        .select('id, password')
+        .eq('id', reportId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching report for password verification:', error);
+        return { success: false, error: error.message };
+      }
+      
+      reportToCheck = data;
     }
     
-    const success = Boolean(data);
-    console.log(`Password verification result: ${success}`);
-    return { success };
-  } catch (error) {
-    console.error('Error verifying password:', error);
-    return { success: false, error };
+    // Verify the password
+    if (!reportToCheck.password) {
+      // Report is not password protected
+      return { success: true, error: null };
+    }
+    
+    const success = reportToCheck.password === password;
+    return { success, error: null };
+  } catch (error: any) {
+    console.error('Error in verifyReportPassword:', error);
+    return { success: false, error: error.message };
   }
 }

@@ -14,6 +14,7 @@ interface Report {
   id: string;
   title: string;
   created_at: string;
+  shared_url: string;
 }
 
 interface ClientPortalReportsProps {
@@ -47,9 +48,13 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
     fetchReports();
   }, [clientId]);
 
-  const viewReport = (id: string) => {
-    // Instead of opening in a new tab, navigate to the shared report URL
-    navigate(`/shared/reports/${id}`);
+  const viewReport = (report: Report) => {
+    // Use the shared_url for viewing reports instead of the report ID
+    if (report.shared_url) {
+      navigate(`/shared/reports/${report.shared_url}`);
+    } else {
+      toast.error('Este informe no tiene un enlace compartido válido');
+    }
   };
 
   return (
@@ -81,7 +86,8 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => viewReport(report.id)}
+                    onClick={() => viewReport(report)}
+                    disabled={!report.shared_url}
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Ver informe

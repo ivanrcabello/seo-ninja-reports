@@ -30,7 +30,7 @@ const PublicReport: React.FC = () => {
       // Log page view
       logSharedReportAccess(reportId, { 
         successful: true,
-        view: 'page_load' 
+        action: 'page_view' 
       }, 'page_view');
     } else {
       console.error('No reportId parameter found in URL');

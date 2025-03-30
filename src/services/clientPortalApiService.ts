@@ -99,7 +99,7 @@ class ClientPortalApiService {
     try {
       const { data, error } = await supabase
         .from('client_portal_reports')
-        .select('*')
+        .select('id, title, created_at, shared_url')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
       
