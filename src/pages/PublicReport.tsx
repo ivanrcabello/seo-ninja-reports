@@ -24,6 +24,11 @@ const PublicReport: React.FC = () => {
   } = useReportData(reportId || '');
 
   const handleVerifyPassword = async () => {
+    if (!passwordInput.trim()) {
+      setShowError(true);
+      return;
+    }
+    
     setVerifying(true);
     setShowError(false);
     

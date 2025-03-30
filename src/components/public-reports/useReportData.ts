@@ -35,11 +35,12 @@ const useReportData = (reportId: string) => {
     try {
       console.log(`Fetching report with ID: ${reportId}`);
       
-      // Check if report exists first
-      const { data: existsData, error: existsError } = await supabase.rpc(
-        'check_report_exists',
-        { report_id_param: reportId }
-      );
+      // Check if report exists first - using a direct query instead of RPC
+      const { data: existsData, error: existsError } = await supabase
+        .from('reports')
+        .select('id')
+        .eq('id', reportId)
+        .maybeSingle();
       
       if (existsError) {
         console.error('Error checking if report exists:', existsError);
