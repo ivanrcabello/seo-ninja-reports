@@ -55,7 +55,27 @@ const useReportData = (reportId: string) => {
         }
       }
       
-      // First try: Fetch from public_reports view directly (simplest approach)
+      // Try 3 different approaches to get the report data
+      
+      // Approach 1: Try to get report data using the get_public_report_by_id function
+      try {
+        const { data: functionData, error: functionError } = await supabase.rpc(
+          'get_public_report_by_id',
+          { report_id_param: reportId }
+        );
+        
+        if (!functionError && functionData && functionData.length > 0) {
+          console.log('Found via RPC function:', functionData[0]);
+          setReport(functionData[0] as PublicReport);
+          logSharedReportAccess(reportId, { successful: true });
+          setIsLoading(false);
+          return;
+        }
+      } catch (functionErr) {
+        console.log('RPC function approach failed:', functionErr);
+      }
+      
+      // Approach 2: Try to fetch from public_reports view
       console.log('Attempting to fetch from public_reports view...');
       const { data: publicData, error: publicError } = await supabase
         .from('public_reports')
@@ -86,48 +106,16 @@ const useReportData = (reportId: string) => {
         console.error('Error fetching from public_reports:', publicError);
       }
       
-      // Second try: Try to fetch from client_portal_reports
-      console.log('Attempting to fetch from client_portal_reports...');
-      const { data: portalReportData, error: portalReportError } = await supabase
-        .from('client_portal_reports')
-        .select('*, clients(name, website)')
-        .eq('original_report_id', reportId)
-        .maybeSingle();
-      
-      // If found in portal reports, use that data
-      if (!portalReportError && portalReportData) {
-        console.log('Found in client_portal_reports:', portalReportData);
-        const formattedReport: PublicReport = {
-          id: portalReportData.id,
-          title: portalReportData.title || 'Informe sin título',
-          summary: portalReportData.summary,
-          url: portalReportData.url,
-          status: portalReportData.status,
-          content: portalReportData.content,
-          date: portalReportData.created_at,
-          client_name: portalReportData.clients?.name,
-          client_website: portalReportData.clients?.website
-        };
-        
-        setReport(formattedReport);
-        logSharedReportAccess(reportId, { successful: true });
-        setIsLoading(false);
-        return;
-      } else if (portalReportError) {
-        console.error('Error fetching from client_portal_reports:', portalReportError);
-      }
-      
-      // Last try: Try fetching directly from reports
-      console.log('Attempting to fetch directly from reports...');
+      // Approach 3: Try to fetch directly from reports table with client info
+      console.log('Attempting to fetch directly from reports table...');
       const { data: reportData, error: reportError } = await supabase
         .from('reports')
         .select('*, clients(name, website)')
         .eq('id', reportId)
         .maybeSingle();
         
-      // If found in reports, use that data
       if (!reportError && reportData) {
-        console.log('Found in reports:', reportData);
+        console.log('Found in reports table:', reportData);
         const formattedReport: PublicReport = {
           id: reportData.id,
           title: reportData.title || 'Informe sin título',

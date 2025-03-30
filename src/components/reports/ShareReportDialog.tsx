@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -80,7 +81,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           setPassword('');
         }
         
-        // Get the full report data to ensure we have everything needed for public_reports
+        // Get the full report data to ensure we have everything needed for public sharing
         const { data: fullReportData, error: fullReportError } = await supabase
           .from('reports')
           .select('*, clients(name, website)')
@@ -93,19 +94,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         }
 
         console.log('Full report data:', fullReportData);
-        
-        // Check if already exists in public_reports
-        const { data: existingPublicReport, error: checkError } = await supabase
-          .from('public_reports')
-          .select('id')
-          .eq('id', reportId)
-          .maybeSingle();
-          
-        console.log('Existing in public_reports:', existingPublicReport);
-        
-        if (checkError) {
-          console.error('Error checking existing public report:', checkError);
-        }
         
         // Prepare the public report data with correct types
         const publicReportData: PublicReportData = {
@@ -120,33 +108,40 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           client_website: fullReportData.clients?.website
         };
         
-        // If it doesn't exist in public_reports or we need to update it
+        // Use the RPC function to update or insert the report data to the public reports
         try {
-          // Use our updated database functions that work on the reports table
-          if (!existingPublicReport) {
-            console.log('Inserting/updating report using RPC function');
-            
-            const { error: rpcError } = await supabase.rpc('insert_public_report', {
-              report_data: publicReportData
-            });
+          // First, try to get data from public_reports to see if the report already exists there
+          const { data: existingPublicReport } = await supabase
+            .from('public_reports')
+            .select('id')
+            .eq('id', reportId)
+            .maybeSingle();
+          
+          if (existingPublicReport) {
+            // Report exists in public_reports, update it using RPC function
+            const { error: rpcError } = await supabase.rpc(
+              'update_public_report',
+              {
+                report_id: reportId,
+                report_data: publicReportData
+              }
+            );
             
             if (rpcError) {
-              console.error('Error using RPC function:', rpcError);
+              console.error('Error using update RPC function:', rpcError);
               throw rpcError;
             }
           } else {
-            console.log('Updating report using RPC function');
-            
-            // Remove id from update data to avoid issues
-            const { id, ...updateData } = publicReportData;
-            
-            const { error: rpcError } = await supabase.rpc('update_public_report', {
-              report_id: reportId,
-              report_data: updateData
-            });
+            // Report doesn't exist in public_reports, insert it using RPC function
+            const { error: rpcError } = await supabase.rpc(
+              'insert_public_report',
+              {
+                report_data: publicReportData
+              }
+            );
             
             if (rpcError) {
-              console.error('Error using RPC function:', rpcError);
+              console.error('Error using insert RPC function:', rpcError);
               throw rpcError;
             }
           }
