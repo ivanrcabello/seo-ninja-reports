@@ -15,6 +15,27 @@ export interface PublicReport {
   password?: string;
 }
 
+// Simplified response types to avoid deep recursion
+export interface ReportCheckResult {
+  exists: boolean;
+  error: string | null;
+}
+
+export interface ReportPasswordCheck {
+  isProtected: boolean;
+  error: string | null;
+}
+
+export interface ReportFetchResult {
+  report: PublicReport | null;
+  error: string | null;
+}
+
+export interface PasswordVerifyResult {
+  success: boolean;
+  error: string | null;
+}
+
 export interface AccessLogOptions {
   successful: boolean;
   passwordAttempt?: boolean;
@@ -23,7 +44,7 @@ export interface AccessLogOptions {
 }
 
 // Check if a report exists and is accessible
-export async function checkReportExists(reportId: string) {
+export async function checkReportExists(reportId: string): Promise<ReportCheckResult> {
   try {
     // First try using the shared_url field
     const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
@@ -53,7 +74,7 @@ export async function checkReportExists(reportId: string) {
 }
 
 // Check if a report is password-protected
-export async function checkReportPassword(reportId: string) {
+export async function checkReportPassword(reportId: string): Promise<ReportPasswordCheck> {
   try {
     // First try using shared_url
     const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
@@ -89,7 +110,7 @@ export async function checkReportPassword(reportId: string) {
 }
 
 // Try to get report from public_reports view
-export async function fetchFromPublicReportsView(reportId: string) {
+export async function fetchFromPublicReportsView(reportId: string): Promise<ReportFetchResult> {
   try {
     // First try with shared_url
     const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
@@ -118,7 +139,7 @@ export async function fetchFromPublicReportsView(reportId: string) {
 }
 
 // Try to get report using RPC function
-export async function fetchReportWithRpc(reportId: string) {
+export async function fetchReportWithRpc(reportId: string): Promise<ReportFetchResult> {
   try {
     // First check if this is a shared_url and get the actual report ID
     const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
@@ -138,7 +159,11 @@ export async function fetchReportWithRpc(reportId: string) {
       return { report: null, error: error.message };
     }
     
-    return { report: data[0] as PublicReport, error: null };
+    if (Array.isArray(data) && data.length > 0) {
+      return { report: data[0] as PublicReport, error: null };
+    }
+    
+    return { report: null, error: "No report data returned" };
   } catch (error: any) {
     console.error('Error in fetchReportWithRpc:', error);
     return { report: null, error: error.message };
@@ -146,7 +171,7 @@ export async function fetchReportWithRpc(reportId: string) {
 }
 
 // Try to get report using direct join
-export async function fetchReportWithJoin(reportId: string) {
+export async function fetchReportWithJoin(reportId: string): Promise<ReportFetchResult> {
   try {
     // First check if this is a shared_url and get the actual report ID
     const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
@@ -197,7 +222,7 @@ export async function fetchReportWithJoin(reportId: string) {
 }
 
 // Get report from reports table only
-export async function fetchReportOnly(reportId: string) {
+export async function fetchReportOnly(reportId: string): Promise<ReportFetchResult> {
   try {
     // First check if this is a shared_url and get the actual report ID
     const { data: reportBySharedUrl, error: sharedUrlError } = await supabase
@@ -239,7 +264,7 @@ export async function fetchReportOnly(reportId: string) {
 }
 
 // Verify report password
-export async function verifyReportPassword(reportId: string, password: string) {
+export async function verifyReportPassword(reportId: string, password: string): Promise<PasswordVerifyResult> {
   try {
     let reportToCheck;
     
