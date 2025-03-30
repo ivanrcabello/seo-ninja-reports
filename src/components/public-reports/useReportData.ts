@@ -35,24 +35,26 @@ const useReportData = (reportId: string) => {
     try {
       console.log(`Fetching report with ID: ${reportId}`);
       
-      // Check if report exists first - using a direct query instead of RPC
-      const { data: existsData, error: existsError } = await supabase
+      // STEP 1: First check if the report exists - using direct query instead of RPC
+      const { data: existCheck, error: existCheckError } = await supabase
         .from('reports')
         .select('id')
         .eq('id', reportId)
         .maybeSingle();
       
-      if (existsError) {
-        console.error('Error checking if report exists:', existsError);
+      if (existCheckError) {
+        console.error('Error checking if report exists:', existCheckError);
         throw new Error('Error al verificar si el informe existe');
       }
       
-      if (!existsData) {
-        console.error('Report does not exist');
-        throw new Error('Informe no encontrado');
+      if (!existCheck) {
+        console.error('Report does not exist - ID:', reportId);
+        throw new Error('ID de reporte no válido');
       }
       
-      // Check if report is password protected
+      console.log('Report exists check passed:', existCheck);
+      
+      // STEP 2: Check if report is password protected
       const { data: protectionData, error: protectionError } = await supabase
         .from('reports')
         .select('password')
@@ -73,76 +75,50 @@ const useReportData = (reportId: string) => {
         }
       }
       
-      // First try: Fetch from public_reports view
+      // STEP 3: FIRST ATTEMPT - Try public_reports view
       console.log('Attempting to fetch from public_reports view...');
-      const { data: publicData, error: publicError } = await supabase
+      const { data: publicReportData, error: publicReportError } = await supabase
         .from('public_reports')
         .select('*')
         .eq('id', reportId)
         .maybeSingle();
       
-      if (!publicError && publicData) {
-        console.log('Found in public_reports:', publicData);
-        setReport(publicData);
-        logSharedReportAccess(reportId, { successful: true });
-        setIsLoading(false);
-        return;
-      } 
-      
-      console.log('Error or no data from public_reports:', publicError);
-      
-      // Second try: Direct query to reports with join
-      console.log('Attempting to fetch with direct join query...');
-      const { data: reportWithClientData, error: reportWithClientError } = await supabase
-        .from('reports')
-        .select(`
-          id,
-          title,
-          summary,
-          url,
-          status,
-          content,
-          date,
-          clients (
-            name,
-            website
-          )
-        `)
-        .eq('id', reportId)
-        .maybeSingle();
-      
-      if (!reportWithClientError && reportWithClientData) {
-        console.log('Found with direct join query:', reportWithClientData);
-        const formattedReport: PublicReport = {
-          id: reportWithClientData.id,
-          title: reportWithClientData.title || 'Informe sin título',
-          summary: reportWithClientData.summary,
-          url: reportWithClientData.url,
-          status: reportWithClientData.status,
-          content: reportWithClientData.content,
-          date: reportWithClientData.date,
-          client_name: reportWithClientData.clients?.name,
-          client_website: reportWithClientData.clients?.website
-        };
-        
-        setReport(formattedReport);
-        logSharedReportAccess(reportId, { successful: true });
+      if (!publicReportError && publicReportData) {
+        console.log('Successfully fetched from public_reports view:', publicReportData);
+        setReport(publicReportData);
+        logSharedReportAccess(reportId, { successful: true, source: 'public_reports_view' });
         setIsLoading(false);
         return;
       }
       
-      console.log('Error or no data from direct join:', reportWithClientError);
+      console.log('Error or no data from public_reports view:', publicReportError);
       
-      // Last attempt: Fetch just the report without client info
-      console.log('Attempting to fetch report only...');
+      // STEP 4: SECOND ATTEMPT - Direct query with join
+      console.log('Attempting direct join query...');
+      const { data: joinData, error: joinError } = await supabase
+        .rpc('get_public_report_by_id', { report_id_param: reportId });
+      
+      if (!joinError && joinData && joinData.length > 0) {
+        console.log('Successfully fetched with rpc function:', joinData[0]);
+        setReport(joinData[0]);
+        logSharedReportAccess(reportId, { successful: true, source: 'rpc_function' });
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('Error or no data from rpc:', joinError);
+      
+      // STEP 5: THIRD ATTEMPT - Manual join query
+      console.log('Attempting manual join query...');
       const { data: reportData, error: reportError } = await supabase
         .from('reports')
-        .select('*')
+        .select('*, clients(name, website)')
         .eq('id', reportId)
-        .maybeSingle();
+        .single();
       
       if (!reportError && reportData) {
-        console.log('Found report only:', reportData);
+        console.log('Successfully fetched with manual join:', reportData);
+        
         const formattedReport: PublicReport = {
           id: reportData.id,
           title: reportData.title || 'Informe sin título',
@@ -150,18 +126,47 @@ const useReportData = (reportId: string) => {
           url: reportData.url,
           status: reportData.status,
           content: reportData.content,
-          date: reportData.date
+          date: reportData.date,
+          client_name: reportData.clients?.name,
+          client_website: reportData.clients?.website
         };
         
         setReport(formattedReport);
-        logSharedReportAccess(reportId, { successful: true });
+        logSharedReportAccess(reportId, { successful: true, source: 'manual_join' });
         setIsLoading(false);
         return;
       }
       
-      console.log('Error or no data from final attempt:', reportError);
+      console.log('Error or no data from manual join:', reportError);
       
-      // If we reach this point, no report was found
+      // STEP 6: FINAL ATTEMPT - Reports table only
+      console.log('Attempting to fetch report only...');
+      const { data: reportOnlyData, error: reportOnlyError } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('id', reportId)
+        .single();
+      
+      if (!reportOnlyError && reportOnlyData) {
+        console.log('Successfully fetched report only:', reportOnlyData);
+        
+        const formattedReport: PublicReport = {
+          id: reportOnlyData.id,
+          title: reportOnlyData.title || 'Informe sin título',
+          summary: reportOnlyData.summary,
+          url: reportOnlyData.url,
+          status: reportOnlyData.status,
+          content: reportOnlyData.content,
+          date: reportOnlyData.date
+        };
+        
+        setReport(formattedReport);
+        logSharedReportAccess(reportId, { successful: true, source: 'reports_only' });
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('All attempts failed. Report not found.');
       throw new Error('No se pudo encontrar el informe solicitado');
       
     } catch (err: any) {
@@ -180,6 +185,7 @@ const useReportData = (reportId: string) => {
 
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
+      console.log(`Verifying password for report: ${reportId}`);
       const { data, error } = await supabase.rpc(
         'verify_shared_report_password', 
         { 
@@ -188,9 +194,13 @@ const useReportData = (reportId: string) => {
         }
       );
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error in verify_shared_report_password RPC:', error);
+        throw error;
+      }
       
       const success = Boolean(data);
+      console.log(`Password verification result: ${success}`);
       setAccessGranted(success);
       
       // Log password attempt

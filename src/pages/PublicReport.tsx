@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading } from '@/components/public-reports';
@@ -23,6 +23,14 @@ const PublicReport: React.FC = () => {
     refetch 
   } = useReportData(reportId || '');
 
+  useEffect(() => {
+    if (reportId) {
+      console.log(`PublicReport page initialized with reportId: ${reportId}`);
+    } else {
+      console.error('No reportId parameter found in URL');
+    }
+  }, [reportId]);
+  
   const handleVerifyPassword = async () => {
     if (!passwordInput.trim()) {
       setShowError(true);
@@ -36,7 +44,7 @@ const PublicReport: React.FC = () => {
     const success = await verifyPassword(passwordInput);
     
     if (success) {
-      console.log('Password verification successful');
+      console.log('Password verification successful, refetching report data');
       await refetch();
     } else {
       console.log('Password verification failed');
@@ -48,18 +56,19 @@ const PublicReport: React.FC = () => {
 
   // Show loading state
   if (isLoading) {
+    console.log('PublicReport: Showing loading state');
     return <PublicReportLoading />;
   }
 
   // Show error state
   if (error) {
-    console.error('Error loading report:', error);
+    console.error('PublicReport: Error loading report:', error);
     return <PublicReportError errorMessage={error} />;
   }
 
   // Show password protection dialog
   if (isPasswordProtected && !accessGranted) {
-    console.log('Report is password protected and access not granted');
+    console.log('PublicReport: Showing password protection dialog');
     return (
       <PasswordProtectionDialog
         isOpen={true}
@@ -78,11 +87,11 @@ const PublicReport: React.FC = () => {
 
   // Show empty state if no report found
   if (!report) {
-    console.log('No report found');
+    console.log('PublicReport: No report found, showing empty state');
     return <PublicReportEmpty />;
   }
 
-  console.log('Rendering report:', report);
+  console.log('PublicReport: Rendering report content:', report);
   
   // Show report content
   return (

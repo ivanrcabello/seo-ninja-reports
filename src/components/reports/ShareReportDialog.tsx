@@ -16,19 +16,6 @@ interface ShareReportDialogProps {
   reportTitle: string;
 }
 
-// Define a type for public report data that matches the table structure
-type PublicReportData = {
-  id?: string;
-  title?: string | null;
-  summary?: string | null;
-  url?: string | null;
-  status?: string | null;
-  content?: any;
-  date?: string | null;
-  client_name?: string | null;
-  client_website?: string | null;
-}
-
 const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   open,
   onOpenChange,
@@ -53,12 +40,29 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   
   // Generate and get public link when dialog opens
   useEffect(() => {
-    if (!open) return;
+    if (!open || !reportId) return;
     
     const generateShareUrl = async () => {
       try {
         setIsLoading(true);
         console.log('Generating share URL for report:', reportId);
+        
+        // First verify the report exists
+        const { data: existsData, error: existsError } = await supabase
+          .from('reports')
+          .select('id')
+          .eq('id', reportId)
+          .single();
+        
+        if (existsError) {
+          console.error('Error checking if report exists:', existsError);
+          throw new Error(`Error al verificar si el informe existe: ${existsError.message}`);
+        }
+        
+        if (!existsData) {
+          console.error('Report does not exist');
+          throw new Error('El informe no existe');
+        }
         
         // Check if the report has an existing password
         const { data: reportData, error: reportError } = await supabase
@@ -81,35 +85,16 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           setPassword('');
         }
         
-        // Get the full report data to ensure we have everything needed for public sharing
-        const { data: fullReportData, error: fullReportError } = await supabase
-          .from('reports')
-          .select('*, clients(name, website)')
-          .eq('id', reportId)
-          .single();
-        
-        if (fullReportError) {
-          console.error('Error fetching full report:', fullReportError);
-          throw new Error(`Error al obtener el informe completo: ${fullReportError.message}`);
-        }
-
-        console.log('Full report data:', fullReportData);
-        
-        // Verify if the report already exists in the public_reports view
-        const { data: existingPublicReport, error: viewCheckError } = await supabase
+        // Test if the public view is working correctly
+        const { data: publicReportData, error: publicViewError } = await supabase
           .from('public_reports')
-          .select('id')
+          .select('id, title, client_name')
           .eq('id', reportId)
           .maybeSingle();
+          
+        console.log('Public reports view test:', { publicReportData, publicViewError });
         
-        if (viewCheckError) {
-          console.error('Error checking public_reports view:', viewCheckError);
-          // Continue with the process even if there was an error checking the view
-        }
-        
-        console.log('Public report check result:', existingPublicReport);
-        
-        // Build the share URL
+        // Build the share URL - using the base URL from the current window
         const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
         setShareUrl(shareUrl);
         
