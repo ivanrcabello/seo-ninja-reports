@@ -69,6 +69,7 @@ export const useContractData = (sharedUrl: string) => {
         setError('No se pudo encontrar el contrato solicitado');
         logContractAccess(sharedUrl, { successful: false, error: 'Contract data not found' }, 'data_not_found');
       } else {
+        console.log('Contract data loaded successfully:', contractData);
         setContract(contractData);
         logContractAccess(sharedUrl, { successful: true }, 'view');
         
