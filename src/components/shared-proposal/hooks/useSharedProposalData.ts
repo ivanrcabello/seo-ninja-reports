@@ -8,6 +8,7 @@ import {
   verifyProposalPassword,
   logProposalAccess
 } from '@/api/shared-content';
+import { logError } from '@/lib/errorLogger';
 
 export const useSharedProposalData = (sharedUrl: string) => {
   const [proposal, setProposal] = useState<SharedProposal | null>(null);
@@ -23,16 +24,16 @@ export const useSharedProposalData = (sharedUrl: string) => {
       return;
     }
 
-    console.log(`Starting fetch for proposal with shared URL: ${sharedUrl}`);
+    console.log(`Iniciando obtención de propuesta con URL compartida: ${sharedUrl}`);
     setIsLoading(true);
     setError(null);
 
     try {
-      // First check if proposal exists
+      // Primero verificar si la propuesta existe
       const { exists, error: existsError } = await checkProposalExists(sharedUrl);
       
       if (existsError) {
-        console.error('Error checking if proposal exists:', existsError);
+        logError('useSharedProposalData.checkProposalExists', existsError);
       } else if (!exists) {
         setError('La propuesta no existe');
         setIsLoading(false);
@@ -40,23 +41,23 @@ export const useSharedProposalData = (sharedUrl: string) => {
         return;
       }
       
-      // Check password protection
+      // Verificar si está protegida con contraseña
       const { isProtected, error: protectionError } = await checkProposalPassword(sharedUrl);
       
       if (protectionError) {
-        console.error('Error checking proposal password protection:', protectionError);
+        logError('useSharedProposalData.checkProposalPassword', protectionError);
       } else {
         setIsPasswordProtected(isProtected);
         
-        // If password protected and access not granted, don't fetch content yet
+        // Si está protegida y no se ha concedido acceso, no obtener contenido aún
         if (isProtected && !accessGranted) {
           setIsLoading(false);
           return;
         }
       }
 
-      // Fetch proposal data
-      const { proposal: proposalData, error: fetchError } = await fetchProposalBySharedUrl(sharedUrl);
+      // Obtener datos de la propuesta
+      const { data: proposalData, error: fetchError } = await fetchProposalBySharedUrl(sharedUrl);
       
       if (fetchError) {
         throw fetchError;
@@ -70,7 +71,7 @@ export const useSharedProposalData = (sharedUrl: string) => {
       logProposalAccess(sharedUrl, { successful: true }, 'view');
       
     } catch (err: any) {
-      console.error('Error fetching shared proposal:', err);
+      logError('useSharedProposalData.fetchProposal', err);
       setError(err.message || 'Error al cargar la propuesta');
       logProposalAccess(sharedUrl, { successful: false, error: err.message || 'Unknown error' }, 'error');
     } finally {
@@ -84,13 +85,13 @@ export const useSharedProposalData = (sharedUrl: string) => {
       
       if (success) {
         setAccessGranted(true);
-        // Re-fetch with access granted
+        // Volver a obtener con acceso concedido
         fetchProposal();
       }
       
       return success;
     } catch (error) {
-      console.error('Error verifying password:', error);
+      logError('useSharedProposalData.verifyPassword', error);
       return false;
     }
   };

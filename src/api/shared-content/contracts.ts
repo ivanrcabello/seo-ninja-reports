@@ -1,115 +1,111 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedContract, SharedContractResponse, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
-import { logContentAccess } from './utils';
+import { SharedContract, SharedContractResponse, AccessLogOptions, AccessLogType, ContractSignatureUpdate } from '@/types/shared-content';
+import { logContentAccess, checkContentExists } from './utils';
+import { logError } from '@/lib/errorLogger';
 
 /**
- * Check if a contract exists
+ * Alias para checkContentExists específico para contratos
  */
-export const checkContractExists = async (contractId: string): Promise<{ exists: boolean, error: Error | null }> => {
-  try {
-    const { data, error } = await supabase
-      .from('public_contracts')
-      .select('id')
-      .eq('shared_url', contractId)
-      .maybeSingle();
-    
-    if (error) throw error;
-    
-    return { exists: !!data, error: null };
-  } catch (error: any) {
-    console.error('Error checking if contract exists:', error);
-    return { exists: false, error };
-  }
+export const checkContractExists = async (contractId: string): Promise<{ exists: boolean; error: Error | null }> => {
+  return checkContentExists(contractId, 'contract');
 };
 
 /**
- * Log contract access
+ * Alias para logContentAccess específico para contratos
  */
 export const logContractAccess = (contractId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {
   return logContentAccess('contract', contractId, options, eventType);
 };
 
 /**
- * Fetch contract by shared URL
+ * Obtiene un contrato por su URL compartida
  */
 export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<SharedContractResponse> => {
   try {
-    console.log('Fetching contract with shared URL:', sharedUrl);
-    
     const { data, error } = await supabase
-      .from('public_contracts')
+      .from('shared_content')
       .select('*')
       .eq('shared_url', sharedUrl)
+      .eq('content_type', 'contract')
       .maybeSingle();
-    
-    if (error) throw error;
-    
-    if (!data) {
-      return { contract: null, error: new Error('Contract not found') };
+      
+    if (error) {
+      logError('fetchContractBySharedUrl', error);
+      throw error;
     }
     
-    // Create a properly typed contract object
+    if (!data) {
+      logContractAccess(sharedUrl, { 
+        successful: false, 
+        error: 'Contract not found' 
+      }, 'not_found');
+      
+      return { data: null, error: new Error('Contract not found') };
+    }
+    
+    // Parse content
+    const content = data.content || {};
+    
+    // Mapear a la estructura de SharedContract
     const contract: SharedContract = {
       id: data.id,
+      original_id: data.original_id,
+      content_type: 'contract',
       title: data.title,
-      content: data.content,
+      content: content.contract_content || content.content || '',
+      status: data.status,
+      shared_url: data.shared_url,
       client_name: data.client_name,
       client_website: data.client_website,
-      status: data.status as SharedContentStatus,
+      client_signed: content.client_signed || false,
+      client_signed_at: content.client_signed_at,
+      client_signature: content.client_signature,
+      admin_signed: content.admin_signed || false,
+      admin_signed_at: content.admin_signed_at,
+      admin_signature: content.admin_signature,
       created_at: data.created_at,
-      updated_at: data.updated_at,
-      client_signed: data.client_signed,
-      client_signed_at: data.client_signed_at,
-      client_signature: data.client_signature,
-      admin_signed: data.admin_signed,
-      admin_signed_at: data.admin_signed_at,
-      admin_signature: data.admin_signature,
-      shared_url: data.shared_url
+      updated_at: data.updated_at
     };
     
-    // Log successful access
+    // Registrar acceso exitoso
     logContractAccess(sharedUrl, { successful: true }, 'view');
     
-    return { contract, error: null };
+    return { data: contract, error: null };
   } catch (error: any) {
-    console.error('Error fetching contract:', error);
+    logError('fetchContractBySharedUrl', error);
     
-    // Log failed access
-    logContractAccess(sharedUrl, { successful: false, error: error.message }, 'error');
+    // Registrar acceso fallido
+    logContractAccess(sharedUrl, { 
+      successful: false, 
+      error: error.message || 'Unknown error' 
+    }, 'error');
     
-    return { contract: null, error };
+    return { data: null, error };
   }
 };
 
 /**
- * Update contract with signature data
+ * Actualiza un contrato con información de firma
  */
 export const updateContractWithSignature = async (
   contractId: string,
-  signatureData: {
-    client_signed: boolean;
-    client_signed_at: string;
-    client_signature: string;
-    status: SharedContentStatus;
-  }
-): Promise<boolean> => {
+  signatureData: ContractSignatureUpdate
+): Promise<{ success: boolean, error?: Error }> => {
   try {
-    // Use RPC function instead of direct update
-    const { data, error } = await supabase
-      .rpc('update_contract_by_shared_url', {
-        shared_url_param: contractId,
-        client_signed_param: signatureData.client_signed,
-        client_signed_at_param: signatureData.client_signed_at,
-        client_signature_param: signatureData.client_signature,
-        status_param: signatureData.status
-      });
+    const { data, error } = await supabase.rpc('update_shared_contract_with_signature', {
+      shared_url_param: contractId,
+      client_signed_param: signatureData.client_signed,
+      client_signed_at_param: signatureData.client_signed_at,
+      client_signature_param: signatureData.client_signature,
+      status_param: signatureData.status || 'signed'
+    });
     
     if (error) throw error;
     
-    return true;
-  } catch (error) {
-    console.error('Error updating contract signature:', error);
-    return false;
+    return { success: !!data };
+  } catch (error: any) {
+    logError('updateContractWithSignature', error);
+    return { success: false, error };
   }
 };

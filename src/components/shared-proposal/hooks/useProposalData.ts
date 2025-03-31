@@ -8,6 +8,7 @@ import {
   verifyContentPassword,
   logContentAccess 
 } from '@/api/shared-content';
+import { logError } from '@/lib/errorLogger';
 
 export const useProposalData = (proposalId?: string) => {
   const [proposal, setProposal] = useState<SharedProposal | null>(null);
@@ -27,7 +28,7 @@ export const useProposalData = (proposalId?: string) => {
       setLoading(true);
       setError(null);
 
-      // Check if proposal exists
+      // Verificar si la propuesta existe
       const { exists, error: existsError } = await checkContentExists(proposalId, 'proposal');
       
       if (existsError) {
@@ -46,7 +47,7 @@ export const useProposalData = (proposalId?: string) => {
         return;
       }
 
-      // Check if password protected
+      // Verificar si está protegida con contraseña
       const { isProtected, error: protectedError } = await checkContentPasswordProtection(proposalId, 'proposal');
       
       if (protectedError) {
@@ -55,9 +56,9 @@ export const useProposalData = (proposalId?: string) => {
       
       setIsPasswordProtected(isProtected);
       
-      // If not password protected or already verified, fetch proposal
+      // Si no está protegida o ya se ha verificado, obtener la propuesta
       if (!isProtected || isPasswordVerified) {
-        const { proposal: proposalData, error: fetchError } = await fetchProposalBySharedUrl(proposalId);
+        const { data: proposalData, error: fetchError } = await fetchProposalBySharedUrl(proposalId);
         
         if (fetchError) {
           throw fetchError;
@@ -69,17 +70,17 @@ export const useProposalData = (proposalId?: string) => {
         
         setProposal(proposalData);
         
-        // Log successful access
+        // Registrar acceso exitoso
         const options: AccessLogOptions = { successful: true };
         logContentAccess('proposal', proposalId, options, 'view');
       } else {
         setLoading(false);
       }
     } catch (err: any) {
-      console.error('Error fetching proposal:', err);
+      logError('useProposalData.fetchProposal', err);
       setError(err.message || 'Error al cargar la propuesta');
       
-      // Log error
+      // Registrar error
       const options: AccessLogOptions = { 
         successful: false, 
         error: err.message || 'Unknown error' 
@@ -104,13 +105,13 @@ export const useProposalData = (proposalId?: string) => {
         return false;
       }
     } catch (err) {
-      console.error('Error verifying password:', err);
+      logError('useProposalData.verifyPassword', err);
       return false;
     }
   };
 
   const handlePrint = () => {
-    // Log the print event
+    // Registrar evento de impresión
     const options: AccessLogOptions = { successful: true };
     if (proposalId) {
       logContentAccess('proposal', proposalId, options, 'print');
@@ -129,7 +130,8 @@ export const useProposalData = (proposalId?: string) => {
     isPasswordProtected,
     isPasswordVerified,
     verifyPassword,
-    handlePrint
+    handlePrint,
+    refetch: fetchProposal
   };
 };
 

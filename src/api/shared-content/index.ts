@@ -1,13 +1,15 @@
 
-// Re-export functions from modules
-import { 
-  checkContentExists, 
-  checkContentPasswordProtection, 
+// Re-exportar funciones comunes
+export { 
+  checkContentExists,
+  checkContentPasswordProtection,
   verifyContentPassword,
   logContentAccess
 } from './utils';
 
-import { 
+// Re-exportar funciones de informes
+export {
+  fetchReportBySharedUrl,
   fetchReportByAnyId,
   checkReportExists,
   checkReportPassword,
@@ -16,14 +18,16 @@ import {
   updateReportWithPassword
 } from './reports';
 
-import { 
+// Re-exportar funciones de contratos
+export {
   fetchContractBySharedUrl,
   checkContractExists,
   updateContractWithSignature,
   logContractAccess
 } from './contracts';
 
-import {
+// Re-exportar funciones de facturas
+export {
   fetchInvoiceBySharedUrl,
   checkInvoiceExists,
   checkInvoicePassword,
@@ -31,50 +35,11 @@ import {
   logInvoiceAccess
 } from './invoices';
 
-import {
+// Re-exportar funciones de propuestas
+export {
   fetchProposalBySharedUrl,
   checkProposalExists,
   checkProposalPassword,
   verifyProposalPassword,
   logProposalAccess
 } from './proposals';
-
-// Alias fetchReportByAnyId to fetchReportBySharedUrl for consistency
-const fetchReportBySharedUrl = fetchReportByAnyId;
-
-export {
-  // Common utilities
-  checkContentExists,
-  checkContentPasswordProtection,
-  verifyContentPassword,
-  logContentAccess,
-  
-  // Reports
-  fetchReportByAnyId,
-  fetchReportBySharedUrl,
-  checkReportExists,
-  checkReportPassword,
-  verifyReportPassword,
-  logReportAccess,
-  updateReportWithPassword,
-  
-  // Contracts
-  fetchContractBySharedUrl,
-  checkContractExists,
-  updateContractWithSignature,
-  logContractAccess,
-  
-  // Invoices
-  fetchInvoiceBySharedUrl,
-  checkInvoiceExists,
-  checkInvoicePassword,
-  verifyInvoicePassword,
-  logInvoiceAccess,
-  
-  // Proposals
-  fetchProposalBySharedUrl,
-  checkProposalExists,
-  checkProposalPassword,
-  verifyProposalPassword,
-  logProposalAccess
-};

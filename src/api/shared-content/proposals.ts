@@ -1,131 +1,97 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedProposal, SharedProposalResponse, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
-import { logContentAccess } from './utils';
+import { SharedProposal, SharedProposalResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
+import { logError } from '@/lib/errorLogger';
 
 /**
- * Check if a proposal exists
+ * Alias para checkContentExists específico para propuestas
  */
-export const checkProposalExists = async (proposalId: string): Promise<{ exists: boolean, error: Error | null }> => {
-  try {
-    const { data, error } = await supabase
-      .from('public_proposals')
-      .select('id')
-      .eq('shared_url', proposalId)
-      .maybeSingle();
-    
-    if (error) throw error;
-    
-    return { exists: !!data, error: null };
-  } catch (error: any) {
-    console.error('Error checking if proposal exists:', error);
-    return { exists: false, error };
-  }
+export const checkProposalExists = async (proposalId: string): Promise<{ exists: boolean; error: Error | null }> => {
+  return checkContentExists(proposalId, 'proposal');
 };
 
 /**
- * Check if a proposal is password protected
+ * Alias para checkContentPasswordProtection específico para propuestas
  */
-export const checkProposalPassword = async (proposalId: string): Promise<{ isProtected: boolean, error: Error | null }> => {
-  try {
-    const { data, error } = await supabase
-      .from('public_proposals')
-      .select('password')
-      .eq('shared_url', proposalId)
-      .maybeSingle();
-    
-    if (error) throw error;
-    
-    // Check if data exists and password is not null or empty
-    const isProtected = !!(data && data.password && data.password.trim() !== '');
-    return { isProtected, error: null };
-  } catch (error: any) {
-    console.error('Error checking proposal password protection:', error);
-    return { isProtected: false, error };
-  }
+export const checkProposalPassword = async (proposalId: string): Promise<{ isProtected: boolean; error: Error | null }> => {
+  return checkContentPasswordProtection(proposalId, 'proposal');
 };
 
 /**
- * Verify proposal password
+ * Alias para verifyContentPassword específico para propuestas
  */
 export const verifyProposalPassword = async (proposalId: string, password: string): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase
-      .from('public_proposals')
-      .select('password')
-      .eq('shared_url', proposalId)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching proposal password:', error);
-      return false;
-    }
-    
-    // If no password is set, or password matches
-    if (!data || !data.password || data.password.trim() === '') {
-      return true;
-    }
-    
-    return data.password === password;
-  } catch (error) {
-    console.error('Error verifying proposal password:', error);
-    return false;
-  }
+  return verifyContentPassword(proposalId, 'proposal', password);
 };
 
 /**
- * Log proposal access
+ * Alias para logContentAccess específico para propuestas
  */
 export const logProposalAccess = (proposalId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {
   return logContentAccess('proposal', proposalId, options, eventType);
 };
 
 /**
- * Fetch proposal by shared URL
+ * Obtiene una propuesta por su URL compartida
  */
 export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<SharedProposalResponse> => {
   try {
-    console.log('Fetching proposal with shared URL:', sharedUrl);
-    
     const { data, error } = await supabase
-      .from('public_proposals')
+      .from('shared_content')
       .select('*')
       .eq('shared_url', sharedUrl)
+      .eq('content_type', 'proposal')
       .maybeSingle();
-    
-    if (error) throw error;
-    
-    if (!data) {
-      return { proposal: null, error: new Error('Proposal not found') };
+      
+    if (error) {
+      logError('fetchProposalBySharedUrl', error);
+      throw error;
     }
     
-    const status = data.status as SharedContentStatus;
+    if (!data) {
+      logProposalAccess(sharedUrl, { 
+        successful: false, 
+        error: 'Proposal not found' 
+      }, 'not_found');
+      
+      return { data: null, error: new Error('Proposal not found') };
+    }
     
-    // Create a properly typed proposal object
+    // Parse content
+    const content = data.content || {};
+    
+    // Mapear a la estructura de SharedProposal
     const proposal: SharedProposal = {
       id: data.id,
+      original_id: data.original_id,
+      content_type: 'proposal',
       title: data.title,
-      description: data.description,
-      services: data.services,
-      price: data.price,
-      status: status,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
+      description: data.description || '',
+      content: content,
+      status: data.status,
       shared_url: data.shared_url,
       client_name: data.client_name,
-      client_website: data.client_website
+      client_website: data.client_website,
+      services: content.services || [],
+      price: content.price,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
     
-    // Log successful access
+    // Registrar acceso exitoso
     logProposalAccess(sharedUrl, { successful: true }, 'view');
     
-    return { proposal, error: null };
+    return { data: proposal, error: null };
   } catch (error: any) {
-    console.error('Error fetching proposal:', error);
+    logError('fetchProposalBySharedUrl', error);
     
-    // Log failed access
-    logProposalAccess(sharedUrl, { successful: false, error: error.message }, 'error');
+    // Registrar acceso fallido
+    logProposalAccess(sharedUrl, { 
+      successful: false, 
+      error: error.message || 'Unknown error' 
+    }, 'error');
     
-    return { proposal: null, error };
+    return { data: null, error };
   }
 };

@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useProposalData } from '@/components/shared-proposal/hooks/useProposalData';
-import { ProposalContent, ProposalHeader } from '@/components/shared-proposal';
+import ProposalContent from '@/components/shared-proposal/ProposalContent';
+import ProposalHeader from '@/components/shared-proposal/ProposalHeader';
 import { PasswordProtectionDialog } from '@/components/shared';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';

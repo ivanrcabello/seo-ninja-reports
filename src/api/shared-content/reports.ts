@@ -1,167 +1,105 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedReport, SharedReportResponse, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
-import { logContentAccess } from './utils';
+import { SharedReport, SharedReportResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
+import { logError } from '@/lib/errorLogger';
 
 /**
- * Check if a report exists
+ * Alias para checkContentExists específico para informes
  */
 export const checkReportExists = async (reportId: string): Promise<{ exists: boolean; error: Error | null }> => {
-  try {
-    const { data, error } = await supabase
-      .from('public_reports')
-      .select('id')
-      .eq('shared_url', reportId)
-      .maybeSingle();
-    
-    if (error) throw error;
-    
-    return { exists: !!data, error: null };
-  } catch (error: any) {
-    console.error('Error checking if report exists:', error);
-    return { exists: false, error };
-  }
+  return checkContentExists(reportId, 'report');
 };
 
 /**
- * Check if report has password
+ * Alias para checkContentPasswordProtection específico para informes
  */
 export const checkReportPassword = async (reportId: string): Promise<{ isProtected: boolean; error: Error | null }> => {
-  try {
-    const { data, error } = await supabase
-      .from('public_reports')
-      .select('password')
-      .eq('shared_url', reportId)
-      .maybeSingle();
-    
-    if (error) throw error;
-    
-    const isProtected = !!(data && data.password && data.password.trim() !== '');
-    return { isProtected, error: null };
-  } catch (error: any) {
-    console.error('Error checking report password:', error);
-    return { isProtected: false, error };
-  }
+  return checkContentPasswordProtection(reportId, 'report');
 };
 
 /**
- * Verify report password
+ * Alias para verifyContentPassword específico para informes
  */
 export const verifyReportPassword = async (reportId: string, password: string): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase
-      .from('public_reports')
-      .select('password')
-      .eq('shared_url', reportId)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching report password:', error);
-      return false;
-    }
-    
-    if (!data || !data.password || data.password.trim() === '') {
-      return true;
-    }
-    
-    return data.password === password;
-  } catch (error) {
-    console.error('Error verifying report password:', error);
-    return false;
-  }
+  return verifyContentPassword(reportId, 'report', password);
 };
 
 /**
- * Log report access
+ * Alias para logContentAccess específico para informes
  */
 export const logReportAccess = (reportId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {
   return logContentAccess('report', reportId, options, eventType);
 };
 
 /**
- * Fetch report by any type of ID (direct ID or shared_url)
+ * Obtiene un informe por su URL compartida
  */
-export const fetchReportByAnyId = async (reportId: string): Promise<SharedReportResponse> => {
+export const fetchReportBySharedUrl = async (sharedUrl: string): Promise<SharedReportResponse> => {
   try {
-    console.log('Fetching report with ID or shared_url:', reportId);
-    
-    // Try to fetch from public_reports first (by shared_url)
-    const { data: publicReportData, error: publicError } = await supabase
-      .from('public_reports')
+    const { data, error } = await supabase
+      .from('shared_content')
       .select('*')
-      .eq('shared_url', reportId)
+      .eq('shared_url', sharedUrl)
+      .eq('content_type', 'report')
       .maybeSingle();
-    
-    if (!publicError && publicReportData) {
-      console.log('Found report in public_reports');
       
-      const status = publicReportData.status as SharedContentStatus;
-      
-      const report: SharedReport = {
-        id: publicReportData.id,
-        title: publicReportData.title || 'Unnamed Report',
-        content: publicReportData.content,
-        summary: publicReportData.summary,
-        url: publicReportData.url,
-        status: status,
-        date: publicReportData.date,
-        shared_url: publicReportData.shared_url,
-        // Add default values for created_at and updated_at if they don't exist
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        client_name: publicReportData.client_name,
-        client_website: publicReportData.client_website
-      };
-      
-      return { report, error: null };
+    if (error) {
+      logError('fetchReportBySharedUrl', error);
+      throw error;
     }
     
-    // If not found in public_reports, try in reports
-    const { data: reportData, error: reportError } = await supabase
-      .from('reports')
-      .select('*, clients(name, website)')
-      .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-      .maybeSingle();
-    
-    if (reportError) {
-      console.error('Error fetching report from reports table:', reportError);
-      throw new Error('Error fetching report data');
+    if (!data) {
+      logReportAccess(sharedUrl, { 
+        successful: false, 
+        error: 'Report not found' 
+      }, 'not_found');
+      
+      return { data: null, error: new Error('Report not found') };
     }
     
-    if (!reportData) {
-      console.log('Report not found in either table');
-      return { report: null, error: new Error('Report not found') };
-    }
-    
-    console.log('Found report in reports table');
-    
-    const status = reportData.status as SharedContentStatus;
-    
-    // Map to the public interface
+    // Mapear a la estructura de SharedReport
     const report: SharedReport = {
-      id: reportData.id,
-      title: reportData.title,
-      content: reportData.content,
-      summary: reportData.summary,
-      url: reportData.url,
-      status: status,
-      date: reportData.date,
-      shared_url: reportData.shared_url,
-      created_at: reportData.created_at || new Date().toISOString(),
-      updated_at: reportData.updated_at || new Date().toISOString(),
-      client_name: reportData.clients?.name,
-      client_website: reportData.clients?.website
+      id: data.id,
+      original_id: data.original_id,
+      content_type: 'report',
+      title: data.title,
+      description: data.description || '',
+      content: data.content,
+      status: data.status,
+      shared_url: data.shared_url,
+      client_name: data.client_name,
+      client_website: data.client_website,
+      summary: data.description,
+      url: data.content?.url,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
     
-    return { report, error: null };
+    // Registrar acceso exitoso
+    logReportAccess(sharedUrl, { successful: true }, 'view');
+    
+    return { data: report, error: null };
   } catch (error: any) {
-    console.error('Error in fetchReportByAnyId:', error);
-    return { report: null, error };
+    logError('fetchReportBySharedUrl', error);
+    
+    // Registrar acceso fallido
+    logReportAccess(sharedUrl, { 
+      successful: false, 
+      error: error.message || 'Unknown error' 
+    }, 'error');
+    
+    return { data: null, error };
   }
 };
 
 /**
- * Update a report with a new password
+ * Alias para fetchReportBySharedUrl para consistencia con la API anterior
+ */
+export const fetchReportByAnyId = fetchReportBySharedUrl;
+
+/**
+ * Actualiza un informe con una nueva contraseña
  */
 export const updateReportWithPassword = async (
   reportId: string, 
@@ -169,15 +107,16 @@ export const updateReportWithPassword = async (
 ): Promise<boolean> => {
   try {
     const { data, error } = await supabase
-      .from('reports')
+      .from('shared_content')
       .update({ password })
-      .eq('id', reportId);
+      .eq('shared_url', reportId)
+      .eq('content_type', 'report');
       
     if (error) throw error;
     
     return true;
   } catch (error) {
-    console.error('Error updating report password:', error);
+    logError('updateReportWithPassword', error);
     return false;
   }
 };
