@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedContract, ContractSignatureUpdate } from '@/types/shared-content';
+import { SharedContract, ContractSignatureUpdate, SharedContractResponse } from '@/types/shared-content';
 import { logContentAccess, checkContentExists, verifyContentPassword } from './utils';
 
 /**
@@ -20,7 +20,7 @@ export const logContractAccess = (contractId: string, options: any, eventType: s
 /**
  * Fetch contract by shared URL
  */
-export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<SharedContract> => {
+export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<SharedContractResponse> => {
   try {
     console.log('Fetching contract with shared URL:', sharedUrl);
     
@@ -31,7 +31,7 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<Share
     if (error) throw error;
     
     if (!data || (Array.isArray(data) && data.length === 0)) {
-      throw new Error('Contract not found');
+      return { contract: null as any, error: new Error('Contract not found') };
     }
     
     // Handle the case when data is an array
@@ -43,10 +43,10 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<Share
       title: contractData.title,
       content: contractData.content,
       status: contractData.status,
-      client_signed: contractData.client_signed,
+      client_signed: contractData.client_signed || false,
       client_signed_at: contractData.client_signed_at,
       client_signature: contractData.client_signature,
-      admin_signed: contractData.admin_signed,
+      admin_signed: contractData.admin_signed || false,
       admin_signed_at: contractData.admin_signed_at,
       admin_signature: contractData.admin_signature,
       shared_url: contractData.shared_url,
@@ -59,14 +59,14 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<Share
     // Log successful access
     logContractAccess(sharedUrl, { successful: true }, 'view');
     
-    return contract;
+    return { contract, error: null };
   } catch (error: any) {
     console.error('Error fetching contract:', error);
     
     // Log failed access
     logContractAccess(sharedUrl, { successful: false, error: error.message }, 'error');
     
-    throw error;
+    return { contract: null as any, error };
   }
 };
 

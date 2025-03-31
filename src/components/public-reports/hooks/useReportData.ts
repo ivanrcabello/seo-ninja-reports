@@ -1,14 +1,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { SharedReport } from '@/types/shared-content';
+import { SharedReport, SharedReportResponse } from '@/types/shared-content';
 import { 
   checkReportExists, 
   checkReportPassword, 
   verifyReportPassword, 
   fetchReportByAnyId,
-  fetchFromPublicReportsView,
-  fetchReportWithRpc,
-  fetchReportOnly,
   logReportAccess
 } from '@/api/shared-content';
 
@@ -63,19 +60,19 @@ const useReportData = (reportId: string) => {
       }
       
       // Fetch the report - try different methods
-      const { report: fetchedReport, error: fetchError } = await fetchReportByAnyId(reportId);
+      const response: SharedReportResponse = await fetchReportByAnyId(reportId);
       
-      if (fetchError) {
-        console.error('Error fetching report:', fetchError);
-        throw fetchError;
+      if (response.error) {
+        console.error('Error fetching report:', response.error);
+        throw response.error;
       }
       
-      if (!fetchedReport) {
+      if (!response.report) {
         setNotFound(true);
         setError('Informe no encontrado');
         logReportAccess(reportId, { successful: false, error: 'Report data not found' }, 'data_not_found');
       } else {
-        setReport(fetchedReport);
+        setReport(response.report);
         logReportAccess(reportId, { successful: true }, 'view');
       }
     } catch (err: any) {

@@ -17,6 +17,9 @@ const SharedInvoicePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [verifyingPassword, setVerifyingPassword] = useState(false);
+  const [showPasswordError, setShowPasswordError] = useState(false);
 
   const fetchInvoice = async (password?: string) => {
     if (!invoiceId) {
@@ -95,22 +98,35 @@ const SharedInvoicePage = () => {
     }
   };
 
-  const verifyPassword = async (password: string) => {
+  const handleVerifyPassword = async () => {
     try {
-      const validPassword = await verifyContentPassword(invoiceId!, 'invoice', password);
+      setVerifyingPassword(true);
+      setShowPasswordError(false);
+      
+      if (!passwordInput || !invoiceId) {
+        setShowPasswordError(true);
+        return false;
+      }
+      
+      const validPassword = await verifyContentPassword(invoiceId, 'invoice', passwordInput);
       
       if (validPassword) {
         setIsPasswordVerified(true);
-        fetchInvoice(password);
+        fetchInvoice(passwordInput);
+        toast.success('Acceso concedido');
         return true;
       } else {
-        toast.error('Invalid password');
+        setShowPasswordError(true);
+        toast.error('Contraseña incorrecta');
         return false;
       }
     } catch (err) {
       console.error('Error verifying password:', err);
-      toast.error('Error verifying password');
+      setShowPasswordError(true);
+      toast.error('Error al verificar contraseña');
       return false;
+    } finally {
+      setVerifyingPassword(false);
     }
   };
 
@@ -154,11 +170,11 @@ const SharedInvoicePage = () => {
         onClose={() => {}}
         title="Factura Protegida"
         description="Esta factura está protegida con contraseña. Por favor, introduce la contraseña para acceder."
-        password=""
-        setPassword={() => {}}
-        onVerify={verifyPassword}
-        isVerifying={loading}
-        showError={!!error}
+        password={passwordInput}
+        setPassword={setPasswordInput}
+        onVerify={handleVerifyPassword}
+        isVerifying={verifyingPassword}
+        showError={showPasswordError}
         errorMessage="Contraseña incorrecta. Por favor, inténtalo de nuevo."
       />
     );

@@ -106,3 +106,24 @@ export interface ContractSignatureUpdate {
   client_signed_at: string;
   client_signature: string;
 }
+
+// Interfaces para resultados de API
+export interface SharedReportResponse {
+  report: SharedReport;
+  error: Error | null;
+}
+
+export interface SharedContractResponse {
+  contract: SharedContract;
+  error: Error | null;
+}
+
+export interface SharedInvoiceResponse {
+  invoice: SharedInvoice;
+  error: Error | null;
+}
+
+export interface SharedProposalResponse {
+  proposal: SharedProposal;
+  error: Error | null;
+}

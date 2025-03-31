@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { SharedContract } from '@/types/shared-content';
+import { SharedContract, ContractSignatureUpdate, SharedContractResponse } from '@/types/shared-content';
 import { 
   fetchContractBySharedUrl, 
   checkContractExists,
@@ -39,17 +39,17 @@ export const useSharedContractData = (sharedUrl: string) => {
       }
 
       // Fetch contract data
-      const { contract: contractData, error: fetchError } = await fetchContractBySharedUrl(sharedUrl);
+      const response: SharedContractResponse = await fetchContractBySharedUrl(sharedUrl);
       
-      if (fetchError) {
-        throw fetchError;
+      if (response.error) {
+        throw response.error;
       }
       
-      if (!contractData) {
+      if (!response.contract) {
         throw new Error('No se pudo encontrar el contrato solicitado');
       }
       
-      setContract(contractData);
+      setContract(response.contract);
       logContractAccess(sharedUrl, { successful: true }, 'view');
       
     } catch (err: any) {
@@ -65,7 +65,14 @@ export const useSharedContractData = (sharedUrl: string) => {
     try {
       setIsSigning(true);
       
-      const { success, error: signError } = await updateContractWithSignature(sharedUrl, signature);
+      const now = new Date().toISOString();
+      const signatureData: ContractSignatureUpdate = {
+        client_signed: true,
+        client_signed_at: now,
+        client_signature: signature
+      };
+      
+      const { success, error: signError } = await updateContractWithSignature(sharedUrl, signatureData);
       
       if (signError) {
         throw signError;

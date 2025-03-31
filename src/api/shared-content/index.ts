@@ -15,24 +15,33 @@ export {
   logContentAccess
 };
 
-// Re-export type-specific helpers for backwards compatibility
-export {
-  checkReportExists,
-  checkReportPassword,
-  verifyReportPassword,
-  logReportAccess,
-  checkInvoiceExists,
-  checkInvoicePassword,
-  verifyInvoicePassword,
-  logInvoiceAccess,
-  checkProposalExists,
-  checkProposalPassword,
-  verifyProposalPassword,
-  logProposalAccess,
-  checkContractExists,
-  checkContractPassword,
-  verifyContractPassword,
-  logContractAccess
+// Re-export type-specific helpers with explicit names to avoid ambiguity
+export { 
+  checkContentExists as checkReportExists,
+  checkContentPasswordProtection as checkReportPassword,
+  verifyContentPassword as verifyReportPassword,
+  logContentAccess as logReportAccess
+} from './utils';
+
+export { 
+  checkContentExists as checkInvoiceExists,
+  checkContentPasswordProtection as checkInvoicePassword,
+  verifyContentPassword as verifyInvoicePassword,
+  logContentAccess as logInvoiceAccess
+} from './utils';
+
+export { 
+  checkContentExists as checkProposalExists,
+  checkContentPasswordProtection as checkProposalPassword,
+  verifyContentPassword as verifyProposalPassword,
+  logContentAccess as logProposalAccess
+} from './utils';
+
+export { 
+  checkContentExists as checkContractExists,
+  checkContentPasswordProtection as checkContractPassword,
+  verifyContentPassword as verifyContractPassword,
+  logContentAccess as logContractAccess
 } from './utils';
 
 // Reports - specifically named exports
