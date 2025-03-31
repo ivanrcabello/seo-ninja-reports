@@ -7,9 +7,6 @@ import { ReportsProvider } from './hooks/useReports.tsx';
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Create a client
-const queryClient = new QueryClient();
-
 const LoadingSpinner = () => {
   return <div className="flex items-center justify-center h-screen">Loading...</div>;
 };
@@ -220,6 +217,9 @@ const ClientPortal = lazy(() => import('./pages/ClientPortal'));
 const ClientPortalDashboard = lazy(() => import('./pages/ClientPortalDashboard'));
 
 function App() {
+  // Create a new QueryClient instance inside the component
+  const queryClient = new QueryClient();
+
   return (
     <>
       <AuthProvider>
