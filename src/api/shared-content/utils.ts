@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { AccessLogOptions, AccessLogType, PasswordVerificationResponse } from '@/types/shared-content';
+import { AccessLogOptions, AccessLogType } from '@/types/shared-content';
 
 /**
  * Comprueba si el contenido compartido existe
@@ -80,7 +80,9 @@ export const checkContentPasswordProtection = async (
     
     if (error) throw error;
     
-    return { isProtected: !!data?.password };
+    // Check if data exists and password is not null or empty
+    const isProtected = !!(data?.password && data.password.trim() !== '');
+    return { isProtected };
   } catch (error: any) {
     console.error(`Error checking ${contentType} password protection:`, error);
     return { isProtected: false, error };
@@ -124,7 +126,7 @@ export const verifyContentPassword = async (
     if (rpcName) {
       const { data, error } = await supabase
         .rpc(rpcName, { 
-          content_id_param: contentId,
+          report_id_param: contentId,
           password_param: password
         });
       
@@ -162,24 +164,20 @@ export const verifyContentPassword = async (
 export const logContentAccess = async (
   contentType: string,
   contentId: string, 
-  options: AccessLogOptions,
-  logType: AccessLogType
+  options: AccessLogOptions = { successful: true },
+  logType: AccessLogType = 'view'
 ): Promise<void> => {
   try {
-    // Crear un registro de acceso en la tabla shared_content_access_logs
-    await supabase
-      .from('shared_content_access_logs')
-      .insert([{
-        content_type: contentType,
-        content_id: contentId,
-        access_type: logType,
-        successful: options.successful,
-        error_message: options.error || null,
-        ip_address: null, // Esto se captura en el lado del servidor
-        user_agent: navigator.userAgent || null,
-        password_attempt: options.passwordAttempt || false,
-        source: options.source || 'web_client'
-      }]);
+    // Insert into shared_content_access_logs using RPC instead of direct insert
+    await supabase.rpc('log_content_access', {
+      content_type_param: contentType,
+      content_id_param: contentId,
+      access_type_param: logType,
+      successful_param: options.successful,
+      error_message_param: options.error || null,
+      password_attempt_param: options.passwordAttempt || false,
+      source_param: options.source || 'web_client'
+    });
   } catch (error) {
     console.error(`Error logging ${contentType} access:`, error);
     // No propagamos el error para evitar interrumpir el flujo principal

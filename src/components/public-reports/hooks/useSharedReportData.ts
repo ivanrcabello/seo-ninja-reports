@@ -30,7 +30,7 @@ export const useSharedReportData = (reportId: string) => {
       setNotFound(false);
       
       // Check if report exists
-      const { exists, error: existsError } = await checkReportExists('report', reportId);
+      const { exists, error: existsError } = await checkReportExists(reportId);
       
       if (existsError) {
         console.error('Error checking if report exists:', existsError);
@@ -49,7 +49,7 @@ export const useSharedReportData = (reportId: string) => {
       }
       
       // Check if it's password protected
-      const { isProtected, error: passwordError } = await checkReportPassword('report', reportId);
+      const { isProtected, error: passwordError } = await checkReportPassword(reportId);
       
       if (passwordError) {
         console.error('Error checking password protection:', passwordError);
@@ -107,7 +107,7 @@ export const useSharedReportData = (reportId: string) => {
   // Function to verify password
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
-      const success = await verifyReportPassword('report', reportId, password);
+      const success = await verifyReportPassword(reportId, password);
       
       if (success) {
         setAccessGranted(true);

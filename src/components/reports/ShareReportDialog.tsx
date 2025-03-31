@@ -80,52 +80,11 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           
           sharedUrl = newSharedUrl;
           console.log('Generated new shared URL:', sharedUrl);
-          
-          // Check if we need to create a public_reports entry
-          const { data: existingPublicReport } = await supabase
-            .from('public_reports')
-            .select('id')
-            .eq('shared_url', sharedUrl)
-            .maybeSingle();
-            
-          if (!existingPublicReport) {
-            // Get the full report data including client info
-            const { data: fullReport, error: fullReportError } = await supabase
-              .from('reports')
-              .select('*, clients(name, website)')
-              .eq('id', reportId)
-              .single();
-              
-            if (fullReportError) {
-              console.error('Error getting full report:', fullReportError);
-            } else if (fullReport) {
-              // Create public report record
-              const { error: insertError } = await supabase
-                .from('public_reports')
-                .insert({
-                  id: fullReport.id,
-                  title: fullReport.title,
-                  summary: fullReport.summary,
-                  url: fullReport.url,
-                  status: fullReport.status,
-                  content: fullReport.content,
-                  date: fullReport.date,
-                  shared_url: sharedUrl,
-                  password: fullReport.password,
-                  client_name: fullReport.clients?.name,
-                  client_website: fullReport.clients?.website
-                });
-                
-              if (insertError) {
-                console.error('Error creating public report:', insertError);
-              }
-            }
-          }
         }
         
         setSharedUrlId(sharedUrl);
         
-        // Check for password
+        // Check for existing password
         const existingPassword = reportData?.password;
         if (existingPassword) {
           setPasswordProtected(true);
@@ -133,6 +92,46 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         } else {
           setPasswordProtected(false);
           setPassword('');
+        }
+        
+        // Check if public_reports entry exists
+        const { data: publicReportData } = await supabase
+          .from('public_reports')
+          .select('id')
+          .eq('shared_url', sharedUrl)
+          .maybeSingle();
+          
+        // If no public report entry exists, create one
+        if (!publicReportData) {
+          const { data: fullReport, error: fullReportError } = await supabase
+            .from('reports')
+            .select('*, clients(name, website)')
+            .eq('id', reportId)
+            .single();
+            
+          if (fullReportError) {
+            console.error('Error getting full report:', fullReportError);
+          } else if (fullReport) {
+            // Create public report record using RPC function
+            const { error: rpcError } = await supabase.rpc('create_public_report', {
+              report_id_param: fullReport.id,
+              title_param: fullReport.title,
+              summary_param: fullReport.summary,
+              url_param: fullReport.url,
+              status_param: fullReport.status,
+              content_param: fullReport.content,
+              date_param: fullReport.date,
+              shared_url_param: sharedUrl,
+              password_param: fullReport.password,
+              client_name_param: fullReport.clients?.name,
+              client_website_param: fullReport.clients?.website
+            });
+            
+            if (rpcError) {
+              console.error('Error creating public report:', rpcError);
+              // Still continue as we can try to view the report even if this fails
+            }
+          }
         }
         
         // Build the share URL - using the shared_url as the identifier
@@ -190,13 +189,14 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       
       // Also update in public_reports if it exists
       if (sharedUrlId) {
-        const { error: publicError } = await supabase
-          .from('public_reports')
-          .update({ password: passwordValue })
-          .eq('shared_url', sharedUrlId);
-          
-        if (publicError) {
-          console.error('Error updating public report password:', publicError);
+        // Use RPC function to update password in public_reports
+        const { error: rpcError } = await supabase.rpc('update_public_report_password', {
+          shared_url_param: sharedUrlId,
+          password_param: passwordValue
+        });
+        
+        if (rpcError) {
+          console.error('Error updating public report password:', rpcError);
         }
       }
       
