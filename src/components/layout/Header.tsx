@@ -89,9 +89,6 @@ const Header = () => {
                 <Button asChild variant="ghost" size="sm">
                   <Link to="/auth">Iniciar sesión</Link>
                 </Button>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/registro">Registrarse</Link>
-                </Button>
                 <Button asChild variant="outline" size="sm">
                   <Link to="/portal">Área de clientes</Link>
                 </Button>

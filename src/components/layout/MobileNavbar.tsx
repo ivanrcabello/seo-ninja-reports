@@ -167,15 +167,6 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu, isOpen, onOpenCh
                   <LogIn className="h-4 w-4" />
                   <span>Iniciar sesión</span>
                 </Link>
-                
-                <Link 
-                  to="/registro" 
-                  className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-                  onClick={closeMenu}
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span>Registrarse</span>
-                </Link>
               </div>
               
               <div className="flex flex-col gap-3">

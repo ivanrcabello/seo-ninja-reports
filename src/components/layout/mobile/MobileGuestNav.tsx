@@ -22,14 +22,6 @@ const MobileGuestNav: React.FC<MobileGuestNavProps> = ({ closeMenu }) => {
         >
           <Link to="/auth">Iniciar sesión</Link>
         </Button>
-        
-        <Button
-          className="w-full bg-emerald-600 hover:bg-emerald-700"
-          asChild
-          onClick={closeMenu}
-        >
-          <Link to="/auth?register=true">Registrarse</Link>
-        </Button>
       </div>
     </div>
   );

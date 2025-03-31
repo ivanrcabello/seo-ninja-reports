@@ -39,7 +39,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
 
   // Calculate metrics
   const totalClients = clients.length;
-  // Check if each client has a status property before filtering
+  // Safely check for status property before filtering
   const activeClients = clients.filter(client => client.status === 'active').length;
   const totalReports = reports.length;
 
