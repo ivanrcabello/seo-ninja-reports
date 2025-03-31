@@ -1,159 +1,102 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedReport, SharedReportResponse, PasswordVerificationResponse, SharedContentStatus } from '@/types/shared-content';
-import { toast } from 'sonner';
-import { checkContentExists, checkContentPasswordProtection, verifyContentPassword, logContentAccess } from './utils';
-
-export const checkReportExists = async (reportId: string): Promise<{ exists: boolean; error?: Error }> => {
-  return checkContentExists('report', reportId);
-};
-
-export const checkReportPassword = async (reportId: string): Promise<{ isProtected: boolean; error?: Error }> => {
-  return checkContentPasswordProtection('report', reportId);
-};
-
-export const verifyReportPassword = async (reportId: string, password: string): Promise<boolean> => {
-  // Log attempt to verify password
-  logContentAccess('report', reportId, { passwordAttempt: true, successful: false }, 'password');
-  
-  const isValid = await verifyContentPassword('report', reportId, password);
-  
-  if (isValid) {
-    // Log successful password verification
-    logContentAccess('report', reportId, { passwordAttempt: true, successful: true }, 'password');
-  }
-  
-  return isValid;
-};
+import { SharedReport, SharedReportResponse, AccessLogType } from '@/types/shared-content';
 
 /**
- * Fetches a report by any ID - either direct id or shared_url
+ * Fetch report by any type of ID (direct ID or shared_url)
  */
 export const fetchReportByAnyId = async (reportId: string): Promise<SharedReportResponse> => {
   try {
-    console.log('Fetching report by ID or shared_url:', reportId);
+    console.log('Fetching report with ID or shared_url:', reportId);
     
-    // First try direct ID
-    let { data: report, error } = await supabase
+    // Try to fetch from public_reports first (by shared_url)
+    const { data: publicReportData, error: publicError } = await supabase
+      .from('public_reports')
+      .select('*')
+      .eq('shared_url', reportId)
+      .maybeSingle();
+    
+    if (!publicError && publicReportData) {
+      console.log('Found report in public_reports');
+      
+      const report: SharedReport = {
+        id: publicReportData.id,
+        title: publicReportData.title || 'Unnamed Report',
+        content: publicReportData.content,
+        summary: publicReportData.summary,
+        url: publicReportData.url,
+        status: publicReportData.status,
+        date: publicReportData.date,
+        shared_url: publicReportData.shared_url,
+        created_at: publicReportData.created_at,
+        updated_at: publicReportData.updated_at,
+        client_name: publicReportData.client_name,
+        client_website: publicReportData.client_website
+      };
+      
+      return { report, error: null };
+    }
+    
+    // If not found in public_reports, try in reports
+    const { data: reportData, error: reportError } = await supabase
       .from('reports')
       .select('*, clients(name, website)')
-      .eq('id', reportId)
-      .single();
-      
-    // If not found, try shared_url
-    if (error || !report) {
-      console.log('Report not found by direct ID, trying shared_url');
-      const { data, error: sharedUrlError } = await supabase
-        .from('reports')
-        .select('*, clients(name, website)')
-        .eq('shared_url', reportId)
-        .single();
-        
-      if (sharedUrlError || !data) {
-        console.log('Report not found in reports table, checking public_reports view');
-        // As a last try, check if it exists in public_reports table
-        const { data: publicReport, error: publicError } = await supabase
-          .from('public_reports')
-          .select('*')
-          .eq('shared_url', reportId)
-          .single();
-          
-        if (publicError || !publicReport) {
-          console.error('Report not found in any table:', publicError);
-          throw new Error("Report not found");
-        }
-        
-        console.log('Found report in public_reports view:', publicReport);
-        
-        // Format as SharedReport
-        return {
-          report: {
-            id: publicReport.id,
-            title: publicReport.title,
-            summary: publicReport.summary,
-            url: publicReport.url,
-            status: publicReport.status as SharedContentStatus,
-            content: publicReport.content,
-            date: publicReport.date,
-            shared_url: publicReport.shared_url,
-            client_name: publicReport.client_name,
-            client_website: publicReport.client_website,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          error: null
-        };
-      }
-      
-      report = data;
+      .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
+      .maybeSingle();
+    
+    if (reportError) {
+      console.error('Error fetching report from reports table:', reportError);
+      throw new Error('Error fetching report data');
     }
     
-    if (!report) {
-      throw new Error("Report not found");
+    if (!reportData) {
+      console.log('Report not found in either table');
+      return { report: null, error: new Error('Report not found') };
     }
     
-    console.log('Successfully found report:', report.id);
+    console.log('Found report in reports table');
     
-    // Format as SharedReport
-    return {
-      report: {
-        id: report.id,
-        title: report.title,
-        summary: report.summary,
-        url: report.url,
-        status: report.status as SharedContentStatus,
-        content: report.content,
-        date: report.date,
-        shared_url: report.shared_url,
-        client_name: report.clients?.name,
-        client_website: report.clients?.website,
-        created_at: report.created_at || new Date().toISOString(),
-        updated_at: report.updated_at || new Date().toISOString()
-      },
-      error: null
+    // Map to the public interface
+    const report: SharedReport = {
+      id: reportData.id,
+      title: reportData.title,
+      content: reportData.content,
+      summary: reportData.summary,
+      url: reportData.url,
+      status: reportData.status,
+      date: reportData.date,
+      shared_url: reportData.shared_url,
+      created_at: reportData.created_at,
+      updated_at: reportData.updated_at,
+      client_name: reportData.clients?.name,
+      client_website: reportData.clients?.website
     };
+    
+    return { report, error: null };
   } catch (error: any) {
-    console.error('Error fetching report:', error);
-    return {
-      report: null,
-      error: new Error(error.message || "Unknown error fetching report")
-    };
+    console.error('Error in fetchReportByAnyId:', error);
+    return { report: null, error };
   }
 };
 
 /**
- * Updates a report with a password
+ * Update a report with a new password
  */
-export const updateReportWithPassword = async (reportId: string, password: string | null): Promise<PasswordVerificationResponse> => {
+export const updateReportWithPassword = async (
+  reportId: string, 
+  password: string
+): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('reports')
       .update({ password })
       .eq('id', reportId);
-    
+      
     if (error) throw error;
     
-    return {
-      success: true,
-      message: 'Password updated successfully'
-    };
-  } catch (error: any) {
-    console.error('Error updating report with password:', error);
-    toast.error('Error updating report with password');
-    return {
-      success: false,
-      message: error.message || 'Error updating report with password'
-    };
+    return true;
+  } catch (error) {
+    console.error('Error updating report password:', error);
+    return false;
   }
-};
-
-/**
- * Log access to a shared report
- */
-export const logReportAccess = (
-  reportId: string, 
-  options: { successful: boolean; error?: string; passwordAttempt?: boolean; source?: string } = { successful: true },
-  accessType: AccessLogType = 'view'
-): void => {
-  logContentAccess('report', reportId, options, accessType);
 };

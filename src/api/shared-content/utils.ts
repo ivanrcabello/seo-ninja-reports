@@ -1,44 +1,44 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { AccessLogOptions, AccessLogType, ExistsResponse, ProtectionResponse } from '@/types/shared-content';
 
 /**
  * Comprueba si el contenido compartido existe
  */
 export const checkContentExists = async (
-  contentType: string, 
-  contentId: string
-): Promise<{ exists: boolean; error?: Error }> => {
+  contentId: string, 
+  contentType: string
+): Promise<ExistsResponse> => {
   try {
     let tableName;
     
     switch (contentType) {
       case 'report':
-        tableName = 'reports';
+        tableName = 'public_reports';
         break;
       case 'invoice':
-        tableName = 'client_invoices';
+        tableName = 'public_invoices';
         break;
       case 'proposal':
-        tableName = 'client_proposals';
+        tableName = 'public_proposals';
         break;
       case 'contract':
-        tableName = 'client_contracts';
+        tableName = 'public_contracts';
         break;
       default:
         throw new Error(`Tipo de contenido no válido: ${contentType}`);
     }
     
-    // Intentar buscar primero por ID directo
+    // Try to find content by shared_url first
     const { data, error } = await supabase
       .from(tableName)
       .select('id')
-      .or(`id.eq.${contentId},shared_url.eq.${contentId}`)
+      .eq('shared_url', contentId)
       .maybeSingle();
     
     if (error) throw error;
     
-    return { exists: !!data };
+    return { exists: !!data, error: null };
   } catch (error: any) {
     console.error(`Error checking if ${contentType} exists:`, error);
     return { exists: false, error };
@@ -49,24 +49,24 @@ export const checkContentExists = async (
  * Comprueba si el contenido está protegido con contraseña
  */
 export const checkContentPasswordProtection = async (
-  contentType: string,
-  contentId: string
-): Promise<{ isProtected: boolean; error?: Error }> => {
+  contentId: string,
+  contentType: string
+): Promise<ProtectionResponse> => {
   try {
     let tableName;
     
     switch (contentType) {
       case 'report':
-        tableName = 'reports';
+        tableName = 'public_reports';
         break;
       case 'invoice':
-        tableName = 'client_invoices';
+        tableName = 'public_invoices';
         break;
       case 'proposal':
-        tableName = 'client_proposals';
+        tableName = 'public_proposals';
         break;
       case 'contract':
-        tableName = 'client_contracts';
+        tableName = 'public_contracts';
         break;
       default:
         throw new Error(`Tipo de contenido no válido: ${contentType}`);
@@ -75,14 +75,14 @@ export const checkContentPasswordProtection = async (
     const { data, error } = await supabase
       .from(tableName)
       .select('password')
-      .or(`id.eq.${contentId},shared_url.eq.${contentId}`)
+      .eq('shared_url', contentId)
       .maybeSingle();
     
     if (error) throw error;
     
     // Check if data exists and password is not null or empty
-    const isProtected = !!(data?.password && data.password.trim() !== '');
-    return { isProtected };
+    const isProtected = !!(data && data.password && data.password.trim() !== '');
+    return { isProtected, error: null };
   } catch (error: any) {
     console.error(`Error checking ${contentType} password protection:`, error);
     return { isProtected: false, error };
@@ -93,8 +93,8 @@ export const checkContentPasswordProtection = async (
  * Verifica la contraseña para el contenido protegido
  */
 export const verifyContentPassword = async (
-  contentType: string,
   contentId: string,
+  contentType: string,
   password: string
 ): Promise<boolean> => {
   try {
@@ -103,26 +103,26 @@ export const verifyContentPassword = async (
     
     switch (contentType) {
       case 'report':
-        tableName = 'reports';
+        tableName = 'public_reports';
         rpcName = 'verify_shared_report_password';
         break;
       case 'invoice':
-        tableName = 'client_invoices';
+        tableName = 'public_invoices';
         rpcName = 'verify_shared_invoice_password';
         break;
       case 'proposal':
-        tableName = 'client_proposals';
+        tableName = 'public_proposals';
         rpcName = 'verify_shared_proposal_password';
         break;
       case 'contract':
-        tableName = 'client_contracts';
+        tableName = 'public_contracts';
         rpcName = 'verify_shared_contract_password';
         break;
       default:
         throw new Error(`Tipo de contenido no válido: ${contentType}`);
     }
     
-    // Intentar usar RPC si está disponible
+    // Try to use RPC if available
     if (rpcName) {
       const { data, error } = await supabase
         .rpc(rpcName, { 
@@ -134,20 +134,20 @@ export const verifyContentPassword = async (
         return Boolean(data);
       }
       
-      // Si hay error, fallback al método directo
+      // If there's an error, fallback to direct query
       console.warn(`RPC ${rpcName} failed, falling back to direct query:`, error);
     }
     
-    // Método directo si no hay RPC o falló
+    // Direct method if no RPC or RPC failed
     const { data, error } = await supabase
       .from(tableName)
       .select('password')
-      .or(`id.eq.${contentId},shared_url.eq.${contentId}`)
+      .eq('shared_url', contentId)
       .maybeSingle();
     
     if (error) throw error;
     
-    if (!data?.password) {
+    if (!data || !data.password) {
       return false;
     }
     
@@ -168,7 +168,7 @@ export const logContentAccess = async (
   logType: AccessLogType = 'view'
 ): Promise<void> => {
   try {
-    // Insert into shared_content_access_logs using RPC instead of direct insert
+    // Insert into shared_content_access_logs using RPC
     await supabase.rpc('log_content_access', {
       content_type_param: contentType,
       content_id_param: contentId,

@@ -1,10 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { PublicContract } from '../types';
-import { fetchContractBySharedUrl, updateContractWithSignature, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from '@/api/shared-content';
+import { SharedContract, ContractSignatureUpdate, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
+import { fetchContractBySharedUrl, updateContractWithSignature, checkContentExists, checkContentPasswordProtection, verifyContentPassword, logContractAccess } from '@/api/shared-content';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { SharedContentStatus, ContractSignatureUpdate } from '@/types/shared-content';
+
+// Define PublicContract type (referenced in component)
+export type PublicContract = SharedContract;
 
 export const useContractData = (contractId?: string) => {
   const [contract, setContract] = useState<PublicContract | null>(null);
@@ -30,7 +32,11 @@ export const useContractData = (contractId?: string) => {
       setError(null);
 
       // Check if contract exists and is password protected
-      const { exists } = await checkContentExists(id, 'contract');
+      const { exists, error: existsError } = await checkContentExists(id, 'contract');
+      
+      if (existsError) {
+        throw existsError;
+      }
       
       if (!exists) {
         setError('Contract not found');
@@ -44,31 +50,38 @@ export const useContractData = (contractId?: string) => {
       setIsPasswordVerified(true);
       
       // Fetch contract data
-      const contractData = await fetchContractBySharedUrl(id);
+      const { contract: contractData, error: fetchError } = await fetchContractBySharedUrl(id);
       
-      // Convert to PublicContract (as expected by component)
-      const publicContract: PublicContract = {
-        id: contractData.id,
-        title: contractData.title,
-        content: contractData.content,
-        status: contractData.status,
-        client_name: contractData.client_name,
-        client_website: contractData.client_website,
-        client_signed: contractData.client_signed,
-        client_signed_at: contractData.client_signed_at,
-        client_signature: contractData.client_signature,
-        admin_signed: contractData.admin_signed,
-        admin_signed_at: contractData.admin_signed_at,
-        admin_signature: contractData.admin_signature,
-        created_at: contractData.created_at,
-        updated_at: contractData.updated_at,
-        shared_url: contractData.shared_url
-      };
+      if (fetchError) {
+        throw fetchError;
+      }
       
-      setContract(publicContract);
+      if (contractData) {
+        setContract(contractData);
+        
+        // Log successful access
+        const logOptions: AccessLogOptions = { successful: true };
+        logContractAccess(id, logOptions, 'view');
+      } else {
+        setError('Contract not found');
+        
+        // Log failed access
+        const logOptions: AccessLogOptions = { 
+          successful: false, 
+          error: 'Contract data not found' 
+        };
+        logContractAccess(id, logOptions, 'data_not_found');
+      }
     } catch (err: any) {
       console.error('Error fetching contract:', err);
       setError(err.message || 'Failed to load contract');
+      
+      // Log error
+      const logOptions: AccessLogOptions = { 
+        successful: false, 
+        error: err.message || 'Unknown error' 
+      };
+      logContractAccess(id, logOptions, 'error');
     } finally {
       setLoading(false);
     }
@@ -149,14 +162,6 @@ export const useContractData = (contractId?: string) => {
     window.print();
   };
 
-  const openSignDialog = () => {
-    setIsSignDialogOpen(true);
-  };
-
-  const closeSignDialog = () => {
-    setIsSignDialogOpen(false);
-  };
-
   return {
     contract,
     loading,
@@ -166,8 +171,6 @@ export const useContractData = (contractId?: string) => {
     verifyPassword,
     signContract,
     handlePrint,
-    openSignDialog,
-    closeSignDialog,
     isSignDialogOpen,
     setIsSignDialogOpen
   };

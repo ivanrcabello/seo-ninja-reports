@@ -1,20 +1,33 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedContract, ContractSignatureUpdate, SharedContractResponse } from '@/types/shared-content';
-import { logContentAccess, checkContentExists, verifyContentPassword } from './utils';
+import { SharedContract, SharedContractResponse, ContractSignatureUpdate, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { logContentAccess } from './utils';
 
 /**
  * Check if a contract exists
  */
 export const checkContractExists = async (contractId: string): Promise<{ exists: boolean, error: Error | null }> => {
-  return checkContentExists(contractId, 'contract');
+  try {
+    const { data, error } = await supabase
+      .from('public_contracts')
+      .select('id')
+      .eq('shared_url', contractId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    return { exists: !!data, error: null };
+  } catch (error: any) {
+    console.error('Error checking if contract exists:', error);
+    return { exists: false, error };
+  }
 };
 
 /**
  * Log contract access
  */
-export const logContractAccess = (contractId: string, options: any, eventType: string = 'access') => {
-  return logContentAccess(contractId, 'contract', options, eventType);
+export const logContractAccess = (contractId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {
+  return logContentAccess('contract', contractId, options, eventType);
 };
 
 /**
@@ -22,84 +35,91 @@ export const logContractAccess = (contractId: string, options: any, eventType: s
  */
 export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<SharedContractResponse> => {
   try {
-    console.log('Fetching contract with shared URL:', sharedUrl);
-    
-    const { data, error } = await supabase.rpc('get_contract_by_shared_url', {
-      shared_url_param: sharedUrl
-    });
+    const { data, error } = await supabase
+      .from('public_contracts')
+      .select('*')
+      .eq('shared_url', sharedUrl)
+      .maybeSingle();
     
     if (error) throw error;
     
-    if (!data || (Array.isArray(data) && data.length === 0)) {
-      return { contract: null as any, error: new Error('Contract not found') };
+    if (!data) {
+      return { contract: null, error: new Error('Contract not found') };
     }
     
-    // Handle the case when data is an array
-    const contractData = Array.isArray(data) ? data[0] : data;
-    
-    // Create a properly typed contract object
     const contract: SharedContract = {
-      id: contractData.id,
-      title: contractData.title,
-      content: contractData.content,
-      status: contractData.status,
-      client_signed: contractData.client_signed || false,
-      client_signed_at: contractData.client_signed_at,
-      client_signature: contractData.client_signature,
-      admin_signed: contractData.admin_signed || false,
-      admin_signed_at: contractData.admin_signed_at,
-      admin_signature: contractData.admin_signature,
-      shared_url: contractData.shared_url,
-      created_at: contractData.created_at,
-      updated_at: contractData.updated_at,
-      client_name: contractData.client_name,
-      client_website: contractData.client_website
+      id: data.id,
+      title: data.title,
+      content: data.content,
+      status: data.status,
+      client_signed: data.client_signed,
+      client_signed_at: data.client_signed_at,
+      client_signature: data.client_signature,
+      admin_signed: data.admin_signed,
+      admin_signed_at: data.admin_signed_at,
+      admin_signature: data.admin_signature,
+      shared_url: data.shared_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      client_name: data.client_name,
+      client_website: data.client_website
     };
-    
-    // Log successful access
-    logContractAccess(sharedUrl, { successful: true }, 'view');
     
     return { contract, error: null };
   } catch (error: any) {
     console.error('Error fetching contract:', error);
-    
-    // Log failed access
-    logContractAccess(sharedUrl, { successful: false, error: error.message }, 'error');
-    
-    return { contract: null as any, error };
+    return { contract: null, error };
   }
 };
 
 /**
- * Update contract with client signature
+ * Update contract with signature
  */
 export const updateContractWithSignature = async (
-  sharedUrl: string, 
+  contractId: string,
   signatureData: ContractSignatureUpdate
 ): Promise<{ success: boolean, error: Error | null }> => {
   try {
-    console.log('Updating contract with signature, shared URL:', sharedUrl);
+    // First try to update in public_contracts
+    const { error: publicError } = await supabase
+      .from('public_contracts')
+      .update({
+        client_signed: signatureData.client_signed,
+        client_signed_at: signatureData.client_signed_at,
+        client_signature: signatureData.client_signature,
+        status: 'signed'
+      })
+      .eq('shared_url', contractId);
     
-    const { data, error } = await supabase.rpc('update_contract_by_shared_url', {
-      shared_url_param: sharedUrl,
-      client_signed_param: signatureData.client_signed,
-      client_signed_at_param: signatureData.client_signed_at,
-      client_signature_param: signatureData.client_signature,
-      status_param: 'signed'
-    });
+    if (publicError) throw publicError;
     
-    if (error) throw error;
+    // Then try to find and update in client_contracts
+    const { data: contract, error: findError } = await supabase
+      .from('client_contracts')
+      .select('id')
+      .eq('shared_url', contractId)
+      .maybeSingle();
     
-    // Log successful signature
-    logContractAccess(sharedUrl, { successful: true, action: 'sign' }, 'sign');
+    if (!findError && contract) {
+      // Update the original contract too
+      const { error: updateError } = await supabase
+        .from('client_contracts')
+        .update({
+          client_signed: signatureData.client_signed,
+          client_signed_at: signatureData.client_signed_at,
+          client_signature: signatureData.client_signature,
+          status: 'signed'
+        })
+        .eq('id', contract.id);
+      
+      if (updateError) {
+        console.error('Error updating original contract:', updateError);
+      }
+    }
     
     return { success: true, error: null };
   } catch (error: any) {
     console.error('Error updating contract with signature:', error);
-    
-    // Log failed signature
-    logContractAccess(sharedUrl, { successful: false, error: error.message, action: 'sign' }, 'error');
-    
     return { success: false, error };
   }
 };

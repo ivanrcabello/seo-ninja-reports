@@ -47,9 +47,6 @@ export {
 // Reports - specifically named exports
 export {
   fetchReportByAnyId,
-  fetchFromPublicReportsView,
-  fetchReportWithRpc,
-  fetchReportOnly,
   updateReportWithPassword
 } from './reports';
 

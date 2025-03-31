@@ -1,73 +1,93 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedProposal } from '@/types/shared-content';
-import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
+import { SharedProposal, SharedProposalResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { logContentAccess } from './utils';
 
 /**
  * Check if a proposal exists
  */
 export const checkProposalExists = async (proposalId: string): Promise<{ exists: boolean, error: Error | null }> => {
-  return checkContentExists(proposalId, 'proposal');
+  try {
+    const { data, error } = await supabase
+      .from('public_proposals')
+      .select('id')
+      .eq('shared_url', proposalId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    return { exists: !!data, error: null };
+  } catch (error: any) {
+    console.error('Error checking if proposal exists:', error);
+    return { exists: false, error };
+  }
 };
 
 /**
  * Check if a proposal is password protected
  */
 export const checkProposalPassword = async (proposalId: string): Promise<{ isProtected: boolean, error: Error | null }> => {
-  return checkContentPasswordProtection(proposalId, 'proposal');
-};
-
-/**
- * Verify a proposal's password
- */
-export const verifyProposalPassword = async (proposalId: string, password: string): Promise<boolean> => {
-  return verifyContentPassword(proposalId, 'proposal', password);
+  try {
+    const { data, error } = await supabase
+      .from('public_proposals')
+      .select('password')
+      .eq('shared_url', proposalId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    // Check if data exists and password is not null or empty
+    const isProtected = !!(data && data.password && data.password.trim() !== '');
+    return { isProtected, error: null };
+  } catch (error: any) {
+    console.error('Error checking proposal password protection:', error);
+    return { isProtected: false, error };
+  }
 };
 
 /**
  * Log proposal access
  */
-export const logProposalAccess = (proposalId: string, options: any, eventType: string = 'access') => {
-  return logContentAccess(proposalId, 'proposal', options, eventType);
+export const logProposalAccess = (proposalId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {
+  return logContentAccess('proposal', proposalId, options, eventType);
 };
 
 /**
  * Fetch proposal by shared URL
  */
-export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<{ proposal: SharedProposal | null, error: Error | null }> => {
+export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<SharedProposalResponse> => {
   try {
     console.log('Fetching proposal with shared URL:', sharedUrl);
     
-    const { data, error } = await supabase.rpc('get_proposal_by_shared_url', {
-      shared_url_param: sharedUrl
-    });
+    const { data, error } = await supabase
+      .from('public_proposals')
+      .select('*')
+      .eq('shared_url', sharedUrl)
+      .maybeSingle();
     
     if (error) throw error;
     
-    if (!data || (Array.isArray(data) && data.length === 0)) {
+    if (!data) {
       return { proposal: null, error: new Error('Proposal not found') };
     }
     
-    // Handle the case when data is an array
-    const proposalData = Array.isArray(data) ? data[0] : data;
-    
     // Create a properly typed proposal object
     const proposal: SharedProposal = {
-      id: proposalData.id,
-      title: proposalData.title,
-      description: proposalData.description,
-      services: proposalData.services,
-      price: proposalData.price,
-      status: proposalData.status,
-      created_at: proposalData.created_at,
-      updated_at: proposalData.updated_at,
-      shared_url: proposalData.shared_url,
-      client_name: proposalData.client_name,
-      client_website: proposalData.client_website
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      services: data.services,
+      price: data.price,
+      status: data.status,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      shared_url: data.shared_url,
+      client_name: data.client_name,
+      client_website: data.client_website
     };
     
     // Log successful access
-    logProposalAccess(sharedUrl, { successful: true, source: 'rpc' }, 'view');
+    logProposalAccess(sharedUrl, { successful: true }, 'view');
     
     return { proposal, error: null };
   } catch (error: any) {

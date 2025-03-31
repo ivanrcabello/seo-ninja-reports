@@ -1,72 +1,92 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedInvoice } from '@/types/shared-content';
-import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
+import { SharedInvoice, SharedInvoiceResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { logContentAccess } from './utils';
 
 /**
  * Check if an invoice exists
  */
 export const checkInvoiceExists = async (invoiceId: string): Promise<{ exists: boolean, error: Error | null }> => {
-  return checkContentExists(invoiceId, 'invoice');
+  try {
+    const { data, error } = await supabase
+      .from('public_invoices')
+      .select('id')
+      .eq('shared_url', invoiceId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    return { exists: !!data, error: null };
+  } catch (error: any) {
+    console.error('Error checking if invoice exists:', error);
+    return { exists: false, error };
+  }
 };
 
 /**
  * Check if an invoice is password protected
  */
 export const checkInvoicePassword = async (invoiceId: string): Promise<{ isProtected: boolean, error: Error | null }> => {
-  return checkContentPasswordProtection(invoiceId, 'invoice');
-};
-
-/**
- * Verify an invoice's password
- */
-export const verifyInvoicePassword = async (invoiceId: string, password: string): Promise<boolean> => {
-  return verifyContentPassword(invoiceId, 'invoice', password);
+  try {
+    const { data, error } = await supabase
+      .from('public_invoices')
+      .select('password')
+      .eq('shared_url', invoiceId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    // Check if data exists and password is not null or empty
+    const isProtected = !!(data && data.password && data.password.trim() !== '');
+    return { isProtected, error: null };
+  } catch (error: any) {
+    console.error('Error checking invoice password protection:', error);
+    return { isProtected: false, error };
+  }
 };
 
 /**
  * Log invoice access
  */
-export const logInvoiceAccess = (invoiceId: string, options: any, eventType: string = 'access') => {
-  return logContentAccess(invoiceId, 'invoice', options, eventType);
+export const logInvoiceAccess = (invoiceId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {
+  return logContentAccess('invoice', invoiceId, options, eventType);
 };
 
 /**
  * Fetch invoice by shared URL
  */
-export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<{ invoice: SharedInvoice, error: Error | null }> => {
+export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<SharedInvoiceResponse> => {
   try {
     console.log('Fetching invoice with shared URL:', sharedUrl);
     
-    const { data, error } = await supabase.rpc('get_invoice_by_shared_url', {
-      shared_url_param: sharedUrl
-    });
+    const { data, error } = await supabase
+      .from('public_invoices')
+      .select('*')
+      .eq('shared_url', sharedUrl)
+      .maybeSingle();
     
     if (error) throw error;
     
-    if (!data || (Array.isArray(data) && data.length === 0)) {
-      return { invoice: null as any, error: new Error('Invoice not found') };
+    if (!data) {
+      return { invoice: null, error: new Error('Invoice not found') };
     }
-    
-    // Handle the case when data is an array
-    const invoiceData = Array.isArray(data) ? data[0] : data;
     
     // Create a properly typed invoice object
     const invoice: SharedInvoice = {
-      id: invoiceData.id,
-      title: invoiceData.title,
-      description: invoiceData.description,
-      amount: invoiceData.amount,
-      status: invoiceData.status,
-      due_date: invoiceData.due_date,
-      payment_method: invoiceData.payment_method,
-      payment_date: invoiceData.payment_date,
-      payment_instructions: invoiceData.payment_instructions,
-      shared_url: invoiceData.shared_url,
-      created_at: invoiceData.created_at,
-      updated_at: invoiceData.updated_at,
-      client_name: invoiceData.client_name,
-      client_website: invoiceData.client_website
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      amount: data.amount,
+      status: data.status,
+      due_date: data.due_date,
+      payment_method: data.payment_method,
+      payment_date: data.payment_date,
+      payment_instructions: data.payment_instructions,
+      shared_url: data.shared_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      client_name: data.client_name,
+      client_website: data.client_website
     };
     
     // Log successful access
@@ -79,6 +99,6 @@ export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<{ invo
     // Log failed access
     logInvoiceAccess(sharedUrl, { successful: false, error: error.message }, 'error');
     
-    return { invoice: null as any, error };
+    return { invoice: null, error };
   }
 };

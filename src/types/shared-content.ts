@@ -1,4 +1,3 @@
-
 // Tipos de estado compartidos entre todos los tipos de contenido
 export type SharedContentStatus = "processing" | "completed" | "failed" | "draft" | "sent" | "accepted" | "rejected" | "pending" | "paid" | "signed" | "expired" | "cancelled";
 
@@ -7,6 +6,14 @@ export type SharedDocumentType = "factura" | "contrato" | "presupuesto" | "propu
 
 // Tipos de acceso para logs
 export type AccessLogType = 'view' | 'print' | 'download' | 'password' | 'not_found' | 'error' | 'check' | 'data_not_found' | 'page_view';
+
+// Opciones comunes para compartir contenido
+export interface SharedContentOptions {
+  password?: string;
+  expiration_date?: string;
+  can_download?: boolean;
+  notify_on_view?: boolean;
+}
 
 // Interfaz base para todo contenido compartido
 export interface SharedContentBase {
@@ -74,39 +81,7 @@ export interface SharedDocument {
   expiration_date?: string;
 }
 
-// Interfaz para la respuesta de verificación de contraseña
-export interface PasswordVerificationResponse {
-  success: boolean;
-  message?: string;
-}
-
-// Opciones comunes para compartir contenido
-export interface SharedContentOptions {
-  password?: string;
-  expiration_date?: string;
-  can_download?: boolean;
-  notify_on_view?: boolean;
-}
-
-// Interfaz para estadísticas de visualización
-export interface SharedContentStats {
-  views: number;
-  unique_views: number;
-  last_viewed_at?: string;
-  viewer_locations?: {
-    country: string;
-    count: number;
-  }[];
-}
-
-// Interfaz para actualización de firma de contrato
-export interface ContractSignatureUpdate {
-  client_signed: boolean;
-  client_signed_at: string;
-  client_signature: string;
-}
-
-// Interfaces para resultados de API
+// Updated response types with optional error
 export interface SharedReportResponse {
   report: SharedReport | null;
   error: Error | null;
@@ -125,6 +100,41 @@ export interface SharedInvoiceResponse {
 export interface SharedProposalResponse {
   proposal: SharedProposal | null;
   error: Error | null;
+}
+
+// Common error response types
+export interface ExistsResponse {
+  exists: boolean;
+  error: Error | null;
+}
+
+export interface ProtectionResponse {
+  isProtected: boolean;
+  error: Error | null;
+}
+
+// Interfaz para verificación de contraseña
+export interface PasswordVerificationResponse {
+  success: boolean;
+  message?: string;
+}
+
+// Interfaz para estadísticas de visualización
+export interface SharedContentStats {
+  views: number;
+  unique_views: number;
+  last_viewed_at?: string;
+  viewer_locations?: {
+    country: string;
+    count: number;
+  }[];
+}
+
+// Interfaz para actualización de firma de contrato
+export interface ContractSignatureUpdate {
+  client_signed: boolean;
+  client_signed_at: string;
+  client_signature: string;
 }
 
 // Tipo para los logs de acceso
