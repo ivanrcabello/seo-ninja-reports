@@ -50,11 +50,15 @@ export const useSharedContractData = (sharedUrl: string) => {
       }
       
       setContract(response.contract);
+      
+      // Log successful access
       logContractAccess(sharedUrl, { successful: true }, 'view');
       
     } catch (err: any) {
       console.error('Error fetching shared contract:', err);
       setError(err.message || 'Error al cargar el contrato');
+      
+      // Log failed access
       logContractAccess(sharedUrl, { successful: false, error: err.message || 'Unknown error' }, 'error');
     } finally {
       setIsLoading(false);

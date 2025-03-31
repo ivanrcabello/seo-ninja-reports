@@ -1,262 +1,180 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { SharedReport } from '@/types/shared-content';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
+import { SharedReport, AccessLogOptions } from '@/types/shared-content';
 import { 
-  checkReportExists,
-  checkReportPassword,
-  verifyReportPassword,
-  logReportAccess
+  fetchReportBySharedUrl, 
+  checkContentExists,
+  checkContentPasswordProtection, 
+  verifyContentPassword,
+  logContentAccess
 } from '@/api/shared-content';
 
-interface PublicReport {
-  id: string;
-  title: string;
-  summary?: string;
-  url?: string;
-  status: string;
-  content?: any;
-  date?: string;
-  client_name?: string;
-  client_website?: string;
-}
-
-/**
- * Hook for fetching and managing report data by ID
- */
 const useReportData = (reportId: string) => {
-  const [report, setReport] = useState<PublicReport | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [report, setReport] = useState<SharedReport | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
-  const [notFound, setNotFound] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const [notFound, setNotFound] = useState<boolean>(false);
+  const [isPasswordProtected, setIsPasswordProtected] = useState<boolean>(false);
+  const [accessGranted, setAccessGranted] = useState<boolean>(false);
 
-  // Validate report ID with UUID format
-  const isValidReportId = useCallback((id: string) => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(id);
-  }, []);
+  // Function to check if report exists and if it's password protected
+  const checkReportStatus = async () => {
+    if (!reportId) {
+      setError('No report ID provided');
+      setIsLoading(false);
+      return;
+    }
 
-  // Simplify fetch with direct access to public_reports table
-  const fetchReportDirect = useCallback(async () => {
-    console.log(`Fetching report with ID: ${reportId} from public_reports table`);
     try {
-      // First, check if the report is password protected
-      const { isProtected, error: protectionError } = await checkReportPassword(reportId);
+      setIsLoading(true);
 
-      if (protectionError) {
-        console.error('Error checking if report is password protected:', protectionError);
-        throw protectionError;
+      // Check if report exists
+      const { exists, error: existsError } = await checkContentExists(reportId, 'report');
+      
+      if (existsError) {
+        throw existsError;
+      }
+      
+      if (!exists) {
+        setNotFound(true);
+        setIsLoading(false);
+        const options: AccessLogOptions = {
+          successful: false, 
+          error: 'Report not found'
+        };
+        logContentAccess('report', reportId, options, 'not_found');
+        return;
+      }
+
+      // Check if password protected
+      const { isProtected, error: protectedError } = await checkContentPasswordProtection(reportId, 'report');
+      
+      if (protectedError) {
+        throw protectedError;
       }
       
       setIsPasswordProtected(isProtected);
       
-      // If password protected and access not granted, don't fetch content
-      if (isProtected && !accessGranted) {
-        console.log('Report is password protected, waiting for password');
+      // If not password protected, fetch report directly
+      if (!isProtected) {
+        setAccessGranted(true);
+        await fetchReport();
+      } else {
         setIsLoading(false);
-        return null;
       }
-      
-      // Try fetching directly from public_reports view
-      const { data: viewData, error: viewError } = await supabase
-        .from('public_reports')
-        .select('*')
-        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-        .single();
-
-      if (!viewError && viewData) {
-        console.log('Successfully fetched report from public_reports view:', viewData);
-        
-        // Log successful access
-        logReportAccess(reportId, { 
-          successful: true, 
-          source: 'public_reports_view' 
-        });
-        
-        return viewData as PublicReport;
-      }
-      
-      // Try fetching from reports table directly if public_reports failed
-      const { data: reportData, error: reportError } = await supabase
-        .from('reports')
-        .select(`
-          id, 
-          title, 
-          summary,
-          url,
-          status,
-          content,
-          date,
-          shared_url,
-          password,
-          clients (name, website)
-        `)
-        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-        .single();
-        
-      if (!reportError && reportData) {
-        console.log('Successfully fetched report from reports table:', reportData);
-        
-        const formattedReport: PublicReport = {
-          id: reportData.id,
-          title: reportData.title || 'Informe sin título',
-          summary: reportData.summary,
-          url: reportData.url,
-          status: reportData.status,
-          content: reportData.content,
-          date: reportData.date,
-          client_name: reportData.clients?.name,
-          client_website: reportData.clients?.website
-        };
-        
-        // Log successful access
-        logReportAccess(reportId, { 
-          successful: true, 
-          source: 'reports_table' 
-        });
-        
-        return formattedReport;
-      }
-      
-      // As a last resort, try using an RPC function
-      const { data: rpcData, error: rpcError } = await supabase
-        .rpc('get_report_by_any_id', { id_param: reportId });
-        
-      if (!rpcError && rpcData) {
-        console.log('Successfully fetched report via RPC function:', rpcData);
-        
-        // Log successful access
-        logReportAccess(reportId, { 
-          successful: true, 
-          source: 'rpc_function' 
-        });
-        
-        return rpcData as PublicReport;
-      }
-      
-      console.error('Could not fetch report with any method:');
-      console.error('View error:', viewError);
-      console.error('Reports table error:', reportError);
-      console.error('RPC error:', rpcError);
-      
-      throw new Error('No se pudo encontrar el informe solicitado');
-      
     } catch (err: any) {
-      console.error('Error in fetchReportDirect:', err);
-      throw err;
-    }
-  }, [reportId, accessGranted]);
-
-  // Main fetch function with error handling and retries
-  const fetchReport = useCallback(async () => {
-    if (!reportId || reportId.trim() === '') {
-      console.error('No reportId provided');
-      setError('ID de reporte no proporcionado');
+      console.error('Error checking report status:', err);
+      setError(err.message || 'Error checking report status');
       setIsLoading(false);
-      setNotFound(true);
-      return;
+      
+      const options: AccessLogOptions = {
+        successful: false, 
+        error: err.message || 'Unknown error'
+      };
+      logContentAccess('report', reportId, options, 'error');
     }
+  };
 
-    if (!isValidReportId(reportId)) {
-      console.error('Invalid UUID format:', reportId);
-      setError('ID de reporte no válido (formato incorrecto)');
-      setIsLoading(false);
-      setNotFound(true);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
+  // Function to fetch report data
+  const fetchReport = async () => {
+    if (!reportId) return;
     
     try {
-      const reportData = await fetchReportDirect();
+      setIsLoading(true);
       
-      if (reportData) {
-        setReport(reportData);
-        setNotFound(false);
-      } else if (isPasswordProtected && !accessGranted) {
-        // We're just waiting for password, not an error
-        setNotFound(false);
-      } else {
+      const { report, error: fetchError } = await fetchReportBySharedUrl(reportId);
+      
+      if (fetchError) throw fetchError;
+      
+      if (!report) {
         setNotFound(true);
-        setError('Informe no encontrado');
-        
-        // Log not found
-        logReportAccess(reportId, { 
+        const options: AccessLogOptions = {
           successful: false, 
-          error: 'Report not found',
-          source: 'not_found'
-        }, 'not_found');
+          error: 'Report not found'
+        };
+        logContentAccess('report', reportId, options, 'data_not_found');
+        throw new Error('Report not found');
       }
+      
+      setReport(report);
+      const options: AccessLogOptions = {
+        successful: true, 
+        source: 'direct_access'
+      };
+      logContentAccess('report', reportId, options, 'view');
+      
     } catch (err: any) {
       console.error('Error fetching report:', err);
-      setError(err.message || 'Error al cargar el informe');
+      setError(err.message || 'Error fetching report');
       
-      // Only retry a limited number of times
-      if (retryCount < 2) {
-        console.log(`Will retry fetch (attempt ${retryCount + 1}/2)`);
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => {
-          fetchReport();
-        }, 1000 * Math.pow(2, retryCount)); // Exponential backoff
-      } else {
-        setNotFound(true);
-        logReportAccess(reportId, { 
-          successful: false, 
-          error: err.message || 'Error after retries',
-          source: 'error_with_retries'
-        }, 'error');
-      }
+      const options: AccessLogOptions = {
+        successful: false, 
+        error: err.message || 'Unknown error',
+        source: 'direct_access'
+      };
+      logContentAccess('report', reportId, options, 'error');
     } finally {
       setIsLoading(false);
     }
-  }, [reportId, isPasswordProtected, accessGranted, fetchReportDirect, retryCount, isValidReportId]);
+  };
 
-  // Password verification function 
+  // Function to verify password
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
-      console.log(`Verifying password for report: ${reportId}`);
-      const success = await verifyReportPassword(reportId, password);
+      const isValid = await verifyContentPassword(reportId, 'report', password);
       
-      console.log(`Password verification result: ${success}`);
-      
-      if (success) {
+      if (isValid) {
         setAccessGranted(true);
+        await fetchReport();
+        
+        const options: AccessLogOptions = {
+          successful: true,
+          passwordAttempt: true,
+          source: 'password_form'
+        };
+        logContentAccess('report', reportId, options, 'password');
+        
+        return true;
+      } else {
+        const options: AccessLogOptions = {
+          successful: false,
+          passwordAttempt: true,
+          error: 'Invalid password',
+          source: 'password_form'
+        };
+        logContentAccess('report', reportId, options, 'password');
+        
+        return false;
       }
+    } catch (err: any) {
+      console.error('Error verifying password:', err);
       
-      return success;
-    } catch (error) {
-      console.error('Error verifying password:', error);
+      const options: AccessLogOptions = {
+        successful: false,
+        passwordAttempt: true,
+        error: err.message || 'Unknown error',
+        source: 'password_form'
+      };
+      logContentAccess('report', reportId, options, 'error');
+      
       return false;
     }
   };
 
-  // Initial fetch on load
+  // Initial check when component mounts or reportId changes
   useEffect(() => {
-    if (reportId) {
-      fetchReport();
-    }
-  }, [fetchReport]);
-  
-  // Effect for retries when access is granted
-  useEffect(() => {
-    if (accessGranted && reportId) {
-      fetchReport();
-    }
-  }, [accessGranted, fetchReport, reportId]);
+    checkReportStatus();
+  }, [reportId]);
 
   return {
     report,
     isLoading,
     error,
+    notFound,
     isPasswordProtected,
     accessGranted,
     verifyPassword,
-    refetch: fetchReport,
-    notFound
+    refetch: checkReportStatus
   };
 };
 

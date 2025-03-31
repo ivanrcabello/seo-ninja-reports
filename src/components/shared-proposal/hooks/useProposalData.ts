@@ -1,114 +1,146 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { SharedProposal } from '@/types/shared-content';
+import { useState, useEffect } from 'react';
+import { SharedProposal, AccessLogOptions } from '@/types/shared-content';
 import { 
-  fetchProposalBySharedUrl,
+  fetchProposalBySharedUrl, 
   checkProposalExists, 
-  checkProposalPassword,
-  verifyProposalPassword,
-  logProposalAccess
+  checkProposalPassword, 
+  verifyProposalPassword, 
+  logProposalAccess 
 } from '@/api/shared-content';
+import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-export const useProposalData = (sharedUrl: string) => {
+export const useProposalData = (proposalId?: string) => {
   const [proposal, setProposal] = useState<SharedProposal | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
+  const [isPasswordProtected, setIsPasswordProtected] = useState<boolean>(false);
+  const [isPasswordVerified, setIsPasswordVerified] = useState<boolean>(false);
+  const params = useParams<{ proposalId: string }>();
+  
+  // Use the proposalId from props or from route params
+  const id = proposalId || params.proposalId;
 
-  const fetchProposal = useCallback(async () => {
-    if (!sharedUrl) {
-      setError('URL de propuesta no proporcionada');
-      setIsLoading(false);
+  const fetchProposal = async (password?: string) => {
+    if (!id) {
+      setError('Invalid proposal ID');
+      setLoading(false);
       return;
     }
 
-    console.log(`Starting fetch for proposal with shared URL: ${sharedUrl}`);
-    setIsLoading(true);
-    setError(null);
-
     try {
-      // First check if proposal exists
-      const { exists, error: existsError } = await checkProposalExists(sharedUrl);
+      setLoading(true);
+      setError(null);
+
+      // Check if proposal exists
+      const { exists, error: existsError } = await checkProposalExists(id);
       
       if (existsError) {
-        console.error('Error checking if proposal exists:', existsError);
-      } else if (!exists) {
-        setError('La propuesta no existe');
-        setIsLoading(false);
-        logProposalAccess(sharedUrl, { successful: false, error: 'Proposal not found' }, 'check');
+        throw existsError;
+      }
+      
+      if (!exists) {
+        setError('Proposal not found');
+        setLoading(false);
+        
+        const options: AccessLogOptions = { 
+          successful: false, 
+          error: 'Proposal not found' 
+        };
+        logProposalAccess(id, options, 'check');
         return;
       }
+
+      // Check if password protected
+      const { isProtected, error: protectedError } = await checkProposalPassword(id);
       
-      // Check password protection
-      const { isProtected, error: passwordError } = await checkProposalPassword(sharedUrl);
+      if (protectedError) {
+        throw protectedError;
+      }
       
-      if (passwordError) {
-        console.error('Error checking proposal password:', passwordError);
-      } else {
-        setIsPasswordProtected(isProtected);
-        console.log(`Proposal is password protected: ${isProtected}`);
+      setIsPasswordProtected(isProtected);
+      
+      // If not password protected or password is already verified, fetch proposal
+      if (!isProtected || isPasswordVerified || password) {
+        const { proposal, error: fetchError } = await fetchProposalBySharedUrl(id);
         
-        // If password protected and access not granted, don't fetch content yet
-        if (isProtected && !accessGranted) {
-          setIsLoading(false);
-          return;
+        if (fetchError) {
+          throw fetchError;
+        }
+        
+        if (proposal) {
+          setProposal(proposal);
+          
+          // Log successful access
+          const options: AccessLogOptions = { successful: true };
+          logProposalAccess(id, options, 'view');
+        } else {
+          setError('Proposal not found');
+          
+          // Log failed access
+          const options: AccessLogOptions = { 
+            successful: false, 
+            error: 'Proposal data not found' 
+          };
+          logProposalAccess(id, options, 'data_not_found');
         }
       }
-
-      // Fetch proposal data
-      const { proposal: proposalData, error: fetchError } = await fetchProposalBySharedUrl(sharedUrl);
-      
-      if (fetchError) {
-        throw fetchError;
-      }
-      
-      if (!proposalData) {
-        setError('No se pudo encontrar la propuesta solicitada');
-        logProposalAccess(sharedUrl, { successful: false, error: 'Proposal data not found' }, 'data_not_found');
-      } else {
-        setProposal(proposalData);
-        logProposalAccess(sharedUrl, { successful: true }, 'view');
-      }
     } catch (err: any) {
-      console.error('Error fetching shared proposal:', err);
-      setError(err.message || 'Error al cargar la propuesta');
+      console.error('Error fetching proposal:', err);
+      setError(err.message || 'Failed to load proposal');
       
       // Log error
-      logProposalAccess(sharedUrl, { successful: false, error: err.message || 'Unknown error' }, 'error');
+      const options: AccessLogOptions = { 
+        successful: false, 
+        error: err.message || 'Unknown error' 
+      };
+      logProposalAccess(id, options, 'error');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [sharedUrl, accessGranted]);
+  };
 
   const verifyPassword = async (password: string): Promise<boolean> => {
+    if (!id) return false;
+
     try {
-      const success = await verifyProposalPassword(sharedUrl, password);
+      const verified = await verifyProposalPassword(id, password);
       
-      if (success) {
-        setAccessGranted(success);
+      if (verified) {
+        setIsPasswordVerified(true);
+        await fetchProposal(password);
+        return true;
+      } else {
+        toast.error('Invalid password');
+        return false;
       }
-      
-      return success;
-    } catch (error) {
-      console.error('Error verifying password:', error);
+    } catch (err) {
+      console.error('Error verifying password:', err);
+      toast.error('Error verifying password');
       return false;
     }
   };
 
   useEffect(() => {
-    if (sharedUrl) {
+    if (id) {
       fetchProposal();
     }
-  }, [fetchProposal]);
+  }, [id]);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   return {
     proposal,
-    isLoading,
+    loading,
     error,
     isPasswordProtected,
-    accessGranted,
+    isPasswordVerified,
     verifyPassword,
-    refetch: fetchProposal
+    handlePrint
   };
 };
+
+export default useProposalData;

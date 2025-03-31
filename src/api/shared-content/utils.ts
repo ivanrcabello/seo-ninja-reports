@@ -2,6 +2,27 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ExistsResponse, ProtectionResponse, PasswordVerificationResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 
+// Define valid table names for content types
+type ContentTableName = 'public_reports' | 'public_proposals' | 'public_invoices' | 'public_contracts';
+
+/**
+ * Get the appropriate table name for a content type
+ */
+const getTableName = (contentType: string): ContentTableName => {
+  switch (contentType) {
+    case 'report':
+      return 'public_reports';
+    case 'proposal':
+      return 'public_proposals';
+    case 'invoice':
+      return 'public_invoices';
+    case 'contract':
+      return 'public_contracts';
+    default:
+      throw new Error(`Invalid content type: ${contentType}`);
+  }
+};
+
 /**
  * Common function to check if content exists by ID
  */
@@ -10,24 +31,7 @@ export const checkContentExists = async (
   contentType: string = 'content'
 ): Promise<ExistsResponse> => {
   try {
-    let tableName: string;
-    
-    switch (contentType) {
-      case 'report':
-        tableName = 'public_reports';
-        break;
-      case 'proposal':
-        tableName = 'public_proposals';
-        break;
-      case 'invoice':
-        tableName = 'public_invoices';
-        break;
-      case 'contract':
-        tableName = 'public_contracts';
-        break;
-      default:
-        tableName = 'public_reports';
-    }
+    const tableName = getTableName(contentType);
     
     const { data, error } = await supabase
       .from(tableName)
@@ -52,24 +56,7 @@ export const checkContentPasswordProtection = async (
   contentType: string = 'content'
 ): Promise<ProtectionResponse> => {
   try {
-    let tableName: string;
-    
-    switch (contentType) {
-      case 'report':
-        tableName = 'public_reports';
-        break;
-      case 'proposal':
-        tableName = 'public_proposals';
-        break;
-      case 'invoice':
-        tableName = 'public_invoices';
-        break;
-      case 'contract':
-        tableName = 'public_contracts';
-        break;
-      default:
-        tableName = 'public_reports';
-    }
+    const tableName = getTableName(contentType);
     
     const { data, error } = await supabase
       .from(tableName)
@@ -97,24 +84,7 @@ export const verifyContentPassword = async (
   password: string
 ): Promise<boolean> => {
   try {
-    let tableName: string;
-    
-    switch (contentType) {
-      case 'report':
-        tableName = 'public_reports';
-        break;
-      case 'proposal':
-        tableName = 'public_proposals';
-        break;
-      case 'invoice':
-        tableName = 'public_invoices';
-        break;
-      case 'contract':
-        tableName = 'public_contracts';
-        break;
-      default:
-        tableName = 'public_reports';
-    }
+    const tableName = getTableName(contentType);
     
     const { data, error } = await supabase
       .from(tableName)

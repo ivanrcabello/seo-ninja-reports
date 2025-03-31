@@ -1,114 +1,146 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { SharedInvoice } from '@/types/shared-content';
+import { useState, useEffect } from 'react';
+import { SharedInvoice, AccessLogOptions } from '@/types/shared-content';
 import { 
-  fetchInvoiceBySharedUrl,
+  fetchInvoiceBySharedUrl, 
   checkInvoiceExists, 
-  checkInvoicePassword,
-  verifyInvoicePassword,
-  logInvoiceAccess
+  checkInvoicePassword, 
+  verifyInvoicePassword, 
+  logInvoiceAccess 
 } from '@/api/shared-content';
+import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-export const useInvoiceData = (sharedUrl: string) => {
+export const useInvoiceData = (invoiceId?: string) => {
   const [invoice, setInvoice] = useState<SharedInvoice | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
+  const [isPasswordProtected, setIsPasswordProtected] = useState<boolean>(false);
+  const [isPasswordVerified, setIsPasswordVerified] = useState<boolean>(false);
+  const params = useParams<{ invoiceId: string }>();
+  
+  // Use the invoiceId from props or from route params
+  const id = invoiceId || params.invoiceId;
 
-  const fetchInvoice = useCallback(async () => {
-    if (!sharedUrl) {
-      setError('URL de factura no proporcionada');
-      setIsLoading(false);
+  const fetchInvoice = async (password?: string) => {
+    if (!id) {
+      setError('Invalid invoice ID');
+      setLoading(false);
       return;
     }
 
-    console.log(`Starting fetch for invoice with shared URL: ${sharedUrl}`);
-    setIsLoading(true);
-    setError(null);
-
     try {
-      // First check if invoice exists
-      const { exists, error: existsError } = await checkInvoiceExists(sharedUrl);
+      setLoading(true);
+      setError(null);
+
+      // Check if invoice exists
+      const { exists, error: existsError } = await checkInvoiceExists(id);
       
       if (existsError) {
-        console.error('Error checking if invoice exists:', existsError);
-      } else if (!exists) {
-        setError('La factura no existe');
-        setIsLoading(false);
-        logInvoiceAccess(sharedUrl, { successful: false, error: 'Invoice not found' }, 'check');
+        throw existsError;
+      }
+      
+      if (!exists) {
+        setError('Invoice not found');
+        setLoading(false);
+        
+        const options: AccessLogOptions = { 
+          successful: false, 
+          error: 'Invoice not found' 
+        };
+        logInvoiceAccess(id, options, 'check');
         return;
       }
+
+      // Check if password protected
+      const { isProtected, error: protectedError } = await checkInvoicePassword(id);
       
-      // Check password protection
-      const { isProtected, error: passwordError } = await checkInvoicePassword(sharedUrl);
+      if (protectedError) {
+        throw protectedError;
+      }
       
-      if (passwordError) {
-        console.error('Error checking invoice password:', passwordError);
-      } else {
-        setIsPasswordProtected(isProtected);
-        console.log(`Invoice is password protected: ${isProtected}`);
+      setIsPasswordProtected(isProtected);
+      
+      // If not password protected or password is already verified, fetch invoice
+      if (!isProtected || isPasswordVerified || password) {
+        const { invoice, error: fetchError } = await fetchInvoiceBySharedUrl(id);
         
-        // If password protected and access not granted, don't fetch content yet
-        if (isProtected && !accessGranted) {
-          setIsLoading(false);
-          return;
+        if (fetchError) {
+          throw fetchError;
+        }
+        
+        if (invoice) {
+          setInvoice(invoice);
+          
+          // Log successful access
+          const options: AccessLogOptions = { successful: true };
+          logInvoiceAccess(id, options, 'view');
+        } else {
+          setError('Invoice not found');
+          
+          // Log failed access
+          const options: AccessLogOptions = { 
+            successful: false, 
+            error: 'Invoice data not found' 
+          };
+          logInvoiceAccess(id, options, 'data_not_found');
         }
       }
-
-      // Fetch invoice data
-      const { invoice: invoiceData, error: fetchError } = await fetchInvoiceBySharedUrl(sharedUrl);
-      
-      if (fetchError) {
-        throw fetchError;
-      }
-      
-      if (!invoiceData) {
-        setError('No se pudo encontrar la factura solicitada');
-        logInvoiceAccess(sharedUrl, { successful: false, error: 'Invoice data not found' }, 'data_not_found');
-      } else {
-        setInvoice(invoiceData);
-        logInvoiceAccess(sharedUrl, { successful: true }, 'view');
-      }
     } catch (err: any) {
-      console.error('Error fetching shared invoice:', err);
-      setError(err.message || 'Error al cargar la factura');
+      console.error('Error fetching invoice:', err);
+      setError(err.message || 'Failed to load invoice');
       
       // Log error
-      logInvoiceAccess(sharedUrl, { successful: false, error: err.message || 'Unknown error' }, 'error');
+      const options: AccessLogOptions = { 
+        successful: false, 
+        error: err.message || 'Unknown error' 
+      };
+      logInvoiceAccess(id, options, 'error');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [sharedUrl, accessGranted]);
+  };
 
   const verifyPassword = async (password: string): Promise<boolean> => {
+    if (!id) return false;
+
     try {
-      const success = await verifyInvoicePassword(sharedUrl, password);
+      const verified = await verifyInvoicePassword(id, password);
       
-      if (success) {
-        setAccessGranted(success);
+      if (verified) {
+        setIsPasswordVerified(true);
+        await fetchInvoice(password);
+        return true;
+      } else {
+        toast.error('Invalid password');
+        return false;
       }
-      
-      return success;
-    } catch (error) {
-      console.error('Error verifying password:', error);
+    } catch (err) {
+      console.error('Error verifying password:', err);
+      toast.error('Error verifying password');
       return false;
     }
   };
 
   useEffect(() => {
-    if (sharedUrl) {
+    if (id) {
       fetchInvoice();
     }
-  }, [fetchInvoice]);
+  }, [id]);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   return {
     invoice,
-    isLoading,
+    loading,
     error,
     isPasswordProtected,
-    accessGranted,
+    isPasswordVerified,
     verifyPassword,
-    refetch: fetchInvoice
+    handlePrint
   };
 };
+
+export default useInvoiceData;

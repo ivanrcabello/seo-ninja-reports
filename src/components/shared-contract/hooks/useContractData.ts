@@ -41,6 +41,12 @@ export const useContractData = (contractId?: string) => {
       if (!exists) {
         setError('Contract not found');
         setLoading(false);
+        
+        const options: AccessLogOptions = { 
+          successful: false, 
+          error: 'Contract not found' 
+        };
+        logContractAccess(id, options, 'check');
         return;
       }
       
@@ -60,28 +66,28 @@ export const useContractData = (contractId?: string) => {
         setContract(response.contract);
         
         // Log successful access
-        const logOptions: AccessLogOptions = { successful: true };
-        logContractAccess(id, logOptions, 'view');
+        const options: AccessLogOptions = { successful: true };
+        logContractAccess(id, options, 'view');
       } else {
         setError('Contract not found');
         
         // Log failed access
-        const logOptions: AccessLogOptions = { 
+        const options: AccessLogOptions = { 
           successful: false, 
           error: 'Contract data not found' 
         };
-        logContractAccess(id, logOptions, 'data_not_found');
+        logContractAccess(id, options, 'data_not_found');
       }
     } catch (err: any) {
       console.error('Error fetching contract:', err);
       setError(err.message || 'Failed to load contract');
       
       // Log error
-      const logOptions: AccessLogOptions = { 
+      const options: AccessLogOptions = { 
         successful: false, 
         error: err.message || 'Unknown error' 
       };
-      logContractAccess(id, logOptions, 'error');
+      logContractAccess(id, options, 'error');
     } finally {
       setLoading(false);
     }
