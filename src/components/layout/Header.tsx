@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { Menu } from 'lucide-react';
+import { Menu, User } from 'lucide-react';
 import MobileNavbar from './MobileNavbar';
 import DesktopNavbar from './DesktopNavbar';
 
@@ -34,6 +34,24 @@ const Header = () => {
           </div>
 
           <DesktopNavbar />
+          
+          <div className="hidden md:flex items-center space-x-4">
+            {user ? (
+              <Button variant="outline" asChild>
+                <Link to="/dashboard">
+                  <User className="h-4 w-4 mr-2" />
+                  Área de admin
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" asChild>
+                <Link to="/auth">
+                  <User className="h-4 w-4 mr-2" />
+                  Acceder
+                </Link>
+              </Button>
+            )}
+          </div>
           
           <Button 
             variant="ghost" 
