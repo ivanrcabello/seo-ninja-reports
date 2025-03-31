@@ -7,11 +7,11 @@ import { BusinessProfile } from '@/types/report.types';
 import MarkdownContent from '@/components/ui/MarkdownContent';
 
 interface ReportContentType {
-  executiveSummary?: string;
-  technicalAnalysis?: string;
-  contentAnalysis?: string;
-  backlinksAnalysis?: string;
-  recommendations?: string;
+  executiveSummary: string;
+  technicalAnalysis: string;
+  contentAnalysis: string;
+  backlinksAnalysis: string;
+  recommendations: string;
   localSeo?: string;
   serviceProposal?: string;
   keywords?: string;
@@ -22,19 +22,27 @@ interface PublicReportContentProps {
   report: {
     id?: string;
     title?: string;
-    content?: ReportContentType;
+    content?: ReportContentType | string;
   };
 }
 
 const PublicReportContent: React.FC<PublicReportContentProps> = ({ report }) => {
   // Asegurarnos que el contenido existe, incluso si está vacío
-  const content = report?.content || {
-    executiveSummary: '',
-    technicalAnalysis: '',
-    contentAnalysis: '',
-    backlinksAnalysis: '',
-    recommendations: ''
-  };
+  const content: ReportContentType = typeof report?.content === 'string' 
+    ? { 
+        executiveSummary: report.content || '',
+        technicalAnalysis: '',
+        contentAnalysis: '',
+        backlinksAnalysis: '',
+        recommendations: ''
+      }
+    : report?.content || {
+        executiveSummary: '',
+        technicalAnalysis: '',
+        contentAnalysis: '',
+        backlinksAnalysis: '',
+        recommendations: ''
+      };
   
   // Verificar si es un informe antiguo donde el contenido es texto simple
   if (typeof report.content === 'string') {

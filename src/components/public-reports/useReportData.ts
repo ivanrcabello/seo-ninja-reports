@@ -64,7 +64,7 @@ const useReportData = (reportId: string) => {
         const reportData: PublicReport = {
           id: sharedData.id,
           title: sharedData.title || 'Informe sin título',
-          status: parseStatusFromString(sharedData.status),
+          status: parseStatusFromString(sharedData.status as string),
           content: sharedData.content,
           date: sharedData.created_at,
           client_name: sharedData.client_name,
@@ -84,43 +84,8 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // Si no está en shared_content, intentar desde public_reports vista
-      const { data: publicData, error: publicError } = await supabase
-        .from('public_reports')
-        .select('*')
-        .or(`shared_url.eq.${reportId},id.eq.${reportId}`)
-        .maybeSingle();
-        
-      if (!publicError && publicData) {
-        console.log('Informe encontrado en public_reports:', publicData);
-        
-        const reportData: PublicReport = {
-          id: publicData.id,
-          title: publicData.title || 'Informe sin título',
-          summary: publicData.summary,
-          url: publicData.url,
-          status: parseStatusFromString(publicData.status),
-          content: publicData.content,
-          date: publicData.date,
-          client_name: publicData.client_name,
-          client_website: publicData.client_website
-        };
-        
-        setReport(reportData);
-        setNotFound(false);
-        
-        // Log de acceso exitoso
-        logSharedReportAccess(reportId, { 
-          successful: true, 
-          source: 'public_reports_vista' 
-        });
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      // Como último recurso, intentar directamente desde la tabla reports
-      const { data: directData, error: directError } = await supabase
+      // Si no está en shared_content, intentar desde la tabla reports directamente
+      const { data: reportData, error: reportError } = await supabase
         .from('reports')
         .select(`
           id, 
@@ -136,22 +101,22 @@ const useReportData = (reportId: string) => {
         .or(`shared_url.eq.${reportId},id.eq.${reportId}`)
         .maybeSingle();
         
-      if (!directError && directData) {
-        console.log('Informe encontrado directamente en reports:', directData);
+      if (!reportError && reportData) {
+        console.log('Informe encontrado directamente en reports:', reportData);
         
-        const reportData: PublicReport = {
-          id: directData.id,
-          title: directData.title || 'Informe sin título',
-          summary: directData.summary,
-          url: directData.url,
-          status: parseStatusFromString(directData.status),
-          content: directData.content,
-          date: directData.date,
-          client_name: directData.clients?.name,
-          client_website: directData.clients?.website
+        const reportObj: PublicReport = {
+          id: reportData.id,
+          title: reportData.title || 'Informe sin título',
+          summary: reportData.summary,
+          url: reportData.url,
+          status: parseStatusFromString(reportData.status),
+          content: reportData.content,
+          date: reportData.date,
+          client_name: reportData.clients?.name,
+          client_website: reportData.clients?.website
         };
         
-        setReport(reportData);
+        setReport(reportObj);
         setNotFound(false);
         
         // Log de acceso exitoso
@@ -167,8 +132,7 @@ const useReportData = (reportId: string) => {
       // Si llegamos aquí, no encontramos el informe
       console.error('No se pudo encontrar el informe con ningún método');
       console.error('Error shared_content:', sharedError);
-      console.error('Error public_reports:', publicError);
-      console.error('Error directamente reports:', directError);
+      console.error('Error directamente reports:', reportError);
       
       setNotFound(true);
       setError('Informe no encontrado');
