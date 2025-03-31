@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -15,7 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-// Import refactored tab components
 import OverviewTab from '@/components/dashboard/tabs/OverviewTab';
 import ClientsTab from '@/components/dashboard/tabs/ClientsTab';
 import ReportsTab from '@/components/dashboard/tabs/ReportsTab';
@@ -33,17 +31,14 @@ const Dashboard = () => {
   const [nextEvents, setNextEvents] = useState<any[]>([]);
   const [upcomingDeadlines, setUpcomingDeadlines] = useState<any[]>([]);
 
-  // Redirect if not logged in
   if (!user && !authLoading) {
     return <Navigate to="/auth" replace />;
   }
 
   const isLoading = authLoading || clientsLoading || reportsLoading;
-  
-  // Store page visibility state
+
   useEffect(() => {
     const handleVisibilityChange = () => {
-      // When page becomes visible again, we ensure we're at the last viewed section
       if (document.visibilityState === 'visible' && lastVisitedSection) {
         const element = document.getElementById(lastVisitedSection);
         if (element) {
@@ -59,10 +54,8 @@ const Dashboard = () => {
     };
   }, [lastVisitedSection]);
 
-  // Calculate business metrics and upcoming deadlines
   useEffect(() => {
     if (!isLoading) {
-      // Mock upcoming events - en una aplicación real, estos datos vendrían de la base de datos
       setNextEvents([
         {
           title: 'Reunión mensual de estrategia',
@@ -82,13 +75,10 @@ const Dashboard = () => {
         }
       ]);
 
-      // Calculate upcoming deadlines from reports/invoices
       const today = new Date();
       const thirtyDaysFromNow = new Date(today);
       thirtyDaysFromNow.setDate(today.getDate() + 30);
       
-      // Here we would normally query real deadlines from the database
-      // This is just a placeholder
       setUpcomingDeadlines([
         {
           title: 'Renovación contrato mensual',
@@ -106,7 +96,6 @@ const Dashboard = () => {
     }
   }, [isLoading, clients]);
 
-  // Track section visibility
   const trackSectionVisibility = (sectionId: string) => {
     setLastVisitedSection(sectionId);
   };
@@ -138,7 +127,6 @@ const Dashboard = () => {
             </p>
           </AnimatedContainer>
           
-          {/* Dashboard Header Cards - Month progress, upcoming tasks, etc. */}
           {!isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <Card>
@@ -216,34 +204,22 @@ const Dashboard = () => {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Enlaces rápidos</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Facturación</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Link 
-                      to="/activity" 
-                      className="text-sm px-3 py-2 bg-secondary rounded-md hover:bg-secondary/80 transition-colors text-center"
-                    >
-                      Actividad
-                    </Link>
-                    <Link 
-                      to="/settings" 
-                      className="text-sm px-3 py-2 bg-secondary rounded-md hover:bg-secondary/80 transition-colors text-center"
-                    >
-                      Configuración
-                    </Link>
-                    <Link 
-                      to="/all-reports" 
-                      className="text-sm px-3 py-2 bg-secondary rounded-md hover:bg-secondary/80 transition-colors text-center"
-                    >
-                      Informes
-                    </Link>
-                    <Link 
-                      to="/clients" 
-                      className="text-sm px-3 py-2 bg-secondary rounded-md hover:bg-secondary/80 transition-colors text-center"
-                    >
-                      Clientes
-                    </Link>
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Este mes:</span>
+                      <span className="text-lg font-bold text-primary">3,950€</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Pendiente:</span>
+                      <span className="text-sm font-medium text-yellow-500">1,200€</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Recurrente:</span>
+                      <span className="text-sm font-medium">3,750€/mes</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

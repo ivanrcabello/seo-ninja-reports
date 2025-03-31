@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
-import { BarChart3, Users, FileText, Activity, Calendar, Clock, Settings } from 'lucide-react';
+import { BarChart3, Users, FileText, Activity, Calendar, Clock, Settings, DollarSign } from 'lucide-react';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
 import { Client as ClientType } from '@/types/client.types';
@@ -30,6 +30,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
   // Filter by active flag instead of status
   const activeClients = clients.filter(client => client.active).length;
   const totalReports = reports.length;
+  
+  // Mock monthly revenue - in a real app this would come from an API or calculation of actual invoice data
+  const monthlyRevenue = 3950;
 
   // Function to navigate to a specific tab
   const navigateToTab = (tab: string) => {
@@ -57,10 +60,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
           icon={<FileText size={20} />} 
         />
         <DashboardMetricCard 
-          title="Posiciones Mejoradas" 
-          value="68%" 
-          trend={{ value: 12, isPositive: true }}
-          icon={<BarChart3 size={20} />} 
+          title="Facturación Mensual" 
+          value={`${monthlyRevenue}€`} 
+          trend={{ value: 8, isPositive: true }}
+          icon={<DollarSign size={20} />} 
         />
       </div>
 
