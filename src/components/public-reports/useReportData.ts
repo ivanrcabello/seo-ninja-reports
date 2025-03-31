@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
@@ -109,10 +110,8 @@ const useReportData = (reportId: string) => {
       }
       
       console.log('Trying RPC function get_public_report_by_id...');
-      const rpcResponse = await supabase
+      const { data: rpcData, error: rpcError } = await supabase
         .rpc('get_public_report_by_id', { report_id_param: reportId });
-      
-      const { data: rpcData, error: rpcError } = rpcResponse;
       
       if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
         console.log('Successfully fetched report via RPC:', rpcData[0].id);
