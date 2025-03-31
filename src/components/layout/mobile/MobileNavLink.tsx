@@ -31,13 +31,20 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({
     <Button
       variant={isActive(to) ? 'default' : variant}
       className={`justify-start ${className}`}
-      asChild
+      asChild={to !== '#'}
       onClick={onClick}
     >
-      <Link to={to}>
-        <Icon className="mr-2 h-4 w-4" />
-        {children}
-      </Link>
+      {to === '#' ? (
+        <div className="flex items-center">
+          <Icon className="mr-2 h-4 w-4" />
+          {children}
+        </div>
+      ) : (
+        <Link to={to} className="flex items-center">
+          <Icon className="mr-2 h-4 w-4" />
+          {children}
+        </Link>
+      )}
     </Button>
   );
 };

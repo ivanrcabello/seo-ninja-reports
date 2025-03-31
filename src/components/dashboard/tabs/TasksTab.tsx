@@ -14,8 +14,13 @@ import { ClientTask, Client } from '@/types/client.types';
 import { Link } from 'react-router-dom';
 import useClients from '@/hooks/useClients';
 
+// Define interfaces for transformed task types
+interface TransformedTask extends ClientTask {
+  client_name?: string;
+}
+
 const TasksTab = () => {
-  const [tasks, setTasks] = useState<(ClientTask & { client_name?: string })[]>([]);
+  const [tasks, setTasks] = useState<TransformedTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -47,7 +52,7 @@ const TasksTab = () => {
         const transformedTasks = taskData.map(task => ({
           ...task,
           client_name: task.clients ? task.clients.name : 'Cliente desconocido'
-        }));
+        })) as TransformedTask[];
 
         setTasks(transformedTasks);
       } catch (error) {

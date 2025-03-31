@@ -1,396 +1,271 @@
 
 import React, { useState } from 'react';
+import { Calendar as CalendarIcon, Plus } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarPlus, CalendarClock, Clock, Trash2, Edit2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
-// Definiría la interfaz para los eventos
-interface Event {
+// Definir el tipo para los eventos
+type EventType = 'meeting' | 'deadline' | 'task' | 'reminder';
+
+interface CalendarEvent {
   id: string;
   title: string;
   date: Date;
+  type: EventType;
+  clientId?: string | null;
   description?: string;
-  type: 'meeting' | 'deadline' | 'task' | 'reminder';
-  clientId?: string;
-  clientName?: string;
 }
 
-// Componente para el formulario de eventos
-const EventForm = ({ 
-  onSave, 
-  onCancel, 
-  event = null 
-}: { 
-  onSave: (event: Omit<Event, 'id'>) => void; 
-  onCancel: () => void; 
-  event?: Event | null 
-}) => {
-  const [title, setTitle] = useState(event?.title || '');
-  const [date, setDate] = useState<Date | undefined>(event?.date || new Date());
-  const [description, setDescription] = useState(event?.description || '');
-  const [type, setType] = useState(event?.type || 'meeting');
-  const [clientName, setClientName] = useState(event?.clientName || '');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!title.trim()) {
-      toast.error('El título es obligatorio');
-      return;
-    }
-
-    if (!date) {
-      toast.error('La fecha es obligatoria');
-      return;
-    }
-
-    onSave({
-      title,
-      date,
-      description,
-      type: type as Event['type'],
-      clientName: clientName || undefined,
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Título</Label>
-        <Input 
-          id="title" 
-          value={title} 
-          onChange={e => setTitle(e.target.value)} 
-          placeholder="Título del evento"
-          required
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label>Fecha</Label>
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate as any}
-          className="rounded-md border"
-          locale={es}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="type">Tipo de Evento</Label>
-        <Select value={type} onValueChange={setType}>
-          <SelectTrigger id="type">
-            <SelectValue placeholder="Seleccionar tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="meeting">Reunión</SelectItem>
-            <SelectItem value="deadline">Fecha Límite</SelectItem>
-            <SelectItem value="task">Tarea</SelectItem>
-            <SelectItem value="reminder">Recordatorio</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="clientName">Cliente (opcional)</Label>
-        <Input 
-          id="clientName" 
-          value={clientName} 
-          onChange={e => setClientName(e.target.value)} 
-          placeholder="Nombre del cliente"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="description">Descripción</Label>
-        <Textarea 
-          id="description" 
-          value={description} 
-          onChange={e => setDescription(e.target.value)} 
-          placeholder="Descripción del evento"
-          rows={3}
-        />
-      </div>
-
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit">Guardar</Button>
-      </DialogFooter>
-    </form>
-  );
-};
-
-// Componente para mostrar la lista de eventos
-const EventsList = ({ 
-  events, 
-  onEdit, 
-  onDelete 
-}: { 
-  events: Event[]; 
-  onEdit: (event: Event) => void; 
-  onDelete: (eventId: string) => void 
-}) => {
-  // Ordenamos los eventos por fecha
-  const sortedEvents = [...events].sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  const getEventTypeIcon = (type: Event['type']) => {
-    switch (type) {
-      case 'meeting':
-        return <CalendarClock className="h-4 w-4 text-blue-500" />;
-      case 'deadline':
-        return <Clock className="h-4 w-4 text-red-500" />;
-      case 'task':
-        return <CalendarPlus className="h-4 w-4 text-green-500" />;
-      case 'reminder':
-        return <CalendarClock className="h-4 w-4 text-amber-500" />;
-    }
-  };
-
-  const getEventTypeLabel = (type: Event['type']) => {
-    switch (type) {
-      case 'meeting':
-        return 'Reunión';
-      case 'deadline':
-        return 'Fecha Límite';
-      case 'task':
-        return 'Tarea';
-      case 'reminder':
-        return 'Recordatorio';
-    }
-  };
-
-  return (
-    <div className="space-y-3">
-      {sortedEvents.map(event => (
-        <Card key={event.id} className="overflow-hidden">
-          <div className="flex items-start p-4">
-            <div className="bg-muted rounded-md p-2 mr-4">
-              {getEventTypeIcon(event.type)}
-            </div>
-            
-            <div className="flex-grow">
-              <div className="font-medium">{event.title}</div>
-              <div className="text-sm text-muted-foreground">
-                {format(event.date, 'PPP', { locale: es })}
-              </div>
-              {event.clientName && (
-                <div className="text-sm text-muted-foreground">
-                  Cliente: {event.clientName}
-                </div>
-              )}
-              {event.description && (
-                <div className="text-sm mt-2">{event.description}</div>
-              )}
-            </div>
-            
-            <div className="flex gap-1 shrink-0">
-              <Button size="sm" variant="ghost" onClick={() => onEdit(event)}>
-                <Edit2 className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => onDelete(event.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      ))}
-      
-      {events.length === 0 && (
-        <div className="text-center py-8">
-          <CalendarClock className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <p className="mt-2 text-muted-foreground">
-            No hay eventos programados
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Componente principal del calendario
-const CalendarTab = () => {
-  // Estado para los eventos (en una aplicación real, esto vendría de una API)
-  const [events, setEvents] = useState<Event[]>([
+const CalendarTab: React.FC = () => {
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [events, setEvents] = useState<CalendarEvent[]>([
     {
       id: '1',
       title: 'Reunión mensual de estrategia',
       date: new Date(new Date().setDate(new Date().getDate() + 3)),
       type: 'meeting',
-      description: 'Revisión de KPIs y planificación de tareas'
     },
     {
       id: '2',
       title: 'Entrega informe SEO Técnico',
       date: new Date(new Date().setDate(new Date().getDate() + 7)),
       type: 'deadline',
-      clientName: 'Restaurante Sabor Mediterráneo'
+      clientId: '1',
     },
     {
       id: '3',
       title: 'Revisión de keywords',
       date: new Date(new Date().setDate(new Date().getDate() + 10)),
       type: 'task',
-      clientName: 'Clínica Dental Sonrisas'
     }
   ]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [newEvent, setNewEvent] = useState<Partial<CalendarEvent>>({
+    title: '',
+    date: new Date(),
+    type: 'meeting',
+  });
   
-  // Manejador para abrir el formulario de creación
-  const handleCreateEvent = () => {
-    setCurrentEvent(null);
-    setIsDialogOpen(true);
-  };
-  
-  // Manejador para abrir el formulario de edición
-  const handleEditEvent = (event: Event) => {
-    setCurrentEvent(event);
-    setIsDialogOpen(true);
-  };
-  
-  // Manejador para guardar un evento
-  const handleSaveEvent = (eventData: Omit<Event, 'id'>) => {
-    if (currentEvent) {
-      // Actualizar evento existente
-      setEvents(prev => prev.map(e => 
-        e.id === currentEvent.id 
-          ? { ...eventData, id: currentEvent.id } 
-          : e
-      ));
-      toast.success('Evento actualizado correctamente');
-    } else {
-      // Crear nuevo evento
-      const newEvent = {
-        ...eventData,
-        id: Date.now().toString() // Esto es simplificado, en producción usaríamos un UUID
-      };
-      setEvents(prev => [...prev, newEvent]);
-      toast.success('Evento creado correctamente');
+  // Obtener eventos del día seleccionado
+  const selectedDateEvents = events.filter(
+    (event) => date && event.date.toDateString() === date.toDateString()
+  );
+
+  // Agregar nuevo evento
+  const handleAddEvent = () => {
+    if (!newEvent.title || !newEvent.date) {
+      toast.error("Por favor completa los campos requeridos");
+      return;
     }
+
+    const event: CalendarEvent = {
+      id: Date.now().toString(),
+      title: newEvent.title,
+      date: newEvent.date,
+      type: newEvent.type as EventType,
+      description: newEvent.description,
+      clientId: newEvent.clientId,
+    };
+
+    setEvents([...events, event]);
     setIsDialogOpen(false);
+    toast.success("Evento creado con éxito");
+    
+    // Resetear el formulario
+    setNewEvent({
+      title: '',
+      date: new Date(),
+      type: 'meeting',
+    });
   };
-  
-  // Manejador para eliminar un evento
-  const handleDeleteEvent = (eventId: string) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
-    toast.success('Evento eliminado correctamente');
+
+  // Manejar el cambio del tipo de evento
+  const handleEventTypeChange = (value: EventType) => {
+    setNewEvent({
+      ...newEvent,
+      type: value,
+    });
   };
-  
-  // Filtrar eventos por fecha seleccionada
-  const eventsForSelectedDate = date
-    ? events.filter(e => 
-        e.date.getDate() === date.getDate() &&
-        e.date.getMonth() === date.getMonth() &&
-        e.date.getFullYear() === date.getFullYear())
-    : [];
+
+  // Obtener color de badge según el tipo de evento
+  const getEventBadgeColor = (type: EventType) => {
+    switch (type) {
+      case 'meeting':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'deadline':
+        return 'bg-red-100 text-red-800 hover:bg-red-200';
+      case 'task':
+        return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'reminder':
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      default:
+        return '';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Calendario de Eventos</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Calendario</h2>
           <p className="text-muted-foreground">
-            Gestiona reuniones, plazos y recordatorios
+            Gestiona tus eventos, reuniones y plazos
           </p>
         </div>
-        <Button onClick={handleCreateEvent}>
-          <CalendarPlus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
           Nuevo Evento
         </Button>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
+
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Seleccionar fecha</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="p-4">
             <Calendar
               mode="single"
               selected={date}
-              onSelect={setDate as any}
+              onSelect={setDate}
               className="rounded-md border"
               locale={es}
             />
           </CardContent>
         </Card>
-        
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between">
-              <div>
-                <CardTitle>
-                  Eventos{date ? ` para ${format(date, 'PPP', { locale: es })}` : ''}
-                </CardTitle>
-                <CardDescription>
-                  {eventsForSelectedDate.length} evento(s) programado(s)
-                </CardDescription>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {date ? format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es }) : "Selecciona una fecha"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedDateEvents.length === 0 ? (
+              <p className="text-center text-muted-foreground py-6">
+                No hay eventos programados para este día
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {selectedDateEvents.map((event) => (
+                  <div 
+                    key={event.id} 
+                    className="flex items-start justify-between border-b pb-4"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">{event.title}</h3>
+                        <Badge className={getEventBadgeColor(event.type)}>
+                          {event.type === 'meeting' && 'Reunión'}
+                          {event.type === 'deadline' && 'Plazo'}
+                          {event.type === 'task' && 'Tarea'}
+                          {event.type === 'reminder' && 'Recordatorio'}
+                        </Badge>
+                      </div>
+                      {event.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+                      )}
+                      <div className="text-sm text-muted-foreground mt-1">
+                        <CalendarIcon className="inline-block h-3 w-3 mr-1" />
+                        {format(event.date, "HH:mm", { locale: es })}
+                      </div>
+                    </div>
+
+                    <Button variant="outline" size="sm">
+                      Ver
+                    </Button>
+                  </div>
+                ))}
               </div>
-            </CardHeader>
-            <CardContent>
-              <EventsList 
-                events={eventsForSelectedDate}
-                onEdit={handleEditEvent}
-                onDelete={handleDeleteEvent}
-              />
-            </CardContent>
-            <CardFooter className="border-t bg-muted/50 px-6 py-3">
-              <Button variant="outline" className="w-full" onClick={handleCreateEvent}>
-                <CalendarPlus className="h-4 w-4 mr-2" />
-                Añadir evento
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Próximos eventos</CardTitle>
-              <CardDescription>
-                Eventos programados en los próximos días
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EventsList 
-                events={events.filter(e => e.date >= new Date()).slice(0, 5)}
-                onEdit={handleEditEvent}
-                onDelete={handleDeleteEvent}
-              />
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-      
+
+      {/* Diálogo para agregar eventos */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {currentEvent ? 'Editar evento' : 'Crear nuevo evento'}
-            </DialogTitle>
-            <DialogDescription>
-              {currentEvent 
-                ? 'Modifica los detalles del evento seleccionado' 
-                : 'Introduce los detalles para el nuevo evento'}
-            </DialogDescription>
+            <DialogTitle>Añadir Nuevo Evento</DialogTitle>
           </DialogHeader>
-          <EventForm 
-            event={currentEvent}
-            onSave={handleSaveEvent}
-            onCancel={() => setIsDialogOpen(false)}
-          />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Título del evento</Label>
+              <Input 
+                id="title" 
+                placeholder="Título del evento" 
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Fecha</Label>
+              <Calendar
+                mode="single"
+                selected={newEvent.date}
+                onSelect={(date) => date && setNewEvent({...newEvent, date})}
+                className="rounded-md border"
+                locale={es}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">Tipo de evento</Label>
+                <Select 
+                  value={newEvent.type} 
+                  onValueChange={handleEventTypeChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="meeting">Reunión</SelectItem>
+                    <SelectItem value="deadline">Plazo</SelectItem>
+                    <SelectItem value="task">Tarea</SelectItem>
+                    <SelectItem value="reminder">Recordatorio</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="time">Hora</Label>
+                <Input 
+                  id="time" 
+                  type="time" 
+                  defaultValue="09:00" 
+                  onChange={(e) => {
+                    const [hours, minutes] = e.target.value.split(':').map(Number);
+                    const newDate = new Date(newEvent.date || new Date());
+                    newDate.setHours(hours, minutes);
+                    setNewEvent({...newEvent, date: newDate});
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción (opcional)</Label>
+              <Input 
+                id="description" 
+                placeholder="Descripción del evento" 
+                value={newEvent.description || ''}
+                onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleAddEvent}>Guardar Evento</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
