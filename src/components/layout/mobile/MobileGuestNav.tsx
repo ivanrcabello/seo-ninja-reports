@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MobileMainLinks from './MobileMainLinks';
 
@@ -16,11 +16,10 @@ const MobileGuestNav: React.FC<MobileGuestNavProps> = ({ closeMenu }) => {
       <div className="mt-auto space-y-2">
         <Button
           className="w-full"
-          variant="outline"
           asChild
           onClick={closeMenu}
         >
-          <Link to="/auth">Iniciar sesión</Link>
+          <Link to="/auth">Acceso administración</Link>
         </Button>
       </div>
     </div>

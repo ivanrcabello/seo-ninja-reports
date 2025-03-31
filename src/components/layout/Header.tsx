@@ -48,8 +48,8 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-700">
-              SoySeoLocal
+            <Link to="/" className="flex items-center">
+              <img src="/lovable-uploads/46c042b9-bcdb-4ac6-aaa3-dc6d747f7d10.png" alt="SoySeoLocal" className="h-10" />
             </Link>
           </div>
 
@@ -86,12 +86,6 @@ const Header = () => {
               </DropdownMenu>
             ) : (
               <>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/auth">Iniciar sesión</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/portal">Área de clientes</Link>
-                </Button>
                 <Button asChild size="sm">
                   <Link to="/auth">Acceso administración</Link>
                 </Button>

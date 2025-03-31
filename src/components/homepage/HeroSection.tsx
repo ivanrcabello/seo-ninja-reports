@@ -41,9 +41,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isLoggedIn }) => {
                 <Button asChild size="lg" variant="default" className="gap-2">
                   <Link to="/paquetes">Ver paquetes SEO <ArrowRight className="w-4 h-4" /></Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="gap-2">
-                  <Link to="/portal">Área de clientes</Link>
-                </Button>
                 <Button asChild size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white">
                   <a href="https://wa.me/34654633796" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                     WhatsApp <ArrowRight className="w-4 h-4" />

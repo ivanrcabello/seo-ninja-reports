@@ -113,10 +113,10 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu, isOpen, onOpenCh
           <SheetTitle className="text-left flex items-center justify-between">
             <Link 
               to="/" 
-              className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-700"
+              className="flex items-center"
               onClick={closeMenu}
             >
-              SoySeoLocal
+              <img src="/lovable-uploads/46c042b9-bcdb-4ac6-aaa3-dc6d747f7d10.png" alt="SoySeoLocal" className="h-8" />
             </Link>
             <SheetClose className="rounded-full h-8 w-8 flex items-center justify-center" onClick={closeMenu}>
               <X className="h-4 w-4" />
@@ -158,21 +158,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu, isOpen, onOpenCh
             </Link>
             
             <div className="pt-4">
-              <div className="flex flex-col gap-3 mb-6">
-                <Link 
-                  to="/auth" 
-                  className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-                  onClick={closeMenu}
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span>Iniciar sesión</span>
-                </Link>
-              </div>
-              
               <div className="flex flex-col gap-3">
-                <Button asChild variant="outline" className="w-full" onClick={closeMenu}>
-                  <Link to="/portal">Área de clientes</Link>
-                </Button>
                 <Button asChild className="w-full" onClick={closeMenu}>
                   <Link to="/auth">Acceso administración</Link>
                 </Button>
