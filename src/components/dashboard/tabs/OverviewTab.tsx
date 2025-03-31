@@ -3,12 +3,26 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import useClients from '@/hooks/useClients';
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
 import { BarChart3, Users, FileText, Activity } from 'lucide-react';
-import useReports from '@/hooks/useReports';
+import { useReports } from '@/hooks/useReports';
+import { useClients } from '@/hooks/useClients';
 
-interface OverviewTabProps {
+// Define interfaces for the component props and the data types
+export interface Client {
+  id: string;
+  name: string;
+  status?: 'active' | 'inactive' | 'pending';
+  // Add other client properties as needed
+}
+
+export interface Report {
+  id: string;
+  title: string;
+  // Add other report properties as needed
+}
+
+export interface OverviewTabProps {
   trackSectionVisibility?: (sectionId: string) => void;
   setActiveTab?: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -62,7 +76,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
           </Button>
           <Button asChild variant="outline" className="h-auto p-4 justify-start">
             <Link to="/reports">
-              <FileText className="h-5 w-5 mr-2" />
+              <FileText className="h-5 w-4 mr-2" />
               <div className="text-left">
                 <div className="font-medium">Informes</div>
                 <div className="text-xs text-muted-foreground">Ver todos los informes</div>

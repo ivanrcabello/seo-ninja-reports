@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import MobileNavLink from './MobileNavLink';
+import { toast } from 'sonner';
 
 // Define the User interface that matches what's used in AuthContext
 interface User {
@@ -25,6 +26,20 @@ const MobileUserNav: React.FC<MobileUserNavProps> = ({
   closeMenu, 
   handleSignOut 
 }) => {
+  const { signOut } = useAuth();
+
+  const onSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Sesión cerrada correctamente');
+      closeMenu();
+      // Redirect is handled by AuthContext
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      toast.error('Error al cerrar sesión');
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-6">
       <div className="flex items-center space-x-3 pb-6 border-b">
@@ -72,7 +87,7 @@ const MobileUserNav: React.FC<MobileUserNavProps> = ({
         <Button
           variant="ghost"
           className="justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-          onClick={handleSignOut}
+          onClick={onSignOut}
         >
           <LogOut className="mr-2 h-4 w-4" />
           Cerrar sesión

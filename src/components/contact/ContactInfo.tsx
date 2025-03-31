@@ -27,9 +27,9 @@ const ContactInfo: React.FC = () => {
                 <Phone className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-medium">Teléfono</h3>
-                <a href="tel:+34911234567" className="text-primary hover:underline">
-                  +34 911 23 45 67
+                <h3 className="font-medium">Teléfono / WhatsApp</h3>
+                <a href="https://wa.me/34654633796" className="text-primary hover:underline">
+                  +34 654 633 796
                 </a>
               </div>
             </div>

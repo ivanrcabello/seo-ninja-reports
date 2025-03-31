@@ -7,7 +7,7 @@ import HeroSection from '@/components/homepage/HeroSection';
 import FeaturesSection from '@/components/homepage/FeaturesSection';
 import CTASection from '@/components/homepage/CTASection';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, UserCircle, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -35,6 +35,32 @@ const Index = () => {
       <main className="flex-1 pt-20">
         <HeroSection isLoggedIn={isLoggedIn} />
         <FeaturesSection />
+        
+        {/* Client Portal Section */}
+        <section className="py-16 bg-slate-50 dark:bg-slate-900">
+          <div className="container px-4 mx-auto">
+            <AnimatedContainer animation="fade" className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">Área de Clientes</h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
+                Acceda a sus informes, facturas y seguimiento de campañas SEO en un solo lugar
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button asChild size="lg">
+                  <Link to="/portal" className="flex items-center gap-2">
+                    <UserCircle className="h-5 w-5" />
+                    Acceder al área de clientes
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="bg-emerald-500 hover:bg-emerald-600 text-white border-0">
+                  <a href="https://wa.me/34654633796" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                    <Phone className="h-5 w-5" />
+                    Contactar por WhatsApp
+                  </a>
+                </Button>
+              </div>
+            </AnimatedContainer>
+          </div>
+        </section>
         
         {/* Blog section */}
         <section className="py-24">

@@ -23,11 +23,13 @@ const Footer: React.FC = () => {
             <div className="space-y-2 pt-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-primary" />
-                <span>Calle Innovación, 123, Madrid</span>
+                <span>Madrid, España</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4 text-primary" />
-                <span>+34 912 345 678</span>
+                <a href="https://wa.me/34654633796" className="hover:text-primary transition-colors">
+                  +34 654 633 796
+                </a>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 text-primary" />
@@ -105,13 +107,13 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/documentacion" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Documentación
+                <Link to="/recursos" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Centro de recursos
                 </Link>
               </li>
               <li>
-                <Link to="/privacidad" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Privacidad
+                <Link to="/documentacion" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Documentación
                 </Link>
               </li>
             </ul>

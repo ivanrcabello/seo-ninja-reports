@@ -1,16 +1,20 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   X, Home, BookOpen, Briefcase, FileText, Phone, LogIn, 
-  UserPlus, ChevronDown, ChevronUp, Layout, Package, Newspaper 
+  UserPlus, ChevronDown, ChevronUp, Layout, Package, Newspaper, LogOut, User
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { toast } from 'sonner';
+import MobileUserNav from './mobile/MobileUserNav';
 
 interface MobileNavbarProps {
   closeMenu: () => void;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface SubmenuProps {
@@ -59,8 +63,21 @@ const Submenu: React.FC<SubmenuProps> = ({ title, items, closeMenu }) => {
   );
 };
 
-const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
-  const { user } = useAuth();
+const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu, isOpen, onOpenChange }) => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Sesión cerrada correctamente');
+      closeMenu();
+      navigate('/');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      toast.error('Error al cerrar sesión');
+    }
+  };
   
   const serviciosItems = [
     { title: 'SEO Local', href: '/servicios/seo-local' },
@@ -81,7 +98,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
     { title: 'Blog', href: '/blog' },
     { title: 'Guías SEO', href: '/guias' },
     { title: 'Documentación', href: '/documentacion' },
-    { title: 'Características', href: '/caracteristicas' }
+    { title: 'Centro de recursos', href: '/recursos' }
   ];
   
   const plataformaItems = [
@@ -90,7 +107,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
   ];
   
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-[80vw] sm:w-[350px] pt-8">
         <SheetHeader className="mb-6">
           <SheetTitle className="text-left flex items-center justify-between">
@@ -107,38 +124,40 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
           </SheetTitle>
         </SheetHeader>
         
-        <div className="mb-6">
-          <Link 
-            to="/" 
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors py-2"
-            onClick={closeMenu}
-          >
-            <Home className="h-4 w-4" />
-            <span>Inicio</span>
-          </Link>
-        </div>
-        
-        <Submenu title="Servicios" items={serviciosItems} closeMenu={closeMenu} />
-        <Submenu title="Paquetes" items={paquetesItems} closeMenu={closeMenu} />
-        <Submenu title="Recursos" items={recursosItems} closeMenu={closeMenu} />
-        <Submenu title="Plataforma SaaS" items={plataformaItems} closeMenu={closeMenu} />
-        
-        <Link 
-          to="/contacto" 
-          className="flex items-center gap-2 text-foreground hover:text-primary transition-colors py-2 border-b border-border pb-4 mb-4"
-          onClick={closeMenu}
-        >
-          <Phone className="h-4 w-4" />
-          <span>Contacto</span>
-        </Link>
-        
-        <div className="pt-4">
-          {user ? (
-            <Button asChild className="w-full mb-4" onClick={closeMenu}>
-              <Link to="/dashboard">Panel de administración</Link>
-            </Button>
-          ) : (
-            <>
+        {user ? (
+          <MobileUserNav 
+            user={user} 
+            closeMenu={closeMenu} 
+            handleSignOut={handleSignOut} 
+          />
+        ) : (
+          <>
+            <div className="mb-6">
+              <Link 
+                to="/" 
+                className="flex items-center gap-2 text-foreground hover:text-primary transition-colors py-2"
+                onClick={closeMenu}
+              >
+                <Home className="h-4 w-4" />
+                <span>Inicio</span>
+              </Link>
+            </div>
+            
+            <Submenu title="Servicios" items={serviciosItems} closeMenu={closeMenu} />
+            <Submenu title="Paquetes" items={paquetesItems} closeMenu={closeMenu} />
+            <Submenu title="Recursos" items={recursosItems} closeMenu={closeMenu} />
+            <Submenu title="Plataforma SaaS" items={plataformaItems} closeMenu={closeMenu} />
+            
+            <Link 
+              to="/contacto" 
+              className="flex items-center gap-2 text-foreground hover:text-primary transition-colors py-2 border-b border-border pb-4 mb-4"
+              onClick={closeMenu}
+            >
+              <Phone className="h-4 w-4" />
+              <span>Contacto</span>
+            </Link>
+            
+            <div className="pt-4">
               <div className="flex flex-col gap-3 mb-6">
                 <Link 
                   to="/auth" 
@@ -167,9 +186,9 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
                   <Link to="/auth">Acceso administración</Link>
                 </Button>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );

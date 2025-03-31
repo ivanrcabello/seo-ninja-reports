@@ -1,15 +1,16 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import useClients from '@/hooks/useClients';
+import { useClients } from '@/hooks/useClients';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ClientList from '@/components/dashboard/ClientList';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Client } from './OverviewTab';
 
-interface ClientsTabProps {
-  clients?: any[];
+export interface ClientsTabProps {
+  clients?: Client[];
   reports?: any[];
 }
 
@@ -19,9 +20,7 @@ const ClientsTab: React.FC<ClientsTabProps> = (props) => {
   const [searchQuery, setSearchQuery] = React.useState('');
 
   const filteredClients = clients?.filter(client => 
-    client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.company?.toLowerCase().includes(searchQuery.toLowerCase())
+    client.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

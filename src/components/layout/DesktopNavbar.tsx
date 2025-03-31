@@ -10,7 +10,6 @@ import {
   NavigationMenuTrigger 
 } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
-import { ChevronDown } from 'lucide-react';
 
 const DesktopNavbar = () => {
   return (
