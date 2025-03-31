@@ -12,7 +12,7 @@ import { fetchPageSpeedData } from '@/services/api/pagespeed/fetchPageSpeedData'
 import { fetchBusinessProfile } from '@/services/api/businessProfile/fetchBusinessProfile';
 import { saveBusinessProfile } from '@/services/api/businessProfile/saveBusinessProfile';
 import { BusinessProfile, Report } from '@/types/report.types';
-import ReportEditDialog from '../ReportEditDialog';
+import ReportEditDialog from './ReportEditDialog';
 
 interface ReportViewerProps {
   reportId?: string;
@@ -24,7 +24,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
   const { getReport, updateReport, isLoading: reportsLoading } = useReports();
   const navigate = useNavigate();
   
-  // Get the isEditing state from the URL search params
   const searchParams = new URLSearchParams(window.location.search);
   const editMode = searchParams.get('mode') === 'edit';
   
@@ -35,12 +34,10 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
   const [isLoadingPageSpeed, setIsLoadingPageSpeed] = useState(false);
   const [isLoadingBusinessProfile, setIsLoadingBusinessProfile] = useState(false);
   
-  // States for the edit dialog
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  // Use the provided report or fetch it based on ID
   const effectiveId = reportId || id;
   const report = providedReport || (effectiveId ? getReport(effectiveId) : undefined);
   
@@ -53,7 +50,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     reportContent: report?.content ? 'exists' : 'missing'
   });
   
-  // If no ID is provided and no report is provided, show error
   if (!effectiveId && !providedReport) {
     console.error("No report ID or report object provided");
     return (
@@ -64,7 +60,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     );
   }
 
-  // Load PageSpeed data
   useEffect(() => {
     if (report?.id && report?.status === 'completed' && report?.url) {
       const loadPageSpeedData = async () => {
@@ -83,7 +78,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     }
   }, [report?.id, report?.status, report?.url]);
 
-  // Load Business Profile data
   useEffect(() => {
     if (report?.id && report?.status === 'completed' && report?.hasBusinessProfile === true) {
       const loadBusinessProfile = async () => {
@@ -102,7 +96,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     }
   }, [report?.id, report?.status, report?.hasBusinessProfile]);
   
-  // Function to get section title from section key
   const getSectionTitle = (section: string): string => {
     const titles: Record<string, string> = {
       executiveSummary: "Resumen Ejecutivo",
@@ -117,7 +110,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     return titles[section] || section;
   };
   
-  // Update this function to return a Promise to match the expected type
   const handleEditSection = (section: string, content: string): Promise<void> => {
     return new Promise((resolve) => {
       setActiveSection(section);
@@ -131,13 +123,11 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     if (!report?.content || !activeSection || !report.id) return;
     
     try {
-      // Create updated content
       const updatedContent = {
         ...report.content,
         [activeSection]: editContent
       };
       
-      // Update report with new content
       await updateReport(report.id, { content: updatedContent });
       
       setIsEditDialogOpen(false);
@@ -159,7 +149,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     try {
       setIsSavingBusinessProfile(true);
       
-      // Ensure required fields are present to meet type requirements
       const profileToSave = {
         businessUrl: profileData.businessUrl || '',
         businessName: profileData.businessName || '',
@@ -172,11 +161,9 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
         businessHours: profileData.businessHours || {}
       };
       
-      // Save business profile
       const success = await saveBusinessProfile(report.id, profileToSave);
       
       if (success) {
-        // Update local report state to reflect the presence of a business profile
         if (!report?.hasBusinessProfile) {
           await updateReport(report.id, { hasBusinessProfile: true });
         }
@@ -193,12 +180,10 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     }
   };
   
-  // If we're still loading reports and don't have a provided report, show skeleton
   if (reportsLoading && !providedReport) {
     return <SkeletonReport />;
   }
 
-  // If report not found
   if (!report) {
     console.error("Report not found:", effectiveId);
     return (
@@ -219,7 +204,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     );
   }
   
-  // Show processing state
   if (report.status === 'processing') {
     return (
       <div className="w-full max-w-5xl mx-auto">
@@ -236,7 +220,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
     );
   }
 
-  // Check if report content exists
   if (!report.content && report.status === 'completed') {
     console.error("Report has status completed but no content:", report);
     return (
@@ -299,7 +282,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ reportId, report: providedR
         </BlurredCard>
       </div>
       
-      {/* Edit Dialog */}
       <ReportEditDialog 
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
