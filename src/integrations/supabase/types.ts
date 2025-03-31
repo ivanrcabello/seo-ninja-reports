@@ -105,13 +105,6 @@ export type Database = {
             foreignKeyName: "business_profiles_report_id_fkey"
             columns: ["report_id"]
             isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "business_profiles_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
             referencedRelation: "reports"
             referencedColumns: ["id"]
           },
@@ -184,6 +177,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          password: string | null
           payment_date: string | null
           payment_instructions: string | null
           payment_method: string | null
@@ -199,6 +193,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          password?: string | null
           payment_date?: string | null
           payment_instructions?: string | null
           payment_method?: string | null
@@ -214,6 +209,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          password?: string | null
           payment_date?: string | null
           payment_instructions?: string | null
           payment_method?: string | null
@@ -264,12 +260,346 @@ export type Database = {
           },
         ]
       }
+      client_portal_accounts: {
+        Row: {
+          client_id: string
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          last_login: string | null
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          last_login?: string | null
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          last_login?: string | null
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_activity_logs: {
+        Row: {
+          action: string
+          client_portal_account_id: string
+          created_at: string
+          details: Json | null
+          id: string
+        }
+        Insert: {
+          action: string
+          client_portal_account_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          client_portal_account_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_activity_logs_client_portal_account_id_fkey"
+            columns: ["client_portal_account_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_contracts: {
+        Row: {
+          client_id: string
+          client_signature: string | null
+          client_signed: boolean
+          client_signed_at: string | null
+          content: string
+          created_at: string
+          id: string
+          original_contract_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          client_signature?: string | null
+          client_signed?: boolean
+          client_signed_at?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          original_contract_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          client_signature?: string | null
+          client_signed?: boolean
+          client_signed_at?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          original_contract_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_contracts_original_contract_id_fkey"
+            columns: ["original_contract_id"]
+            isOneToOne: false
+            referencedRelation: "client_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_invoices: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          original_invoice_id: string | null
+          payment_date: string | null
+          payment_instructions: string | null
+          payment_method: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          original_invoice_id?: string | null
+          payment_date?: string | null
+          payment_instructions?: string | null
+          payment_method?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          original_invoice_id?: string | null
+          payment_date?: string | null
+          payment_instructions?: string | null
+          payment_method?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_invoices_original_invoice_id_fkey"
+            columns: ["original_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "client_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_proposals: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          original_proposal_id: string | null
+          price: number | null
+          services: string[] | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          original_proposal_id?: string | null
+          price?: number | null
+          services?: string[] | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          original_proposal_id?: string | null
+          price?: number | null
+          services?: string[] | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_proposals_original_proposal_id_fkey"
+            columns: ["original_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "client_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_reports: {
+        Row: {
+          client_id: string
+          content: Json | null
+          created_at: string
+          id: string
+          original_report_id: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          client_id: string
+          content?: Json | null
+          created_at?: string
+          id?: string
+          original_report_id?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          client_id?: string
+          content?: Json | null
+          created_at?: string
+          id?: string
+          original_report_id?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_reports_original_report_id_fkey"
+            columns: ["original_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_sessions: {
+        Row: {
+          client_portal_account_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+        }
+        Insert: {
+          client_portal_account_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+        }
+        Update: {
+          client_portal_account_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_sessions_client_portal_account_id_fkey"
+            columns: ["client_portal_account_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_proposals: {
         Row: {
           client_id: string
           created_at: string
           description: string | null
           id: string
+          password: string | null
           price: number | null
           services: string[] | null
           shared_url: string | null
@@ -282,6 +612,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          password?: string | null
           price?: number | null
           services?: string[] | null
           shared_url?: string | null
@@ -294,6 +625,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          password?: string | null
           price?: number | null
           services?: string[] | null
           shared_url?: string | null
@@ -304,6 +636,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "client_proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_tasks: {
+        Row: {
+          assigned_to: string | null
+          client_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_tasks_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
@@ -436,13 +815,6 @@ export type Database = {
             foreignKeyName: "keywords_report_id_fkey"
             columns: ["report_id"]
             isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "keywords_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
             referencedRelation: "reports"
             referencedColumns: ["id"]
           },
@@ -535,13 +907,6 @@ export type Database = {
             foreignKeyName: "pagespeed_data_report_id_fkey"
             columns: ["report_id"]
             isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pagespeed_data_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
             referencedRelation: "reports"
             referencedColumns: ["id"]
           },
@@ -581,6 +946,8 @@ export type Database = {
           has_business_profile: boolean | null
           id: string
           notes: string | null
+          password: string | null
+          shared_url: string | null
           status: string
           summary: string | null
           title: string
@@ -596,6 +963,8 @@ export type Database = {
           has_business_profile?: boolean | null
           id?: string
           notes?: string | null
+          password?: string | null
+          shared_url?: string | null
           status?: string
           summary?: string | null
           title: string
@@ -611,6 +980,8 @@ export type Database = {
           has_business_profile?: boolean | null
           id?: string
           notes?: string | null
+          password?: string | null
+          shared_url?: string | null
           status?: string
           summary?: string | null
           title?: string
@@ -1042,14 +1413,14 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "duplicate_content_view"
-            referencedColumns: ["page2_id"]
+            referencedColumns: ["page1_id"]
           },
           {
             foreignKeyName: "seo_crawler_headings_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "duplicate_content_view"
-            referencedColumns: ["page1_id"]
+            referencedColumns: ["page2_id"]
           },
           {
             foreignKeyName: "seo_crawler_headings_page_id_fkey"
@@ -1113,14 +1484,14 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "duplicate_content_view"
-            referencedColumns: ["page2_id"]
+            referencedColumns: ["page1_id"]
           },
           {
             foreignKeyName: "seo_crawler_issues_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "duplicate_content_view"
-            referencedColumns: ["page1_id"]
+            referencedColumns: ["page2_id"]
           },
           {
             foreignKeyName: "seo_crawler_issues_page_id_fkey"
@@ -1193,14 +1564,14 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "duplicate_content_view"
-            referencedColumns: ["page2_id"]
+            referencedColumns: ["page1_id"]
           },
           {
             foreignKeyName: "seo_crawler_links_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "duplicate_content_view"
-            referencedColumns: ["page1_id"]
+            referencedColumns: ["page2_id"]
           },
           {
             foreignKeyName: "seo_crawler_links_page_id_fkey"
@@ -1398,14 +1769,14 @@ export type Database = {
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "duplicate_content_view"
-            referencedColumns: ["page2_id"]
+            referencedColumns: ["page1_id"]
           },
           {
             foreignKeyName: "seo_crawler_performance_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "duplicate_content_view"
-            referencedColumns: ["page1_id"]
+            referencedColumns: ["page2_id"]
           },
           {
             foreignKeyName: "seo_crawler_performance_page_id_fkey"
@@ -1631,6 +2002,96 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_content: {
+        Row: {
+          client_name: string | null
+          client_website: string | null
+          content: Json | null
+          content_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          original_id: string
+          password: string | null
+          shared_url: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_name?: string | null
+          client_website?: string | null
+          content?: Json | null
+          content_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          original_id: string
+          password?: string | null
+          shared_url?: string
+          status: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_name?: string | null
+          client_website?: string | null
+          content?: Json | null
+          content_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          original_id?: string
+          password?: string | null
+          shared_url?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shared_content_access_logs: {
+        Row: {
+          access_type: string
+          content_id: string
+          content_type: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          password_attempt: boolean | null
+          source: string | null
+          successful: boolean | null
+          user_agent: string | null
+        }
+        Insert: {
+          access_type: string
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          password_attempt?: boolean | null
+          source?: string | null
+          successful?: boolean | null
+          user_agent?: string | null
+        }
+        Update: {
+          access_type?: string
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          password_attempt?: boolean | null
+          source?: string | null
+          successful?: boolean | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       duplicate_content_view: {
@@ -1643,79 +2104,217 @@ export type Database = {
         }
         Relationships: []
       }
-      public_contracts: {
-        Row: {
-          admin_signature: string | null
-          admin_signed: boolean | null
-          admin_signed_at: string | null
-          client_name: string | null
-          client_signature: string | null
-          client_signed: boolean | null
-          client_signed_at: string | null
-          client_website: string | null
-          content: string | null
-          created_at: string | null
-          id: string | null
-          shared_url: string | null
-          status: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Relationships: []
-      }
-      public_invoices: {
-        Row: {
-          amount: number | null
-          client_name: string | null
-          client_website: string | null
-          created_at: string | null
-          description: string | null
-          due_date: string | null
-          id: string | null
-          payment_date: string | null
-          payment_method: string | null
-          shared_url: string | null
-          status: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Relationships: []
-      }
-      public_proposals: {
-        Row: {
-          client_name: string | null
-          client_website: string | null
-          created_at: string | null
-          description: string | null
-          id: string | null
-          price: number | null
-          services: string[] | null
-          shared_url: string | null
-          status: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Relationships: []
-      }
-      public_reports: {
-        Row: {
-          client_name: string | null
-          client_website: string | null
-          content: Json | null
-          date: string | null
-          id: string | null
-          status: string | null
-          summary: string | null
-          title: string | null
-          url: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
+      authenticate_client_portal_account: {
+        Args: {
+          p_email: string
+          p_password: string
+          p_session_hours?: number
+        }
+        Returns: {
+          account_id: string
+          client_id: string
+          token: string
+          expires_at: string
+        }[]
+      }
+      change_client_portal_password: {
+        Args: {
+          p_account_id: string
+          p_current_password: string
+          p_new_password: string
+        }
+        Returns: boolean
+      }
+      check_content_exists: {
+        Args: {
+          content_id: string
+          content_type: string
+        }
+        Returns: boolean
+      }
+      check_content_password_protected: {
+        Args: {
+          content_id: string
+          content_type: string
+        }
+        Returns: boolean
+      }
+      check_invoice_password_protection: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: boolean
+      }
+      check_proposal_password_protection: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: boolean
+      }
+      check_report_exists: {
+        Args: {
+          report_id_param: string
+        }
+        Returns: boolean
+      }
+      check_report_password_protection: {
+        Args: {
+          report_id_param: string
+        }
+        Returns: boolean
+      }
+      check_shared_content_exists: {
+        Args: {
+          content_id: string
+          content_type?: string
+        }
+        Returns: boolean
+      }
+      check_shared_content_password: {
+        Args: {
+          content_id: string
+          content_type?: string
+        }
+        Returns: boolean
+      }
+      create_client_portal_account: {
+        Args: {
+          p_client_id: string
+          p_email: string
+          p_password: string
+        }
+        Returns: string
+      }
       create_settings_table_if_not_exists: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_secure_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_client_accounts_for_client_portal: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      get_client_portal_account_data: {
+        Args: {
+          client_id_param: string
+          account_id_param: string
+        }
+        Returns: {
+          client_id: string
+          client_name: string
+          client_website: string
+          client_phone_number: string
+          client_industry: string
+          account_id: string
+          account_email: string
+          account_last_login: string
+        }[]
+      }
+      get_client_portal_contracts: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: {
+          client_id: string
+          client_signature: string | null
+          client_signed: boolean
+          client_signed_at: string | null
+          content: string
+          created_at: string
+          id: string
+          original_contract_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      get_client_portal_data: {
+        Args: {
+          client_id_param: string
+          table_name: string
+        }
+        Returns: Record<string, unknown>[]
+      }
+      get_client_portal_invoices: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          original_invoice_id: string | null
+          payment_date: string | null
+          payment_instructions: string | null
+          payment_method: string | null
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      get_client_portal_proposals: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: {
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          original_proposal_id: string | null
+          price: number | null
+          services: string[] | null
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      get_client_portal_reports: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: {
+          client_id: string
+          content: Json | null
+          created_at: string
+          id: string
+          original_report_id: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          url: string | null
+        }[]
+      }
+      get_contract_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          content: string
+          status: string
+          client_signed: boolean
+          client_signed_at: string
+          client_signature: string
+          admin_signed: boolean
+          admin_signed_at: string
+          admin_signature: string
+          shared_url: string
+          created_at: string
+          updated_at: string
+          client_name: string
+          client_website: string
+        }[]
       }
       get_crawl_headings: {
         Args: {
@@ -1731,6 +2330,28 @@ export type Database = {
           heading_position: number
         }[]
       }
+      get_invoice_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          amount: number
+          status: string
+          due_date: string
+          payment_method: string
+          payment_date: string
+          payment_instructions: string
+          shared_url: string
+          password: string
+          created_at: string
+          updated_at: string
+          client_name: string
+          client_website: string
+        }[]
+      }
       get_page_headings: {
         Args: {
           page_id_param: string
@@ -1743,6 +2364,25 @@ export type Database = {
           heading_type: string
           content: string
           heading_position: number
+        }[]
+      }
+      get_proposal_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          services: string[]
+          price: number
+          status: string
+          shared_url: string
+          password: string
+          created_at: string
+          updated_at: string
+          client_name: string
+          client_website: string
         }[]
       }
       get_public_contract_by_shared_url: {
@@ -1788,6 +2428,88 @@ export type Database = {
           client_website: string
         }[]
       }
+      get_report_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          summary: string
+          url: string
+          status: string
+          content: Json
+          date: string
+          client_name: string
+          client_website: string
+          shared_url: string
+          password: string
+        }[]
+      }
+      insert_public_report: {
+        Args: {
+          report_data: Json
+        }
+        Returns: undefined
+      }
+      invalidate_client_portal_session: {
+        Args: {
+          p_token: string
+        }
+        Returns: boolean
+      }
+      is_client_portal_session_valid: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: boolean
+      }
+      is_client_portal_user: {
+        Args: {
+          client_id_param: string
+        }
+        Returns: boolean
+      }
+      log_shared_content_access: {
+        Args: {
+          content_type: string
+          content_id: string
+          access_type: string
+          successful?: boolean
+          error_message?: string
+          password_attempt?: boolean
+          source?: string
+        }
+        Returns: string
+      }
+      sync_contract_to_client_portal: {
+        Args: {
+          contract_id_param: string
+          client_id_param: string
+        }
+        Returns: string
+      }
+      sync_invoice_to_client_portal: {
+        Args: {
+          invoice_id_param: string
+          client_id_param: string
+        }
+        Returns: string
+      }
+      sync_proposal_to_client_portal: {
+        Args: {
+          proposal_id_param: string
+          client_id_param: string
+        }
+        Returns: string
+      }
+      sync_report_to_client_portal: {
+        Args: {
+          report_id_param: string
+          client_id_param: string
+        }
+        Returns: string
+      }
       update_contract_by_shared_url: {
         Args: {
           shared_url_param: string
@@ -1797,6 +2519,71 @@ export type Database = {
           status_param?: string
         }
         Returns: string
+      }
+      update_public_report: {
+        Args: {
+          report_id: string
+          report_data: Json
+        }
+        Returns: undefined
+      }
+      update_shared_contract_with_signature: {
+        Args: {
+          shared_url_param: string
+          client_signed_param: boolean
+          client_signed_at_param: string
+          client_signature_param: string
+          status_param?: string
+        }
+        Returns: boolean
+      }
+      validate_client_portal_session: {
+        Args: {
+          p_token: string
+        }
+        Returns: {
+          account_id: string
+          client_id: string
+          email: string
+          is_valid: boolean
+        }[]
+      }
+      verify_content_password: {
+        Args: {
+          content_id: string
+          content_type: string
+          password_param: string
+        }
+        Returns: boolean
+      }
+      verify_shared_content_password: {
+        Args: {
+          content_id: string
+          content_type: string
+          password_param: string
+        }
+        Returns: boolean
+      }
+      verify_shared_invoice_password: {
+        Args: {
+          shared_url_param: string
+          password_param: string
+        }
+        Returns: boolean
+      }
+      verify_shared_proposal_password: {
+        Args: {
+          shared_url_param: string
+          password_param: string
+        }
+        Returns: boolean
+      }
+      verify_shared_report_password: {
+        Args: {
+          report_id_param: string
+          password_param: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

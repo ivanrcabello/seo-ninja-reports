@@ -48,13 +48,18 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
             .single();
           
           if (reportError) {
+            console.error('Error al obtener el informe:', reportError);
             throw new Error(`Error al obtener el informe: ${reportError.message}`);
           }
           
-          // Insertamos en la tabla pública con type assertion
+          if (!reportData) {
+            throw new Error('No se encontraron datos del informe');
+          }
+          
+          // Insertamos en la tabla pública
           const { error: insertError } = await supabase
             .from('public_reports')
-            .insert([{
+            .insert({
               id: reportData.id,
               title: reportData.title,
               date: reportData.date,
@@ -64,9 +69,10 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
               content: reportData.content,
               client_name: reportData.clients?.name,
               client_website: reportData.clients?.website
-            }] as any);
+            });
           
           if (insertError) {
+            console.error('Error al insertar en public_reports:', insertError);
             throw new Error(`Error al compartir el informe: ${insertError.message}`);
           }
         }
@@ -76,7 +82,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         setShareUrl(shareUrl);
         
         toast.success('Enlace generado correctamente');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error al generar enlace:', error);
         toast.error('Error al generar enlace para compartir');
       } finally {
