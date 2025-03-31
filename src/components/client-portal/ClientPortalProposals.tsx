@@ -2,21 +2,22 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { FileText, Calendar, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 import { clientPortalApi } from '@/services/clientPortalApiService';
-import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
 
 interface Proposal {
   id: string;
   title: string;
+  description?: string;
   status: string;
   created_at: string;
-  shared_url: string;
+  price?: number;
+  shared_url?: string;
 }
 
 interface ClientPortalProposalsProps {
@@ -26,7 +27,6 @@ interface ClientPortalProposalsProps {
 const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProposals = async () => {
@@ -36,7 +36,6 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
         
         const data = await clientPortalApi.getProposals(clientId);
         clientPortalLogger.info(`Successfully fetched ${data.length} proposals`, { count: data.length }, 'ClientPortalProposals');
-        console.log('Proposals data:', data);
         setProposals(data);
       } catch (err: any) {
         console.error('Error fetching proposals:', err);
@@ -50,35 +49,38 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
     fetchProposals();
   }, [clientId]);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return <Badge className="bg-green-500">Aceptada</Badge>;
-      case 'sent':
-        return <Badge className="bg-yellow-500">Enviada</Badge>;
-      case 'rejected':
-        return <Badge className="bg-red-500">Rechazada</Badge>;
-      case 'draft':
-        return <Badge className="bg-gray-500">Borrador</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
+  const viewProposal = (proposal: Proposal) => {
+    if (proposal.shared_url) {
+      window.open(`/shared/proposals/${proposal.shared_url}`, '_blank');
+    } else {
+      toast.error('Esta propuesta no tiene un enlace compartido válido');
     }
   };
 
-  const viewProposal = (proposal: Proposal) => {
-    // Navigate to the shared proposal URL if available, or the ID-based URL
-    if (proposal.shared_url) {
-      navigate(`/shared/proposals/${proposal.shared_url}`);
-    } else {
-      navigate(`/shared/proposals/${proposal.id}`);
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+      case 'aceptada':
+        return <Badge className="bg-green-500">Aceptada</Badge>;
+      case 'pending':
+      case 'pendiente':
+        return <Badge className="bg-yellow-500">Pendiente</Badge>;
+      case 'rejected':
+      case 'rechazada':
+        return <Badge className="bg-red-500">Rechazada</Badge>;
+      case 'draft':
+      case 'borrador':
+        return <Badge variant="outline">Borrador</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Propuestas</h2>
+      <h2 className="text-2xl font-bold">Tus Propuestas</h2>
       <p className="text-muted-foreground">
-        Revisa las propuestas de servicios.
+        Aquí encontrarás todas las propuestas de servicios compartidas contigo.
       </p>
       
       <Card>
@@ -94,19 +96,34 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
               {proposals.map(proposal => (
                 <div key={proposal.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div>
-                    <h3 className="font-medium">{proposal.title}</h3>
-                    <div className="flex space-x-3 text-sm text-muted-foreground">
-                      <span>{getStatusBadge(proposal.status)}</span>
-                      <span>•</span>
-                      <span>{format(new Date(proposal.created_at), 'dd/MM/yyyy')}</span>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium">{proposal.title}</h3>
+                      {getStatusBadge(proposal.status)}
                     </div>
+                    {proposal.description && (
+                      <p className="text-sm text-muted-foreground truncate max-w-md">
+                        {proposal.description}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <Calendar className="inline h-3 w-3 mr-1" />
+                      {format(new Date(proposal.created_at), 'dd/MM/yyyy')}
+                      {proposal.price && (
+                        <span className="ml-2 font-medium">
+                          {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(proposal.price)}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm"
                     onClick={() => viewProposal(proposal)}
+                    disabled={!proposal.shared_url}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <FileText className="h-4 w-4 mr-2" />
+                    Ver propuesta
+                    <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
               ))}

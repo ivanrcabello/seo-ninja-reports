@@ -2,23 +2,22 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { CreditCard, Calendar, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 import { clientPortalApi } from '@/services/clientPortalApiService';
-import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
 
 interface Invoice {
   id: string;
   title: string;
   amount: number;
   status: string;
-  due_date?: string;
   created_at: string;
-  shared_url: string;
+  due_date?: string;
+  shared_url?: string;
 }
 
 interface ClientPortalInvoicesProps {
@@ -28,7 +27,6 @@ interface ClientPortalInvoicesProps {
 const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId }) => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchInvoices = async () => {
@@ -38,7 +36,6 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
         
         const data = await clientPortalApi.getInvoices(clientId);
         clientPortalLogger.info(`Successfully fetched ${data.length} invoices`, { count: data.length }, 'ClientPortalInvoices');
-        console.log('Invoices data:', data);
         setInvoices(data);
       } catch (err: any) {
         console.error('Error fetching invoices:', err);
@@ -52,34 +49,30 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
     fetchInvoices();
   }, [clientId]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', { 
-      style: 'currency', 
-      currency: 'EUR' 
-    }).format(amount);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return <Badge className="bg-green-500">Pagada</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-500">Pendiente</Badge>;
-      case 'overdue':
-        return <Badge className="bg-red-500">Vencida</Badge>;
-      case 'cancelled':
-        return <Badge className="bg-gray-500">Cancelada</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
+  const viewInvoice = (invoice: Invoice) => {
+    if (invoice.shared_url) {
+      window.open(`/shared/invoices/${invoice.shared_url}`, '_blank');
+    } else {
+      toast.error('Esta factura no tiene un enlace compartido válido');
     }
   };
 
-  const viewInvoice = (invoice: Invoice) => {
-    // Navigate to the shared invoice URL if available, or the ID-based URL
-    if (invoice.shared_url) {
-      navigate(`/shared/invoices/${invoice.shared_url}`);
-    } else {
-      navigate(`/shared/invoices/${invoice.id}`);
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'paid':
+      case 'pagada':
+        return <Badge className="bg-green-500">Pagada</Badge>;
+      case 'pending':
+      case 'pendiente':
+        return <Badge className="bg-yellow-500">Pendiente</Badge>;
+      case 'overdue':
+      case 'vencida':
+        return <Badge className="bg-red-500">Vencida</Badge>;
+      case 'cancelled':
+      case 'cancelada':
+        return <Badge variant="outline">Cancelada</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -87,7 +80,7 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Tus Facturas</h2>
       <p className="text-muted-foreground">
-        Revisa tus facturas y su estado de pago.
+        Aquí encontrarás todas tus facturas y podrás ver su estado.
       </p>
       
       <Card>
@@ -103,26 +96,29 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
               {invoices.map(invoice => (
                 <div key={invoice.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div>
-                    <h3 className="font-medium">{invoice.title}</h3>
-                    <div className="flex space-x-3 text-sm text-muted-foreground">
-                      <span>{formatCurrency(invoice.amount)}</span>
-                      <span>•</span>
-                      <span>{getStatusBadge(invoice.status)}</span>
-                      {invoice.due_date && (
-                        <>
-                          <span>•</span>
-                          <span>Vence: {format(new Date(invoice.due_date), 'dd/MM/yyyy')}</span>
-                        </>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium">{invoice.title}</h3>
+                      {getStatusBadge(invoice.status)}
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(invoice.amount)}</span>
+                      {invoice.due_date && (
+                        <span className="ml-2">
+                          <Calendar className="inline h-3 w-3 mr-1" />
+                          Vence: {format(new Date(invoice.due_date), 'dd/MM/yyyy')}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm"
                     onClick={() => viewInvoice(invoice)}
+                    disabled={!invoice.shared_url}
                   >
                     <CreditCard className="h-4 w-4 mr-2" />
                     Ver factura
+                    <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
               ))}

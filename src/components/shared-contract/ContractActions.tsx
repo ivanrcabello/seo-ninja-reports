@@ -1,43 +1,57 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Download } from 'lucide-react';
-import { PublicContract } from './types';
+import { Download, Printer, Pencil } from 'lucide-react';
+import { SharedContract } from '@/types/shared-content';
 
 interface ContractActionsProps {
-  contract: PublicContract;
+  contract: SharedContract;
   onOpenSignDialog: () => void;
   onPrint: () => void;
 }
 
-const ContractActions: React.FC<ContractActionsProps> = ({ 
-  contract, 
-  onOpenSignDialog, 
-  onPrint 
+const ContractActions: React.FC<ContractActionsProps> = ({
+  contract,
+  onOpenSignDialog,
+  onPrint
 }) => {
-  if (!contract) return null;
-  
+  const canSign = !contract.client_signed && 
+    contract.status !== 'cancelled' && 
+    contract.status !== 'expired';
+
   return (
-    <div className="w-full flex flex-col sm:flex-row sm:justify-between gap-4">
-      {/* Botón para firmar si el cliente aún no ha firmado */}
-      {!contract.client_signed && contract.status !== 'cancelled' && contract.status !== 'expired' && (
+    <div className="flex flex-col space-y-2">
+      {canSign && (
         <Button 
           onClick={onOpenSignDialog}
-          className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
+          className="flex items-center justify-center gap-2"
         >
-          <Pencil className="h-4 w-4 mr-2" />
-          Firmar como Cliente
+          <Pencil className="h-4 w-4" />
+          Firmar contrato
         </Button>
       )}
       
-      {/* Botón para descargar/imprimir siempre visible */}
+      <Button 
+        variant="outline"
+        onClick={onPrint}
+        className="flex items-center justify-center gap-2"
+      >
+        <Printer className="h-4 w-4" />
+        Imprimir contrato
+      </Button>
+      
       <Button 
         variant="outline" 
-        onClick={onPrint}
-        className="w-full sm:w-auto"
+        className="flex items-center justify-center gap-2"
+        asChild
       >
-        <Download className="h-4 w-4 mr-2" />
-        Imprimir / Guardar PDF
+        <a href="#" onClick={(e) => {
+          e.preventDefault();
+          onPrint();
+        }}>
+          <Download className="h-4 w-4" />
+          Descargar contrato
+        </a>
       </Button>
     </div>
   );

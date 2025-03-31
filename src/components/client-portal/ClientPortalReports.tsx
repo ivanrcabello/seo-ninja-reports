@@ -2,13 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Calendar } from 'lucide-react';
+import { FileText, Calendar, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 import { clientPortalApi } from '@/services/clientPortalApiService';
-import { useNavigate } from 'react-router-dom';
 
 interface Report {
   id: string;
@@ -24,7 +23,6 @@ interface ClientPortalReportsProps {
 const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -49,9 +47,10 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
   }, [clientId]);
 
   const viewReport = (report: Report) => {
-    // Use the shared_url for viewing reports instead of the report ID
+    // Use the shared_url for viewing reports
     if (report.shared_url) {
-      navigate(`/shared/reports/${report.shared_url}`);
+      // Open in a new window/tab
+      window.open(`/shared/reports/${report.shared_url}`, '_blank');
     } else {
       toast.error('Este informe no tiene un enlace compartido válido');
     }
@@ -91,6 +90,7 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Ver informe
+                    <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
               ))}

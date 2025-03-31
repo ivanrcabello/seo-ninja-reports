@@ -55,7 +55,7 @@ export const fetchFromPublicReportsView = async (reportId: string): Promise<{ re
       title: data.title,
       summary: data.summary,
       url: data.url,
-      status: data.status,
+      status: data.status as "processing" | "completed" | "failed",
       content: data.content,
       date: data.date,
       client_name: data.client_name,
@@ -96,10 +96,22 @@ export const fetchReportWithRpc = async (reportId: string): Promise<{ report: Pu
         return { report: null, error: null };
       }
       
-      return { report: idData as unknown as PublicReport, error: null };
+      return { 
+        report: {
+          ...idData,
+          status: idData.status as "processing" | "completed" | "failed"
+        } as PublicReport, 
+        error: null 
+      };
     }
     
-    return { report: data as unknown as PublicReport, error: null };
+    return { 
+      report: {
+        ...data,
+        status: data.status as "processing" | "completed" | "failed"
+      } as PublicReport, 
+      error: null 
+    };
   } catch (error: any) {
     console.error('Error fetching with RPC:', error);
     return { report: null, error: error };
@@ -144,7 +156,7 @@ export const fetchReportOnly = async (reportId: string): Promise<{ report: Publi
       title: data.title,
       summary: data.summary,
       url: data.url,
-      status: data.status,
+      status: data.status as "processing" | "completed" | "failed",
       content: data.content,
       date: data.date,
       client_name: data.clients?.name,
@@ -156,5 +168,34 @@ export const fetchReportOnly = async (reportId: string): Promise<{ report: Publi
   } catch (error: any) {
     console.error('Error fetching report directly:', error);
     return { report: null, error: error };
+  }
+};
+
+/**
+ * Main function to fetch report by ID or shared URL
+ */
+export const fetchReportByAnyId = async (reportId: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+  try {
+    // Try each method in sequence
+    const methods = [
+      fetchFromPublicReportsView,
+      fetchReportWithRpc,
+      fetchReportOnly
+    ];
+    
+    for (const method of methods) {
+      const { report, error } = await method(reportId);
+      
+      // If we got a report or a definitive error, return it
+      if (report || (error && error.message !== 'Not found')) {
+        return { report, error };
+      }
+    }
+    
+    // If we get here, all methods failed
+    return { report: null, error: new Error('Report not found') };
+  } catch (error: any) {
+    console.error('Error in fetchReportByAnyId:', error);
+    return { report: null, error };
   }
 };

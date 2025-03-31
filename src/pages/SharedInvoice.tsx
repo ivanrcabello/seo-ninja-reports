@@ -1,121 +1,148 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { InvoiceContent, InvoiceHeader, InvoiceActions, useInvoiceData } from '@/components/shared-invoice';
-import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice/types';
+import { useInvoiceData, InvoiceHeader, InvoiceContent, InvoiceActions } from '@/components/shared-invoice';
+import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { toast } from 'sonner';
-import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 
-// Component for displaying a shared invoice
-const SharedInvoice = () => {
-  const { sharedUrl } = useParams<{ sharedUrl: string }>();
+const SharedInvoice: React.FC = () => {
+  const { invoiceId = '' } = useParams<{ invoiceId: string }>();
+  const [passwordInput, setPasswordInput] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [logo, setLogo] = useState<string | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  
   const { 
     invoice, 
     isLoading, 
-    error, 
+    error,
     isPasswordProtected, 
-    refetch 
-  } = useInvoiceData(sharedUrl || '');
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
-
+    accessGranted, 
+    verifyPassword,
+    refetch
+  } = useInvoiceData(invoiceId);
+  
+  // Load company logo if available
   useEffect(() => {
-    if (isPasswordProtected && !accessGranted) {
-      setIsPasswordDialogOpen(true);
+    const fetchLogo = async () => {
+      try {
+        // In a real implementation, you'd fetch this from settings or API
+        // For now we'll just use a placeholder or nothing
+        setLogo(null);
+      } catch (error) {
+        console.error('Error fetching logo:', error);
+      }
+    };
+    
+    fetchLogo();
+  }, []);
+  
+  const handleVerifyPassword = async () => {
+    if (!passwordInput.trim()) {
+      setShowError(true);
+      return;
     }
-  }, [isPasswordProtected, accessGranted]);
-
-  // Function to handle printing the invoice
+    
+    setVerifying(true);
+    setShowError(false);
+    
+    try {
+      const success = await verifyPassword(passwordInput);
+      
+      if (success) {
+        toast.success('Acceso concedido');
+      } else {
+        setShowError(true);
+        toast.error('Contraseña incorrecta');
+      }
+    } catch (err) {
+      setShowError(true);
+      toast.error('Error al verificar la contraseña');
+    } finally {
+      setVerifying(false);
+    }
+  };
+  
   const handlePrint = () => {
     window.print();
   };
-
-  const verifyPassword = async (password: string) => {
-    try {
-      // Call function to verify password
-      const { data, error: verifyError } = await supabase.rpc(
-        'verify_shared_invoice_password', 
-        { 
-          shared_url_param: sharedUrl || '',
-          password_param: password
-        }
-      );
-      
-      if (verifyError) throw new Error(verifyError.message);
-      
-      if (data === true) {
-        setAccessGranted(true);
-        setIsPasswordDialogOpen(false);
-        toast.success('Acceso concedido');
-        refetch();
-      } else {
-        toast.error('Contraseña incorrecta');
-      }
-    } catch (err: any) {
-      console.error("Error verifying password:", err);
-      toast.error('Error al verificar la contraseña');
-    }
-  };
-
-  if (isPasswordDialogOpen) {
+  
+  // Show password protection dialog
+  if (isPasswordProtected && !accessGranted) {
     return (
-      <PasswordProtectionDialog 
-        onSubmit={verifyPassword}
-        onCancel={() => window.history.back()}
-        type="invoice"
+      <PasswordProtectionDialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Factura Protegida"
+        description="Esta factura está protegida con contraseña. Por favor, introduce la contraseña para acceder."
+        password={passwordInput}
+        setPassword={setPasswordInput}
+        onVerify={handleVerifyPassword}
+        isVerifying={verifying}
+        showError={showError}
+        errorMessage="Contraseña incorrecta. Por favor, inténtalo de nuevo."
       />
     );
   }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-lg font-medium">Cargando factura...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !invoice) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md w-full p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-red-200">
-          <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar la factura</h1>
-          <p className="text-center text-muted-foreground mb-6">
-            {error || 'La factura solicitada no existe o ha sido eliminada.'}
-          </p>
-          <div className="flex justify-center">
-            <a
-              href="/"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Volver al inicio
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  
+  // Adapt invoice to type compatibility
+  const adaptedInvoice = invoice ? {
+    ...invoice,
+    status: invoice.status as any
+  } : null;
+  
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-primary/10 overflow-hidden">
-        <InvoiceHeader 
-          invoice={invoice}
-          onPrint={handlePrint}
-        />
-        
-        <InvoiceContent 
-          invoice={invoice}
-        />
-        
-        <InvoiceActions 
-          invoice={invoice}
-          onPrint={handlePrint}
-        />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
+      {logo && (
+        <div className="flex justify-center pt-8 print:pt-0">
+          <img
+            src={logo}
+            alt="Company Logo"
+            className="h-12 mx-auto mb-6 print:mb-2"
+          />
+        </div>
+      )}
+      
+      <div className="container mx-auto px-4 py-8 print:py-2 max-w-4xl">
+        <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-0"
+          ref={contentRef}
+        >
+          {adaptedInvoice && (
+            <>
+              <InvoiceHeader 
+                invoice={adaptedInvoice} 
+                onPrint={handlePrint}
+              />
+              
+              <div className="flex flex-col md:flex-row">
+                <div className="flex-1 p-6">
+                  <InvoiceContent invoice={adaptedInvoice} />
+                </div>
+                
+                <div className="hidden md:block w-64 p-6 bg-slate-50 dark:bg-slate-900/60 border-l border-slate-200 dark:border-slate-800 print:hidden">
+                  <InvoiceActions 
+                    invoice={adaptedInvoice} 
+                    onPrint={handlePrint}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+          
+          {isLoading && (
+            <div className="flex justify-center items-center p-12">
+              <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
+            </div>
+          )}
+          
+          {error && !isLoading && (
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-red-500 mb-2">Error</h2>
+              <p className="text-slate-600 dark:text-slate-400">{error}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

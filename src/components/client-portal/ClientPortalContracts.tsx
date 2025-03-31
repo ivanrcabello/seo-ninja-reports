@@ -2,22 +2,23 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, Calendar } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { FileText, Calendar, CheckCircle, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { clientPortalLogger } from '@/services/clientPortalLoggingService';
 import { clientPortalApi } from '@/services/clientPortalApiService';
-import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
 
 interface Contract {
   id: string;
   title: string;
   status: string;
-  created_at: string;
   client_signed: boolean;
-  shared_url: string;
+  client_signed_at?: string;
+  created_at: string;
+  updated_at: string;
+  shared_url?: string;
 }
 
 interface ClientPortalContractsProps {
@@ -27,7 +28,6 @@ interface ClientPortalContractsProps {
 const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId }) => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchContracts = async () => {
@@ -37,7 +37,6 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
         
         const data = await clientPortalApi.getContracts(clientId);
         clientPortalLogger.info(`Successfully fetched ${data.length} contracts`, { count: data.length }, 'ClientPortalContracts');
-        console.log('Contracts data:', data);
         setContracts(data);
       } catch (err: any) {
         console.error('Error fetching contracts:', err);
@@ -51,39 +50,41 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
     fetchContracts();
   }, [clientId]);
 
-  const getStatusBadge = (status: string, signed: boolean) => {
-    if (status === 'signed' || signed) {
-      return <Badge className="bg-green-500">Firmado</Badge>;
-    }
-    
-    switch (status) {
-      case 'draft':
-        return <Badge className="bg-gray-500">Borrador</Badge>;
-      case 'sent':
-        return <Badge className="bg-yellow-500">Pendiente de firma</Badge>;
-      case 'expired':
-        return <Badge className="bg-red-500">Expirado</Badge>;
-      case 'cancelled':
-        return <Badge className="bg-gray-500">Cancelado</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
+  const viewContract = (contract: Contract) => {
+    if (contract.shared_url) {
+      window.open(`/shared/contracts/${contract.shared_url}`, '_blank');
+    } else {
+      toast.error('Este contrato no tiene un enlace compartido válido');
     }
   };
 
-  const viewContract = (contract: Contract) => {
-    // Navigate to the shared contract URL if available, or the ID-based URL
-    if (contract.shared_url) {
-      navigate(`/shared/contracts/${contract.shared_url}`);
-    } else {
-      navigate(`/shared/contracts/${contract.id}`);
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'signed':
+      case 'firmado':
+        return <Badge className="bg-green-500">Firmado</Badge>;
+      case 'sent':
+      case 'enviado':
+        return <Badge className="bg-yellow-500">Enviado</Badge>;
+      case 'draft':
+      case 'borrador':
+        return <Badge variant="outline">Borrador</Badge>;
+      case 'expired':
+      case 'expirado':
+        return <Badge className="bg-red-500">Expirado</Badge>;
+      case 'cancelled':
+      case 'cancelado':
+        return <Badge variant="outline" className="bg-slate-500 text-white">Cancelado</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Contratos</h2>
+      <h2 className="text-2xl font-bold">Tus Contratos</h2>
       <p className="text-muted-foreground">
-        Consulta y firma los contratos.
+        Aquí encontrarás todos tus contratos y podrás ver su estado y firmarlos si es necesario.
       </p>
       
       <Card>
@@ -99,23 +100,32 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
               {contracts.map(contract => (
                 <div key={contract.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div>
-                    <h3 className="font-medium">{contract.title}</h3>
-                    <div className="flex space-x-3 text-sm text-muted-foreground">
-                      <span>{getStatusBadge(contract.status, contract.client_signed)}</span>
-                      <span>•</span>
-                      <span>
-                        <Calendar className="inline h-3 w-3 mr-1" />
-                        {format(new Date(contract.created_at), 'dd/MM/yyyy')}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium">{contract.title}</h3>
+                      {getStatusBadge(contract.status)}
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                      <Calendar className="inline h-3 w-3 mr-1" />
+                      {format(new Date(contract.created_at), 'dd/MM/yyyy')}
+                      {contract.client_signed && (
+                        <span className="ml-2 text-green-500 flex items-center text-xs">
+                          <CheckCircle className="inline h-3 w-3 mr-1" />
+                          Firmado el {contract.client_signed_at ? 
+                            format(new Date(contract.client_signed_at), 'dd/MM/yyyy') : 
+                            format(new Date(contract.updated_at), 'dd/MM/yyyy')}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm"
                     onClick={() => viewContract(contract)}
+                    disabled={!contract.shared_url}
                   >
-                    <ClipboardList className="h-4 w-4 mr-2" />
-                    Ver contrato
+                    <FileText className="h-4 w-4 mr-2" />
+                    {!contract.client_signed && contract.status.toLowerCase() !== 'cancelled' ? 'Firmar contrato' : 'Ver contrato'}
+                    <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
               ))}
