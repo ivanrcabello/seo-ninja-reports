@@ -19,6 +19,7 @@ interface ShareReportDialogProps {
   clientName?: string;
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
+  onGenerateShareUrl?: () => Promise<string>;
 }
 
 const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
@@ -29,7 +30,8 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   report,
   clientName = '',
   clientWebsite = '',
-  onShared
+  onShared,
+  onGenerateShareUrl
 }) => {
   // Use either the provided report.id or the reportId prop
   const effectiveReportId = report?.id || reportId;
@@ -47,6 +49,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}
+      onGenerateShareUrl={onGenerateShareUrl}
     />
   );
 };

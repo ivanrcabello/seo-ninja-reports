@@ -11,6 +11,7 @@ interface ShareProposalDialogProps {
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
   proposalData?: any;
+  onGenerateShareUrl?: () => Promise<string>;
 }
 
 const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
@@ -21,7 +22,8 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   clientName = '',
   clientWebsite = '',
   onShared,
-  proposalData
+  proposalData,
+  onGenerateShareUrl
 }) => {
   if (!proposalId) {
     console.error('ShareProposalDialog: proposalId es requerido');
@@ -39,6 +41,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}
+      onGenerateShareUrl={onGenerateShareUrl}
     />
   );
 };

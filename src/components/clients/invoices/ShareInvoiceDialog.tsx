@@ -11,6 +11,7 @@ interface ShareInvoiceDialogProps {
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
   invoiceData?: any;
+  onGenerateShareUrl?: () => Promise<string>;
 }
 
 const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
@@ -21,7 +22,8 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
   clientName = '',
   clientWebsite = '',
   onShared,
-  invoiceData
+  invoiceData,
+  onGenerateShareUrl
 }) => {
   if (!invoiceId) {
     console.error('ShareInvoiceDialog: invoiceId es requerido');
@@ -39,6 +41,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}
+      onGenerateShareUrl={onGenerateShareUrl}
     />
   );
 };

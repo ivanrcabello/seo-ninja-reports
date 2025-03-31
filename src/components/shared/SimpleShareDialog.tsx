@@ -40,6 +40,7 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
   const [sharedUrl, setSharedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPdfPreparing, setIsPdfPreparing] = useState(false);
 
   const getContentTypeTitle = (): string => {
     switch (contentType) {
@@ -125,31 +126,67 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
     }
   };
   
-  const handleDownloadAsPdf = () => {
+  const handleDownloadAsPdf = async () => {
     if (!sharedUrl) return;
     
-    // Construir URL para vista de impresión
-    const printViewUrl = sharedUrl.includes('?') 
-      ? `${sharedUrl}&print=true` 
-      : `${sharedUrl}?print=true`;
+    setIsPdfPreparing(true);
     
-    // Abrir ventana para preparar impresión/PDF
-    const printWindow = window.open(printViewUrl, '_blank');
-    
-    if (!printWindow) {
-      toast.error('No se pudo abrir la ventana para descargar el PDF');
-      return;
+    try {
+      // Construir URL para vista de impresión
+      const printViewUrl = sharedUrl.includes('?') 
+        ? `${sharedUrl}&print=true&pdf=true` 
+        : `${sharedUrl}?print=true&pdf=true`;
+      
+      // Abrir ventana para preparar impresión/PDF
+      const printWindow = window.open(printViewUrl, '_blank');
+      
+      if (!printWindow) {
+        toast.error('No se pudo abrir la ventana para descargar el PDF. Por favor, permita ventanas emergentes.');
+        setIsPdfPreparing(false);
+        return;
+      }
+      
+      // Esperar a que la página cargue y luego iniciar la impresión a PDF
+      printWindow.addEventListener('load', () => {
+        setTimeout(() => {
+          try {
+            // Iniciar diálogo de impresión con opciones para PDF
+            const mediaQueryList = printWindow.matchMedia('print');
+            mediaQueryList.addEventListener('change', (mql) => {
+              if (!mql.matches && printWindow) {
+                // La impresión/PDF ha finalizado o sido cancelada
+                console.log('PDF generation completed or canceled');
+              }
+            }, { once: true });
+            
+            printWindow.print();
+            
+            // El navegador mostrará el diálogo para guardar como PDF
+            toast.success('Preparando documento para descarga como PDF');
+          } catch (err) {
+            console.error('Error al generar PDF:', err);
+            toast.error('Hubo un problema al generar el PDF');
+          } finally {
+            setIsPdfPreparing(false);
+          }
+        }, 1500); // Dar tiempo para que el contenido se cargue completamente
+      });
+      
+      printWindow.addEventListener('error', () => {
+        toast.error('Error al cargar la página para el PDF');
+        setIsPdfPreparing(false);
+      });
+    } catch (error) {
+      console.error('Error en descarga PDF:', error);
+      toast.error('Hubo un problema al generar el PDF');
+      setIsPdfPreparing(false);
     }
-    
-    // Esperar a que la página cargue y luego iniciar la impresión a PDF
-    printWindow.addEventListener('load', () => {
-      setTimeout(() => {
-        printWindow.print();
-        // El navegador mostrará el diálogo para guardar como PDF
-      }, 1000);
-    });
-    
-    toast.success('Preparando documento para descarga');
+  };
+  
+  const handlePreview = () => {
+    if (sharedUrl) {
+      window.open(sharedUrl, '_blank');
+    }
   };
 
   return (
@@ -230,15 +267,16 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
                   size="sm"
                   onClick={handleDownloadAsPdf}
                   className="flex items-center gap-1"
+                  disabled={isPdfPreparing}
                 >
                   <Download className="h-4 w-4" />
-                  Descargar como PDF
+                  {isPdfPreparing ? "Preparando PDF..." : "Descargar como PDF"}
                 </Button>
                 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(sharedUrl, '_blank')}
+                  onClick={handlePreview}
                   className="flex items-center gap-1"
                 >
                   <Printer className="h-4 w-4" />

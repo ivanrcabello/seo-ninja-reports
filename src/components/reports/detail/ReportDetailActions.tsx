@@ -15,12 +15,14 @@ interface ReportDetailActionsProps {
   onDeleteReport: () => Promise<void>;
   reportId?: string;
   reportTitle?: string;
+  onGenerateShareUrl?: () => Promise<string>;
 }
 
 const ReportDetailActions: React.FC<ReportDetailActionsProps> = ({ 
   onDeleteReport, 
   reportId = '',
-  reportTitle = 'Informe'
+  reportTitle = 'Informe',
+  onGenerateShareUrl
 }) => {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -81,6 +83,7 @@ const ReportDetailActions: React.FC<ReportDetailActionsProps> = ({
           onOpenChange={setIsShareDialogOpen}
           reportId={reportId}
           reportTitle={reportTitle}
+          onGenerateShareUrl={onGenerateShareUrl}
         />
       )}
     </>
