@@ -5,11 +5,12 @@ import { PublicReport } from '@/types/shared-content';
 import { 
   checkReportExists, 
   checkReportPassword,
+  fetchReportByAnyId,
+  verifyReportPassword,
+  logReportAccess,
   fetchFromPublicReportsView,
   fetchReportWithRpc,
-  fetchReportOnly,
-  verifyReportPassword,
-  logReportAccess
+  fetchReportOnly
 } from '@/api/shared-content';
 
 const useReportData = (reportId: string) => {

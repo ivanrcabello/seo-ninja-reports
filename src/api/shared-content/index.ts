@@ -16,7 +16,10 @@ export {
   checkReportPassword,
   verifyReportPassword,
   fetchReportByAnyId,
-  logReportAccess
+  logReportAccess,
+  fetchFromPublicReportsView,
+  fetchReportWithRpc,
+  fetchReportOnly
 } from './reports';
 
 export {
