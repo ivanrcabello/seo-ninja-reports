@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading, useReportData } from '@/components/public-reports';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
+import { toast } from 'sonner';
 
 const PublicReport: React.FC = () => {
   const navigate = useNavigate();
@@ -55,27 +56,34 @@ const PublicReport: React.FC = () => {
       if (success) {
         console.log('Password verification successful, refetching report data');
         await refetch();
+        toast.success('Acceso concedido', {
+          description: 'Contraseña correcta. Cargando informe...'
+        });
       } else {
         console.log('Password verification failed');
         setShowError(true);
+        toast.error('Contraseña incorrecta');
       }
     } catch (err) {
       console.error('Error during password verification:', err);
       setShowError(true);
+      toast.error('Error al verificar la contraseña');
     } finally {
       setVerifying(false);
     }
   };
   
   const handleRetry = () => {
+    console.log('Retrying report fetch manually');
     setLoadRetries(prev => prev + 1);
     refetch();
+    toast.info('Reintentando cargar el informe...');
   };
 
   // Show loading state
   if (isLoading) {
     console.log('PublicReport: Showing loading state');
-    return <PublicReportLoading />;
+    return <PublicReportLoading timeout={20000} />;
   }
 
   // Show error state

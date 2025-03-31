@@ -2,11 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
-import { 
-  RpcResponseCheckReportExists, 
-  RpcResponseGetPublicReportById, 
-  PublicReportData 
-} from '@/types/supabase-rpc.types';
 
 interface PublicReport {
   id: string;
@@ -63,66 +58,9 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // DIRECT APPROACH: Try to get report by shared_url first (most efficient)
-      console.log('Fetching report directly by shared_url...');
-      const { data: directReportData, error: directReportError } = await supabase
-        .from('reports')
-        .select(`
-          id, 
-          title, 
-          summary,
-          url,
-          status,
-          content,
-          date,
-          client_id,
-          password,
-          clients (
-            name,
-            website
-          )
-        `)
-        .eq('shared_url', reportId)
-        .single();
-      
-      if (!directReportError && directReportData) {
-        console.log('Successfully fetched report by shared_url:', directReportData.id);
-        const formattedReport: PublicReport = {
-          id: directReportData.id,
-          title: directReportData.title || 'Informe sin título',
-          summary: directReportData.summary,
-          url: directReportData.url,
-          status: directReportData.status,
-          content: directReportData.content,
-          date: directReportData.date,
-          client_name: directReportData.clients?.name,
-          client_website: directReportData.clients?.website
-        };
-        
-        // Check if password protected
-        const isProtected = Boolean(directReportData.password);
-        setIsPasswordProtected(isProtected);
-        
-        // If not protected or access granted, set the report
-        if (!isProtected || accessGranted) {
-          setReport(formattedReport);
-        }
-        
-        // Log access
-        logSharedReportAccess(reportId, { 
-          successful: true, 
-          source: 'direct_shared_url' 
-        });
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      // FALLBACK APPROACH: If not found by shared_url, try other methods
-      console.log('Report not found by shared_url, checking if report exists by ID...');
-      
-      // Try by direct ID
-      const { data: reportByIdData, error: reportByIdError } = await supabase
+      // APPROACH 1: Try to get report directly from the reports table first
+      console.log('Fetching report directly from reports table...');
+      const { data: reportData, error: reportError } = await supabase
         .from('reports')
         .select(`
           id, 
@@ -140,25 +78,25 @@ const useReportData = (reportId: string) => {
             website
           )
         `)
-        .eq('id', reportId)
-        .single();
+        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
+        .maybeSingle();
       
-      if (!reportByIdError && reportByIdData) {
-        console.log('Successfully fetched report by direct ID:', reportByIdData.id);
+      if (!reportError && reportData) {
+        console.log('Successfully fetched report:', reportData.id);
         const formattedReport: PublicReport = {
-          id: reportByIdData.id,
-          title: reportByIdData.title || 'Informe sin título',
-          summary: reportByIdData.summary,
-          url: reportByIdData.url,
-          status: reportByIdData.status,
-          content: reportByIdData.content,
-          date: reportByIdData.date,
-          client_name: reportByIdData.clients?.name,
-          client_website: reportByIdData.clients?.website
+          id: reportData.id,
+          title: reportData.title || 'Informe sin título',
+          summary: reportData.summary,
+          url: reportData.url,
+          status: reportData.status,
+          content: reportData.content,
+          date: reportData.date,
+          client_name: reportData.clients?.name,
+          client_website: reportData.clients?.website
         };
         
         // Check if password protected
-        const isProtected = Boolean(reportByIdData.password);
+        const isProtected = Boolean(reportData.password);
         setIsPasswordProtected(isProtected);
         
         // If not protected or access granted, set the report
@@ -169,24 +107,44 @@ const useReportData = (reportId: string) => {
         // Log access
         logSharedReportAccess(reportId, { 
           successful: true, 
-          source: 'direct_id' 
+          source: 'direct_query' 
         });
         
         setIsLoading(false);
         return;
       }
       
-      // Last fallback - public_reports view
-      const { data: publicReportData, error: publicReportError } = await supabase
+      // APPROACH 2: Try to use the RPC function
+      console.log('Trying RPC function get_public_report_by_id...');
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc('get_public_report_by_id', { report_id_param: reportId })
+        .limit(1);
+      
+      if (!rpcError && rpcData && rpcData.length > 0) {
+        console.log('Successfully fetched report via RPC:', rpcData[0].id);
+        setReport(rpcData[0]);
+        
+        // Log access
+        logSharedReportAccess(reportId, { 
+          successful: true, 
+          source: 'rpc_function' 
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
+      // APPROACH 3: Try the public_reports view
+      console.log('Trying public_reports view...');
+      const { data: viewData, error: viewError } = await supabase
         .from('public_reports')
         .select('*')
-        .eq('shared_url', reportId)
+        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
         .maybeSingle();
       
-      if (!publicReportError && publicReportData) {
-        console.log('Successfully fetched from public_reports view with shared_url');
-        setReport(publicReportData as unknown as PublicReport);
-        setIsPasswordProtected(Boolean(publicReportData.password));
+      if (!viewError && viewData) {
+        console.log('Successfully fetched from public_reports view');
+        setReport(viewData as PublicReport);
         
         // Log access
         logSharedReportAccess(reportId, { 
@@ -198,8 +156,32 @@ const useReportData = (reportId: string) => {
         return;
       }
       
+      // APPROACH 4: Last resort - direct SQL query through function
+      console.log('Using direct SQL query as last resort...');
+      const { data: directData, error: directError } = await supabase
+        .rpc('get_report_by_any_id', { id_param: reportId });
+      
+      if (!directError && directData) {
+        console.log('Successfully fetched report via direct SQL:', directData);
+        setReport(directData as PublicReport);
+        
+        // Log access
+        logSharedReportAccess(reportId, { 
+          successful: true, 
+          source: 'direct_sql' 
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
       // If we got here, we have exhausted all options
       console.error('All attempts failed. Report not found or not accessible.');
+      if (directError) console.error('Direct SQL error:', directError);
+      if (viewError) console.error('View error:', viewError);
+      if (rpcError) console.error('RPC error:', rpcError);
+      if (reportError) console.error('Report error:', reportError);
+      
       setError('No se pudo encontrar el informe solicitado');
       setNotFound(true);
       logSharedReportAccess(reportId, { 

@@ -1,13 +1,14 @@
 
 import React from 'react';
-import { FileX, Home } from 'lucide-react';
+import { FileX, Home, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PublicReportEmptyProps {
   onBack?: () => void;
+  onRetry?: () => void;
 }
 
-const PublicReportEmpty: React.FC<PublicReportEmptyProps> = ({ onBack }) => {
+const PublicReportEmpty: React.FC<PublicReportEmptyProps> = ({ onBack, onRetry }) => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-full max-w-md text-center p-8">
@@ -19,18 +20,29 @@ const PublicReportEmpty: React.FC<PublicReportEmptyProps> = ({ onBack }) => {
           El informe que estás buscando no existe o ha sido eliminado.
         </p>
         
-        {onBack && (
-          <div className="mb-6">
+        <div className="flex flex-col md:flex-row gap-3 justify-center mb-6">
+          {onRetry && (
+            <Button 
+              onClick={onRetry} 
+              variant="outline" 
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Reintentar
+            </Button>
+          )}
+          
+          {onBack && (
             <Button 
               onClick={onBack} 
-              variant="outline" 
+              variant="default" 
               className="flex items-center gap-2"
             >
               <Home className="h-4 w-4" />
               Volver al inicio
             </Button>
-          </div>
-        )}
+          )}
+        </div>
         
         <p className="text-sm text-muted-foreground">
           Si crees que esto es un error, contacta con la persona que compartió este enlace contigo.

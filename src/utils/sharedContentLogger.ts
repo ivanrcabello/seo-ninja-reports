@@ -1,66 +1,82 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-interface LogOptions {
-  successful: boolean;
-  passwordAttempt?: boolean;
-  error?: string;
-  action?: string;
-  source?: string;
-}
-
+/**
+ * Log when a shared report is accessed
+ */
 export const logSharedReportAccess = async (
-  reportId: string,
-  options: LogOptions,
-  eventType?: string
+  reportId: string, 
+  options: {
+    successful: boolean;
+    passwordAttempt?: boolean;
+    error?: string;
+    action?: string;
+    source?: string;
+  },
+  eventType: string = 'access'
 ) => {
   try {
-    const { successful, passwordAttempt, error, action, source } = options;
+    const { data, error } = await supabase
+      .from('shared_content_logs')
+      .insert({
+        content_id: reportId,
+        content_type: 'report',
+        event_type: options.action || eventType,
+        is_successful: options.successful,
+        is_password_attempt: options.passwordAttempt || false,
+        error_message: options.error,
+        source: options.source || 'direct_access',
+        user_agent: navigator.userAgent,
+        ip_address: null // This is filled on the server side
+      });
+      
+    if (error) {
+      console.error('Error logging shared report access:', error);
+    }
     
-    // Simplemente guardar un registro en la consola por ahora
-    console.log('Shared report access:', {
-      reportId,
-      successful,
-      passwordAttempt,
-      error,
-      action: action || (passwordAttempt ? 'password_verification' : 'view'),
-      source,
-      timestamp: new Date().toISOString(),
-      eventType: eventType || 'report_access'
-    });
-    
-    // Aquí se podría implementar el envío a un servicio de analytics o guardar en Supabase
-    // si se quisiera hacer un seguimiento más detallado de los accesos
-  } catch (e) {
-    // No hacemos fallar la aplicación si falla el logging
-    console.error('Error logging shared report access:', e);
+    return { data, error };
+  } catch (err) {
+    console.error('Exception logging shared report access:', err);
+    return { data: null, error: err };
   }
 };
 
+/**
+ * Log when a shared proposal is accessed
+ */
 export const logSharedProposalAccess = async (
-  proposalId: string,
-  options: LogOptions,
-  eventType?: string
+  proposalId: string, 
+  options: {
+    successful: boolean;
+    passwordAttempt?: boolean;
+    error?: string;
+    action?: string;
+    source?: string;
+  },
+  eventType: string = 'access'
 ) => {
   try {
-    const { successful, passwordAttempt, error, action, source } = options;
+    const { data, error } = await supabase
+      .from('shared_content_logs')
+      .insert({
+        content_id: proposalId,
+        content_type: 'proposal',
+        event_type: options.action || eventType,
+        is_successful: options.successful,
+        is_password_attempt: options.passwordAttempt || false,
+        error_message: options.error,
+        source: options.source || 'direct_access',
+        user_agent: navigator.userAgent,
+        ip_address: null // This is filled on the server side
+      });
+      
+    if (error) {
+      console.error('Error logging shared proposal access:', error);
+    }
     
-    // Simplemente guardar un registro en la consola por ahora
-    console.log('Shared proposal access:', {
-      proposalId,
-      successful,
-      passwordAttempt,
-      error,
-      action: action || (passwordAttempt ? 'password_verification' : 'view'),
-      source,
-      timestamp: new Date().toISOString(),
-      eventType: eventType || 'proposal_access'
-    });
-    
-    // Aquí se podría implementar el envío a un servicio de analytics o guardar en Supabase
-    // si se quisiera hacer un seguimiento más detallado de los accesos
-  } catch (e) {
-    // No hacemos fallar la aplicación si falla el logging
-    console.error('Error logging shared proposal access:', e);
+    return { data, error };
+  } catch (err) {
+    console.error('Exception logging shared proposal access:', err);
+    return { data: null, error: err };
   }
 };

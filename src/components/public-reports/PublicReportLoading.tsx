@@ -1,12 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PublicReportLoadingProps {
   timeout?: number; // Tiempo en milisegundos antes de mostrar mensaje de timeout
+  onRetry?: () => void;
 }
 
-const PublicReportLoading: React.FC<PublicReportLoadingProps> = ({ timeout = 30000 }) => {
+const PublicReportLoading: React.FC<PublicReportLoadingProps> = ({ 
+  timeout = 20000,
+  onRetry
+}) => {
   const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
   const [loadingTime, setLoadingTime] = useState(0);
   
@@ -50,9 +55,22 @@ const PublicReportLoading: React.FC<PublicReportLoadingProps> = ({ timeout = 300
               <li>El servidor está ocupado</li>
               <li>El informe es muy extenso</li>
             </ul>
-            <p className="text-sm mt-2">
-              Puedes intentar recargar la página o volver más tarde.
-            </p>
+            
+            {onRetry ? (
+              <Button 
+                onClick={onRetry}
+                variant="outline" 
+                size="sm"
+                className="mt-4 bg-white border-amber-300 text-amber-800 hover:bg-amber-100"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reintentar cargar el informe
+              </Button>
+            ) : (
+              <p className="text-sm mt-4">
+                Puedes intentar recargar la página o volver más tarde.
+              </p>
+            )}
           </div>
         )}
       </div>

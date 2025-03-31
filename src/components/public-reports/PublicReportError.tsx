@@ -1,17 +1,19 @@
 
 import React from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PublicReportErrorProps {
   errorMessage?: string;
   onRetry?: () => void;
+  onHome?: () => void;
   retryCount?: number;
 }
 
 const PublicReportError: React.FC<PublicReportErrorProps> = ({ 
   errorMessage,
   onRetry,
+  onHome,
   retryCount = 0
 }) => {
   return (
@@ -29,8 +31,8 @@ const PublicReportError: React.FC<PublicReportErrorProps> = ({
           </p>
         )}
         
-        {onRetry && (
-          <div className="mb-6">
+        <div className="flex flex-col md:flex-row gap-3 justify-center mb-6">
+          {onRetry && (
             <Button 
               onClick={onRetry} 
               variant="outline" 
@@ -40,15 +42,27 @@ const PublicReportError: React.FC<PublicReportErrorProps> = ({
               <RefreshCw className="h-4 w-4" />
               {retryCount >= 3 ? 'Demasiados intentos' : 'Reintentar'}
             </Button>
-            {retryCount > 0 && (
-              <p className="text-xs mt-2 text-muted-foreground">
-                Intentos: {retryCount}/3
-              </p>
-            )}
-          </div>
+          )}
+          
+          {onHome && (
+            <Button 
+              onClick={onHome}
+              variant="default"
+              className="flex items-center gap-2"
+            >
+              <Home className="h-4 w-4" />
+              Volver al inicio
+            </Button>
+          )}
+        </div>
+        
+        {retryCount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Intentos: {retryCount}/3
+          </p>
         )}
         
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-4">
           Si el problema persiste, contacta con la persona que compartió este enlace contigo.
         </p>
       </div>
