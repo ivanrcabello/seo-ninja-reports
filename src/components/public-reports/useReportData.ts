@@ -47,7 +47,7 @@ const useReportData = (reportId: string) => {
     try {
       // First, check if the report is password protected
       const { data: protectionData, error: protectionError } = await supabase
-        .rpc('check_report_password_protection', { report_id_param: reportId });
+        .rpc('check_shared_content_password', { content_id: reportId, content_type: 'report' });
 
       if (!protectionError) {
         setIsPasswordProtected(Boolean(protectionData));
@@ -235,13 +235,14 @@ const useReportData = (reportId: string) => {
     try {
       console.log(`Verifying password for report: ${reportId}`);
       const { data, error } = await supabase
-        .rpc('verify_shared_report_password', { 
-          report_id_param: reportId,
+        .rpc('verify_shared_content_password', { 
+          content_id: reportId,
+          content_type: 'report',
           password_param: password
         });
       
       if (error) {
-        console.error('Error in verify_shared_report_password RPC:', error);
+        console.error('Error in verify_shared_content_password RPC:', error);
         throw error;
       }
       

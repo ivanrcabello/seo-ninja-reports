@@ -1,145 +1,130 @@
 
 import React, { useState, useRef } from 'react';
-import { PublicContract } from './types';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Pen, Check, Trash2, AlertCircle } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
+import { Button } from '@/components/ui/button';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { Eraser, CheckCircle, Loader2 } from 'lucide-react';
 
 interface ContractSignProps {
-  contract: PublicContract;
-  onSign: (signature: string) => Promise<boolean>;
-  onCancel: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSign: (signatureData: string) => Promise<boolean>;
+  isLoading: boolean;
 }
 
 const ContractSign: React.FC<ContractSignProps> = ({
-  contract,
+  open,
+  onOpenChange,
   onSign,
-  onCancel,
+  isLoading
 }) => {
-  const [isSigning, setIsSigning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [signatureComplete, setSignatureComplete] = useState(false);
-  const signCanvasRef = useRef<SignatureCanvas | null>(null);
+  const signatureRef = useRef<SignatureCanvas | null>(null);
+  const [isSigned, setIsSigned] = useState(false);
+  const [signing, setSigning] = useState(false);
 
-  const handleClearSignature = () => {
-    if (signCanvasRef.current) {
-      signCanvasRef.current.clear();
-      setSignatureComplete(false);
+  const clearSignature = () => {
+    if (signatureRef.current) {
+      signatureRef.current.clear();
+      setIsSigned(false);
     }
   };
 
-  const handleSign = async () => {
-    if (!signCanvasRef.current || signCanvasRef.current.isEmpty()) {
-      setError('Por favor, añade tu firma antes de firmar el contrato');
+  const handleSubmitSignature = async () => {
+    if (!signatureRef.current || signatureRef.current.isEmpty()) {
+      toast.error('Por favor, firme antes de continuar');
       return;
     }
 
     try {
-      setIsSigning(true);
-      setError(null);
-      
-      // Get signature as data URL
-      const signatureDataUrl = signCanvasRef.current.toDataURL('image/png');
-      
-      // Send signature to backend
-      const success = await onSign(signatureDataUrl);
-      
-      if (!success) {
-        setError('No se pudo completar la firma. Por favor, inténtalo de nuevo.');
+      setSigning(true);
+      const signatureData = signatureRef.current.toDataURL('image/png');
+      const success = await onSign(signatureData);
+
+      if (success) {
+        toast.success('Contrato firmado correctamente');
+        onOpenChange(false);
+      } else {
+        toast.error('No se pudo firmar el contrato, intente nuevamente');
       }
-    } catch (err: any) {
-      console.error('Error signing contract:', err);
-      setError(err.message || 'Error al firmar el contrato');
+    } catch (error) {
+      console.error('Error al firmar:', error);
+      toast.error('Error al procesar la firma');
     } finally {
-      setIsSigning(false);
+      setSigning(false);
     }
   };
 
   return (
-    <Card className="border bg-card">
-      <CardHeader>
-        <CardTitle>Firma el contrato</CardTitle>
-        <CardDescription>
-          Firma digitalmente el contrato "{contract.title}" para aceptar sus términos y condiciones
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        <div className="mb-4">
-          <p className="text-sm mb-4 text-muted-foreground">
-            Al firmar este contrato, confirmas que has leído, entendido y aceptas los términos
-            y condiciones establecidos en el documento.
-          </p>
-          
-          <div className="mb-2">
-            <p className="text-sm mb-1 font-medium">Tu firma:</p>
-            <div className="border rounded-md bg-background p-1">
-              <SignatureCanvas
-                ref={signCanvasRef}
-                canvasProps={{
-                  width: 600,
-                  height: 200,
-                  className: 'signature-canvas w-full h-[200px] border border-dashed border-muted-foreground/20'
-                }}
-                onEnd={() => setSignatureComplete(true)}
-              />
-            </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Firmar Contrato</DialogTitle>
+          <DialogDescription>
+            Dibuje su firma en el espacio a continuación para firmar el contrato.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="border rounded-md p-2 bg-background">
+          <div className="border border-dashed border-gray-300 rounded-md h-40 flex items-center justify-center bg-white">
+            <SignatureCanvas
+              ref={signatureRef}
+              canvasProps={{
+                className: 'signature-canvas w-full h-full',
+                style: { width: '100%', height: '100%' }
+              }}
+              onEnd={() => setIsSigned(true)}
+            />
           </div>
-          
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-2">
             <Button 
-              type="button"
               variant="ghost" 
-              size="sm"
-              onClick={handleClearSignature}
+              size="sm" 
+              onClick={clearSignature}
+              type="button"
             >
-              <Trash2 className="h-4 w-4 mr-2" /> 
-              Borrar firma
+              <Eraser className="h-4 w-4 mr-2" />
+              Borrar
             </Button>
           </div>
         </div>
-      </CardContent>
-      
-      <CardFooter className="flex justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSigning}
-        >
-          Cancelar
-        </Button>
-        
-        <Button
-          type="button"
-          onClick={handleSign}
-          disabled={isSigning || !signatureComplete}
-          className="gap-2"
-        >
-          {isSigning ? (
-            <>
-              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              Firmando...
-            </>
-          ) : (
-            <>
-              <Check className="h-4 w-4" />
-              Firmar contrato
-            </>
-          )}
-        </Button>
-      </CardFooter>
-    </Card>
+
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-between mt-4">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={signing || isLoading}
+          >
+            Cancelar
+          </Button>
+          
+          <Button
+            onClick={handleSubmitSignature}
+            disabled={!isSigned || signing || isLoading}
+            className="flex items-center gap-2"
+          >
+            {signing || isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Procesando...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4" />
+                Firmar y Aceptar
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

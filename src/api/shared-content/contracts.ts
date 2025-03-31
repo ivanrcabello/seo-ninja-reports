@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SharedContract, SharedContractResponse, AccessLogOptions, AccessLogType, ContractSignatureUpdate } from '@/types/shared-content';
 import { logContentAccess } from './utils';

@@ -1,115 +1,135 @@
 
-import { useState, useEffect } from 'react';
-import { SharedContract, SharedContractResponse, ContractSignatureUpdate } from '@/types/shared-content';
-import { fetchContractBySharedUrl, logContractAccess, updateContractWithSignature } from '@/api/shared-content/contracts';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client'; 
+import { ContractSignatureUpdate, SharedContract } from '@/types/shared-content';
+import { 
+  fetchContractBySharedUrl, 
+  checkContractExists, 
+  logContractAccess,
+  updateContractWithSignature
+} from '@/api/shared-content/contracts';
 
-interface UseSharedContractDataResult {
-  contract: SharedContract | null;
-  isLoading: boolean;
-  error: string | null;
-  signContract: (signature: string) => Promise<boolean>;
-  refetch: () => Promise<void>;
-}
-
-export const useSharedContractData = (contractId: string): UseSharedContractDataResult => {
+export const useSharedContractData = (contractId: string) => {
   const [contract, setContract] = useState<SharedContract | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [signing, setSigning] = useState(false);
 
-  const loadContract = async () => {
+  const fetchContract = useCallback(async () => {
     if (!contractId) {
-      setError('Contract ID is required');
-      setIsLoading(false);
+      setError('ID de contrato no especificado');
+      setLoading(false);
       return;
     }
 
+    setLoading(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
-
-      const response: SharedContractResponse = await fetchContractBySharedUrl(contractId);
+      // Check if contract exists
+      const { exists, error: existsError } = await checkContractExists(contractId);
       
-      if (response.error) {
-        throw response.error;
+      if (existsError) {
+        console.error('Error checking contract existence:', existsError);
+        throw existsError;
+      }
+      
+      if (!exists) {
+        throw new Error('El contrato no existe');
       }
 
-      if (response.data) {
-        setContract(response.data);
-        
-        // Log access
-        logContractAccess(contractId, { 
-          successful: true 
-        }, 'view');
-      } else {
-        logContractAccess(contractId, { 
-          successful: false,
-          error: 'Contract not found' 
-        }, 'not_found');
-        
-        throw new Error('Contract not found');
+      // Fetch contract data
+      const { data, error: fetchError } = await fetchContractBySharedUrl(contractId);
+      
+      if (fetchError) {
+        throw fetchError;
       }
+      
+      if (!data) {
+        throw new Error('No se pudo encontrar el contrato solicitado');
+      }
+      
+      setContract(data);
+      
+      // Log access
+      logContractAccess(contractId, { successful: true }, 'view');
     } catch (err: any) {
+      console.error('Error fetching contract:', err);
       setError(err.message || 'Error al cargar el contrato');
-      console.error('Error loading contract:', err);
-      
-      logContractAccess(contractId, { 
-        successful: false,
-        error: err.message || 'Unknown error' 
-      }, 'error');
+      logContractAccess(contractId, { successful: false, error: err.message || 'Unknown error' }, 'error');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadContract();
   }, [contractId]);
 
   const signContract = async (signature: string): Promise<boolean> => {
-    if (!contract) return false;
+    if (!contract || !contractId) return false;
     
     try {
-      // Create the signature update data
-      const signData: ContractSignatureUpdate = {
+      setSigning(true);
+      
+      const signatureData: ContractSignatureUpdate = {
         client_signed: true,
         client_signed_at: new Date().toISOString(),
         client_signature: signature,
         status: 'signed'
       };
       
-      // Update the contract using the API function
-      const success = await updateContractWithSignature(contractId, signData);
+      const success = await updateContractWithSignature(contractId, signatureData);
       
-      if (!success) throw new Error('Failed to update contract');
+      if (success) {
+        // Log success
+        logContractAccess(contractId, { 
+          successful: true,
+          action: 'sign'
+        }, 'sign');
+        
+        // Update local state
+        setContract(prev => prev ? {
+          ...prev,
+          client_signed: true,
+          client_signed_at: signatureData.client_signed_at,
+          client_signature: signature,
+          status: 'signed'
+        } : null);
+        
+        return true;
+      } else {
+        // Log failure
+        logContractAccess(contractId, {
+          successful: false,
+          action: 'sign',
+          error: 'Failed to update signature'
+        }, 'error');
+        
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Error signing contract:', error);
       
-      // Log successful signing
-      logContractAccess(contractId, { 
-        successful: true 
-      }, 'check');
-      
-      // Update local contract state
-      await loadContract();
-      
-      return true;
-    } catch (err) {
-      console.error('Error signing contract:', err);
-      
-      // Log failed signing
-      logContractAccess(contractId, { 
+      // Log error
+      logContractAccess(contractId, {
         successful: false,
-        error: 'Failed to sign contract' 
-      }, 'check');
+        action: 'sign',
+        error: error.message || 'Unknown error'
+      }, 'error');
       
       return false;
+    } finally {
+      setSigning(false);
     }
   };
 
+  useEffect(() => {
+    fetchContract();
+  }, [fetchContract]);
+
   return {
     contract,
-    isLoading,
+    loading,
     error,
+    signing,
     signContract,
-    refetch: loadContract
+    refetch: fetchContract
   };
 };
