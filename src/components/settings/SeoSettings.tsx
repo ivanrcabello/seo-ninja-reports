@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Search } from 'lucide-react';
 
 interface PageSeo {
   id?: string;
@@ -34,6 +35,7 @@ const SeoSettings = () => {
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState<PageSeo | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const { data: pages, isLoading } = useQuery({
     queryKey: ['seo-pages'],
@@ -130,6 +132,12 @@ const SeoSettings = () => {
     { name: 'Paquete Master', value: 'pack-master' }
   ];
   
+  // Filter page options based on search query
+  const filteredPageOptions = pageOptions.filter(page =>
+    page.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    page.value.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
   return (
     <Card className="w-full">
       <CardHeader>
@@ -140,13 +148,28 @@ const SeoSettings = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
+          <Label htmlFor="page-search">Buscar página</Label>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="page-search"
+              type="text"
+              placeholder="Buscar por nombre de página..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
           <Label htmlFor="page-select">Selecciona una página</Label>
           <Select onValueChange={handlePageSelect}>
             <SelectTrigger id="page-select">
               <SelectValue placeholder="Seleccionar página" />
             </SelectTrigger>
-            <SelectContent>
-              {pageOptions.map((page) => (
+            <SelectContent className="max-h-80">
+              {filteredPageOptions.map((page) => (
                 <SelectItem key={page.value} value={page.value}>
                   {page.name}
                 </SelectItem>
