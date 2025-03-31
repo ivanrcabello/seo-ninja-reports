@@ -2,9 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Copy, Check, Link2, Download, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { shareContent, getShareUrl } from '@/utils/shareContent';
@@ -34,8 +32,6 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
   onShared,
   onGenerateShareUrl
 }) => {
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [password, setPassword] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [sharedUrl, setSharedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -84,8 +80,7 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
         data,
         clientName,
         clientWebsite,
-        usePassword: isPasswordProtected,
-        password: isPasswordProtected ? password : undefined
+        usePassword: false
       });
 
       if (result.success && result.url) {
@@ -151,17 +146,7 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
         setTimeout(() => {
           try {
             // Iniciar diálogo de impresión con opciones para PDF
-            const mediaQueryList = printWindow.matchMedia('print');
-            mediaQueryList.addEventListener('change', (mql) => {
-              if (!mql.matches && printWindow) {
-                // La impresión/PDF ha finalizado o sido cancelada
-                console.log('PDF generation completed or canceled');
-              }
-            }, { once: true });
-            
             printWindow.print();
-            
-            // El navegador mostrará el diálogo para guardar como PDF
             toast.success('Preparando documento para descarga como PDF');
           } catch (err) {
             console.error('Error al generar PDF:', err);
@@ -204,34 +189,10 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
         
         {!sharedUrl ? (
           <>
-            <div className="space-y-4 py-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="password-protection" 
-                  checked={isPasswordProtected}
-                  onCheckedChange={(checked) => setIsPasswordProtected(!!checked)}
-                />
-                <Label htmlFor="password-protection">Proteger con contraseña</Label>
-              </div>
-              
-              {isPasswordProtected && (
-                <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
-                    placeholder="Introduce una contraseña"
-                  />
-                </div>
-              )}
-            </div>
-            
             <DialogFooter>
               <Button 
                 onClick={handleShare}
-                disabled={isSharing || (isPasswordProtected && !password)}
+                disabled={isSharing}
               >
                 {isSharing ? "Compartiendo..." : "Compartir"}
               </Button>
@@ -256,9 +217,7 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
               </div>
               
               <div className="text-sm text-muted-foreground">
-                {isPasswordProtected
-                  ? `Este ${getContentTypeTitle().toLowerCase()} está protegido con contraseña.`
-                  : `Este ${getContentTypeTitle().toLowerCase()} es visible para cualquier persona con el enlace.`}
+                Este {getContentTypeTitle().toLowerCase()} es visible para cualquier persona con el enlace.
               </div>
               
               <div className="flex flex-wrap gap-2 mt-4">

@@ -28,7 +28,7 @@ export async function shareContent(options: {
     // Crear un ID único para la URL compartida
     const sharedUrlId = uuidv4();
     
-    // Datos para insertar en la base de datos
+    // Datos para insertar en la base de datos (sin password)
     const insertData = {
       original_id: options.contentId,
       content_type: options.contentType,
@@ -36,7 +36,7 @@ export async function shareContent(options: {
       content: options.data || {},
       status: options.data?.status || 'active',
       shared_url: sharedUrlId,
-      password: options.usePassword ? options.password : null,
+      password: null, // Siempre null ya que eliminamos la protección con contraseña
       client_name: options.clientName || '',
       client_website: options.clientWebsite || '',
       created_at: new Date().toISOString(),
