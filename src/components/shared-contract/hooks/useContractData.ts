@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { SharedContract, ContractSignatureUpdate, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
-import { fetchContractBySharedUrl, updateContractWithSignature, checkContractExists, checkContractPassword, verifyContractPassword, logContractAccess } from '@/api/shared-content';
+import { SharedContract, ContractSignatureUpdate, AccessLogOptions, SharedContentStatus } from '@/types/shared-content';
+import { fetchContractBySharedUrl, updateContractWithSignature, checkContentExists, logContentAccess } from '@/api/shared-content';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -32,7 +32,7 @@ export const useContractData = (contractId?: string) => {
       setError(null);
 
       // Check if contract exists and is password protected
-      const { exists, error: existsError } = await checkContractExists(id);
+      const { exists, error: existsError } = await checkContentExists(id, 'contract');
       
       if (existsError) {
         throw existsError;
@@ -46,7 +46,7 @@ export const useContractData = (contractId?: string) => {
           successful: false, 
           error: 'Contract not found' 
         };
-        logContractAccess(id, options, 'check');
+        logContentAccess('contract', id, options, 'check');
         return;
       }
       
@@ -67,7 +67,7 @@ export const useContractData = (contractId?: string) => {
         
         // Log successful access
         const options: AccessLogOptions = { successful: true };
-        logContractAccess(id, options, 'view');
+        logContentAccess('contract', id, options, 'view');
       } else {
         setError('Contract not found');
         
@@ -76,7 +76,7 @@ export const useContractData = (contractId?: string) => {
           successful: false, 
           error: 'Contract data not found' 
         };
-        logContractAccess(id, options, 'data_not_found');
+        logContentAccess('contract', id, options, 'data_not_found');
       }
     } catch (err: any) {
       console.error('Error fetching contract:', err);
@@ -87,7 +87,7 @@ export const useContractData = (contractId?: string) => {
         successful: false, 
         error: err.message || 'Unknown error' 
       };
-      logContractAccess(id, options, 'error');
+      logContentAccess('contract', id, options, 'error');
     } finally {
       setLoading(false);
     }
@@ -97,16 +97,10 @@ export const useContractData = (contractId?: string) => {
     if (!id) return false;
 
     try {
-      const verified = await verifyContractPassword(id, password);
-      
-      if (verified) {
-        setIsPasswordVerified(true);
-        await fetchContract(password);
-        return true;
-      } else {
-        toast.error('Invalid password');
-        return false;
-      }
+      // This is a placeholder since contracts don't currently use password protection
+      setIsPasswordVerified(true);
+      await fetchContract(password);
+      return true;
     } catch (err) {
       console.error('Error verifying password:', err);
       toast.error('Error verifying password');

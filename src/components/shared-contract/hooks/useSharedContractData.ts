@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { SharedContract, ContractSignatureUpdate, AccessLogOptions, AccessLogType, SharedContractResponse } from '@/types/shared-content';
 import { 
   fetchContractBySharedUrl, 
-  checkContractExists,
-  logContractAccess,
+  checkContentExists,
+  logContentAccess,
   updateContractWithSignature
 } from '@/api/shared-content';
 
@@ -27,14 +27,19 @@ export const useSharedContractData = (sharedUrl: string) => {
 
     try {
       // First check if contract exists
-      const { exists, error: existsError } = await checkContractExists(sharedUrl);
+      const { exists, error: existsError } = await checkContentExists(sharedUrl, 'contract');
       
       if (existsError) {
         console.error('Error checking if contract exists:', existsError);
       } else if (!exists) {
         setError('El contrato no existe');
         setIsLoading(false);
-        logContractAccess(sharedUrl, { successful: false, error: 'Contract not found' }, 'check');
+        
+        const options: AccessLogOptions = { 
+          successful: false, 
+          error: 'Contract not found' 
+        };
+        logContentAccess('contract', sharedUrl, options, 'check');
         return;
       }
 
@@ -52,14 +57,19 @@ export const useSharedContractData = (sharedUrl: string) => {
       setContract(response.contract);
       
       // Log successful access
-      logContractAccess(sharedUrl, { successful: true }, 'view');
+      const options: AccessLogOptions = { successful: true };
+      logContentAccess('contract', sharedUrl, options, 'view');
       
     } catch (err: any) {
       console.error('Error fetching shared contract:', err);
       setError(err.message || 'Error al cargar el contrato');
       
       // Log failed access
-      logContractAccess(sharedUrl, { successful: false, error: err.message || 'Unknown error' }, 'error');
+      const options: AccessLogOptions = { 
+        successful: false, 
+        error: err.message || 'Unknown error' 
+      };
+      logContentAccess('contract', sharedUrl, options, 'error');
     } finally {
       setIsLoading(false);
     }

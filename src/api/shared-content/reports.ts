@@ -1,6 +1,80 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedReport, SharedReportResponse, SharedContentStatus } from '@/types/shared-content';
+import { SharedReport, SharedReportResponse, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
+import { logContentAccess } from './utils';
+
+/**
+ * Check if a report exists
+ */
+export const checkReportExists = async (reportId: string): Promise<{ exists: boolean; error: Error | null }> => {
+  try {
+    const { data, error } = await supabase
+      .from('public_reports')
+      .select('id')
+      .eq('shared_url', reportId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    return { exists: !!data, error: null };
+  } catch (error: any) {
+    console.error('Error checking if report exists:', error);
+    return { exists: false, error };
+  }
+};
+
+/**
+ * Check if report has password
+ */
+export const checkReportPassword = async (reportId: string): Promise<{ isProtected: boolean; error: Error | null }> => {
+  try {
+    const { data, error } = await supabase
+      .from('public_reports')
+      .select('password')
+      .eq('shared_url', reportId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    const isProtected = !!(data && data.password && data.password.trim() !== '');
+    return { isProtected, error: null };
+  } catch (error: any) {
+    console.error('Error checking report password:', error);
+    return { isProtected: false, error };
+  }
+};
+
+/**
+ * Verify report password
+ */
+export const verifyReportPassword = async (reportId: string, password: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('public_reports')
+      .select('password')
+      .eq('shared_url', reportId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching report password:', error);
+      return false;
+    }
+    
+    if (!data || !data.password) return true;
+    
+    return data.password === password;
+  } catch (error) {
+    console.error('Error verifying report password:', error);
+    return false;
+  }
+};
+
+/**
+ * Log report access
+ */
+export const logReportAccess = (reportId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {
+  return logContentAccess('report', reportId, options, eventType);
+};
 
 /**
  * Fetch report by any type of ID (direct ID or shared_url)
@@ -30,8 +104,8 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
         status: status,
         date: publicReportData.date,
         shared_url: publicReportData.shared_url,
-        created_at: new Date().toISOString(), // Add missing properties
-        updated_at: new Date().toISOString(), // Add missing properties
+        created_at: publicReportData.created_at || new Date().toISOString(), 
+        updated_at: publicReportData.updated_at || new Date().toISOString(),
         client_name: publicReportData.client_name,
         client_website: publicReportData.client_website
       };

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { SharedReport, AccessLogOptions } from '@/types/shared-content';
+import { SharedReport, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 import { 
   fetchReportBySharedUrl, 
   checkContentExists,
@@ -133,37 +133,34 @@ const useReportData = (reportId: string) => {
           source: 'password_form'
         };
         logContentAccess('report', reportId, options, 'password');
-        
         return true;
-      } else {
-        const options: AccessLogOptions = {
-          successful: false,
-          passwordAttempt: true,
-          error: 'Invalid password',
-          source: 'password_form'
-        };
-        logContentAccess('report', reportId, options, 'password');
-        
-        return false;
       }
-    } catch (err: any) {
-      console.error('Error verifying password:', err);
       
       const options: AccessLogOptions = {
         successful: false,
         passwordAttempt: true,
-        error: err.message || 'Unknown error',
         source: 'password_form'
       };
-      logContentAccess('report', reportId, options, 'error');
+      logContentAccess('report', reportId, options, 'password');
+      return false;
       
+    } catch (err: any) {
+      console.error('Error verifying password:', err);
+      const options: AccessLogOptions = {
+        successful: false,
+        passwordAttempt: true,
+        error: err.message,
+        source: 'password_form'
+      };
+      logContentAccess('report', reportId, options, 'password');
       return false;
     }
   };
 
-  // Initial check when component mounts or reportId changes
   useEffect(() => {
-    checkReportStatus();
+    if (reportId) {
+      checkReportStatus();
+    }
   }, [reportId]);
 
   return {

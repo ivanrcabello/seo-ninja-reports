@@ -3,24 +3,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExistsResponse, ProtectionResponse, PasswordVerificationResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 
 // Define valid table names for content types
-type ContentTableName = 'public_reports' | 'public_proposals' | 'public_invoices' | 'public_contracts';
+const validTableNames = {
+  report: 'public_reports',
+  proposal: 'public_proposals',
+  invoice: 'public_invoices',
+  contract: 'public_contracts'
+} as const;
+
+type ContentType = keyof typeof validTableNames;
+type TableName = typeof validTableNames[ContentType];
 
 /**
  * Get the appropriate table name for a content type
  */
-const getTableName = (contentType: string): ContentTableName => {
-  switch (contentType) {
-    case 'report':
-      return 'public_reports';
-    case 'proposal':
-      return 'public_proposals';
-    case 'invoice':
-      return 'public_invoices';
-    case 'contract':
-      return 'public_contracts';
-    default:
-      throw new Error(`Invalid content type: ${contentType}`);
+const getTableName = (contentType: string): TableName => {
+  const type = contentType as ContentType;
+  if (Object.keys(validTableNames).includes(type)) {
+    return validTableNames[type];
   }
+  throw new Error(`Invalid content type: ${contentType}`);
 };
 
 /**
@@ -66,7 +67,7 @@ export const checkContentPasswordProtection = async (
     
     if (error) throw error;
     
-    // Check if data exists and password is not null or empty
+    // Check if data exists and has a non-empty password
     const isProtected = !!(data && data.password && typeof data.password === 'string' && data.password.trim() !== '');
     return { isProtected, error: null };
   } catch (error: any) {

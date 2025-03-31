@@ -1,119 +1,55 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useProposalData } from '@/components/shared-proposal';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { ProposalContent, ProposalHeader } from '@/components/shared-proposal';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
-import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
+import { useProposalData } from '@/components/shared-proposal/hooks/useProposalData';
 
 const SharedProposal: React.FC = () => {
-  const { proposalId } = useParams<{ proposalId: string }>();
+  const { proposalId = '' } = useParams<{ proposalId: string }>();
   const [passwordInput, setPasswordInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [showError, setShowError] = useState(false);
   
-  const {
+  const { 
     proposal,
-    isLoading,
+    loading, // Note: using loading instead of isLoading
     error,
     isPasswordProtected,
-    accessGranted,
+    isPasswordVerified, // Note: using isPasswordVerified instead of accessGranted
     verifyPassword,
-    refetch
+    handlePrint
   } = useProposalData(proposalId);
   
   const handleVerifyPassword = async () => {
+    if (!passwordInput.trim()) {
+      setShowError(true);
+      return;
+    }
+    
     setVerifying(true);
     setShowError(false);
     
-    const success = await verifyPassword(passwordInput);
-    
-    if (success) {
-      await refetch();
-    } else {
+    try {
+      const success = await verifyPassword(passwordInput);
+      
+      if (success) {
+        toast.success('Acceso concedido');
+      } else {
+        setShowError(true);
+        toast.error('Contraseña incorrecta');
+      }
+    } catch (err) {
       setShowError(true);
-    }
-    
-    setVerifying(false);
-  };
-  
-  // Render status badge
-  const renderStatusBadge = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return (
-          <Badge className="bg-green-500 text-white">
-            <CheckCircle className="w-4 h-4 mr-1" /> Aceptada
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge className="bg-yellow-500 text-white">
-            <Clock className="w-4 h-4 mr-1" /> Pendiente
-          </Badge>
-        );
-      case 'rejected':
-        return (
-          <Badge className="bg-red-500 text-white">
-            <AlertCircle className="w-4 h-4 mr-1" /> Rechazada
-          </Badge>
-        );
-      default:
-        return (
-          <Badge>
-            {status}
-          </Badge>
-        );
+      toast.error('Error al verificar la contraseña');
+    } finally {
+      setVerifying(false);
     }
   };
-  
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="container mx-auto max-w-4xl">
-          <Card className="p-8">
-            <div className="space-y-6">
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <Separator />
-              <div className="space-y-4">
-                <Skeleton className="h-6 w-1/4" />
-                <Skeleton className="h-24 w-full" />
-              </div>
-              <div className="space-y-4">
-                <Skeleton className="h-6 w-1/4" />
-                <Skeleton className="h-48 w-full" />
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-  
-  // Show error state
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="container mx-auto max-w-4xl">
-          <Card className="p-8 text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Ha ocurrido un error</h2>
-            <p className="text-muted-foreground">{error}</p>
-          </Card>
-        </div>
-      </div>
-    );
-  }
   
   // Show password protection dialog
-  if (isPasswordProtected && !accessGranted) {
+  if (isPasswordProtected && !isPasswordVerified) {
     return (
       <PasswordProtectionDialog
         isOpen={true}
@@ -130,90 +66,26 @@ const SharedProposal: React.FC = () => {
     );
   }
   
-  // Show empty state if no proposal found
-  if (!proposal) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="container mx-auto max-w-4xl">
-          <Card className="p-8 text-center">
-            <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Propuesta no encontrada</h2>
-            <p className="text-muted-foreground">Esta propuesta no existe o no está disponible.</p>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="container mx-auto max-w-4xl">
-        <Card className="p-6 md:p-8">
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between items-start flex-wrap gap-4">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold">{proposal.title}</h1>
-                  <p className="text-muted-foreground mt-1">
-                    Propuesta para {proposal.client_name}
-                    {proposal.client_website && (
-                      <> — <a href={proposal.client_website.startsWith('http') ? proposal.client_website : `https://${proposal.client_website}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline">
-                        {proposal.client_website}
-                      </a>
-                      </>
-                    )}
-                  </p>
-                </div>
-                
-                <div className="flex flex-col items-end gap-2">
-                  {renderStatusBadge(proposal.status)}
-                  {proposal.price !== undefined && (
-                    <div className="text-xl font-bold">
-                      {formatCurrency(proposal.price)}
-                    </div>
-                  )}
-                </div>
-              </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
+      <div className="container mx-auto px-4 py-8 print:py-2 max-w-4xl">
+        <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-0">
+          {proposal ? (
+            <>
+              <ProposalHeader proposal={proposal} />
+              <ProposalContent proposal={proposal} onPrint={handlePrint} />
+            </>
+          ) : loading ? (
+            <div className="flex justify-center items-center p-12">
+              <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
             </div>
-            
-            <Separator />
-            
-            {proposal.description && (
-              <div>
-                <h2 className="text-xl font-semibold mb-3">Descripción</h2>
-                <div className="prose dark:prose-invert max-w-none">
-                  <p>{proposal.description}</p>
-                </div>
-              </div>
-            )}
-            
-            {proposal.services && Array.isArray(proposal.services) && proposal.services.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-3">Servicios incluidos</h2>
-                <ul className="grid grid-cols-1 gap-3 pl-0 list-none">
-                  {proposal.services.map((service: string, index: number) => (
-                    <li key={index} className="bg-muted p-3 rounded-md flex items-start">
-                      <CheckCircle className="w-5 h-5 mr-2 text-primary shrink-0 mt-0.5" />
-                      <span>{service}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            <div className="flex justify-end gap-2 pt-6">
-              <Button variant="outline">
-                Descargar PDF
-              </Button>
-              <Button>
-                Aceptar propuesta
-              </Button>
+          ) : (
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-red-500 mb-2">Error</h2>
+              <p className="text-slate-600 dark:text-slate-400">{error || 'No se pudo cargar la propuesta.'}</p>
             </div>
-          </div>
-        </Card>
+          )}
+        </div>
       </div>
     </div>
   );

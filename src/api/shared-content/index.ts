@@ -1,67 +1,72 @@
 
-// Base utilities - importing these specifically to avoid conflicts
+// Re-export functions from modules
 import { 
-  checkContentExists,
-  checkContentPasswordProtection,
+  checkContentExists, 
+  checkContentPasswordProtection, 
   verifyContentPassword,
   logContentAccess
 } from './utils';
 
-// Export these utilities directly
-export {
-  checkContentExists,
-  checkContentPasswordProtection,
-  verifyContentPassword,
-  logContentAccess
-};
-
-// Re-export type-specific helpers with explicit names to avoid ambiguity
-export { 
-  checkContentExists as checkReportExists,
-  checkContentPasswordProtection as checkReportPassword,
-  verifyContentPassword as verifyReportPassword,
-  logContentAccess as logReportAccess
-} from './utils';
-
-export { 
-  checkContentExists as checkInvoiceExists,
-  checkContentPasswordProtection as checkInvoicePassword,
-  verifyContentPassword as verifyInvoicePassword,
-  logContentAccess as logInvoiceAccess
-} from './utils';
-
-export { 
-  checkContentExists as checkProposalExists,
-  checkContentPasswordProtection as checkProposalPassword,
-  verifyContentPassword as verifyProposalPassword,
-  logContentAccess as logProposalAccess
-} from './utils';
-
-export { 
-  checkContentExists as checkContractExists,
-  checkContentPasswordProtection as checkContractPassword,
-  verifyContentPassword as verifyContractPassword,
-  logContentAccess as logContractAccess
-} from './utils';
-
-// Reports - specifically named exports
-export {
+import { 
   fetchReportByAnyId,
   updateReportWithPassword
 } from './reports';
 
-// Invoices - specifically named exports
-export {
-  fetchInvoiceBySharedUrl
+import { 
+  fetchContractBySharedUrl,
+  checkContractExists,
+  updateContractWithSignature,
+  logContractAccess
+} from './contracts';
+
+import {
+  fetchInvoiceBySharedUrl,
+  checkInvoiceExists,
+  checkInvoicePassword,
+  verifyInvoicePassword,
+  logInvoiceAccess
 } from './invoices';
 
-// Proposals - specifically named exports
-export {
-  fetchProposalBySharedUrl
+import {
+  fetchProposalBySharedUrl,
+  checkProposalExists,
+  checkProposalPassword,
+  verifyProposalPassword,
+  logProposalAccess
 } from './proposals';
 
-// Contracts - specifically named exports
+// Alias fetchReportByAnyId to fetchReportBySharedUrl for consistency
+const fetchReportBySharedUrl = fetchReportByAnyId;
+
 export {
+  // Common utilities
+  checkContentExists,
+  checkContentPasswordProtection,
+  verifyContentPassword,
+  logContentAccess,
+  
+  // Reports
+  fetchReportByAnyId,
+  fetchReportBySharedUrl,
+  updateReportWithPassword,
+  
+  // Contracts
   fetchContractBySharedUrl,
-  updateContractWithSignature
-} from './contracts';
+  checkContractExists,
+  updateContractWithSignature,
+  logContractAccess,
+  
+  // Invoices
+  fetchInvoiceBySharedUrl,
+  checkInvoiceExists,
+  checkInvoicePassword,
+  verifyInvoicePassword,
+  logInvoiceAccess,
+  
+  // Proposals
+  fetchProposalBySharedUrl,
+  checkProposalExists,
+  checkProposalPassword,
+  verifyProposalPassword,
+  logProposalAccess
+};
