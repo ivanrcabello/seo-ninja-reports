@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, Copy, Link, Mail, Lock, Unlock, RefreshCw } from 'lucide-react';
@@ -27,6 +27,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   const [shareUrl, setShareUrl] = useState('');
   const [passwordProtected, setPasswordProtected] = useState(false);
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
   
   // Generate a random password when needed
   const generateRandomPassword = () => {
@@ -45,6 +46,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
     const generateShareUrl = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         
         // Check if the report has an existing password
         const { data: reportData, error: reportError } = await supabase
@@ -98,7 +100,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
               content: fullReportData.content,
               client_name: fullReportData.clients?.name,
               client_website: fullReportData.clients?.website
-            }] as any);
+            }]);
           
           if (insertError) {
             throw new Error(`Error al compartir el informe: ${insertError.message}`);
@@ -110,8 +112,9 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         setShareUrl(shareUrl);
         
         toast.success('Enlace generado correctamente');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error al generar enlace:', error);
+        setError(error.message || 'Error al generar enlace para compartir');
         toast.error('Error al generar enlace para compartir');
       } finally {
         setIsLoading(false);
@@ -184,6 +187,11 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
             <div className="flex justify-center py-4">
               <div className="w-8 h-8 rounded-full border-4 border-t-primary border-primary/30 animate-spin"></div>
               <span className="ml-3">Generando enlace...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-4">
+              <p className="text-red-500">{error}</p>
+              <Button className="mt-4" onClick={() => onOpenChange(false)}>Cerrar</Button>
             </div>
           ) : (
             <>
