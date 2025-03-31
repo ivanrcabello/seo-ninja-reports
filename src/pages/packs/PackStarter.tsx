@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -51,7 +50,7 @@ const PackStarter = () => {
           title="Pack Starter"
           description="Ideal para pequeñas empresas que quieren iniciar su presencia online"
           price="199€"
-          period="mes"
+          period="/mes"
         />
         
         <section className="py-16 sm:py-24">
@@ -108,41 +107,12 @@ const PackStarter = () => {
           </div>
         </section>
         
-        <section className="py-16 sm:py-24 bg-slate-50 dark:bg-slate-900/20">
-          <div className="container px-4 sm:px-6 mx-auto">
-            <AnimatedContainer animation="slide-up" className="max-w-3xl mx-auto text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">¿Para quién es ideal este paquete?</h2>
-              <p className="text-lg text-muted-foreground">
-                El Pack Starter está diseñado especialmente para estos tipos de negocios y situaciones
-              </p>
-            </AnimatedContainer>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <AnimatedContainer animation="slide-up" delay={0} className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-border">
-                <h3 className="text-xl font-bold mb-4">Negocios nuevos</h3>
-                <p className="text-muted-foreground">
-                  Empresas que acaban de iniciar su actividad y necesitan establecer una presencia online inicial.
-                </p>
-              </AnimatedContainer>
-              
-              <AnimatedContainer animation="slide-up" delay={200} className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-border">
-                <h3 className="text-xl font-bold mb-4">Presupuesto limitado</h3>
-                <p className="text-muted-foreground">
-                  Negocios que quieren mejorar su SEO pero cuentan con un presupuesto ajustado para marketing.
-                </p>
-              </AnimatedContainer>
-              
-              <AnimatedContainer animation="slide-up" delay={400} className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-border">
-                <h3 className="text-xl font-bold mb-4">Mercados poco competitivos</h3>
-                <p className="text-muted-foreground">
-                  Empresas en nichos o zonas geográficas con competencia SEO moderada o baja.
-                </p>
-              </AnimatedContainer>
-            </div>
-          </div>
-        </section>
-        
-        <PackCTA />
+        <PackCTA 
+          title="¿Preparado para empezar a mejorar tu SEO?"
+          description="Nuestro Pack Starter es la manera perfecta de comenzar a mejorar tu visibilidad online sin un gran presupuesto."
+          buttonText="Contratar Pack Starter"
+          buttonLink="/contacto?plan=starter"
+        />
       </main>
       
       <Footer />

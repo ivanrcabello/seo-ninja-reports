@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useReports } from '@/hooks/useReports';
-import { useClients } from '@/hooks/useClients';
+import useReports from '@/hooks/useReports';
+import useClients from '@/hooks/useClients';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,11 @@ import { FileText, Search, Plus, Calendar, User, File } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
-const ReportsTab = () => {
+interface ReportsTabProps {
+  reports?: any[];
+}
+
+const ReportsTab: React.FC<ReportsTabProps> = (props) => {
   const { reports, isLoading } = useReports();
   const { clients } = useClients();
   const navigate = useNavigate();

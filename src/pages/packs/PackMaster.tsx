@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -61,7 +60,7 @@ const PackMaster = () => {
           title="Pack Master"
           description="La solución definitiva para dominar las búsquedas locales en su sector"
           price="799€"
-          period="mes"
+          period="/mes"
         />
         
         <section className="py-16 sm:py-24">
@@ -152,7 +151,12 @@ const PackMaster = () => {
           </div>
         </section>
         
-        <PackCTA />
+        <PackCTA 
+          title="Domina tu mercado con la estrategia SEO más completa"
+          description="Nuestro Pack Master está diseñado para empresas que quieren liderar su sector y maximizar su presencia online."
+          buttonText="Contratar Pack Master"
+          buttonLink="/contacto?plan=master"
+        />
       </main>
       
       <Footer />

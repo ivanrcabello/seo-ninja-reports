@@ -1,14 +1,19 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useClients } from '@/hooks/useClients';
+import useClients from '@/hooks/useClients';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ClientList from '@/components/dashboard/ClientList';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-const ClientsTab = () => {
+interface ClientsTabProps {
+  clients?: any[];
+  reports?: any[];
+}
+
+const ClientsTab: React.FC<ClientsTabProps> = (props) => {
   const { clients, isLoading } = useClients();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = React.useState('');

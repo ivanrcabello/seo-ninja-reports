@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -56,7 +55,7 @@ const PackAscenso = () => {
           title="Pack Ascenso"
           description="Para empresas que buscan crecer y consolidar su posicionamiento local"
           price="399€"
-          period="mes"
+          period="/mes"
           isPrimary={true}
         />
         
@@ -118,41 +117,12 @@ const PackAscenso = () => {
           </div>
         </section>
         
-        <section className="py-16 sm:py-24 bg-slate-50 dark:bg-slate-900/20">
-          <div className="container px-4 sm:px-6 mx-auto">
-            <AnimatedContainer animation="slide-up" className="max-w-3xl mx-auto text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">¿Para quién es ideal este paquete?</h2>
-              <p className="text-lg text-muted-foreground">
-                El Pack Ascenso está diseñado especialmente para estos tipos de negocios y situaciones
-              </p>
-            </AnimatedContainer>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <AnimatedContainer animation="slide-up" delay={0} className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-border">
-                <h3 className="text-xl font-bold mb-4">Negocios establecidos</h3>
-                <p className="text-muted-foreground">
-                  Empresas con cierta trayectoria que buscan incrementar significativamente su visibilidad local.
-                </p>
-              </AnimatedContainer>
-              
-              <AnimatedContainer animation="slide-up" delay={200} className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-border">
-                <h3 className="text-xl font-bold mb-4">Competencia moderada</h3>
-                <p className="text-muted-foreground">
-                  Negocios que operan en mercados con competencia media y necesitan destacar.
-                </p>
-              </AnimatedContainer>
-              
-              <AnimatedContainer animation="slide-up" delay={400} className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-border">
-                <h3 className="text-xl font-bold mb-4">Objetivos de crecimiento</h3>
-                <p className="text-muted-foreground">
-                  Empresas con planes de expansión que necesitan aumentar su base de clientes local.
-                </p>
-              </AnimatedContainer>
-            </div>
-          </div>
-        </section>
-        
-        <PackCTA />
+        <PackCTA 
+          title="Haz crecer tu negocio con SEO profesional"
+          description="Nuestro Pack Ascenso te ayudará a destacar entre tu competencia y aumentar tus clientes locales."
+          buttonText="Contratar Pack Ascenso"
+          buttonLink="/contacto?plan=ascenso"
+        />
       </main>
       
       <Footer />

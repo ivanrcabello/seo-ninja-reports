@@ -6,20 +6,24 @@ import { Link } from 'react-router-dom';
 
 interface PackDetailHeaderProps {
   title: string;
-  subtitle: string;
+  description: string;
+  subtitle?: string;
   price: string;
   period?: string;
+  isPrimary?: boolean;
 }
 
 const PackDetailHeader: React.FC<PackDetailHeaderProps> = ({
   title,
+  description,
   subtitle,
   price,
-  period = '/mes'
+  period = '/mes',
+  isPrimary = false
 }) => {
   return (
     <section className="relative overflow-hidden py-20 sm:py-32">
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-background opacity-50 -z-10" />
+      <div className={`absolute inset-0 bg-gradient-to-b ${isPrimary ? 'from-primary/5 to-background' : 'from-blue-50 to-white dark:from-gray-900 dark:to-background'} opacity-50 -z-10`} />
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
       </div>
@@ -45,7 +49,7 @@ const PackDetailHeader: React.FC<PackDetailHeaderProps> = ({
           
           <AnimatedContainer animation="slide-up" delay={400} className="mb-8">
             <p className="text-lg text-muted-foreground">
-              {subtitle}
+              {description}
             </p>
           </AnimatedContainer>
           

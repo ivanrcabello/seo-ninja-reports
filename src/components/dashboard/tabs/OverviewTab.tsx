@@ -3,12 +3,17 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useClients } from '@/hooks/useClients';
+import useClients from '@/hooks/useClients';
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
 import { BarChart3, Users, FileText, Activity } from 'lucide-react';
-import { useReports } from '@/hooks/useReports';
+import useReports from '@/hooks/useReports';
 
-const OverviewTab = () => {
+interface OverviewTabProps {
+  trackSectionVisibility?: (sectionId: string) => void;
+  setActiveTab?: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setActiveTab }) => {
   const { clients } = useClients();
   const { reports } = useReports();
 
