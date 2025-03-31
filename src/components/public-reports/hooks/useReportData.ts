@@ -1,178 +1,117 @@
 
 import { useState, useEffect } from 'react';
-import { SharedReport, AccessLogOptions, AccessLogType } from '@/types/shared-content';
-import { 
-  fetchReportBySharedUrl, 
-  checkContentExists,
-  checkContentPasswordProtection, 
-  verifyContentPassword,
-  logContentAccess
-} from '@/api/shared-content';
+import { SharedReport, SharedReportResponse } from '@/types/shared-content';
+import { fetchReportByAnyId, verifyReportPassword, logReportAccess } from '@/api/shared-content/reports';
 
-const useReportData = (reportId: string) => {
+interface UseReportDataParams {
+  reportId: string;
+}
+
+interface UseReportDataResult {
+  report: SharedReport | null;
+  isLoading: boolean;
+  error: string | null;
+  isPasswordProtected: boolean;
+  accessGranted: boolean;
+  verifyPassword: (password: string) => Promise<boolean>;
+}
+
+export const useReportData = ({ reportId }: UseReportDataParams): UseReportDataResult => {
   const [report, setReport] = useState<SharedReport | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState<boolean>(false);
   const [isPasswordProtected, setIsPasswordProtected] = useState<boolean>(false);
   const [accessGranted, setAccessGranted] = useState<boolean>(false);
 
-  // Function to check if report exists and if it's password protected
-  const checkReportStatus = async () => {
-    if (!reportId) {
-      setError('No report ID provided');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      // Check if report exists
-      const { exists, error: existsError } = await checkContentExists(reportId, 'report');
-      
-      if (existsError) {
-        throw existsError;
-      }
-      
-      if (!exists) {
-        setNotFound(true);
+  useEffect(() => {
+    const loadReport = async () => {
+      if (!reportId) {
+        setError('Report ID is required');
         setIsLoading(false);
-        const options: AccessLogOptions = {
-          successful: false, 
-          error: 'Report not found'
-        };
-        logContentAccess('report', reportId, options, 'not_found');
         return;
       }
 
-      // Check if password protected
-      const { isProtected, error: protectedError } = await checkContentPasswordProtection(reportId, 'report');
-      
-      if (protectedError) {
-        throw protectedError;
-      }
-      
-      setIsPasswordProtected(isProtected);
-      
-      // If not password protected, fetch report directly
-      if (!isProtected) {
-        setAccessGranted(true);
-        await fetchReport();
-      } else {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response: SharedReportResponse = await fetchReportByAnyId(reportId);
+        
+        if (response.error) {
+          throw response.error;
+        }
+
+        if (response.data) {
+          setReport(response.data);
+          
+          // Check if report is password protected
+          const passwordProtected = !!response.data.password;
+          setIsPasswordProtected(passwordProtected);
+          
+          if (!passwordProtected) {
+            setAccessGranted(true);
+          }
+          
+          // Log access
+          logReportAccess(reportId, { 
+            successful: true 
+          }, 'view');
+        } else {
+          logReportAccess(reportId, { 
+            successful: false,
+            error: 'Report not found' 
+          }, 'not_found');
+          
+          throw new Error('Report not found');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Error al cargar el informe');
+        console.error('Error loading report:', err);
+        
+        logReportAccess(reportId, { 
+          successful: false,
+          error: err.message || 'Unknown error' 
+        }, 'error');
+      } finally {
         setIsLoading(false);
       }
-    } catch (err: any) {
-      console.error('Error checking report status:', err);
-      setError(err.message || 'Error checking report status');
-      setIsLoading(false);
-      
-      const options: AccessLogOptions = {
-        successful: false, 
-        error: err.message || 'Unknown error'
-      };
-      logContentAccess('report', reportId, options, 'error');
-    }
-  };
+    };
 
-  // Function to fetch report data
-  const fetchReport = async () => {
-    if (!reportId) return;
-    
-    try {
-      setIsLoading(true);
-      
-      const { report, error: fetchError } = await fetchReportBySharedUrl(reportId);
-      
-      if (fetchError) throw fetchError;
-      
-      if (!report) {
-        setNotFound(true);
-        const options: AccessLogOptions = {
-          successful: false, 
-          error: 'Report not found'
-        };
-        logContentAccess('report', reportId, options, 'data_not_found');
-        throw new Error('Report not found');
-      }
-      
-      setReport(report);
-      const options: AccessLogOptions = {
-        successful: true, 
-        source: 'direct_access'
-      };
-      logContentAccess('report', reportId, options, 'view');
-      
-    } catch (err: any) {
-      console.error('Error fetching report:', err);
-      setError(err.message || 'Error fetching report');
-      
-      const options: AccessLogOptions = {
-        successful: false, 
-        error: err.message || 'Unknown error',
-        source: 'direct_access'
-      };
-      logContentAccess('report', reportId, options, 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    loadReport();
+  }, [reportId]);
 
-  // Function to verify password
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
-      const isValid = await verifyContentPassword(reportId, 'report', password);
+      const isValid = await verifyReportPassword(reportId, password);
       
       if (isValid) {
         setAccessGranted(true);
-        await fetchReport();
         
-        const options: AccessLogOptions = {
-          successful: true,
-          passwordAttempt: true,
-          source: 'password_form'
-        };
-        logContentAccess('report', reportId, options, 'password');
-        return true;
+        // Log successful password attempt
+        logReportAccess(reportId, { 
+          successful: true 
+        }, 'password');
+      } else {
+        // Log failed password attempt
+        logReportAccess(reportId, { 
+          successful: false,
+          error: 'Invalid password' 
+        }, 'password');
       }
       
-      const options: AccessLogOptions = {
-        successful: false,
-        passwordAttempt: true,
-        source: 'password_form'
-      };
-      logContentAccess('report', reportId, options, 'password');
-      return false;
-      
-    } catch (err: any) {
+      return isValid;
+    } catch (err) {
       console.error('Error verifying password:', err);
-      const options: AccessLogOptions = {
-        successful: false,
-        passwordAttempt: true,
-        error: err.message,
-        source: 'password_form'
-      };
-      logContentAccess('report', reportId, options, 'password');
       return false;
     }
   };
-
-  useEffect(() => {
-    if (reportId) {
-      checkReportStatus();
-    }
-  }, [reportId]);
 
   return {
     report,
     isLoading,
     error,
-    notFound,
     isPasswordProtected,
     accessGranted,
-    verifyPassword,
-    refetch: checkReportStatus
+    verifyPassword
   };
 };
-
-export default useReportData;

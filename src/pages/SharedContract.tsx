@@ -1,31 +1,40 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ContractHeader, ContractContent } from '@/components/shared-contract';
 import { useContractData } from '@/components/shared-contract/hooks/useContractData';
-import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
+import ContractContent from '@/components/shared-contract/ContractContent';
+import ContractHeader from '@/components/shared-contract/ContractHeader';
+import ContractSign from '@/components/shared-contract/ContractSign';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { PublicContract } from '@/components/shared-contract/types';
+import AnimatedContainer from '@/components/ui/AnimatedContainer';
+import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 
 const SharedContract: React.FC = () => {
-  const { contractId = '' } = useParams<{ contractId: string }>();
+  const { contractId } = useParams<{ contractId: string }>();
+  const [activeTab, setActiveTab] = useState('view');
   const [passwordInput, setPasswordInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [showError, setShowError] = useState(false);
-  const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-  
-  const { 
-    contract, 
+
+  const {
+    contract,
     loading,
     error,
-    isPasswordProtected, 
-    isPasswordVerified, 
+    isPasswordProtected,
+    isPasswordVerified,
     verifyPassword,
     signContract,
     handlePrint
-  } = useContractData(contractId);
-  
+  } = useContractData(contractId || '');
+
+  const handleOpenSignDialog = () => {
+    setActiveTab('sign');
+  };
+
   const handleVerifyPassword = async () => {
     if (!passwordInput.trim()) {
       setShowError(true);
@@ -51,26 +60,25 @@ const SharedContract: React.FC = () => {
       setVerifying(false);
     }
   };
-  
-  const handleSign = async (signature: string) => {
-    if (!contract) return;
-    
+
+  const handleSign = async (signature: string): Promise<boolean> => {
     try {
-      const { success, error } = await signContract(signature);
-      
+      const success = await signContract(signature);
       if (success) {
-        setIsSignDialogOpen(false);
         toast.success('Contrato firmado correctamente');
+        setActiveTab('view');
       } else {
-        toast.error(error || 'No se pudo firmar el contrato');
+        toast.error('Error al firmar el contrato');
       }
-    } catch (err) {
-      console.error('Error signing contract:', err);
+      return success;
+    } catch (error) {
+      console.error('Error signing contract:', error);
       toast.error('Error al firmar el contrato');
+      return false;
     }
   };
-  
-  // Show password protection dialog
+
+  // Show password protection dialog if needed
   if (isPasswordProtected && !isPasswordVerified) {
     return (
       <PasswordProtectionDialog
@@ -87,50 +95,86 @@ const SharedContract: React.FC = () => {
       />
     );
   }
-  
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
-      <div className="container mx-auto px-4 py-8 print:py-2 max-w-4xl">
-        <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-0"
-          ref={contentRef}
-        >
-          {contract && (
-            <>
-              <ContractHeader 
-                contract={contract as PublicContract}
-              />
-              
-              <div className="flex flex-col md:flex-row">
-                <div className="flex-1 p-6">
-                  <ContractContent
-                    loading={loading}
-                    error={error}
-                    contract={contract as PublicContract}
-                    onOpenSignDialog={() => setIsSignDialogOpen(true)}
-                    onPrint={handlePrint}
-                    onSign={handleSign}
-                    isSignDialogOpen={isSignDialogOpen}
-                    setIsSignDialogOpen={setIsSignDialogOpen}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-          
-          {loading && (
-            <div className="flex justify-center items-center p-12">
-              <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
-            </div>
-          )}
-          
-          {error && !loading && (
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-red-500 mb-2">Error</h2>
-              <p className="text-slate-600 dark:text-slate-400">{error}</p>
-            </div>
-          )}
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="container max-w-4xl mx-auto p-6">
+        <div className="bg-destructive/10 p-6 rounded-lg">
+          <h2 className="text-xl font-semibold text-destructive mb-4">Error al cargar el contrato</h2>
+          <p className="mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Intentar de nuevo</Button>
         </div>
       </div>
+    );
+  }
+
+  // Show 404 state
+  if (!contract) {
+    return (
+      <div className="container max-w-4xl mx-auto p-6">
+        <div className="bg-muted p-6 rounded-lg text-center">
+          <h2 className="text-xl font-semibold mb-4">Contrato no encontrado</h2>
+          <p className="mb-4">El contrato que buscas no existe o ha expirado.</p>
+          <Button onClick={() => window.location.reload()}>Intentar de nuevo</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Convert SharedContract to PublicContract
+  const publicContract: PublicContract = {
+    ...contract,
+    content: contract.content as unknown as string // Type casting to string as required by PublicContract
+  };
+
+  return (
+    <div className="container max-w-4xl mx-auto px-4 py-8">
+      <AnimatedContainer animation="fade-in">
+        <ContractHeader 
+          title={contract.title} 
+          client={contract.client_name || ''} 
+          canSign={!contract.client_signed}
+          status={contract.status}
+        />
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+          <TabsList className="mb-4 w-full grid grid-cols-2">
+            <TabsTrigger value="view">Ver contrato</TabsTrigger>
+            <TabsTrigger 
+              value="sign" 
+              disabled={contract.client_signed || contract.status === 'expired' || contract.status === 'cancelled'}
+            >
+              Firmar contrato
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="view" className="border p-6 rounded-lg min-h-[50vh]">
+            <ContractContent 
+              contract={publicContract} 
+              onOpenSignDialog={handleOpenSignDialog}
+              onPrint={handlePrint}
+            />
+          </TabsContent>
+          
+          <TabsContent value="sign">
+            <ContractSign 
+              contract={publicContract}
+              onSign={handleSign} 
+              onCancel={() => setActiveTab('view')} 
+            />
+          </TabsContent>
+        </Tabs>
+      </AnimatedContainer>
     </div>
   );
 };

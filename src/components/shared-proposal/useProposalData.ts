@@ -1,148 +1,113 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { logSharedProposalAccess } from '@/utils/sharedContentLogger';
+import { useState, useEffect } from 'react';
+import { SharedProposal, SharedProposalResponse } from '@/types/shared-content';
+import { fetchProposalBySharedUrl, verifyProposalPassword, logProposalAccess } from '@/api/shared-content/proposals';
 
-interface PublicProposal {
-  id: string;
-  title: string;
-  description?: string;
-  services?: any;
-  status: string;
-  price?: number;
-  client_name: string;
-  client_website?: string;
-  created_at: string;
-  updated_at: string;
-  shared_url: string;
+interface UseProposalDataResult {
+  proposal: SharedProposal | null;
+  isLoading: boolean;
+  error: string | null;
+  isPasswordProtected: boolean;
+  accessGranted: boolean;
+  verifyPassword: (password: string) => Promise<boolean>;
 }
 
-const useProposalData = (sharedUrlId: string | undefined) => {
-  const [proposal, setProposal] = useState<PublicProposal | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const useProposalData = (proposalId: string): UseProposalDataResult => {
+  const [proposal, setProposal] = useState<SharedProposal | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
-  
-  const fetchProposal = useCallback(async () => {
-    if (!sharedUrlId) {
-      setError('URL de propuesta no válido');
-      setIsLoading(false);
-      return;
-    }
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Check if proposal is password protected
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_proposal_password_protection',
-        { shared_url_param: sharedUrlId }
-      );
-      
-      if (protectionError) throw new Error(protectionError.message);
-      
-      setIsPasswordProtected(protectionData === true);
-      
-      // If password protected and access not granted, don't fetch content
-      if (protectionData === true && !accessGranted) {
+  const [isPasswordProtected, setIsPasswordProtected] = useState<boolean>(false);
+  const [accessGranted, setAccessGranted] = useState<boolean>(false);
+
+  useEffect(() => {
+    const loadProposal = async () => {
+      if (!proposalId) {
+        setError('Proposal ID is required');
         setIsLoading(false);
         return;
       }
-      
-      // Try to fetch from client_proposals first
-      const { data: proposalData, error: proposalError } = await supabase
-        .from('client_proposals')
-        .select('*, clients:client_id(name, website)')
-        .eq('shared_url', sharedUrlId)
-        .maybeSingle();
-      
-      // If not found, try public_proposals
-      if (!proposalData || proposalError) {
-        const { data: publicProposal, error: publicError } = await supabase
-          .from('public_proposals')
-          .select('*')
-          .eq('shared_url', sharedUrlId)
-          .maybeSingle();
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response: SharedProposalResponse = await fetchProposalBySharedUrl(proposalId);
         
-        if (publicError) throw new Error(publicError.message);
-        
-        if (!publicProposal) {
-          throw new Error('Propuesta no encontrada');
+        if (response.error) {
+          throw response.error;
         }
+
+        if (response.data) {
+          setProposal(response.data);
+          
+          // Check if proposal is password protected
+          const passwordProtected = !!response.data.password;
+          setIsPasswordProtected(passwordProtected);
+          
+          if (!passwordProtected) {
+            setAccessGranted(true);
+          }
+          
+          // Log access
+          logProposalAccess(proposalId, { 
+            successful: true 
+          }, 'view');
+        } else {
+          logProposalAccess(proposalId, { 
+            successful: false,
+            error: 'Proposal not found' 
+          }, 'not_found');
+          
+          throw new Error('Proposal not found');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Error al cargar la propuesta');
+        console.error('Error loading proposal:', err);
         
-        setProposal(publicProposal as PublicProposal);
-        
-        // Log successful access
-        logSharedProposalAccess(sharedUrlId, { successful: true });
-      } else {
-        // Format data from client_proposals
-        const formattedProposal = {
-          ...proposalData,
-          client_name: proposalData.clients?.name,
-          client_website: proposalData.clients?.website
-        };
-        
-        setProposal(formattedProposal as PublicProposal);
-        
-        // Log successful access
-        logSharedProposalAccess(sharedUrlId, { successful: true });
+        logProposalAccess(proposalId, { 
+          successful: false,
+          error: err.message || 'Unknown error' 
+        }, 'error');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err: any) {
-      console.error('Error fetching proposal:', err);
-      setError(err.message || 'Error al cargar la propuesta');
-      
-      // Log error
-      logSharedProposalAccess(sharedUrlId, {
-        successful: false,
-        error: err.message
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [sharedUrlId, accessGranted]);
-  
+    };
+
+    loadProposal();
+  }, [proposalId]);
+
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.rpc(
-        'verify_shared_proposal_password',
-        {
-          shared_url_param: sharedUrlId,
-          password_param: password
-        }
-      );
+      const isValid = await verifyProposalPassword(proposalId, password);
       
-      if (error) throw error;
+      if (isValid) {
+        setAccessGranted(true);
+        
+        // Log successful password attempt
+        logProposalAccess(proposalId, { 
+          successful: true 
+        }, 'password');
+      } else {
+        // Log failed password attempt
+        logProposalAccess(proposalId, { 
+          successful: false,
+          error: 'Invalid password' 
+        }, 'password');
+      }
       
-      setAccessGranted(Boolean(data));
-      
-      // Log password attempt
-      logSharedProposalAccess(sharedUrlId!, {
-        passwordAttempt: true,
-        successful: Boolean(data)
-      });
-      
-      return Boolean(data);
-    } catch (error) {
-      console.error('Error verifying password:', error);
+      return isValid;
+    } catch (err) {
+      console.error('Error verifying password:', err);
       return false;
     }
   };
-  
-  useEffect(() => {
-    fetchProposal();
-  }, [fetchProposal]);
-  
+
   return {
     proposal,
     isLoading,
     error,
     isPasswordProtected,
     accessGranted,
-    verifyPassword,
-    refetch: fetchProposal
+    verifyPassword
   };
 };
-
-export default useProposalData;

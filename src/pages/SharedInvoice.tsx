@@ -1,169 +1,61 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { InvoiceHeader, InvoiceContent, InvoiceActions } from '@/components/shared-invoice';
-import { fetchInvoiceBySharedUrl } from '@/api/shared-content';
-import { checkContentExists, checkContentPasswordProtection, verifyContentPassword } from '@/api/shared-content';
+import { useInvoiceData } from '@/components/shared-invoice/hooks/useInvoiceData';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
-import { SharedInvoice, SharedContentStatus } from '@/types/shared-content';
-import { Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
+import InvoiceViewer from '@/components/shared-invoice/InvoiceViewer';
 
-const SharedInvoicePage = () => {
+const SharedInvoice: React.FC = () => {
   const { invoiceId } = useParams<{ invoiceId: string }>();
-  const [invoice, setInvoice] = useState<SharedInvoice | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
-  const [verifyingPassword, setVerifyingPassword] = useState(false);
-  const [showPasswordError, setShowPasswordError] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  
+  const { 
+    invoice, 
+    isLoading, 
+    error, 
+    isPasswordProtected, 
+    accessGranted,
+    verifyPassword 
+  } = useInvoiceData({ invoiceId: invoiceId || '' });
 
-  const fetchInvoice = async (password?: string) => {
-    if (!invoiceId) {
-      setError('No invoice ID provided');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // First check if the invoice exists
-      const { exists, error: existsError } = await checkContentExists(invoiceId, 'invoice');
-      
-      if (existsError) {
-        throw existsError;
-      }
-      
-      if (!exists) {
-        setError('Invoice not found');
-        setLoading(false);
-        return;
-      }
-
-      // Check if password protected
-      const { isProtected, error: protectedError } = await checkContentPasswordProtection(invoiceId, 'invoice');
-      
-      if (protectedError) {
-        throw protectedError;
-      }
-      
-      setIsPasswordProtected(isProtected);
-      
-      // If password protected and no password provided, wait for password input
-      if (isProtected && !password) {
-        setIsPasswordVerified(false);
-        setLoading(false);
-        return;
-      }
-      
-      // If password protected and password provided, verify it first
-      if (isProtected && password) {
-        const validPassword = await verifyContentPassword(invoiceId, 'invoice', password);
-        
-        if (!validPassword) {
-          setError('Invalid password');
-          setIsPasswordVerified(false);
-          setLoading(false);
-          return;
-        }
-        
-        setIsPasswordVerified(true);
-      } else if (!isProtected) {
-        // If not password protected, mark as verified
-        setIsPasswordVerified(true);
-      }
-
-      // Fetch the invoice
-      const { invoice: fetchedInvoice, error: fetchError } = await fetchInvoiceBySharedUrl(invoiceId);
-      
-      if (fetchError) {
-        throw fetchError;
-      }
-      
-      if (fetchedInvoice) {
-        setInvoice(fetchedInvoice);
-      } else {
-        setError('Invoice not found');
-      }
-    } catch (err: any) {
-      console.error('Error fetching invoice:', err);
-      setError(err.message || 'Failed to load invoice');
-    } finally {
-      setLoading(false);
+  const handleRetry = () => {
+    if (retryCount < 3) {
+      setRetryCount(prev => prev + 1);
+      window.location.reload();
     }
   };
 
   const handleVerifyPassword = async () => {
+    if (!passwordInput.trim()) {
+      setShowError(true);
+      return;
+    }
+    
+    setVerifying(true);
+    setShowError(false);
+    
     try {
-      setVerifyingPassword(true);
-      setShowPasswordError(false);
+      const success = await verifyPassword(passwordInput);
       
-      if (!passwordInput || !invoiceId) {
-        setShowPasswordError(true);
-        return false;
-      }
-      
-      const validPassword = await verifyContentPassword(invoiceId, 'invoice', passwordInput);
-      
-      if (validPassword) {
-        setIsPasswordVerified(true);
-        fetchInvoice(passwordInput);
+      if (success) {
         toast.success('Acceso concedido');
-        return true;
       } else {
-        setShowPasswordError(true);
+        setShowError(true);
         toast.error('Contraseña incorrecta');
-        return false;
       }
     } catch (err) {
-      console.error('Error verifying password:', err);
-      setShowPasswordError(true);
-      toast.error('Error al verificar contraseña');
-      return false;
+      setShowError(true);
+      toast.error('Error al verificar la contraseña');
     } finally {
-      setVerifyingPassword(false);
+      setVerifying(false);
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  useEffect(() => {
-    if (invoiceId) {
-      fetchInvoice();
-    }
-  }, [invoiceId]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-lg">Cargando factura...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
-        <div className="p-8 border rounded-lg bg-red-50 max-w-md">
-          <h1 className="text-2xl font-bold text-red-700 mb-4">Error</h1>
-          <p className="text-red-600 mb-6">{error}</p>
-          <p className="text-gray-500">
-            La factura solicitada no está disponible o ha expirado.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isPasswordProtected && !isPasswordVerified) {
+  if (isPasswordProtected && !accessGranted) {
     return (
       <PasswordProtectionDialog
         isOpen={true}
@@ -173,39 +65,62 @@ const SharedInvoicePage = () => {
         password={passwordInput}
         setPassword={setPasswordInput}
         onVerify={handleVerifyPassword}
-        isVerifying={verifyingPassword}
-        showError={showPasswordError}
+        isVerifying={verifying}
+        showError={showError}
         errorMessage="Contraseña incorrecta. Por favor, inténtalo de nuevo."
       />
     );
   }
 
-  if (!invoice) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
-        <div className="p-8 border rounded-lg bg-yellow-50 max-w-md">
-          <h1 className="text-2xl font-bold text-yellow-700 mb-4">Factura no encontrada</h1>
-          <p className="text-gray-600 mb-6">
-            La factura solicitada no está disponible o ha expirado.
-          </p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-destructive/10 text-destructive p-6 rounded-lg">
+          <h2 className="text-xl font-semibold mb-4">Error al cargar la factura</h2>
+          <p className="mb-4">{error}</p>
+          <button 
+            onClick={handleRetry} 
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            disabled={retryCount >= 3}
+          >
+            Intentar de nuevo
+          </button>
+          {retryCount >= 3 && (
+            <p className="mt-4 text-sm">
+              Se ha superado el número máximo de intentos. Por favor, contacta con soporte.
+            </p>
+          )}
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <InvoiceHeader 
-        invoice={invoice} 
-        onPrint={handlePrint}
-      />
-      <InvoiceContent invoice={invoice} />
-      <InvoiceActions 
-        invoice={invoice}
-        onPrint={handlePrint}
-      />
-    </div>
-  );
+  if (!invoice) {
+    return (
+      <div className="container max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-muted p-6 rounded-lg text-center">
+          <h2 className="text-xl font-semibold mb-4">Factura no encontrada</h2>
+          <p className="mb-4">Esta factura no existe o ha sido eliminada.</p>
+          <button 
+            onClick={handleRetry} 
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+          >
+            Intentar de nuevo
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return <InvoiceViewer invoice={invoice} />;
 };
 
-export default SharedInvoicePage;
+export default SharedInvoice;

@@ -1,329 +1,235 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, Copy, Link, Mail, Lock, Unlock, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Link2, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import { uuid } from '@supabase/supabase-js/dist/module/lib/helpers';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShareReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportId: string;
-  reportTitle: string;
+  report: {
+    id: string;
+    title: string;
+    clientId: string;
+    summary?: string;
+    url?: string;
+  };
+  clientName?: string;
+  clientWebsite?: string;
+  onShared?: (sharedUrl: string) => void;
 }
 
 const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   open,
   onOpenChange,
-  reportId,
-  reportTitle
+  report,
+  clientName = '',
+  clientWebsite = '',
+  onShared
 }) => {
-  const [copied, setCopied] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
-  const [passwordProtected, setPasswordProtected] = useState(false);
+  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [password, setPassword] = useState('');
-  const [sharedUrlId, setSharedUrlId] = useState<string | null>(null);
-  
-  // Generate a random password when needed
-  const generateRandomPassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setPassword(result);
-  };
-  
-  // Generate and get public link when dialog opens
+  const [isSharing, setIsSharing] = useState(false);
+  const [isShared, setIsShared] = useState(false);
+  const [sharedUrl, setSharedUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const reportId = report?.id;
+
   useEffect(() => {
-    if (!open || !reportId) return;
+    // Reset state when dialog opens
+    if (open) {
+      setIsShared(false);
+      setSharedUrl(null);
+      setCopied(false);
+    }
+  }, [open]);
+
+  const shareReport = async () => {
+    if (!reportId) return;
     
-    const generateShareUrl = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Generating share URL for report:', reportId);
+    try {
+      setIsSharing(true);
+      
+      // First check if the report is already shared
+      const { data: existingShared, error: checkError } = await supabase
+        .from('shared_content')
+        .select('shared_url')
+        .eq('original_id', reportId)
+        .eq('content_type', 'report')
+        .single();
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+      
+      let sharedUrlId: string;
+      
+      if (existingShared) {
+        // Update existing shared record
+        sharedUrlId = existingShared.shared_url;
         
-        // Check if the report exists and if it already has a shared URL
+        const { error: updateError } = await supabase
+          .from('shared_content')
+          .update({
+            password: isPasswordProtected ? password : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('shared_url', sharedUrlId);
+          
+        if (updateError) throw updateError;
+      } else {
+        // Create new shared record
+        sharedUrlId = uuid();
+        
+        // Get full report data
         const { data: reportData, error: reportError } = await supabase
           .from('reports')
-          .select('shared_url, password')
+          .select('*')
           .eq('id', reportId)
           .single();
-        
-        if (reportError) {
-          console.error('Error checking report:', reportError);
-          throw new Error(`Error checking report: ${reportError.message}`);
-        }
-        
-        let sharedUrl = reportData?.shared_url;
-        
-        // If there's no shared_url yet, generate one
-        if (!sharedUrl) {
-          // Generate UUID on the client side
-          const newSharedUrl = crypto.randomUUID();
           
-          // Update the report with the new shared URL
-          const { error: updateError } = await supabase
-            .from('reports')
-            .update({ shared_url: newSharedUrl })
-            .eq('id', reportId);
-            
-          if (updateError) {
-            console.error('Error generating shared URL:', updateError);
-            throw new Error(`Error generating shared URL: ${updateError.message}`);
-          }
+        if (reportError) throw reportError;
+        
+        // Insert into shared_content
+        const { error: insertError } = await supabase
+          .from('shared_content')
+          .insert({
+            original_id: reportId,
+            content_type: 'report',
+            title: report.title,
+            description: report.summary || '',
+            content: reportData.content || {},
+            status: reportData.status,
+            shared_url: sharedUrlId,
+            password: isPasswordProtected ? password : null,
+            client_name: clientName,
+            client_website: clientWebsite
+          });
           
-          sharedUrl = newSharedUrl;
-          console.log('Generated new shared URL:', sharedUrl);
-        }
-        
-        setSharedUrlId(sharedUrl);
-        
-        // Check for existing password
-        const existingPassword = reportData?.password;
-        if (existingPassword) {
-          setPasswordProtected(true);
-          setPassword(existingPassword);
-        } else {
-          setPasswordProtected(false);
-          setPassword('');
-        }
-        
-        // Check if public_reports entry exists
-        const { data: publicReportData } = await supabase
-          .from('public_reports')
-          .select('id')
-          .eq('shared_url', sharedUrl)
-          .maybeSingle();
-          
-        // If no public report entry exists, create one
-        if (!publicReportData) {
-          const { data: fullReport, error: fullReportError } = await supabase
-            .from('reports')
-            .select('*, clients(name, website)')
-            .eq('id', reportId)
-            .single();
-            
-          if (fullReportError) {
-            console.error('Error getting full report:', fullReportError);
-          } else if (fullReport) {
-            // Create public report record using RPC function
-            const { error: rpcError } = await supabase.rpc('create_public_report', {
-              report_id_param: fullReport.id,
-              title_param: fullReport.title,
-              summary_param: fullReport.summary,
-              url_param: fullReport.url,
-              status_param: fullReport.status,
-              content_param: fullReport.content,
-              date_param: fullReport.date,
-              shared_url_param: sharedUrl,
-              password_param: fullReport.password,
-              client_name_param: fullReport.clients?.name,
-              client_website_param: fullReport.clients?.website
-            });
-            
-            if (rpcError) {
-              console.error('Error creating public report:', rpcError);
-              // Still continue as we can try to view the report even if this fails
-            }
-          }
-        }
-        
-        // Build the share URL - using the shared_url as the identifier
-        const fullShareUrl = `${window.location.origin}/shared/reports/${sharedUrl}`;
-        setShareUrl(fullShareUrl);
-        
-        toast.success('Enlace generado correctamente');
-      } catch (error: any) {
-        console.error('Error generating share URL:', error);
-        toast.error('Error: ' + (error.message || 'Error al generar enlace'));
-      } finally {
-        setIsLoading(false);
+        if (insertError) throw insertError;
       }
-    };
-    
-    generateShareUrl();
-  }, [open, reportId]);
-  
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
+      
+      // Set state and callback
+      setSharedUrl(`${window.location.origin}/shared/reports/${sharedUrlId}`);
+      setIsShared(true);
+      if (onShared) onShared(sharedUrlId);
+      
+      // Also update the report with the shared_url
+      await supabase
+        .from('reports')
+        .update({ shared_url: sharedUrlId })
+        .eq('id', reportId);
+      
+    } catch (error: any) {
+      console.error('Error sharing report:', error);
+      toast.error('Error al compartir el informe', {
+        description: error.message
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (sharedUrl) {
+      navigator.clipboard.writeText(sharedUrl);
       setCopied(true);
       toast.success('Enlace copiado al portapapeles');
       
       setTimeout(() => {
         setCopied(false);
       }, 2000);
-    } catch (error) {
-      toast.error('No se pudo copiar el enlace');
-      console.error('Error copiando al portapapeles:', error);
     }
   };
-  
-  const handleEmailShare = () => {
-    const subject = encodeURIComponent(`Informe SEO: ${reportTitle}`);
-    const body = encodeURIComponent(`Hola,\n\nQuiero compartir contigo este informe SEO${passwordProtected ? ' (protegido con contraseña)' : ''}.\n\nPuedes verlo en: ${shareUrl}\n\n${passwordProtected ? `Contraseña: ${password}\n\n` : ''}Saludos.`);
-    
-    window.open(`mailto:?subject=${subject}&body=${body}`);
-  };
-  
-  const handleUpdatePassword = async () => {
-    if (!reportId) return;
-    
-    setIsLoading(true);
-    try {
-      // Update the password in the reports table
-      const passwordValue = passwordProtected ? password : null;
-      
-      const { error } = await supabase
-        .from('reports')
-        .update({ password: passwordValue })
-        .eq('id', reportId);
-        
-      if (error) throw new Error('Error al actualizar la contraseña');
-      
-      // Also update in public_reports if it exists
-      if (sharedUrlId) {
-        // Use RPC function to update password in public_reports
-        const { error: rpcError } = await supabase.rpc('update_public_report_password', {
-          shared_url_param: sharedUrlId,
-          password_param: passwordValue
-        });
-        
-        if (rpcError) {
-          console.error('Error updating public report password:', rpcError);
-        }
-      }
-      
-      toast.success(passwordProtected 
-        ? 'Informe protegido con contraseña' 
-        : 'Protección de contraseña desactivada');
-      
-    } catch (err: any) {
-      console.error('Error updating password:', err);
-      toast.error(err.message || 'Error al actualizar la contraseña');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md glass">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Compartir Informe</DialogTitle>
           <DialogDescription>
-            Comparte este informe mediante un enlace directo.
+            Compartir el informe "{report?.title}" con el cliente.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6 py-4">
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="w-8 h-8 rounded-full border-4 border-t-primary border-primary/30 animate-spin"></div>
-              <span className="ml-3">Generando enlace...</span>
+        
+        {!isShared ? (
+          <>
+            <div className="flex items-center space-x-2 pt-4">
+              <Checkbox 
+                id="password-protection" 
+                checked={isPasswordProtected}
+                onCheckedChange={(checked) => setIsPasswordProtected(!!checked)}
+              />
+              <Label htmlFor="password-protection">Proteger con contraseña</Label>
             </div>
-          ) : (
-            <>
-              <div className="flex items-center space-x-2">
-                <div className="grid flex-1 gap-2">
-                  <Input
-                    value={shareUrl}
-                    readOnly
-                    className="w-full"
-                  />
+            
+            {isPasswordProtected && (
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input 
+                  id="password" 
+                  type="text" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  placeholder="Ingresa una contraseña"
+                />
+              </div>
+            )}
+            
+            <DialogFooter className="pt-4">
+              <Button 
+                onClick={shareReport}
+                disabled={isSharing || (isPasswordProtected && !password)}
+              >
+                {isSharing ? "Compartiendo..." : "Compartir informe"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center space-x-2 pt-4">
+              <div className="border border-input bg-background rounded-md px-3 py-2 text-sm w-full flex items-center justify-between">
+                <div className="truncate mr-2">
+                  <Link2 className="h-4 w-4 inline mr-2 text-muted-foreground" />
+                  {sharedUrl}
                 </div>
                 <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handleCopyLink} 
-                  className="transition-all group hover:bg-primary hover:text-primary-foreground"
+                  variant="ghost" 
+                  size="sm"
+                  onClick={copyToClipboard}
+                  disabled={copied}
                 >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500 group-hover:text-primary-foreground" />
-                  ) : (
-                    <Copy className="h-4 w-4 group-hover:text-primary-foreground" />
-                  )}
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button 
-                  onClick={handleCopyLink} 
-                  className="w-full sm:w-auto gap-2 group"
-                >
-                  <Link className="h-4 w-4 group-hover:animate-pulse" />
-                  Copiar enlace
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleEmailShare} 
-                  className="w-full sm:w-auto gap-2 group transition-colors hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Mail className="h-4 w-4 group-hover:animate-pulse" />
-                  Compartir por email
-                </Button>
-              </div>
-              
-              <div className="border-t border-border pt-4 mt-2">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="password-protection"
-                      checked={passwordProtected}
-                      onCheckedChange={setPasswordProtected}
-                    />
-                    <Label htmlFor="password-protection" className="flex items-center gap-1">
-                      {passwordProtected ? (
-                        <Lock className="h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Unlock className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      Proteger con contraseña
-                    </Label>
-                  </div>
-                </div>
-                
-                {passwordProtected && (
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        type="text"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Introduce una contraseña"
-                        className="flex-1"
-                      />
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={generateRandomPassword}
-                        title="Generar contraseña aleatoria"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      El destinatario necesitará esta contraseña para ver el informe
-                    </p>
-                  </div>
-                )}
-                
-                <Button 
-                  className="mt-4 w-full"
-                  onClick={handleUpdatePassword}
-                  disabled={isLoading || (passwordProtected && !password)}
-                >
-                  {passwordProtected ? 'Actualizar protección' : 'Quitar protección'}
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
+            </div>
+            
+            <div className="pt-2 text-sm text-muted-foreground">
+              {isPasswordProtected
+                ? "Este informe está protegido con contraseña."
+                : "Este informe es visible para cualquier persona con el enlace."}
+            </div>
+            
+            <DialogFooter className="pt-4">
+              <Button onClick={() => onOpenChange(false)}>
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

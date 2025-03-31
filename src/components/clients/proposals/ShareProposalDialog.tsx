@@ -1,208 +1,215 @@
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useState } from 'react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, Copy, Link, Mail } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Link2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { uuid } from '@supabase/supabase-js/dist/module/lib/helpers';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface ShareProposalDialogProps {
+interface ShareProposalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   proposalId: string;
-  proposalTitle?: string;
+  proposalTitle: string;
+  clientName: string;
+  clientWebsite?: string;
+  onShared?: (sharedUrl: string) => void;
 }
 
 const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   open,
   onOpenChange,
   proposalId,
-  proposalTitle = "Propuesta"
+  proposalTitle,
+  clientName,
+  clientWebsite = '',
+  onShared
 }) => {
+  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const [password, setPassword] = useState('');
+  const [isSharing, setIsSharing] = useState(false);
+  const [isShared, setIsShared] = useState(false);
+  const [sharedUrl, setSharedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Reset state when dialog opens or closes
-  useEffect(() => {
-    if (!open) {
-      // Reset state when dialog closes
-      setCopied(false);
-      return;
-    }
+
+  const shareProposal = async () => {
+    if (!proposalId) return;
     
-    // Generate URL when dialog opens
-    const generateShareUrl = async () => {
-      try {
-        setIsLoading(true);
+    try {
+      setIsSharing(true);
+      
+      // First check if the proposal is already shared
+      const { data: existingShared, error: checkError } = await supabase
+        .from('shared_content')
+        .select('shared_url')
+        .eq('original_id', proposalId)
+        .eq('content_type', 'proposal')
+        .single();
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+      
+      let sharedUrlId: string;
+      
+      if (existingShared) {
+        // Update existing shared record
+        sharedUrlId = existingShared.shared_url;
         
-        // Verificar si la propuesta ya tiene un shared_url
-        const { data: proposalData, error: proposalError } = await supabase
+        const { error: updateError } = await supabase
+          .from('shared_content')
+          .update({
+            password: isPasswordProtected ? password : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('shared_url', sharedUrlId);
+          
+        if (updateError) throw updateError;
+      } else {
+        // Create new shared record
+        sharedUrlId = uuid();
+        
+        // Get proposal data
+        const { data: proposal, error: proposalError } = await supabase
           .from('client_proposals')
-          .select('shared_url, client_id, clients(name, website)')
+          .select('*')
           .eq('id', proposalId)
           .single();
-        
-        if (proposalError) {
-          throw new Error('Error al obtener la propuesta');
-        }
-        
-        let sharedUrl = proposalData.shared_url;
-        
-        // Si no tiene shared_url, generamos uno
-        if (!sharedUrl) {
-          const { data: updatedProposal, error: updateError } = await supabase
-            .from('client_proposals')
-            .update({ shared_url: crypto.randomUUID() })
-            .eq('id', proposalId)
-            .select('shared_url')
-            .single();
           
-          if (updateError) {
-            throw new Error('Error al generar enlace compartido');
-          }
-          
-          sharedUrl = updatedProposal.shared_url;
-        }
+        if (proposalError) throw proposalError;
         
-        // Verificar si ya existe en public_proposals
-        const { data: existingPublic } = await supabase
-          .from('public_proposals')
-          .select('id')
-          .eq('shared_url', sharedUrl)
-          .single();
-        
-        // Si no existe en public_proposals, lo creamos
-        if (!existingPublic) {
-          // Obtenemos todos los datos de la propuesta
-          const { data: fullProposal, error: fullProposalError } = await supabase
-            .from('client_proposals')
-            .select('*')
-            .eq('id', proposalId)
-            .single();
+        // Insert into shared_content
+        const { error: insertError } = await supabase
+          .from('shared_content')
+          .insert({
+            original_id: proposalId,
+            content_type: 'proposal',
+            title: proposalTitle,
+            description: proposal.description || '',
+            content: proposal,
+            status: proposal.status,
+            shared_url: sharedUrlId,
+            password: isPasswordProtected ? password : null,
+            client_name: clientName,
+            client_website: clientWebsite
+          });
           
-          if (fullProposalError) {
-            throw new Error('Error al obtener datos completos de la propuesta');
-          }
-          
-          // Insertamos en public_proposals con type assertion
-          const { error: insertError } = await supabase
-            .from('public_proposals')
-            .insert([{
-              id: fullProposal.id,
-              title: fullProposal.title,
-              description: fullProposal.description,
-              status: fullProposal.status,
-              price: fullProposal.price,
-              services: fullProposal.services,
-              shared_url: sharedUrl,
-              created_at: fullProposal.created_at,
-              updated_at: fullProposal.updated_at,
-              client_name: proposalData.clients?.name,
-              client_website: proposalData.clients?.website
-            }] as any);
-          
-          if (insertError) {
-            throw new Error('Error al crear propuesta pública');
-          }
-        }
-        
-        // Construir la URL completa
-        const fullUrl = `${window.location.origin}/shared/proposals/${sharedUrl}`;
-        setShareUrl(fullUrl);
-        toast.success('Enlace generado correctamente');
-      } catch (error: any) {
-        console.error('Error generating share URL:', error);
-        toast.error('Error: ' + (error.message || 'Error al generar enlace'));
-      } finally {
-        setIsLoading(false);
+        if (insertError) throw insertError;
       }
-    };
-    
-    generateShareUrl();
-  }, [open, proposalId]);
-  
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
+      
+      // Set state and callback
+      setSharedUrl(`${window.location.origin}/shared/proposals/${sharedUrlId}`);
+      setIsShared(true);
+      if (onShared) onShared(sharedUrlId);
+      
+    } catch (error: any) {
+      console.error('Error sharing proposal:', error);
+      toast.error('Error al compartir la propuesta', {
+        description: error.message
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (sharedUrl) {
+      navigator.clipboard.writeText(sharedUrl);
       setCopied(true);
       toast.success('Enlace copiado al portapapeles');
       
       setTimeout(() => {
         setCopied(false);
       }, 2000);
-    } catch (error) {
-      toast.error('No se pudo copiar el enlace');
-      console.error('Error copiando al portapapeles:', error);
     }
   };
-  
-  const handleEmailShare = () => {
-    const subject = encodeURIComponent(`Propuesta: ${proposalTitle}`);
-    const body = encodeURIComponent(`Hola,\n\nQuiero compartir contigo esta propuesta.\n\nPuedes verla en: ${shareUrl}\n\nSaludos.`);
-    
-    window.open(`mailto:?subject=${subject}&body=${body}`);
-  };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Compartir Propuesta</DialogTitle>
           <DialogDescription>
-            Comparte esta propuesta mediante un enlace directo.
+            Compartir la propuesta "{proposalTitle}" con el cliente.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6 py-4">
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <p>Generando enlace...</p>
+        
+        {!isShared ? (
+          <>
+            <div className="flex items-center space-x-2 pt-4">
+              <Checkbox 
+                id="password-protection" 
+                checked={isPasswordProtected}
+                onCheckedChange={(checked) => setIsPasswordProtected(!!checked)}
+              />
+              <Label htmlFor="password-protection">Proteger con contraseña</Label>
             </div>
-          ) : (
-            <>
-              <div className="flex items-center space-x-2">
-                <div className="grid flex-1 gap-2">
-                  <Input
-                    value={shareUrl}
-                    readOnly
-                    className="w-full"
-                  />
+            
+            {isPasswordProtected && (
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input 
+                  id="password" 
+                  type="text" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  placeholder="Ingresa una contraseña"
+                />
+              </div>
+            )}
+            
+            <DialogFooter className="pt-4">
+              <Button 
+                onClick={shareProposal}
+                disabled={isSharing || (isPasswordProtected && !password)}
+              >
+                {isSharing ? "Compartiendo..." : "Compartir propuesta"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center space-x-2 pt-4">
+              <div className="border border-input bg-background rounded-md px-3 py-2 text-sm w-full flex items-center justify-between">
+                <div className="truncate mr-2">
+                  <Link2 className="h-4 w-4 inline mr-2 text-muted-foreground" />
+                  {sharedUrl}
                 </div>
                 <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handleCopyLink} 
-                  className="transition-all group hover:bg-primary hover:text-primary-foreground"
+                  variant="ghost" 
+                  size="sm"
+                  onClick={copyToClipboard}
+                  disabled={copied}
                 >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500 group-hover:text-primary-foreground" />
-                  ) : (
-                    <Copy className="h-4 w-4 group-hover:text-primary-foreground" />
-                  )}
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button 
-                  onClick={handleCopyLink} 
-                  className="w-full sm:w-auto gap-2 group"
-                >
-                  <Link className="h-4 w-4 group-hover:animate-pulse" />
-                  Copiar enlace
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleEmailShare} 
-                  className="w-full sm:w-auto gap-2 group transition-colors hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Mail className="h-4 w-4 group-hover:animate-pulse" />
-                  Compartir por email
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
+            </div>
+            
+            <div className="pt-2 text-sm text-muted-foreground">
+              {isPasswordProtected
+                ? "Esta propuesta está protegida con contraseña."
+                : "Esta propuesta es visible para cualquier persona con el enlace."}
+            </div>
+            
+            <DialogFooter className="pt-4">
+              <Button onClick={() => onOpenChange(false)}>
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

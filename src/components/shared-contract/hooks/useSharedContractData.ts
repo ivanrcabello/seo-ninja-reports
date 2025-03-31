@@ -1,123 +1,104 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { SharedContract, ContractSignatureUpdate, AccessLogOptions, AccessLogType, SharedContractResponse } from '@/types/shared-content';
-import { 
-  fetchContractBySharedUrl, 
-  checkContentExists,
-  logContentAccess,
-  updateContractWithSignature
-} from '@/api/shared-content';
+import { useState, useEffect } from 'react';
+import { SharedContract, SharedContractResponse } from '@/types/shared-content';
+import { fetchContractBySharedUrl, logContractAccess, signSharedContract } from '@/api/shared-content/contracts';
 
-export const useSharedContractData = (sharedUrl: string) => {
+interface UseSharedContractDataResult {
+  contract: SharedContract | null;
+  isLoading: boolean;
+  error: string | null;
+  signContract: (signature: string) => Promise<boolean>;
+  refetch: () => Promise<void>;
+}
+
+export const useSharedContractData = (contractId: string): UseSharedContractDataResult => {
   const [contract, setContract] = useState<SharedContract | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isSigning, setIsSigning] = useState(false);
 
-  const fetchContract = useCallback(async () => {
-    if (!sharedUrl) {
-      setError('URL de contrato no proporcionada');
+  const loadContract = async () => {
+    if (!contractId) {
+      setError('Contract ID is required');
       setIsLoading(false);
       return;
     }
 
-    console.log(`Starting fetch for contract with shared URL: ${sharedUrl}`);
-    setIsLoading(true);
-    setError(null);
-
     try {
-      // First check if contract exists
-      const { exists, error: existsError } = await checkContentExists(sharedUrl, 'contract');
-      
-      if (existsError) {
-        console.error('Error checking if contract exists:', existsError);
-      } else if (!exists) {
-        setError('El contrato no existe');
-        setIsLoading(false);
-        
-        const options: AccessLogOptions = { 
-          successful: false, 
-          error: 'Contract not found' 
-        };
-        logContentAccess('contract', sharedUrl, options, 'check');
-        return;
-      }
+      setIsLoading(true);
+      setError(null);
 
-      // Fetch contract data
-      const response: SharedContractResponse = await fetchContractBySharedUrl(sharedUrl);
+      const response: SharedContractResponse = await fetchContractBySharedUrl(contractId);
       
       if (response.error) {
         throw response.error;
       }
-      
-      if (!response.data) {
-        throw new Error('No se pudo encontrar el contrato solicitado');
+
+      if (response.data) {
+        setContract(response.data);
+        
+        // Log access
+        logContractAccess(contractId, { 
+          successful: true 
+        }, 'view');
+      } else {
+        logContractAccess(contractId, { 
+          successful: false,
+          error: 'Contract not found' 
+        }, 'not_found');
+        
+        throw new Error('Contract not found');
       }
-      
-      setContract(response.data);
-      
-      // Log successful access
-      const options: AccessLogOptions = { successful: true };
-      logContentAccess('contract', sharedUrl, options, 'view');
-      
     } catch (err: any) {
-      console.error('Error fetching shared contract:', err);
       setError(err.message || 'Error al cargar el contrato');
+      console.error('Error loading contract:', err);
       
-      // Log failed access
-      const options: AccessLogOptions = { 
-        successful: false, 
+      logContractAccess(contractId, { 
+        successful: false,
         error: err.message || 'Unknown error' 
-      };
-      logContentAccess('contract', sharedUrl, options, 'error');
+      }, 'error');
     } finally {
       setIsLoading(false);
-    }
-  }, [sharedUrl]);
-
-  const signContract = async (signature: string): Promise<{ success: boolean, error?: string }> => {
-    try {
-      setIsSigning(true);
-      
-      const now = new Date().toISOString();
-      const signatureData: ContractSignatureUpdate = {
-        client_signed: true,
-        client_signed_at: now,
-        client_signature: signature
-      };
-      
-      const { success, error: signError } = await updateContractWithSignature(sharedUrl, signatureData);
-      
-      if (signError) {
-        throw signError;
-      }
-      
-      if (!success) {
-        throw new Error('No se pudo firmar el contrato');
-      }
-      
-      // Re-fetch contract to update state
-      await fetchContract();
-      
-      return { success: true };
-    } catch (err: any) {
-      console.error('Error signing contract:', err);
-      return { success: false, error: err.message || 'Error al firmar el contrato' };
-    } finally {
-      setIsSigning(false);
     }
   };
 
   useEffect(() => {
-    fetchContract();
-  }, [fetchContract]);
+    loadContract();
+  }, [contractId]);
+
+  const signContract = async (signature: string): Promise<boolean> => {
+    if (!contract) return false;
+    
+    try {
+      const success = await signSharedContract(contractId, signature);
+      
+      if (success) {
+        // Log successful signing
+        logContractAccess(contractId, { 
+          successful: true 
+        }, 'sign');
+        
+        // Update local contract state
+        await loadContract();
+      } else {
+        // Log failed signing
+        logContractAccess(contractId, { 
+          successful: false,
+          error: 'Failed to sign contract' 
+        }, 'sign');
+      }
+      
+      return success;
+    } catch (err) {
+      console.error('Error signing contract:', err);
+      return false;
+    }
+  };
 
   return {
     contract,
     isLoading,
     error,
-    isSigning,
     signContract,
-    refetch: fetchContract
+    refetch: loadContract
   };
 };

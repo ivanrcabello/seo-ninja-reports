@@ -1,14 +1,9 @@
 
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Lock, Loader2 } from 'lucide-react';
 
 interface PasswordProtectionDialogProps {
@@ -17,11 +12,11 @@ interface PasswordProtectionDialogProps {
   title: string;
   description: string;
   password: string;
-  setPassword: (password: string) => void;
+  setPassword: (value: string) => void;
   onVerify: () => void;
   isVerifying: boolean;
   showError: boolean;
-  errorMessage: string;
+  errorMessage?: string;
 }
 
 const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
@@ -34,51 +29,58 @@ const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
   onVerify,
   isVerifying,
   showError,
-  errorMessage
+  errorMessage = 'La contraseña es incorrecta. Por favor, inténtalo de nuevo.'
 }) => {
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      onVerify();
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onVerify();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mx-auto bg-primary/10 p-3 rounded-full">
+          <div className="mx-auto bg-primary/10 p-3 rounded-full mb-4">
             <Lock className="h-6 w-6 text-primary" />
           </div>
-          <DialogTitle className="text-center pt-2">{title}</DialogTitle>
-          <DialogDescription className="text-center">{description}</DialogDescription>
+          <DialogTitle className="text-center">{title}</DialogTitle>
+          <DialogDescription className="text-center">
+            {description}
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="password">Contraseña</Label>
             <Input
+              id="password"
               type="password"
-              placeholder="Introduce la contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className={`${showError ? 'border-red-500' : ''}`}
+              placeholder="Ingresa la contraseña"
+              className={showError ? "border-destructive focus-visible:ring-destructive" : ""}
+              autoComplete="off"
             />
-            {showError && <p className="text-sm text-red-500">{errorMessage}</p>}
-          </div>
-          <Button 
-            onClick={onVerify} 
-            disabled={isVerifying || !password.trim()} 
-            className="w-full"
-          >
-            {isVerifying ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verificando
-              </>
-            ) : (
-              'Acceder'
+            {showError && (
+              <p className="text-sm text-destructive">
+                {errorMessage}
+              </p>
             )}
-          </Button>
-        </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isVerifying || !password.trim()}>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                'Acceder'
+              )}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

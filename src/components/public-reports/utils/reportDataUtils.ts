@@ -1,178 +1,148 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { SharedReport } from '@/types/shared-content';
+import { logError } from '@/lib/errorLogger';
 
-export interface PublicReport {
-  id: string;
-  title: string;
-  summary?: string;
-  url?: string;
-  status: string;
-  content?: any;
-  date?: string;
-  client_name?: string;
-  client_website?: string;
+export interface ReportAccessOptions {
+  successful: boolean;
+  error?: string;
 }
 
+export type AccessLogType = 'view' | 'password' | 'not_found' | 'error';
+
 /**
- * Check if a report exists by ID - with improved error handling
+ * Verifica si un informe existe
  */
-export const checkReportExists = async (reportId: string) => {
+export const checkReportExists = async (reportId: string): Promise<{ exists: boolean; error: Error | null }> => {
   try {
-    console.log('Checking if report exists:', reportId);
-    
-    // Try using the RPC function first
-    const { data, error } = await supabase
-      .rpc('check_report_exists', { report_id_param: reportId });
+    // Usar RPC para verificar
+    const { data, error } = await supabase.rpc('check_shared_content_exists', {
+      content_id: reportId,
+      content_type: 'report'
+    });
     
     if (error) {
-      console.error('Error with RPC check_report_exists:', error);
-      
-      // Fallback to direct query if RPC fails
-      const { data: directData, error: directError } = await supabase
-        .from('reports')
-        .select('id')
-        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-        .maybeSingle();
-      
-      if (directError) {
-        console.error('Error with direct query fallback:', directError);
-        return { exists: false, error: directError };
-      }
-      
-      return { exists: !!directData, error: null };
+      logError('checkReportExists', error);
+      return { exists: false, error };
     }
     
-    return { exists: Boolean(data), error };
-  } catch (err) {
-    console.error('Exception checking if report exists:', err);
-    return { exists: false, error: err };
+    return { exists: data, error: null };
+  } catch (error: any) {
+    logError('checkReportExists', error);
+    return { exists: false, error };
   }
 };
 
 /**
- * Check if a report is password protected
+ * Verifica si un informe está protegido por contraseña
  */
-export const checkReportPassword = async (reportId: string) => {
+export const checkReportPassword = async (reportId: string): Promise<{ isProtected: boolean; error: Error | null }> => {
   try {
-    const { data, error } = await supabase
-      .rpc('check_report_password_protection', { report_id_param: reportId });
-    
-    return { isProtected: Boolean(data), error };
-  } catch (err) {
-    console.error('Error checking report password protection:', err);
-    return { isProtected: false, error: err };
-  }
-};
-
-/**
- * Verify report password
- */
-export const verifyReportPassword = async (reportId: string, password: string) => {
-  try {
-    const { data, error } = await supabase
-      .rpc('verify_shared_report_password', { 
-        report_id_param: reportId, 
-        password_param: password 
-      });
-    
-    return { success: Boolean(data), error };
-  } catch (err) {
-    console.error('Error verifying report password:', err);
-    return { success: false, error: err };
-  }
-};
-
-/**
- * Fetch report with RPC - the main method to use
- */
-export const fetchReportWithRpc = async (reportId: string) => {
-  try {
-    console.log('Fetching report with RPC:', reportId);
-    const { data, error } = await supabase
-      .rpc('get_report_by_any_id', { id_param: reportId });
+    // Usar RPC para verificar protección por contraseña
+    const { data, error } = await supabase.rpc('check_shared_content_password', {
+      content_id: reportId,
+      content_type: 'report'
+    });
     
     if (error) {
-      console.error('Error fetching report with RPC:', error);
-      return { report: null, error };
+      logError('checkReportPassword', error);
+      return { isProtected: false, error };
     }
     
-    if (!data) {
-      console.error('No data returned from RPC for report:', reportId);
-      return { report: null, error: new Error('No data returned') };
-    }
-    
-    console.log('RPC returned report data:', data);
-    return { report: data as PublicReport, error };
-  } catch (err) {
-    console.error('Exception fetching report with RPC:', err);
-    return { report: null, error: err };
+    return { isProtected: data, error: null };
+  } catch (error: any) {
+    logError('checkReportPassword', error);
+    return { isProtected: false, error };
   }
 };
 
 /**
- * Fetch from public_reports view - fallback method
+ * Verifica la contraseña de un informe compartido
  */
-export const fetchFromPublicReportsView = async (reportId: string) => {
+export const verifyReportPassword = async (reportId: string, password: string): Promise<boolean> => {
   try {
-    console.log('Fetching from public_reports view:', reportId);
+    // Usar RPC para verificar la contraseña
+    const { data, error } = await supabase.rpc('verify_shared_content_password', {
+      content_id: reportId,
+      content_type: 'report',
+      password_param: password
+    });
+    
+    if (error) {
+      logError('verifyReportPassword', error);
+      return false;
+    }
+    
+    return data;
+  } catch (error: any) {
+    logError('verifyReportPassword', error);
+    return false;
+  }
+};
+
+/**
+ * Registra el acceso a un informe compartido
+ */
+export const logReportAccess = async (
+  reportId: string, 
+  options: ReportAccessOptions, 
+  eventType: AccessLogType = 'view'
+): Promise<void> => {
+  try {
+    // Usar RPC para registrar el acceso
+    await supabase.rpc('log_shared_content_access', {
+      content_type: 'report',
+      content_id: reportId,
+      access_type: eventType,
+      successful: options.successful,
+      error_message: options.error || null,
+      password_attempt: eventType === 'password',
+      source: 'web_client'
+    });
+  } catch (error) {
+    console.error('Error registrando acceso:', error);
+    // No propagamos el error para que no afecte la experiencia del usuario
+  }
+};
+
+/**
+ * Obtiene un informe por su URL compartida
+ */
+export const fetchReportBySharedUrl = async (sharedUrl: string): Promise<SharedReport | null> => {
+  try {
     const { data, error } = await supabase
-      .from('public_reports')
+      .from('shared_content')
       .select('*')
-      .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-      .maybeSingle();
-    
+      .eq('shared_url', sharedUrl)
+      .eq('content_type', 'report')
+      .single();
+      
     if (error) {
-      console.error('Error fetching from public_reports view:', error);
-    } else if (data) {
-      console.log('Found report in public_reports view');
-    } else {
-      console.log('No report found in public_reports view');
+      logError('fetchReportBySharedUrl', error);
+      return null;
     }
     
-    return { report: data as PublicReport, error };
-  } catch (err) {
-    console.error('Exception fetching from public_reports view:', err);
-    return { report: null, error: err };
-  }
-};
-
-/**
- * Fetch report only - last resort direct table query
- */
-export const fetchReportOnly = async (reportId: string) => {
-  try {
-    console.log('Fetching report directly from reports table:', reportId);
-    const { data, error } = await supabase
-      .from('reports')
-      .select('*')
-      .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-      .maybeSingle();
+    if (!data) return null;
     
-    if (error) {
-      console.error('Error fetching report only:', error);
-      return { report: null, error };
-    }
-    
-    if (!data) {
-      console.error('No report found with direct query:', reportId);
-      return { report: null, error: new Error('Report not found') };
-    }
-    
-    console.log('Found report with direct query:', data.id);
-    
-    const report: PublicReport = {
+    // Crear objeto SharedReport
+    return {
       id: data.id,
-      title: data.title || 'Sin título',
-      summary: data.summary,
-      url: data.url,
-      status: data.status,
+      original_id: data.original_id,
+      content_type: 'report',
+      title: data.title,
+      description: data.description || '',
       content: data.content,
-      date: data.date
+      status: data.status,
+      shared_url: data.shared_url,
+      password: data.password,
+      client_name: data.client_name,
+      client_website: data.client_website,
+      summary: data.description,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
-    
-    return { report, error };
-  } catch (err) {
-    console.error('Exception fetching report only:', err);
-    return { report: null, error: err };
+  } catch (error) {
+    logError('fetchReportBySharedUrl', error);
+    return null;
   }
 };
