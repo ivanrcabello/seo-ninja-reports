@@ -43,7 +43,44 @@ export async function shareContent(options: {
       updated_at: new Date().toISOString()
     };
     
-    // Insertar en la tabla shared_content
+    // Primero verificar si ya existe una entrada compartida para este contenido
+    const { data: existingSharedContent, error: checkError } = await supabase
+      .from('shared_content')
+      .select('shared_url')
+      .eq('original_id', options.contentId)
+      .eq('content_type', options.contentType)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error('Error al verificar contenido compartido existente:', checkError);
+    }
+    
+    // Si ya existe uno compartido, actualizarlo
+    if (existingSharedContent?.shared_url) {
+      console.log('Actualizando contenido compartido existente');
+      const { data: updatedData, error: updateError } = await supabase
+        .from('shared_content')
+        .update({
+          title: options.title,
+          content: options.data || {},
+          status: options.data?.status || 'active',
+          client_name: options.clientName || '',
+          client_website: options.clientWebsite || '',
+          updated_at: new Date().toISOString()
+        })
+        .eq('original_id', options.contentId)
+        .eq('content_type', options.contentType)
+        .select();
+        
+      if (updateError) {
+        console.error('Error al actualizar contenido compartido:', updateError);
+        return { success: false, error: updateError.message };
+      }
+      
+      return { success: true, url: existingSharedContent.shared_url };
+    }
+    
+    // Si no existe, insertar nueva entrada
     const { data, error } = await supabase
       .from('shared_content')
       .insert(insertData)
@@ -65,6 +102,33 @@ export async function shareContent(options: {
         
       if (updateError) {
         console.warn('No se pudo actualizar la referencia compartida en reports:', updateError);
+      }
+    } else if (options.contentType === 'proposal') {
+      const { error: updateError } = await supabase
+        .from('client_proposals')
+        .update({ shared_url: sharedUrlId })
+        .eq('id', options.contentId);
+        
+      if (updateError) {
+        console.warn('No se pudo actualizar la referencia compartida en client_proposals:', updateError);
+      }
+    } else if (options.contentType === 'invoice') {
+      const { error: updateError } = await supabase
+        .from('client_invoices')
+        .update({ shared_url: sharedUrlId })
+        .eq('id', options.contentId);
+        
+      if (updateError) {
+        console.warn('No se pudo actualizar la referencia compartida en client_invoices:', updateError);
+      }
+    } else if (options.contentType === 'contract') {
+      const { error: updateError } = await supabase
+        .from('client_contracts')
+        .update({ shared_url: sharedUrlId })
+        .eq('id', options.contentId);
+        
+      if (updateError) {
+        console.warn('No se pudo actualizar la referencia compartida en client_contracts:', updateError);
       }
     }
 

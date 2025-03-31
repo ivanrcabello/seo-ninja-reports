@@ -24,73 +24,103 @@ interface AccessLogOptions {
 }
 
 /**
- * Hook for fetching and managing report data by ID
+ * Hook para obtener y gestionar los datos de un informe por su ID
  */
 const useReportData = (reportId: string) => {
   const [report, setReport] = useState<PublicReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(true); // Por defecto concedido ya que eliminamos contraseñas
   const [notFound, setNotFound] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Validate report ID with UUID format
-  const isValidReportId = useCallback((id: string) => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(id);
-  }, []);
+  // Función simplificada para obtener informe directamente
+  const fetchReport = useCallback(async () => {
+    if (!reportId || reportId.trim() === '') {
+      setError('ID de informe no proporcionado');
+      setIsLoading(false);
+      setNotFound(true);
+      return;
+    }
 
-  // Simplify fetch with direct access to shared_content table
-  const fetchReportDirect = useCallback(async () => {
-    console.log(`Fetching report with ID: ${reportId} from shared_content table`);
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      // First, check if the report is password protected
-      const { data: protectionData, error: protectionError } = await supabase
-        .rpc('check_shared_content_password', { content_id: reportId, content_type: 'report' });
-
-      if (!protectionError) {
-        setIsPasswordProtected(Boolean(protectionData));
-        
-        // If password protected and access not granted, don't fetch content
-        if (protectionData && !accessGranted) {
-          console.log('Report is password protected, waiting for password');
-          setIsLoading(false);
-          return null;
-        }
-      }
+      console.log(`Intentando obtener informe con ID/URL: ${reportId}`);
       
-      // Try fetching from shared_content table where content_type is 'report'
-      const { data: viewData, error: viewError } = await supabase
+      // Primero intentar desde shared_content
+      const { data: sharedData, error: sharedError } = await supabase
         .from('shared_content')
         .select('*')
+        .or(`shared_url.eq.${reportId},id.eq.${reportId}`)
         .eq('content_type', 'report')
-        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-        .single();
-
-      if (!viewError && viewData) {
-        console.log('Successfully fetched report from shared_content table:', viewData);
+        .maybeSingle();
         
-        // Log successful access
+      if (!sharedError && sharedData) {
+        console.log('Informe encontrado en shared_content:', sharedData);
+        
+        const reportData: PublicReport = {
+          id: sharedData.id,
+          title: sharedData.title || 'Informe sin título',
+          status: parseStatusFromString(sharedData.status),
+          content: sharedData.content,
+          date: sharedData.created_at,
+          client_name: sharedData.client_name,
+          client_website: sharedData.client_website
+        };
+        
+        setReport(reportData);
+        setNotFound(false);
+        
+        // Log de acceso exitoso
         logSharedReportAccess(reportId, { 
           successful: true, 
-          source: 'shared_content_table' 
+          source: 'shared_content_tabla' 
         });
         
-        return {
-          id: viewData.id,
-          title: viewData.title || 'Informe sin título',
-          summary: viewData.description,
-          content: viewData.content,
-          status: parseStatusFromString(viewData.status),
-          client_name: viewData.client_name,
-          client_website: viewData.client_website,
-          date: viewData.created_at
-        } as PublicReport;
+        setIsLoading(false);
+        return;
       }
       
-      // Try fetching from reports table directly if shared_content failed
-      const { data: reportData, error: reportError } = await supabase
+      // Si no está en shared_content, intentar desde public_reports vista
+      const { data: publicData, error: publicError } = await supabase
+        .from('public_reports')
+        .select('*')
+        .or(`shared_url.eq.${reportId},id.eq.${reportId}`)
+        .maybeSingle();
+        
+      if (!publicError && publicData) {
+        console.log('Informe encontrado en public_reports:', publicData);
+        
+        const reportData: PublicReport = {
+          id: publicData.id,
+          title: publicData.title || 'Informe sin título',
+          summary: publicData.summary,
+          url: publicData.url,
+          status: parseStatusFromString(publicData.status),
+          content: publicData.content,
+          date: publicData.date,
+          client_name: publicData.client_name,
+          client_website: publicData.client_website
+        };
+        
+        setReport(reportData);
+        setNotFound(false);
+        
+        // Log de acceso exitoso
+        logSharedReportAccess(reportId, { 
+          successful: true, 
+          source: 'public_reports_vista' 
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
+      // Como último recurso, intentar directamente desde la tabla reports
+      const { data: directData, error: directError } = await supabase
         .from('reports')
         .select(`
           id, 
@@ -101,199 +131,98 @@ const useReportData = (reportId: string) => {
           content,
           date,
           shared_url,
-          password,
           clients (name, website)
         `)
-        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-        .single();
+        .or(`shared_url.eq.${reportId},id.eq.${reportId}`)
+        .maybeSingle();
         
-      if (!reportError && reportData) {
-        console.log('Successfully fetched report from reports table:', reportData);
+      if (!directError && directData) {
+        console.log('Informe encontrado directamente en reports:', directData);
         
-        const formattedReport: PublicReport = {
-          id: reportData.id,
-          title: reportData.title || 'Informe sin título',
-          summary: reportData.summary,
-          url: reportData.url,
-          status: parseStatusFromString(reportData.status),
-          content: reportData.content,
-          date: reportData.date,
-          client_name: reportData.clients?.name,
-          client_website: reportData.clients?.website
+        const reportData: PublicReport = {
+          id: directData.id,
+          title: directData.title || 'Informe sin título',
+          summary: directData.summary,
+          url: directData.url,
+          status: parseStatusFromString(directData.status),
+          content: directData.content,
+          date: directData.date,
+          client_name: directData.clients?.name,
+          client_website: directData.clients?.website
         };
         
-        // Log successful access
-        logSharedReportAccess(reportId, { 
-          successful: true, 
-          source: 'reports_table' 
-        });
-        
-        return formattedReport;
-      }
-      
-      // As a last resort, try using an RPC function
-      const { data: rpcData, error: rpcError } = await supabase
-        .rpc('get_report_by_any_id', { id_param: reportId });
-        
-      if (!rpcError && rpcData) {
-        console.log('Successfully fetched report via RPC function:', rpcData);
-        
-        // Log successful access
-        logSharedReportAccess(reportId, { 
-          successful: true, 
-          source: 'rpc_function' 
-        });
-        
-        // Ensure status is properly parsed as SharedContentStatus
-        if (rpcData.status) {
-          rpcData.status = parseStatusFromString(rpcData.status);
-        }
-        
-        return rpcData as PublicReport;
-      }
-      
-      console.error('Could not fetch report with any method:');
-      console.error('View error:', viewError);
-      console.error('Reports table error:', reportError);
-      console.error('RPC error:', rpcError);
-      
-      throw new Error('No se pudo encontrar el informe solicitado');
-      
-    } catch (err: any) {
-      console.error('Error in fetchReportDirect:', err);
-      throw err;
-    }
-  }, [reportId, accessGranted]);
-
-  // Main fetch function with error handling and retries
-  const fetchReport = useCallback(async () => {
-    if (!reportId || reportId.trim() === '') {
-      console.error('No reportId provided');
-      setError('ID de reporte no proporcionado');
-      setIsLoading(false);
-      setNotFound(true);
-      return;
-    }
-
-    if (!isValidReportId(reportId)) {
-      console.error('Invalid UUID format:', reportId);
-      setError('ID de reporte no válido (formato incorrecto)');
-      setIsLoading(false);
-      setNotFound(true);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const reportData = await fetchReportDirect();
-      
-      if (reportData) {
         setReport(reportData);
         setNotFound(false);
-      } else if (isPasswordProtected && !accessGranted) {
-        // We're just waiting for password, not an error
-        setNotFound(false);
-      } else {
-        setNotFound(true);
-        setError('Informe no encontrado');
         
-        // Log not found
+        // Log de acceso exitoso
         logSharedReportAccess(reportId, { 
-          successful: false, 
-          error: 'Report not found',
-          source: 'not_found'
+          successful: true, 
+          source: 'reports_tabla_directa' 
         });
+        
+        setIsLoading(false);
+        return;
       }
+      
+      // Si llegamos aquí, no encontramos el informe
+      console.error('No se pudo encontrar el informe con ningún método');
+      console.error('Error shared_content:', sharedError);
+      console.error('Error public_reports:', publicError);
+      console.error('Error directamente reports:', directError);
+      
+      setNotFound(true);
+      setError('Informe no encontrado');
+      
+      // Log de acceso fallido
+      logSharedReportAccess(reportId, { 
+        successful: false, 
+        error: 'Informe no encontrado',
+        source: 'no_encontrado'
+      });
+      
     } catch (err: any) {
-      console.error('Error fetching report:', err);
+      console.error('Error al obtener informe:', err);
       setError(err.message || 'Error al cargar el informe');
       
-      // Only retry a limited number of times
+      // Solo reintentar un número limitado de veces
       if (retryCount < 2) {
-        console.log(`Will retry fetch (attempt ${retryCount + 1}/2)`);
+        console.log(`Reintentando búsqueda (intento ${retryCount + 1}/2)`);
         setRetryCount(prev => prev + 1);
         setTimeout(() => {
           fetchReport();
-        }, 1000 * Math.pow(2, retryCount)); // Exponential backoff
+        }, 1000 * Math.pow(2, retryCount)); // Backoff exponencial
       } else {
         setNotFound(true);
         logSharedReportAccess(reportId, { 
           successful: false, 
-          error: err.message || 'Error after retries',
-          source: 'error_with_retries'
+          error: err.message || 'Error después de reintentos',
+          source: 'error_con_reintentos'
         });
       }
     } finally {
       setIsLoading(false);
     }
-  }, [reportId, isPasswordProtected, accessGranted, fetchReportDirect, retryCount, isValidReportId]);
+  }, [reportId, retryCount]);
 
-  // Password verification function 
+  // Ya no necesitamos verificación de contraseña, pero mantenemos la función
+  // para mantener compatibilidad con código existente
   const verifyPassword = async (password: string): Promise<boolean> => {
-    try {
-      console.log(`Verifying password for report: ${reportId}`);
-      const { data, error } = await supabase
-        .rpc('verify_shared_content_password', { 
-          content_id: reportId,
-          content_type: 'report',
-          password_param: password
-        });
-      
-      if (error) {
-        console.error('Error in verify_shared_content_password RPC:', error);
-        throw error;
-      }
-      
-      const success = Boolean(data);
-      console.log(`Password verification result: ${success}`);
-      
-      if (success) {
-        setAccessGranted(true);
-        
-        // Log successful password verification
-        logSharedReportAccess(reportId, {
-          passwordAttempt: true,
-          successful: true,
-          source: 'password_verification_success'
-        });
-      } else {
-        // Log failed password verification
-        logSharedReportAccess(reportId, {
-          passwordAttempt: true,
-          successful: false,
-          source: 'password_verification_failed'
-        });
-      }
-      
-      return success;
-    } catch (error) {
-      console.error('Error verifying password:', error);
-      return false;
-    }
+    return true; // Siempre devolver true ya que eliminamos la protección con contraseña
   };
 
-  // Initial fetch on load
+  // Cargar informe inicialmente
   useEffect(() => {
     if (reportId) {
       fetchReport();
     }
   }, [fetchReport]);
-  
-  // Effect for retries when access is granted
-  useEffect(() => {
-    if (accessGranted && reportId) {
-      fetchReport();
-    }
-  }, [accessGranted, fetchReport, reportId]);
 
   return {
     report,
     isLoading,
     error,
-    isPasswordProtected,
-    accessGranted,
+    isPasswordProtected: false,
+    accessGranted: true,
     verifyPassword,
     refetch: fetchReport,
     notFound
@@ -302,6 +231,7 @@ const useReportData = (reportId: string) => {
 
 export default useReportData;
 
+// Función auxiliar para convertir string de estado a tipo SharedContentStatus
 const parseStatusFromString = (status: string): SharedContentStatus => {
   const validStatuses: SharedContentStatus[] = [
     "processing", "completed", "failed", "draft", "sent", 
@@ -313,6 +243,6 @@ const parseStatusFromString = (status: string): SharedContentStatus => {
     return status as SharedContentStatus;
   }
   
-  // Default fallback
+  // Fallback predeterminado
   return "draft";
 };

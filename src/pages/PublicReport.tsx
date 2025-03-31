@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading } from '@/components/public-reports';
 import useReportData from '@/components/public-reports/useReportData';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
@@ -10,9 +9,6 @@ import { toast } from 'sonner';
 const PublicReport: React.FC = () => {
   const navigate = useNavigate();
   const { reportId = '' } = useParams<{ reportId: string }>();
-  const [passwordInput, setPasswordInput] = useState('');
-  const [verifying, setVerifying] = useState(false);
-  const [showError, setShowError] = useState(false);
   const [loadRetries, setLoadRetries] = useState(0);
   
   console.log('PublicReport page loaded with reportId:', reportId);
@@ -21,17 +17,14 @@ const PublicReport: React.FC = () => {
     report, 
     isLoading, 
     error, 
-    isPasswordProtected, 
-    accessGranted, 
-    verifyPassword,
     refetch,
     notFound
   } = useReportData(reportId);
 
+  // Registrar visualización de página
   useEffect(() => {
     if (reportId) {
       console.log(`PublicReport page initialized with reportId: ${reportId}`);
-      // Log page view
       logSharedReportAccess(reportId, { 
         successful: true,
         action: 'page_view' 
@@ -39,38 +32,7 @@ const PublicReport: React.FC = () => {
     }
   }, [reportId]);
   
-  const handleVerifyPassword = async () => {
-    if (!passwordInput.trim()) {
-      setShowError(true);
-      return;
-    }
-    
-    setVerifying(true);
-    setShowError(false);
-    
-    try {
-      console.log('Verifying password for report:', reportId);
-      const success = await verifyPassword(passwordInput);
-      
-      if (success) {
-        console.log('Password verification successful');
-        toast.success('Acceso concedido', {
-          description: 'Contraseña correcta. Cargando informe...'
-        });
-      } else {
-        console.log('Password verification failed');
-        setShowError(true);
-        toast.error('Contraseña incorrecta');
-      }
-    } catch (err) {
-      console.error('Error during password verification:', err);
-      setShowError(true);
-      toast.error('Error al verificar la contraseña');
-    } finally {
-      setVerifying(false);
-    }
-  };
-  
+  // Función para reintentar carga de datos
   const handleRetry = () => {
     console.log('Retrying report fetch manually');
     setLoadRetries(prev => prev + 1);
@@ -78,13 +40,13 @@ const PublicReport: React.FC = () => {
     toast.info('Reintentando cargar el informe...');
   };
 
-  // Show loading state
+  // Mostrar estado de carga
   if (isLoading) {
     console.log('PublicReport: Showing loading state');
-    return <PublicReportLoading timeout={10000} />;
+    return <PublicReportLoading timeout={10000} onRetry={handleRetry} />;
   }
 
-  // Show error state
+  // Mostrar estado de error
   if (error) {
     console.error('PublicReport: Error loading report:', error);
     return (
@@ -96,32 +58,13 @@ const PublicReport: React.FC = () => {
     );
   }
 
-  // Show not found state
+  // Mostrar estado de no encontrado
   if (notFound) {
     console.log('PublicReport: Report not found, showing empty state');
     return <PublicReportEmpty onBack={() => navigate('/')} onRetry={handleRetry} />;
   }
 
-  // Show password protection dialog
-  if (isPasswordProtected && !accessGranted) {
-    console.log('PublicReport: Showing password protection dialog');
-    return (
-      <PasswordProtectionDialog
-        isOpen={true}
-        onClose={() => {}}
-        title="Informe Protegido"
-        description="Este informe está protegido con contraseña. Por favor, introduce la contraseña para acceder."
-        password={passwordInput}
-        setPassword={setPasswordInput}
-        onVerify={handleVerifyPassword}
-        isVerifying={verifying}
-        showError={showError}
-        errorMessage="Contraseña incorrecta. Por favor, inténtalo de nuevo."
-      />
-    );
-  }
-
-  // Show empty state if no report found
+  // Mostrar estado vacío si no hay informe
   if (!report) {
     console.log('PublicReport: No report found, showing empty state');
     return <PublicReportEmpty onBack={() => navigate('/')} onRetry={handleRetry} />;
@@ -129,7 +72,7 @@ const PublicReport: React.FC = () => {
 
   console.log('PublicReport: Rendering report content:', report);
   
-  // Show report content
+  // Mostrar contenido del informe
   return (
     <div className="min-h-screen bg-background">
       <PublicReportHeader 

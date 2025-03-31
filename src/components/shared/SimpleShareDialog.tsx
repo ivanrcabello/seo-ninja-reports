@@ -128,9 +128,7 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
     
     try {
       // Construir URL para vista de impresión
-      const printViewUrl = sharedUrl.includes('?') 
-        ? `${sharedUrl}&print=true&pdf=true` 
-        : `${sharedUrl}?print=true&pdf=true`;
+      const printViewUrl = `${sharedUrl}?print=true&pdf=true`;
       
       // Abrir ventana para preparar impresión/PDF
       const printWindow = window.open(printViewUrl, '_blank');
