@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSharedContractData } from '@/components/shared-contract/hooks/useSharedContractData';
 import ContractHeader from '@/components/shared-contract/ContractHeader';
@@ -15,7 +15,7 @@ import { useReactToPrint } from 'react-to-print';
 
 const SharedContract: React.FC = () => {
   const { contractId = '' } = useParams();
-  const contentRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
   const { 
     contract, 
