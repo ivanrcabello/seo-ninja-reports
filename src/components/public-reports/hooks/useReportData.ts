@@ -1,16 +1,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useReportValidation } from './useReportValidation';
-import { logSharedReportAccess } from '../services/sharedReportLogger';
+import { PublicReport } from '@/types/shared-content';
 import { 
-  PublicReport,
   checkReportExists, 
   checkReportPassword,
   fetchFromPublicReportsView,
   fetchReportWithRpc,
   fetchReportOnly,
-  verifyReportPassword
-} from '../utils/reportDataUtils';
+  verifyReportPassword,
+  logReportAccess
+} from '@/api/shared-content';
 
 const useReportData = (reportId: string) => {
   const [report, setReport] = useState<PublicReport | null>(null);
@@ -45,7 +45,7 @@ const useReportData = (reportId: string) => {
         setError('El informe no existe');
         setIsLoading(false);
         setNotFound(true);
-        logSharedReportAccess(reportId, { successful: false, error: 'Report not found' }, 'rpc_check');
+        logReportAccess(reportId, { successful: false, error: 'Report not found' }, 'rpc_check');
         return;
       }
       
@@ -71,7 +71,7 @@ const useReportData = (reportId: string) => {
       
       if (!publicReportError && publicReport) {
         setReport(publicReport);
-        logSharedReportAccess(reportId, { successful: true }, 'public_reports_view');
+        logReportAccess(reportId, { successful: true }, 'public_reports_view');
         setIsLoading(false);
         return;
       }
@@ -81,7 +81,7 @@ const useReportData = (reportId: string) => {
       
       if (!rpcError && rpcReport) {
         setReport(rpcReport);
-        logSharedReportAccess(reportId, { successful: true }, 'rpc');
+        logReportAccess(reportId, { successful: true }, 'rpc');
         setIsLoading(false);
         return;
       }
@@ -91,7 +91,7 @@ const useReportData = (reportId: string) => {
       
       if (!reportOnlyError && reportOnly) {
         setReport(reportOnly);
-        logSharedReportAccess(reportId, { successful: true }, 'reports_only');
+        logReportAccess(reportId, { successful: true }, 'reports_only');
         setIsLoading(false);
         return;
       }
@@ -100,7 +100,7 @@ const useReportData = (reportId: string) => {
       console.error('All attempts failed. Report not found or not accessible.');
       setError('No se pudo encontrar el informe solicitado');
       setNotFound(true);
-      logSharedReportAccess(reportId, { 
+      logReportAccess(reportId, { 
         successful: false, 
         error: 'All attempts failed'
       }, 'exhausted_options');
@@ -111,7 +111,7 @@ const useReportData = (reportId: string) => {
       setNotFound(true);
       
       // Log error
-      logSharedReportAccess(reportId, { 
+      logReportAccess(reportId, { 
         successful: false, 
         error: err.message || 'Unknown error'
       }, 'error');
@@ -122,16 +122,14 @@ const useReportData = (reportId: string) => {
 
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
-      const { success, error } = await verifyReportPassword(reportId, password);
+      const success = await verifyReportPassword(reportId, password);
       
-      if (error) {
-        throw error;
+      if (success) {
+        setAccessGranted(success);
       }
       
-      setAccessGranted(success);
-      
       // Log password attempt
-      logSharedReportAccess(reportId, {
+      logReportAccess(reportId, {
         passwordAttempt: true,
         successful: success
       }, 'password_verification');

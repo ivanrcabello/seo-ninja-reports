@@ -1,9 +1,11 @@
 
+export { useContractData } from './hooks/useContractData';
+
+// Re-export existing components
 export { default as ContractHeader } from './ContractHeader';
 export { default as ContractContent } from './ContractContent';
-export { default as SignatureSection } from './SignatureSection';
-export { default as ContractActions } from './ContractActions';
 export { default as ContactInfo } from './ContactInfo';
-export { useContractData } from './useContractData';
-export { useContractActions } from './useContractActions';
-export type { PublicContract } from './types';
+export { default as SignatureSection } from './SignatureSection';
+
+// Re-export types
+export type { SharedContract } from '@/types/shared-content';

@@ -1,6 +1,5 @@
 
-import useProposalData from './useProposalData';
+export { useProposalData } from './hooks/useProposalData';
 
-export {
-  useProposalData
-};
+// Re-export types
+export type { SharedProposal } from '@/types/shared-content';
