@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { PublicReport } from '@/types/shared-content';
+import { SharedReport } from '@/types/shared-content';
 import { 
   checkReportExists, 
   checkReportPassword, 
@@ -13,7 +13,7 @@ import {
 } from '@/api/shared-content';
 
 const useReportData = (reportId: string) => {
-  const [report, setReport] = useState<PublicReport | null>(null);
+  const [report, setReport] = useState<SharedReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);

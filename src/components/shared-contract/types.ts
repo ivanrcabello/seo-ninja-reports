@@ -1,9 +1,11 @@
 
+import { SharedContentStatus } from '@/types/shared-content';
+
 export interface PublicContract {
   id: string;
   title: string;
   content: string;
-  status: string;
+  status: SharedContentStatus;
   client_name?: string;
   client_website?: string;
   client_signed: boolean;
@@ -14,5 +16,5 @@ export interface PublicContract {
   admin_signature?: string;
   created_at: string;
   updated_at: string;
-  shared_url?: string;
+  shared_url: string;  // Changed from optional to required
 }

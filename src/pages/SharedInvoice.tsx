@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useInvoiceData, InvoiceHeader, InvoiceContent, InvoiceActions } from '@/components/shared-invoice';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { toast } from 'sonner';
+import { SharedInvoice as SharedInvoiceType } from '@/types/shared-content';
 
 const SharedInvoice: React.FC = () => {
   const { invoiceId = '' } = useParams<{ invoiceId: string }>();
@@ -86,10 +87,12 @@ const SharedInvoice: React.FC = () => {
     );
   }
   
-  // Adapt invoice to type compatibility
+  // Adapt invoice to type compatibility if needed
   const adaptedInvoice = invoice ? {
     ...invoice,
-    status: invoice.status as any
+    // Ensure required fields are present
+    created_at: invoice.created_at || new Date().toISOString(),
+    status: invoice.status as SharedInvoiceType['status']
   } : null;
   
   return (

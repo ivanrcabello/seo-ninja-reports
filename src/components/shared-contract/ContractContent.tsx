@@ -4,11 +4,12 @@ import { Loader2 } from 'lucide-react';
 import { SignatureSection } from './';
 import { PublicContract } from './types';
 import { ContractActions } from './';
+import { SharedContract } from '@/types/shared-content';
 
 interface ContractContentProps {
   loading: boolean;
   error: string | null;
-  contract: PublicContract | null;
+  contract: PublicContract | SharedContract | null;
   onOpenSignDialog: () => void;
   onPrint: () => void;
   onSign: (signature: string) => void;

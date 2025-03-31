@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { SharedContentStatus } from '@/types/shared-content';
 
 /**
  * Check if content exists (works for all content types)
@@ -73,3 +74,30 @@ export const logContentAccess = async (contentId: string, contentType: string, o
     return false;
   }
 };
+
+// Type-safe helper functions for specific content types
+// These will be used by the specific content modules
+
+// Report specific helpers
+export const checkReportExists = (reportId: string) => checkContentExists(reportId, 'report');
+export const checkReportPassword = (reportId: string) => checkContentPasswordProtection(reportId, 'report');
+export const verifyReportPassword = (reportId: string, password: string) => verifyContentPassword(reportId, 'report', password);
+export const logReportAccess = (reportId: string, options: any, eventType: string = 'access') => logContentAccess(reportId, 'report', options, eventType);
+
+// Contract specific helpers
+export const checkContractExists = (contractId: string) => checkContentExists(contractId, 'contract');
+export const checkContractPassword = (contractId: string) => checkContentPasswordProtection(contractId, 'contract');
+export const verifyContractPassword = (contractId: string, password: string) => verifyContentPassword(contractId, 'contract', password);
+export const logContractAccess = (contractId: string, options: any, eventType: string = 'access') => logContentAccess(contractId, 'contract', options, eventType);
+
+// Invoice specific helpers
+export const checkInvoiceExists = (invoiceId: string) => checkContentExists(invoiceId, 'invoice');
+export const checkInvoicePassword = (invoiceId: string) => checkContentPasswordProtection(invoiceId, 'invoice');
+export const verifyInvoicePassword = (invoiceId: string, password: string) => verifyContentPassword(invoiceId, 'invoice', password);
+export const logInvoiceAccess = (invoiceId: string, options: any, eventType: string = 'access') => logContentAccess(invoiceId, 'invoice', options, eventType);
+
+// Proposal specific helpers
+export const checkProposalExists = (proposalId: string) => checkContentExists(proposalId, 'proposal');
+export const checkProposalPassword = (proposalId: string) => checkContentPasswordProtection(proposalId, 'proposal');
+export const verifyProposalPassword = (proposalId: string, password: string) => verifyContentPassword(proposalId, 'proposal', password);
+export const logProposalAccess = (proposalId: string, options: any, eventType: string = 'access') => logContentAccess(proposalId, 'proposal', options, eventType);

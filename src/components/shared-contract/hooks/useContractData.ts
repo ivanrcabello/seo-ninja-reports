@@ -3,10 +3,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { SharedContract } from '@/types/shared-content';
 import { 
   fetchContractBySharedUrl, 
-  updateContractSignature,
-  checkContractExists, 
-  checkContractPassword,
-  verifyContractPassword,
+  updateContractWithSignature,
+  checkContentExists, 
+  checkContentPasswordProtection,
+  verifyContentPassword,
   logContractAccess
 } from '@/api/shared-content';
 
@@ -31,7 +31,7 @@ export const useContractData = (sharedUrl: string) => {
 
     try {
       // First check if contract exists
-      const { exists, error: existsError } = await checkContractExists(sharedUrl);
+      const { exists, error: existsError } = await checkContentExists(sharedUrl, 'contract');
       
       if (existsError) {
         console.error('Error checking if contract exists:', existsError);
@@ -46,7 +46,7 @@ export const useContractData = (sharedUrl: string) => {
       }
       
       // Check password protection
-      const { isProtected, error: passwordError } = await checkContractPassword(sharedUrl);
+      const { isProtected, error: passwordError } = await checkContentPasswordProtection(sharedUrl, 'contract');
       
       if (passwordError) {
         console.error('Error checking contract password:', passwordError);
@@ -99,7 +99,7 @@ export const useContractData = (sharedUrl: string) => {
 
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
-      const success = await verifyContractPassword(sharedUrl, password);
+      const success = await verifyContentPassword(sharedUrl, 'contract', password);
       
       if (success) {
         setAccessGranted(success);
@@ -117,7 +117,7 @@ export const useContractData = (sharedUrl: string) => {
     try {
       if (!contract) return false;
       
-      const { success, error: signError } = await updateContractSignature(sharedUrl, signature);
+      const { success, error: signError } = await updateContractWithSignature(sharedUrl, signature);
       
       if (signError) {
         throw signError;
@@ -132,7 +132,7 @@ export const useContractData = (sharedUrl: string) => {
             client_signed: true,
             client_signed_at: new Date().toISOString(),
             client_signature: signature,
-            status: 'signed'
+            status: 'signed' as SharedContentStatus
           };
         });
         

@@ -7,17 +7,20 @@ export interface SharedContentBase {
   id: string;
   title: string;
   shared_url: string;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
   client_name?: string;
   client_website?: string;
 }
 
+// Public Report type (for compatibility with existing code)
+export type PublicReport = SharedReport;
+
 // Informe público compartido
 export interface SharedReport extends SharedContentBase {
   summary?: string;
   url?: string;
-  status: string;
+  status: SharedContentStatus;
   content?: any;
   date?: string;
 }
@@ -27,14 +30,14 @@ export interface SharedProposal extends SharedContentBase {
   description?: string;
   services?: string[];
   price?: number;
-  status: string;
+  status: SharedContentStatus;
 }
 
 // Factura pública compartida
 export interface SharedInvoice extends SharedContentBase {
   description?: string;
   amount: number;
-  status: string;
+  status: SharedContentStatus;
   due_date?: string;
   payment_method?: string;
   payment_date?: string;
@@ -44,7 +47,7 @@ export interface SharedInvoice extends SharedContentBase {
 // Contrato público compartido
 export interface SharedContract extends SharedContentBase {
   content: string;
-  status: string;
+  status: SharedContentStatus;
   client_signed?: boolean;
   client_signed_at?: string;
   client_signature?: string;
