@@ -936,6 +936,54 @@ export type Database = {
         }
         Relationships: []
       }
+      public_reports: {
+        Row: {
+          client_name: string | null
+          client_website: string | null
+          content: Json | null
+          created_at: string | null
+          date: string
+          id: string
+          password: string | null
+          shared_url: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          client_name?: string | null
+          client_website?: string | null
+          content?: Json | null
+          created_at?: string | null
+          date?: string
+          id: string
+          password?: string | null
+          shared_url?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          client_name?: string | null
+          client_website?: string | null
+          content?: Json | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          password?: string | null
+          shared_url?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           client_id: string

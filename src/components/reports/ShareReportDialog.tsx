@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -39,7 +38,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
     setPassword(result);
   };
   
-  // Generar y obtener el enlace público cuando se abre el diálogo
+  // Generate and get the public link when the dialog opens
   useEffect(() => {
     if (!open) return;
     
@@ -68,15 +67,18 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           setPassword('');
         }
         
-        // Primero, verificamos si el informe ya está en la tabla pública
-        const { data: existingReport } = await supabase
-          .from('public_reports')
+        // Check if the report already exists in shared_content table
+        const { data: existingContent } = await supabase
+          .from('shared_content')
           .select('id')
-          .eq('id', reportId)
+          .eq('original_id', reportId)
+          .eq('content_type', 'report')
           .single();
         
-        if (!existingReport) {
-          // Si no existe, copiamos los datos del informe a la tabla pública
+        let sharedUrl: string;
+        
+        if (!existingContent) {
+          // If it doesn't exist, get the report data and create entry in shared_content
           const { data: fullReportData, error: fullReportError } = await supabase
             .from('reports')
             .select('*, clients(name, website)')
@@ -86,30 +88,48 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           if (fullReportError) {
             throw new Error(`Error al obtener el informe: ${fullReportError.message}`);
           }
-          
-          // Insertamos en la tabla pública con type assertion
-          const { error: insertError } = await supabase
-            .from('public_reports')
+
+          // Create new shared content entry
+          const { data: insertData, error: insertError } = await supabase
+            .from('shared_content')
             .insert([{
-              id: fullReportData.id,
+              original_id: fullReportData.id,
+              content_type: 'report',
               title: fullReportData.title,
-              date: fullReportData.date,
               status: fullReportData.status,
-              url: fullReportData.url,
-              summary: fullReportData.summary,
               content: fullReportData.content,
+              password: fullReportData.password,
               client_name: fullReportData.clients?.name,
-              client_website: fullReportData.clients?.website
-            }]);
+              client_website: fullReportData.clients?.website,
+              description: fullReportData.summary
+            }])
+            .select('shared_url')
+            .single();
           
           if (insertError) {
             throw new Error(`Error al compartir el informe: ${insertError.message}`);
           }
+          
+          sharedUrl = insertData.shared_url;
+        } else {
+          // Get the shared URL from the existing entry
+          const { data: sharedContent, error: sharedContentError } = await supabase
+            .from('shared_content')
+            .select('shared_url')
+            .eq('original_id', reportId)
+            .eq('content_type', 'report')
+            .single();
+          
+          if (sharedContentError) {
+            throw new Error(`Error al obtener la URL compartida: ${sharedContentError.message}`);
+          }
+          
+          sharedUrl = sharedContent.shared_url;
         }
         
-        // Construimos la URL pública
-        const shareUrl = `${window.location.origin}/shared/reports/${reportId}`;
-        setShareUrl(shareUrl);
+        // Build the public URL
+        const publicUrl = `${window.location.origin}/shared/reports/${sharedUrl}`;
+        setShareUrl(publicUrl);
         
         toast.success('Enlace generado correctamente');
       } catch (error: any) {
@@ -151,15 +171,24 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
     
     setIsLoading(true);
     try {
-      // Actualizamos la contraseña en la tabla reports
+      // Update password in reports table
       const passwordValue = passwordProtected ? password : null;
       
-      const { error } = await supabase
+      const { error: reportError } = await supabase
         .from('reports')
         .update({ password: passwordValue })
         .eq('id', reportId);
         
-      if (error) throw new Error('Error al actualizar la contraseña');
+      if (reportError) throw new Error('Error al actualizar la contraseña en el informe');
+      
+      // Update password in shared_content table if it exists
+      const { error: sharedContentError } = await supabase
+        .from('shared_content')
+        .update({ password: passwordValue })
+        .eq('original_id', reportId)
+        .eq('content_type', 'report');
+      
+      if (sharedContentError) throw new Error('Error al actualizar la contraseña en el contenido compartido');
       
       toast.success(passwordProtected 
         ? 'Informe protegido con contraseña' 

@@ -14,14 +14,16 @@ export const logSharedContentAccess = async ({
   options?: AccessLogOptions;
 }) => {
   try {
-    await supabase.rpc('log_shared_content_access', {
-      content_type: contentType,
-      content_id: contentId,
-      access_type: accessType,
-      successful: options.success !== undefined ? options.success : true,
-      error_message: options.error_message || null,
-      password_attempt: options.password_attempt || false,
-      source: options.source || 'web_client'
+    await supabase.functions.invoke('log-content-access', {
+      body: {
+        content_type: contentType,
+        content_id: contentId,
+        access_type: accessType,
+        successful: options.success !== undefined ? options.success : true,
+        error_message: options.error_message || null,
+        password_attempt: options.password_attempt || false,
+        source: options.source || 'web_client'
+      }
     });
   } catch (error) {
     console.error('Error logging shared content access:', error);
@@ -33,10 +35,13 @@ export const checkContentExists = async (
   contentType: SharedContentType
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('check_shared_content_exists', {
-      content_id: contentId,
-      content_type: contentType
-    });
+    // Use direct query to check if content exists
+    const { data, error } = await supabase
+      .from('shared_content')
+      .select('id')
+      .eq('shared_url', contentId)
+      .eq('content_type', contentType)
+      .single();
     
     if (error) throw error;
     
@@ -52,14 +57,17 @@ export const checkContentPasswordProtection = async (
   contentType: SharedContentType
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('check_shared_content_password', {
-      content_id: contentId,
-      content_type: contentType
-    });
+    // Use direct query to check if content is password protected
+    const { data, error } = await supabase
+      .from('shared_content')
+      .select('password')
+      .eq('shared_url', contentId)
+      .eq('content_type', contentType)
+      .single();
     
     if (error) throw error;
     
-    return !!data;
+    return data && data.password ? true : false;
   } catch (error) {
     console.error('Error checking content password protection:', error);
     return false;
@@ -72,11 +80,14 @@ export const verifyContentPassword = async (
   password: string
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('verify_shared_content_password', {
-      content_id: contentId,
-      content_type: contentType,
-      password_param: password
-    });
+    // Use direct query to verify password
+    const { data, error } = await supabase
+      .from('shared_content')
+      .select('id')
+      .eq('shared_url', contentId)
+      .eq('content_type', contentType)
+      .eq('password', password)
+      .single();
     
     if (error) throw error;
     
