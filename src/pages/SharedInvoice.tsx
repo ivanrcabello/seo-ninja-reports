@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { InvoiceContent, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
-import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice';
+import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice/types';
 import { toast } from 'sonner';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 
@@ -25,11 +25,13 @@ const SharedInvoice = () => {
   const verifyPassword = async (password: string) => {
     try {
       // Call function to verify password
-      const { data, error: verifyError } = await supabase
-        .rpc('verify_shared_invoice_password', { 
+      const { data, error: verifyError } = await supabase.rpc(
+        'verify_shared_invoice_password', 
+        { 
           shared_url_param: sharedUrl || '',
           password_param: password
-        });
+        }
+      );
       
       if (verifyError) throw new Error(verifyError.message);
       
@@ -56,10 +58,12 @@ const SharedInvoice = () => {
       console.log("Fetching invoice with shared URL:", sharedUrl);
       
       // Check if invoice is password protected without requiring the password
-      const { data: protectionData, error: protectionError } = await supabase
-        .rpc('check_invoice_password_protection', { 
+      const { data: protectionData, error: protectionError } = await supabase.rpc(
+        'check_invoice_password_protection', 
+        { 
           shared_url_param: sharedUrl 
-        });
+        }
+      );
       
       if (protectionError) throw new Error(protectionError.message);
       
@@ -71,7 +75,7 @@ const SharedInvoice = () => {
         return;
       }
       
-      // Fetch from public_invoices directly (no RLS, no authentication required)
+      // Fetch from public_invoices view
       const { data, error: fetchError } = await supabase
         .from('public_invoices')
         .select('*')
@@ -99,18 +103,20 @@ const SharedInvoice = () => {
       // de que todos los campos requeridos estén presentes
       const formattedInvoice: SharedInvoiceType = {
         id: data.id,
-        title: data.title,
+        title: data.title || '',
         description: data.description || '',
         amount: data.amount || 0,
         status: status,
         due_date: data.due_date,
         payment_method: data.payment_method,
         payment_date: data.payment_date,
-        payment_instructions: data.payment_instructions || '', // Aseguramos que siempre tenga un valor
+        // We need to use the optional chaining or type assertion here since TypeScript doesn't recognize this property
+        // Use of type assertion to handle the property that exists in runtime but not in TypeScript definition
+        payment_instructions: (data as any).payment_instructions || '',
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,
-        client_name: data.client_name,
+        client_name: data.client_name || '',
         client_website: data.client_website
       };
       

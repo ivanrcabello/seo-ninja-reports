@@ -17,6 +17,7 @@ const LoadingSpinner = () => {
 const Auth = lazy(() => import('./pages/Auth'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Index = lazy(() => import('./pages/Index'));
 
 const ClientDetail = lazy(() => 
   import('./pages/ClientDetail')
@@ -131,6 +132,93 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const SharedInvoice = lazy(() => 
+  import('./pages/SharedInvoice')
+    .catch(error => {
+      console.error("Error loading SharedInvoice component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading shared invoice</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const SharedProposal = lazy(() => 
+  import('./pages/SharedProposal')
+    .catch(error => {
+      console.error("Error loading SharedProposal component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading shared proposal</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const SharedContract = lazy(() => 
+  import('./pages/SharedContract')
+    .catch(error => {
+      console.error("Error loading SharedContract component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading shared contract</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const PublicReport = lazy(() => 
+  import('./pages/PublicReport')
+    .catch(error => {
+      console.error("Error loading PublicReport component:", error);
+      return {
+        default: () => (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-xl font-bold mb-4">Error loading public report</h1>
+            <p className="mb-4">There was a problem loading this page.</p>
+            <button 
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Return to dashboard
+            </button>
+          </div>
+        )
+      };
+    })
+);
+
+const ClientPortal = lazy(() => import('./pages/ClientPortal'));
+const ClientPortalDashboard = lazy(() => import('./pages/ClientPortalDashboard'));
+
 function App() {
   return (
     <>
@@ -141,9 +229,20 @@ function App() {
               <Router>
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
+                    {/* Rutas públicas */}
+                    <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/shared/invoices/:sharedUrl" element={<SharedInvoice />} />
+                    <Route path="/shared/proposals/:sharedUrl" element={<SharedProposal />} />
+                    <Route path="/shared/contracts/:sharedUrl" element={<SharedContract />} />
+                    <Route path="/shared/reports/:id" element={<PublicReport />} />
                     
-                    <Route path="/" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
+                    {/* Portal de clientes */}
+                    <Route path="/portal" element={<ClientPortal />} />
+                    <Route path="/portal/dashboard" element={<ClientPortalDashboard />} />
+                    
+                    {/* Rutas de administración (protegidas) */}
+                    <Route path="/admin" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
                     <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
                     <Route path="/clients/:id" element={<AuthGuard><ClientDetailWithErrorBoundary /></AuthGuard>} />
                     <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
@@ -151,7 +250,7 @@ function App() {
                     <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
                     <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
 
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>
               </Router>

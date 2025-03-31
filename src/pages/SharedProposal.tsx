@@ -48,11 +48,13 @@ const SharedProposal = () => {
   const verifyPassword = async (password: string) => {
     try {
       // Call function to verify password
-      const { data, error: verifyError } = await supabase
-        .rpc('verify_shared_proposal_password', { 
+      const { data, error: verifyError } = await supabase.rpc(
+        'verify_shared_proposal_password', 
+        { 
           shared_url_param: sharedUrl || '',
           password_param: password
-        });
+        }
+      );
       
       if (verifyError) throw new Error(verifyError.message);
       
@@ -79,10 +81,12 @@ const SharedProposal = () => {
       console.log("Fetching proposal with shared URL:", sharedUrl);
       
       // Check if proposal is password protected without requiring the password
-      const { data: protectionData, error: protectionError } = await supabase
-        .rpc('check_proposal_password_protection', { 
+      const { data: protectionData, error: protectionError } = await supabase.rpc(
+        'check_proposal_password_protection', 
+        { 
           shared_url_param: sharedUrl 
-        });
+        }
+      );
       
       if (protectionError) throw new Error(protectionError.message);
       
