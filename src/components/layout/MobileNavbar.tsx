@@ -116,7 +116,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu, isOpen, onOpenCh
               className="flex items-center"
               onClick={closeMenu}
             >
-              <img src="/lovable-uploads/46c042b9-bcdb-4ac6-aaa3-dc6d747f7d10.png" alt="SoySeoLocal" className="h-8" />
+              <img src="/lovable-uploads/509b18fe-6ed5-47e8-9cde-5aa13a1de63e.png" alt="SEOLocal" className="h-8" />
             </Link>
             <SheetClose className="rounded-full h-8 w-8 flex items-center justify-center" onClick={closeMenu}>
               <X className="h-4 w-4" />
@@ -156,14 +156,6 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu, isOpen, onOpenCh
               <Phone className="h-4 w-4" />
               <span>Contacto</span>
             </Link>
-            
-            <div className="pt-4">
-              <div className="flex flex-col gap-3">
-                <Button asChild className="w-full" onClick={closeMenu}>
-                  <Link to="/auth">Acceso administración</Link>
-                </Button>
-              </div>
-            </div>
           </>
         )}
       </SheetContent>

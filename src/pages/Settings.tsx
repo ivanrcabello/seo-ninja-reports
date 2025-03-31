@@ -1,15 +1,16 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ApiSettings from '@/components/settings/ApiSettings';
 import LogoUpload from '@/components/settings/LogoUpload';
+import SeoSettings from '@/components/settings/SeoSettings';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
 
@@ -83,7 +84,7 @@ const Settings = () => {
           <AnimatedContainer animation="slide-up" className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold mb-2">Configuración</h1>
             <p className="text-muted-foreground">
-              Gestiona las configuraciones de API y generación de informes
+              Gestiona las configuraciones del sistema y contenido del sitio web
             </p>
           </AnimatedContainer>
 
@@ -105,15 +106,30 @@ const Settings = () => {
             </div>
           ) : (
             <AnimatedContainer animation="fade" delay={200}>
-              <div className="grid grid-cols-1 gap-8">
-                <LogoUpload />
-                <ApiSettings 
-                  brightDataUsername={brightDataUsername}
-                  setBrightDataUsername={setBrightDataUsername}
-                  brightDataPassword={brightDataPassword}
-                  setBrightDataPassword={setBrightDataPassword}
-                />
-              </div>
+              <Tabs defaultValue="apis" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="apis">APIs</TabsTrigger>
+                  <TabsTrigger value="branding">Marca</TabsTrigger>
+                  <TabsTrigger value="seo">SEO</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="apis" className="space-y-4">
+                  <ApiSettings 
+                    brightDataUsername={brightDataUsername}
+                    setBrightDataUsername={setBrightDataUsername}
+                    brightDataPassword={brightDataPassword}
+                    setBrightDataPassword={setBrightDataPassword}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="branding">
+                  <LogoUpload />
+                </TabsContent>
+                
+                <TabsContent value="seo">
+                  <SeoSettings />
+                </TabsContent>
+              </Tabs>
             </AnimatedContainer>
           )}
         </div>

@@ -13,9 +13,7 @@ const Footer: React.FC = () => {
           {/* Column 1: Logo and About */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center">
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
-                SoySeoLocal.com
-              </span>
+              <img src="/lovable-uploads/509b18fe-6ed5-47e8-9cde-5aa13a1de63e.png" alt="SEOLocal" className="h-10" />
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs">
               Mejoramos la visibilidad online de tu negocio local con estrategias SEO avanzadas e informes automatizados.
@@ -33,7 +31,7 @@ const Footer: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>info@soyseolocal.com</span>
+                <span>contacto@seolocal.es</span>
               </div>
             </div>
           </div>
@@ -123,16 +121,16 @@ const Footer: React.FC = () => {
         {/* Copyright Bar */}
         <div className="mt-12 pt-6 border-t border-border flex flex-col md:flex-row justify-between items-center">
           <p className="text-xs text-muted-foreground mb-4 md:mb-0">
-            © {currentYear} SoySeoLocal.com. Todos los derechos reservados.
+            © {currentYear} SEOLocal.es. Todos los derechos reservados.
           </p>
           <div className="flex space-x-6">
             <Link to="/privacidad" className="text-xs text-muted-foreground hover:text-primary transition-colors">
               Política de Privacidad
             </Link>
-            <Link to="/privacidad#cookies" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+            <Link to="/cookies" className="text-xs text-muted-foreground hover:text-primary transition-colors">
               Cookies
             </Link>
-            <Link to="/privacidad#terminos" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+            <Link to="/terminos" className="text-xs text-muted-foreground hover:text-primary transition-colors">
               Términos de Uso
             </Link>
           </div>

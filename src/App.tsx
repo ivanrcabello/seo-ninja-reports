@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './context/AuthContext';
@@ -30,6 +29,8 @@ const Guias = lazy(() => import('./pages/Guias'));
 const Documentacion = lazy(() => import('./pages/Documentacion'));
 const Recursos = lazy(() => import('./pages/Recursos'));
 const Privacidad = lazy(() => import('./pages/Privacidad'));
+const Cookies = lazy(() => import('./pages/Cookies'));
+const Terminos = lazy(() => import('./pages/Terminos'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Service Pages
@@ -294,7 +295,10 @@ function App() {
                     <Route path="/recursos" element={<Recursos />} />
                     <Route path="/contacto" element={<Contacto />} />
                     <Route path="/privacidad" element={<Privacidad />} />
+                    <Route path="/cookies" element={<Cookies />} />
+                    <Route path="/terminos" element={<Terminos />} />
                     
+                    {/* Shared links */}
                     <Route path="/shared/invoices/:sharedUrl" element={<SharedInvoice />} />
                     <Route path="/shared/proposals/:sharedUrl" element={<SharedProposal />} />
                     <Route path="/shared/contracts/:sharedUrl" element={<SharedContract />} />
