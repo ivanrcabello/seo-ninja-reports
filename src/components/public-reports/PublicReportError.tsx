@@ -1,12 +1,19 @@
 
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PublicReportErrorProps {
   errorMessage?: string;
+  onRetry?: () => void;
+  retryCount?: number;
 }
 
-const PublicReportError: React.FC<PublicReportErrorProps> = ({ errorMessage }) => {
+const PublicReportError: React.FC<PublicReportErrorProps> = ({ 
+  errorMessage,
+  onRetry,
+  retryCount = 0
+}) => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-full max-w-md text-center p-8">
@@ -21,6 +28,26 @@ const PublicReportError: React.FC<PublicReportErrorProps> = ({ errorMessage }) =
             Se produjo un error al cargar el informe. Por favor, inténtalo de nuevo más tarde.
           </p>
         )}
+        
+        {onRetry && (
+          <div className="mb-6">
+            <Button 
+              onClick={onRetry} 
+              variant="outline" 
+              className="flex items-center gap-2"
+              disabled={retryCount >= 3}
+            >
+              <RefreshCw className="h-4 w-4" />
+              {retryCount >= 3 ? 'Demasiados intentos' : 'Reintentar'}
+            </Button>
+            {retryCount > 0 && (
+              <p className="text-xs mt-2 text-muted-foreground">
+                Intentos: {retryCount}/3
+              </p>
+            )}
+          </div>
+        )}
+        
         <p className="text-sm text-muted-foreground">
           Si el problema persiste, contacta con la persona que compartió este enlace contigo.
         </p>

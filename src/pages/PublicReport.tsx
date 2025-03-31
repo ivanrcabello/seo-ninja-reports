@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading, useReportData } from '@/components/public-reports';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
 
 const PublicReport: React.FC = () => {
+  const navigate = useNavigate();
   const { reportId = '' } = useParams<{ reportId: string }>();
   const [passwordInput, setPasswordInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [loadRetries, setLoadRetries] = useState(0);
   
   console.log('PublicReport page loaded with reportId:', reportId);
   
@@ -64,6 +66,11 @@ const PublicReport: React.FC = () => {
       setVerifying(false);
     }
   };
+  
+  const handleRetry = () => {
+    setLoadRetries(prev => prev + 1);
+    refetch();
+  };
 
   // Show loading state
   if (isLoading) {
@@ -74,13 +81,19 @@ const PublicReport: React.FC = () => {
   // Show error state
   if (error) {
     console.error('PublicReport: Error loading report:', error);
-    return <PublicReportError errorMessage={error} />;
+    return (
+      <PublicReportError 
+        errorMessage={error} 
+        onRetry={handleRetry} 
+        retryCount={loadRetries}
+      />
+    );
   }
 
   // Show not found state
   if (notFound) {
     console.log('PublicReport: Report not found, showing empty state');
-    return <PublicReportEmpty />;
+    return <PublicReportEmpty onBack={() => navigate('/')} />;
   }
 
   // Show password protection dialog
@@ -105,7 +118,7 @@ const PublicReport: React.FC = () => {
   // Show empty state if no report found
   if (!report) {
     console.log('PublicReport: No report found, showing empty state');
-    return <PublicReportEmpty />;
+    return <PublicReportEmpty onBack={() => navigate('/')} />;
   }
 
   console.log('PublicReport: Rendering report content:', report);

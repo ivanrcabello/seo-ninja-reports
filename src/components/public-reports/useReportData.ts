@@ -34,6 +34,8 @@ const useReportData = (reportId: string) => {
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastAttempt, setLastAttempt] = useState<Date | null>(null);
 
   const fetchReport = useCallback(async () => {
     if (!reportId || reportId.trim() === '') {
@@ -44,10 +46,11 @@ const useReportData = (reportId: string) => {
       return;
     }
 
-    console.log(`Starting fetch for report with ID: ${reportId}`);
+    console.log(`Starting fetch for report with ID: ${reportId} (Attempt: ${retryCount + 1})`);
     setIsLoading(true);
     setError(null);
     setNotFound(false);
+    setLastAttempt(new Date());
 
     try {
       // Basic UUID format validation to avoid unnecessary DB queries
@@ -60,129 +63,9 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // APPROACH 1: Try to get report from public_reports view first (most direct)
-      console.log('APPROACH 1: Fetching from public_reports view...');
-      const { data: publicReportData, error: publicReportError } = await supabase
-        .from('public_reports')
-        .select('*')
-        .eq('id', reportId)
-        .maybeSingle();
-      
-      console.log('Public reports view result:', { 
-        data: publicReportData ? 'Data exists' : 'No data', 
-        error: publicReportError 
-      });
-      
-      if (!publicReportError && publicReportData) {
-        console.log('Successfully fetched from public_reports view');
-        setReport(publicReportData as unknown as PublicReport);
-        logSharedReportAccess(reportId, { successful: true, source: 'public_reports_view' });
-        setIsLoading(false);
-        return;
-      }
-      
-      // APPROACH 2: Check if report exists and check password protection
-      console.log('APPROACH 2: Checking if report exists and password protection...');
-      const { data, error: reportCheckError } = await supabase
-        .rpc<RpcResponseCheckReportExists>('check_report_exists', { report_id_param: reportId });
-      
-      // Parse the response correctly
-      const reportCheck: RpcResponseCheckReportExists = 
-        typeof data === 'boolean' ? { exists: data } : 
-        (data && typeof data === 'object' && 'exists' in data) ? data as RpcResponseCheckReportExists : 
-        { exists: false };
-      
-      console.log('Report exists check:', { exists: reportCheck.exists, error: reportCheckError });
-      
-      if (reportCheckError) {
-        console.error('Error checking if report exists (RPC):', reportCheckError);
-        // Continue to try other methods if RPC fails
-      } else if (!reportCheck.exists) {
-        console.error('Report does not exist (confirmed by RPC) - ID:', reportId);
-        setError('El informe no existe');
-        setIsLoading(false);
-        setNotFound(true);
-        logSharedReportAccess(reportId, { successful: false, error: 'Report not found', source: 'rpc_check' });
-        return;
-      }
-      
-      // Direct check in reports table
-      console.log('Checking if report exists in reports table...');
-      const { data: reportData, error: reportDataError } = await supabase
-        .from('reports')
-        .select('id, password')
-        .eq('id', reportId)
-        .maybeSingle();
-      
-      console.log('Direct reports table check:', { 
-        data: reportData ? 'Found' : 'Not found', 
-        error: reportDataError 
-      });
-      
-      if (reportDataError) {
-        console.error('Error checking if report exists in reports table:', reportDataError);
-      } else if (!reportData) {
-        console.error('Report does not exist in reports table - ID:', reportId);
-        setError('El informe no existe');
-        setIsLoading(false);
-        setNotFound(true);
-        logSharedReportAccess(reportId, { successful: false, error: 'Report not found', source: 'direct_check' });
-        return;
-      }
-      
-      // Check if report is password protected
-      const isProtected = Boolean(reportData && reportData.password);
-      setIsPasswordProtected(isProtected);
-      console.log(`Report is password protected: ${isProtected}`);
-      
-      // If password protected and access not granted, don't fetch content yet
-      if (isProtected && !accessGranted) {
-        setIsLoading(false);
-        return;
-      }
-      
-      // APPROACH 3: Use get_public_report_by_id RPC
-      console.log('APPROACH 3: Using get_public_report_by_id RPC...');
-      const { data: rpcData, error: rpcError } = await supabase
-        .rpc<RpcResponseGetPublicReportById[]>('get_public_report_by_id', { report_id_param: reportId });
-      
-      // Process RPC data correctly
-      let rpcReportData: RpcResponseGetPublicReportById[] = [];
-      if (rpcData) {
-        if (Array.isArray(rpcData)) {
-          rpcReportData = rpcData as RpcResponseGetPublicReportById[];
-        } else if (typeof rpcData === 'object') {
-          rpcReportData = [rpcData as unknown as RpcResponseGetPublicReportById];
-        }
-      }
-      
-      console.log('RPC result:', { 
-        data: rpcReportData && rpcReportData.length > 0 ? 'Data exists' : 'No data', 
-        error: rpcError 
-      });
-      
-      if (!rpcError && rpcReportData && rpcReportData.length > 0) {
-        console.log('Successfully fetched via RPC');
-        const reportToSet: PublicReport = {
-          id: rpcReportData[0].id,
-          title: rpcReportData[0].title || 'Informe sin título',
-          summary: rpcReportData[0].summary || undefined,
-          url: rpcReportData[0].url || undefined,
-          status: rpcReportData[0].status || 'unknown',
-          content: rpcReportData[0].content,
-          date: rpcReportData[0].date || undefined,
-          client_name: rpcReportData[0].client_name || undefined,
-          client_website: rpcReportData[0].client_website || undefined,
-        };
-        setReport(reportToSet);
-        logSharedReportAccess(reportId, { successful: true, source: 'rpc' });
-        setIsLoading(false);
-        return;
-      }
-      
-      // APPROACH 4: Fallback to direct join query
-      console.log('APPROACH 4: Using direct join query...');
-      const { data: joinData, error: joinError } = await supabase
+      // DIRECT APPROACH: Try to get report by shared_url first (most efficient)
+      console.log('Fetching report directly by shared_url...');
+      const { data: directReportData, error: directReportError } = await supabase
         .from('reports')
         .select(`
           id, 
@@ -192,69 +75,125 @@ const useReportData = (reportId: string) => {
           status,
           content,
           date,
+          client_id,
+          password,
+          clients (
+            name,
+            website
+          )
+        `)
+        .eq('shared_url', reportId)
+        .single();
+      
+      if (!directReportError && directReportData) {
+        console.log('Successfully fetched report by shared_url:', directReportData.id);
+        const formattedReport: PublicReport = {
+          id: directReportData.id,
+          title: directReportData.title || 'Informe sin título',
+          summary: directReportData.summary,
+          url: directReportData.url,
+          status: directReportData.status,
+          content: directReportData.content,
+          date: directReportData.date,
+          client_name: directReportData.clients?.name,
+          client_website: directReportData.clients?.website
+        };
+        
+        // Check if password protected
+        const isProtected = Boolean(directReportData.password);
+        setIsPasswordProtected(isProtected);
+        
+        // If not protected or access granted, set the report
+        if (!isProtected || accessGranted) {
+          setReport(formattedReport);
+        }
+        
+        // Log access
+        logSharedReportAccess(reportId, { 
+          successful: true, 
+          source: 'direct_shared_url' 
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
+      // FALLBACK APPROACH: If not found by shared_url, try other methods
+      console.log('Report not found by shared_url, checking if report exists by ID...');
+      
+      // Try by direct ID
+      const { data: reportByIdData, error: reportByIdError } = await supabase
+        .from('reports')
+        .select(`
+          id, 
+          title, 
+          summary,
+          url,
+          status,
+          content,
+          date,
+          client_id,
+          password,
+          shared_url,
           clients (
             name,
             website
           )
         `)
         .eq('id', reportId)
-        .maybeSingle();
+        .single();
       
-      console.log('Join query result:', { 
-        data: joinData ? 'Data exists' : 'No data', 
-        error: joinError 
-      });
-      
-      if (!joinError && joinData) {
-        console.log('Successfully fetched with join query');
-        
-        // Format the data to match PublicReport interface
+      if (!reportByIdError && reportByIdData) {
+        console.log('Successfully fetched report by direct ID:', reportByIdData.id);
         const formattedReport: PublicReport = {
-          id: joinData.id,
-          title: joinData.title || 'Informe sin título',
-          summary: joinData.summary,
-          url: joinData.url,
-          status: joinData.status,
-          content: joinData.content,
-          date: joinData.date,
-          client_name: joinData.clients?.name,
-          client_website: joinData.clients?.website
+          id: reportByIdData.id,
+          title: reportByIdData.title || 'Informe sin título',
+          summary: reportByIdData.summary,
+          url: reportByIdData.url,
+          status: reportByIdData.status,
+          content: reportByIdData.content,
+          date: reportByIdData.date,
+          client_name: reportByIdData.clients?.name,
+          client_website: reportByIdData.clients?.website
         };
         
-        setReport(formattedReport);
-        logSharedReportAccess(reportId, { successful: true, source: 'direct_join' });
+        // Check if password protected
+        const isProtected = Boolean(reportByIdData.password);
+        setIsPasswordProtected(isProtected);
+        
+        // If not protected or access granted, set the report
+        if (!isProtected || accessGranted) {
+          setReport(formattedReport);
+        }
+        
+        // Log access
+        logSharedReportAccess(reportId, { 
+          successful: true, 
+          source: 'direct_id' 
+        });
+        
         setIsLoading(false);
         return;
       }
       
-      // APPROACH 5: Last resort - Reports table only
-      console.log('APPROACH 5: Fetching report only (no joins)...');
-      const { data: reportOnlyData, error: reportOnlyError } = await supabase
-        .from('reports')
+      // Last fallback - public_reports view
+      const { data: publicReportData, error: publicReportError } = await supabase
+        .from('public_reports')
         .select('*')
-        .eq('id', reportId)
+        .eq('shared_url', reportId)
         .maybeSingle();
       
-      console.log('Report only query result:', { 
-        data: reportOnlyData ? 'Data exists' : 'No data', 
-        error: reportOnlyError 
-      });
-      
-      if (!reportOnlyError && reportOnlyData) {
-        console.log('Successfully fetched report only');
+      if (!publicReportError && publicReportData) {
+        console.log('Successfully fetched from public_reports view with shared_url');
+        setReport(publicReportData as unknown as PublicReport);
+        setIsPasswordProtected(Boolean(publicReportData.password));
         
-        const formattedReport: PublicReport = {
-          id: reportOnlyData.id,
-          title: reportOnlyData.title || 'Informe sin título',
-          summary: reportOnlyData.summary,
-          url: reportOnlyData.url,
-          status: reportOnlyData.status,
-          content: reportOnlyData.content,
-          date: reportOnlyData.date
-        };
+        // Log access
+        logSharedReportAccess(reportId, { 
+          successful: true, 
+          source: 'public_reports_view' 
+        });
         
-        setReport(formattedReport);
-        logSharedReportAccess(reportId, { successful: true, source: 'reports_only' });
         setIsLoading(false);
         return;
       }
@@ -272,18 +211,24 @@ const useReportData = (reportId: string) => {
     } catch (err: any) {
       console.error('Error fetching shared report:', err);
       setError(err.message || 'Error al cargar el informe');
-      setNotFound(true);
       
-      // Log error
-      logSharedReportAccess(reportId, { 
-        successful: false, 
-        error: err.message || 'Unknown error',
-        source: 'error'
-      });
+      // Only consider retrying if we haven't exceeded retry count
+      if (retryCount < 3) {
+        console.log(`Will retry fetch (${retryCount + 1}/3)...`);
+        setRetryCount(retryCount + 1);
+      } else {
+        setNotFound(true);
+        // Log error
+        logSharedReportAccess(reportId, { 
+          successful: false, 
+          error: err.message || 'Unknown error',
+          source: 'error_with_retries_exhausted'
+        });
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [reportId, accessGranted]);
+  }, [reportId, accessGranted, retryCount]);
 
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
@@ -317,11 +262,31 @@ const useReportData = (reportId: string) => {
     }
   };
 
+  // Initial fetch
   useEffect(() => {
     if (reportId) {
       fetchReport();
     }
   }, [fetchReport]);
+
+  // Retry logic with exponential backoff if needed
+  useEffect(() => {
+    if (retryCount > 0 && retryCount <= 3 && lastAttempt) {
+      const now = new Date();
+      const timeSinceLastAttempt = now.getTime() - lastAttempt.getTime();
+      const backoffTime = Math.min(1000 * Math.pow(2, retryCount - 1), 8000); // exponential backoff, max 8 seconds
+      
+      // Only retry if enough time has passed since last attempt
+      if (timeSinceLastAttempt > backoffTime) {
+        const retryTimeout = setTimeout(() => {
+          console.log(`Auto-retrying fetch attempt ${retryCount}/3 after ${backoffTime}ms backoff...`);
+          fetchReport();
+        }, backoffTime);
+        
+        return () => clearTimeout(retryTimeout);
+      }
+    }
+  }, [retryCount, lastAttempt, fetchReport]);
 
   return {
     report,
