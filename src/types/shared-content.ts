@@ -6,7 +6,7 @@ export type SharedContentStatus = "processing" | "completed" | "failed" | "draft
 export type SharedContentType = "report" | "proposal" | "invoice" | "contract";
 
 // Tipos de acceso para logs
-export type AccessLogType = 'view' | 'print' | 'download' | 'password' | 'not_found' | 'error' | 'check' | 'data_not_found' | 'page_view';
+export type AccessLogType = 'view' | 'print' | 'download' | 'password' | 'not_found' | 'error' | 'check' | 'data_not_found' | 'page_view' | 'sign';
 
 // Opciones comunes para compartir contenido
 export interface SharedContentOptions {

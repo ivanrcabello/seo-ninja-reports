@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { SharedContract, SharedContractResponse } from '@/types/shared-content';
-import { fetchContractBySharedUrl, logContractAccess, signSharedContract } from '@/api/shared-content/contracts';
+import { fetchContractBySharedUrl, logContractAccess } from '@/api/shared-content/contracts';
 
 interface UseSharedContractDataResult {
   contract: SharedContract | null;
@@ -69,27 +69,40 @@ export const useSharedContractData = (contractId: string): UseSharedContractData
     if (!contract) return false;
     
     try {
-      const success = await signSharedContract(contractId, signature);
+      // Call the signSharedContract function from API (we'll implement this)
+      const signData = {
+        client_signed: true,
+        client_signed_at: new Date().toISOString(),
+        client_signature: signature,
+        status: 'signed' as const
+      };
       
-      if (success) {
-        // Log successful signing
-        logContractAccess(contractId, { 
-          successful: true 
-        }, 'sign');
+      // Update the contract in the database
+      const { error } = await supabase
+        .from('shared_content')
+        .update(signData)
+        .eq('shared_url', contractId);
         
-        // Update local contract state
-        await loadContract();
-      } else {
-        // Log failed signing
-        logContractAccess(contractId, { 
-          successful: false,
-          error: 'Failed to sign contract' 
-        }, 'sign');
-      }
+      if (error) throw error;
       
-      return success;
+      // Log successful signing
+      logContractAccess(contractId, { 
+        successful: true 
+      }, 'sign');
+      
+      // Update local contract state
+      await loadContract();
+      
+      return true;
     } catch (err) {
       console.error('Error signing contract:', err);
+      
+      // Log failed signing
+      logContractAccess(contractId, { 
+        successful: false,
+        error: 'Failed to sign contract' 
+      }, 'sign');
+      
       return false;
     }
   };

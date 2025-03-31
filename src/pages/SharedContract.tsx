@@ -19,6 +19,7 @@ const SharedContract: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
 
   const {
     contract,
@@ -133,13 +134,28 @@ const SharedContract: React.FC = () => {
 
   // Convert SharedContract to PublicContract
   const publicContract: PublicContract = {
-    ...contract,
-    content: contract.content as unknown as string // Type casting to string as required by PublicContract
+    id: contract.id,
+    title: contract.title,
+    content: contract.content as string, // Type casting to string as required by PublicContract
+    client_name: contract.client_name,
+    client_website: contract.client_website,
+    status: contract.status,
+    created_at: contract.created_at,
+    updated_at: contract.updated_at,
+    client_signed: contract.client_signed || false,
+    client_signed_at: contract.client_signed_at,
+    client_signature: contract.client_signature,
+    admin_signed: contract.admin_signed || false,
+    admin_signed_at: contract.admin_signed_at,
+    admin_signature: contract.admin_signature,
+    shared_url: contract.shared_url,
+    content_type: contract.content_type,
+    original_id: contract.original_id,
   };
 
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
-      <AnimatedContainer animation="fade-in">
+      <AnimatedContainer animation="fade">
         <ContractHeader 
           title={contract.title} 
           client={contract.client_name || ''} 
@@ -163,6 +179,11 @@ const SharedContract: React.FC = () => {
               contract={publicContract} 
               onOpenSignDialog={handleOpenSignDialog}
               onPrint={handlePrint}
+              loading={false}
+              error={null}
+              onSign={() => {}}
+              isSignDialogOpen={isSignDialogOpen}
+              setIsSignDialogOpen={setIsSignDialogOpen}
             />
           </TabsContent>
           

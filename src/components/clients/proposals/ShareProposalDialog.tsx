@@ -22,7 +22,7 @@ interface ShareProposalDialogProps {
   onOpenChange: (open: boolean) => void;
   proposalId: string;
   proposalTitle: string;
-  clientName: string;
+  clientName?: string;  // Make clientName optional
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
 }
@@ -32,7 +32,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   onOpenChange,
   proposalId,
   proposalTitle,
-  clientName,
+  clientName = '',  // Provide a default value
   clientWebsite = '',
   onShared
 }) => {

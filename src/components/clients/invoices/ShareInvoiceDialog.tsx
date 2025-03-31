@@ -22,7 +22,7 @@ interface ShareInvoiceDialogProps {
   onOpenChange: (open: boolean) => void;
   invoiceId: string;
   invoiceTitle: string;
-  clientName: string;
+  clientName?: string;  // Make clientName optional
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
 }
@@ -32,7 +32,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
   onOpenChange,
   invoiceId,
   invoiceTitle,
-  clientName,
+  clientName = '',  // Provide a default value
   clientWebsite = '',
   onShared
 }) => {

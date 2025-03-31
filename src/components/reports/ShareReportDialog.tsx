@@ -20,10 +20,12 @@ import { supabase } from '@/integrations/supabase/client';
 interface ShareReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  report: {
+  reportId: string; // Keep supporting reportId for backwards compatibility
+  reportTitle: string;
+  report?: {
     id: string;
     title: string;
-    clientId: string;
+    clientId?: string;
     summary?: string;
     url?: string;
   };
@@ -35,6 +37,8 @@ interface ShareReportDialogProps {
 const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   open,
   onOpenChange,
+  reportId,
+  reportTitle,
   report,
   clientName = '',
   clientWebsite = '',
@@ -46,7 +50,10 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   const [isShared, setIsShared] = useState(false);
   const [sharedUrl, setSharedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const reportId = report?.id;
+  
+  // Use either the provided report.id or the reportId prop
+  const effectiveReportId = report?.id || reportId;
+  const effectiveReportTitle = report?.title || reportTitle;
 
   useEffect(() => {
     // Reset state when dialog opens
@@ -58,7 +65,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   }, [open]);
 
   const shareReport = async () => {
-    if (!reportId) return;
+    if (!effectiveReportId) return;
     
     try {
       setIsSharing(true);
@@ -67,7 +74,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       const { data: existingShared, error: checkError } = await supabase
         .from('shared_content')
         .select('shared_url')
-        .eq('original_id', reportId)
+        .eq('original_id', effectiveReportId)
         .eq('content_type', 'report')
         .single();
       
@@ -98,7 +105,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         const { data: reportData, error: reportError } = await supabase
           .from('reports')
           .select('*')
-          .eq('id', reportId)
+          .eq('id', effectiveReportId)
           .single();
           
         if (reportError) throw reportError;
@@ -107,10 +114,10 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         const { error: insertError } = await supabase
           .from('shared_content')
           .insert({
-            original_id: reportId,
+            original_id: effectiveReportId,
             content_type: 'report',
-            title: report.title,
-            description: report.summary || '',
+            title: effectiveReportTitle,
+            description: report?.summary || '',
             content: reportData.content || {},
             status: reportData.status,
             shared_url: sharedUrlId,
@@ -131,7 +138,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       await supabase
         .from('reports')
         .update({ shared_url: sharedUrlId })
-        .eq('id', reportId);
+        .eq('id', effectiveReportId);
       
     } catch (error: any) {
       console.error('Error sharing report:', error);
@@ -161,7 +168,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Compartir Informe</DialogTitle>
           <DialogDescription>
-            Compartir el informe "{report?.title}" con el cliente.
+            Compartir el informe "{effectiveReportTitle}" con el cliente.
           </DialogDescription>
         </DialogHeader>
         

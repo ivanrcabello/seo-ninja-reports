@@ -1,14 +1,14 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
+import { SharedContentStatus } from '@/types/shared-content';
 
 interface PublicReport {
   id: string;
   title: string;
   summary?: string;
   url?: string;
-  status: string;
+  status: SharedContentStatus;
   content?: any;
   date?: string;
   client_name?: string;
@@ -40,9 +40,9 @@ const useReportData = (reportId: string) => {
     return uuidRegex.test(id);
   }, []);
 
-  // Simplify fetch with direct access to public_reports table
+  // Simplify fetch with direct access to shared_content table
   const fetchReportDirect = useCallback(async () => {
-    console.log(`Fetching report with ID: ${reportId} from public_reports table`);
+    console.log(`Fetching report with ID: ${reportId} from shared_content table`);
     try {
       // First, check if the report is password protected
       const { data: protectionData, error: protectionError } = await supabase
@@ -59,26 +59,36 @@ const useReportData = (reportId: string) => {
         }
       }
       
-      // Try fetching directly from public_reports view
+      // Try fetching from shared_content table where content_type is 'report'
       const { data: viewData, error: viewError } = await supabase
-        .from('public_reports')
+        .from('shared_content')
         .select('*')
+        .eq('content_type', 'report')
         .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
         .single();
 
       if (!viewError && viewData) {
-        console.log('Successfully fetched report from public_reports view:', viewData);
+        console.log('Successfully fetched report from shared_content table:', viewData);
         
         // Log successful access
         logSharedReportAccess(reportId, { 
           successful: true, 
-          source: 'public_reports_view' 
+          source: 'shared_content_table' 
         });
         
-        return viewData as PublicReport;
+        return {
+          id: viewData.id,
+          title: viewData.title || 'Informe sin título',
+          summary: viewData.description,
+          content: viewData.content,
+          status: viewData.status as SharedContentStatus,
+          client_name: viewData.client_name,
+          client_website: viewData.client_website,
+          date: viewData.created_at
+        } as PublicReport;
       }
       
-      // Try fetching from reports table directly if public_reports failed
+      // Try fetching from reports table directly if shared_content failed
       const { data: reportData, error: reportError } = await supabase
         .from('reports')
         .select(`

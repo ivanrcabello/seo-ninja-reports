@@ -1,7 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SharedReport } from '@/types/shared-content';
 import { logError } from '@/lib/errorLogger';
+import { SharedContentStatus } from "@/types/shared-content";
 
 export interface ReportAccessOptions {
   successful: boolean;
@@ -145,4 +145,19 @@ export const fetchReportBySharedUrl = async (sharedUrl: string): Promise<SharedR
     logError('fetchReportBySharedUrl', error);
     return null;
   }
+};
+
+export const parseStatusFromString = (status: string): SharedContentStatus => {
+  const validStatuses: SharedContentStatus[] = [
+    "processing", "completed", "failed", "draft", "sent", 
+    "accepted", "rejected", "pending", "paid", "signed", 
+    "expired", "cancelled"
+  ];
+  
+  if (validStatuses.includes(status as SharedContentStatus)) {
+    return status as SharedContentStatus;
+  }
+  
+  // Default fallback
+  return "draft";
 };
