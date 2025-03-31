@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Copy, Check, Link2 } from 'lucide-react';
+import { Copy, Check, Link2, Download, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { shareContent, getShareUrl } from '@/utils/shareContent';
 
@@ -123,6 +124,33 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
         });
     }
   };
+  
+  const handleDownloadAsPdf = () => {
+    if (!sharedUrl) return;
+    
+    // Construir URL para vista de impresión
+    const printViewUrl = sharedUrl.includes('?') 
+      ? `${sharedUrl}&print=true` 
+      : `${sharedUrl}?print=true`;
+    
+    // Abrir ventana para preparar impresión/PDF
+    const printWindow = window.open(printViewUrl, '_blank');
+    
+    if (!printWindow) {
+      toast.error('No se pudo abrir la ventana para descargar el PDF');
+      return;
+    }
+    
+    // Esperar a que la página cargue y luego iniciar la impresión a PDF
+    printWindow.addEventListener('load', () => {
+      setTimeout(() => {
+        printWindow.print();
+        // El navegador mostrará el diálogo para guardar como PDF
+      }, 1000);
+    });
+    
+    toast.success('Preparando documento para descarga');
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -194,6 +222,28 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
                 {isPasswordProtected
                   ? `Este ${getContentTypeTitle().toLowerCase()} está protegido con contraseña.`
                   : `Este ${getContentTypeTitle().toLowerCase()} es visible para cualquier persona con el enlace.`}
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadAsPdf}
+                  className="flex items-center gap-1"
+                >
+                  <Download className="h-4 w-4" />
+                  Descargar como PDF
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(sharedUrl, '_blank')}
+                  className="flex items-center gap-1"
+                >
+                  <Printer className="h-4 w-4" />
+                  Vista previa
+                </Button>
               </div>
             </div>
             
