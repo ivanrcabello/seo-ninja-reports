@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Medal, Target, TrendingUp } from 'lucide-react';
+import { ArrowRight, Medal, Target, TrendingUp, Shield, Users, Laptop } from 'lucide-react';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 
 interface HeroSectionProps {
@@ -44,6 +44,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isLoggedIn }) => {
                 <Button asChild size="lg" variant="outline" className="gap-2">
                   <Link to="/portal">Área de clientes</Link>
                 </Button>
+                <Button asChild size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                  <a href="https://wa.me/34654633796" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                    WhatsApp <ArrowRight className="w-4 h-4" />
+                  </a>
+                </Button>
               </>
             )}
           </div>
@@ -58,28 +63,28 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isLoggedIn }) => {
                 <Target className="w-8 h-8 text-primary" />
               </div>
             </div>
-            <h3 className="text-lg font-medium mb-2">Estrategia personalizada</h3>
-            <p className="text-muted-foreground">Analizamos su negocio y competencia para crear un plan SEO completamente adaptado a sus necesidades.</p>
+            <h3 className="text-lg font-medium mb-2">Garantía de resultados</h3>
+            <p className="text-muted-foreground">Nos comprometemos con resultados tangibles y medibles para su negocio o le devolvemos su inversión.</p>
           </AnimatedContainer>
           
           <AnimatedContainer animation="fade" delay={300} className="text-center">
             <div className="flex justify-center mb-4">
               <div className="p-3 rounded-full bg-primary/10">
-                <TrendingUp className="w-8 h-8 text-primary" />
+                <Users className="w-8 h-8 text-primary" />
               </div>
             </div>
-            <h3 className="text-lg font-medium mb-2">Resultados medibles</h3>
-            <p className="text-muted-foreground">Informes mensuales detallados para que pueda ver cómo mejora su presencia online y aumentan sus visitas.</p>
+            <h3 className="text-lg font-medium mb-2">Expertos en posicionamiento SEO</h3>
+            <p className="text-muted-foreground">Especialistas en posicionamiento de empresas y negocios de servicios con resultados comprobados.</p>
           </AnimatedContainer>
           
           <AnimatedContainer animation="fade" delay={400} className="text-center">
             <div className="flex justify-center mb-4">
               <div className="p-3 rounded-full bg-primary/10">
-                <Medal className="w-8 h-8 text-primary" />
+                <Laptop className="w-8 h-8 text-primary" />
               </div>
             </div>
-            <h3 className="text-lg font-medium mb-2">Especialistas en local</h3>
-            <p className="text-muted-foreground">Nos especializamos en posicionamiento para negocios de servicios locales como fontaneros, abogados o fisioterapeutas.</p>
+            <h3 className="text-lg font-medium mb-2">Área de cliente propia</h3>
+            <p className="text-muted-foreground">Acceda a informes, seguimiento de su campaña y resultados en tiempo real en su área personalizada.</p>
           </AnimatedContainer>
         </div>
       </div>

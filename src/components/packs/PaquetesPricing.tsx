@@ -47,7 +47,7 @@ const PaquetesPricing = () => {
           <PackCard 
             title="Ascenso"
             description="Para empresas que buscan crecer localmente"
-            price="399€"
+            price="350€"
             features={ascensoFeatures}
             link="/paquetes/ascenso"
             isPrimary={true}
@@ -57,7 +57,7 @@ const PaquetesPricing = () => {
           <PackCard 
             title="Master"
             description="Estrategia completa para dominar tu mercado local"
-            price="799€"
+            price="650€"
             features={masterFeatures}
             link="/paquetes/master"
             delay={400}

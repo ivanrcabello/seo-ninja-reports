@@ -7,7 +7,7 @@ import HeroSection from '@/components/homepage/HeroSection';
 import FeaturesSection from '@/components/homepage/FeaturesSection';
 import CTASection from '@/components/homepage/CTASection';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import { ArrowRight, UserCircle, Phone } from 'lucide-react';
+import { ArrowRight, UserCircle, Phone, Brain, Award, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -34,6 +34,51 @@ const Index = () => {
       
       <main className="flex-1 pt-20">
         <HeroSection isLoggedIn={isLoggedIn} />
+        
+        {/* Our Proprietary Method Section */}
+        <section className="py-16 bg-slate-50 dark:bg-slate-900/30">
+          <div className="container px-4 mx-auto">
+            <AnimatedContainer animation="fade" className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Nuestro método: <span className="text-primary">SeoBoost AI</span></h2>
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                Tras años de investigación y desarrollo, hemos creado un método propio que combina la inteligencia artificial con nuestra experiencia en SEO local para obtener resultados superiores.
+              </p>
+            </AnimatedContainer>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              <AnimatedContainer animation="slide-up" delay={100} className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <Brain className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Análisis con IA</h3>
+                <p className="text-muted-foreground">
+                  Nuestra plataforma utiliza algoritmos avanzados de IA para analizar su negocio, competencia y mercado local.
+                </p>
+              </AnimatedContainer>
+              
+              <AnimatedContainer animation="slide-up" delay={200} className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <Award className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Estrategia personalizada</h3>
+                <p className="text-muted-foreground">
+                  Creamos un plan SEO único basado en datos reales y adaptado específicamente a su negocio y sector.
+                </p>
+              </AnimatedContainer>
+              
+              <AnimatedContainer animation="slide-up" delay={300} className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <CheckCircle className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Optimización continua</h3>
+                <p className="text-muted-foreground">
+                  Mejoramos constantemente su estrategia gracias a nuestro sistema de aprendizaje automático que se adapta a los cambios del mercado.
+                </p>
+              </AnimatedContainer>
+            </div>
+          </div>
+        </section>
+        
         <FeaturesSection />
         
         {/* Client Portal Section */}

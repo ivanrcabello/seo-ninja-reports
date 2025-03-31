@@ -17,8 +17,8 @@ const ContactInfo: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-medium">Email</h3>
-                <a href="mailto:info@soyseolocal.com" className="text-primary hover:underline">
-                  info@soyseolocal.com
+                <a href="mailto:ivan@soyseolocal.com" className="text-primary hover:underline">
+                  ivan@soyseolocal.com
                 </a>
               </div>
             </div>

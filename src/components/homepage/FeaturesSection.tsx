@@ -70,7 +70,7 @@ const FeaturesSection = () => {
           <AnimatedContainer animation="fade" className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Paquetes SEO para cada necesidad</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Elija el plan que mejor se adapte a su negocio y objetivos
+              Elija el plan que mejor se adapte a su negocio y objetivos (IVA incluido)
             </p>
           </AnimatedContainer>
           
@@ -102,7 +102,7 @@ const FeaturesSection = () => {
               <div className="bg-primary text-white text-center py-1 px-3 rounded-full text-sm font-medium self-start mb-2">Recomendado</div>
               <h3 className="text-xl font-bold mb-2">Pack Ascenso</h3>
               <p className="text-muted-foreground mb-4">Para empresas en crecimiento</p>
-              <div className="text-3xl font-bold mb-4">399€<span className="text-lg font-normal text-muted-foreground">/mes</span></div>
+              <div className="text-3xl font-bold mb-4">350€<span className="text-lg font-normal text-muted-foreground">/mes</span></div>
               <ul className="mb-8 flex-1 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">✓</span>
@@ -125,7 +125,7 @@ const FeaturesSection = () => {
             <AnimatedContainer animation="slide-up" delay={400} className="bg-white dark:bg-slate-900 rounded-lg shadow-lg p-8 flex flex-col border border-border">
               <h3 className="text-xl font-bold mb-2">Pack Master</h3>
               <p className="text-muted-foreground mb-4">Para dominar su mercado local</p>
-              <div className="text-3xl font-bold mb-4">799€<span className="text-lg font-normal text-muted-foreground">/mes</span></div>
+              <div className="text-3xl font-bold mb-4">650€<span className="text-lg font-normal text-muted-foreground">/mes</span></div>
               <ul className="mb-8 flex-1 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">✓</span>

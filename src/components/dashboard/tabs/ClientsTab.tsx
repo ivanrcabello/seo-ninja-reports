@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useClients } from '@/hooks/useClients';
+import useClients from '@/hooks/useClients'; // Fixed import
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ClientList from '@/components/dashboard/ClientList';
 import { Button } from '@/components/ui/button';

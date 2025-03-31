@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
 import { BarChart3, Users, FileText, Activity } from 'lucide-react';
-import { useReports } from '@/hooks/useReports';
-import { useClients } from '@/hooks/useClients';
+import useReports from '@/hooks/useReports'; // Fixed import
+import useClients from '@/hooks/useClients'; // Fixed import
 
 // Define interfaces for the component props and the data types
 export interface Client {
@@ -25,11 +25,17 @@ export interface Report {
 export interface OverviewTabProps {
   trackSectionVisibility?: (sectionId: string) => void;
   setActiveTab?: React.Dispatch<React.SetStateAction<string>>;
+  clients?: Client[];
+  reports?: Report[];
 }
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setActiveTab }) => {
-  const { clients } = useClients();
-  const { reports } = useReports();
+const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setActiveTab, clients: propClients, reports: propReports }) => {
+  const { clients: hookClients } = useClients();
+  const { reports: hookReports } = useReports();
+  
+  // Use props if provided, otherwise use hook data
+  const clients = propClients || hookClients || [];
+  const reports = propReports || hookReports || [];
 
   // Calculate metrics
   const totalClients = clients.length;
