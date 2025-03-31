@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -15,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OverviewTab from '@/components/dashboard/tabs/OverviewTab';
 import ClientsTab from '@/components/dashboard/tabs/ClientsTab';
 import ReportsTab from '@/components/dashboard/tabs/ReportsTab';
-import InvoicesTab from '@/components/dashboard/InvoicesTab';
+import InvoicesTab from '@/components/dashboard/tabs/InvoicesTab';
 import ActivityTab from '@/components/dashboard/tabs/ActivityTab';
 
 const Dashboard = () => {
