@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -27,24 +26,31 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
   
-  return (
-    <Button
-      variant={isActive(to) ? 'default' : variant}
-      className={`justify-start ${className}`}
-      asChild={to !== '#'}
-      onClick={onClick}
-    >
-      {to === '#' ? (
+  if (to === '#' || onClick) {
+    return (
+      <Button
+        variant={isActive(to) ? 'default' : variant}
+        className={`justify-start ${className}`}
+        onClick={onClick}
+      >
         <div className="flex items-center">
           <Icon className="mr-2 h-4 w-4" />
           {children}
         </div>
-      ) : (
-        <Link to={to} className="flex items-center">
-          <Icon className="mr-2 h-4 w-4" />
-          {children}
-        </Link>
-      )}
+      </Button>
+    );
+  }
+  
+  return (
+    <Button
+      variant={isActive(to) ? 'default' : variant}
+      className={`justify-start ${className}`}
+      asChild
+    >
+      <Link to={to} className="flex items-center">
+        <Icon className="mr-2 h-4 w-4" />
+        {children}
+      </Link>
     </Button>
   );
 };

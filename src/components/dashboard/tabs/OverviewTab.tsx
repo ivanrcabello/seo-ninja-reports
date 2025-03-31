@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
-import { BarChart3, Users, FileText, Activity, Calendar, Clock } from 'lucide-react';
+import { BarChart3, Users, FileText, Activity, Calendar, Clock, Settings } from 'lucide-react';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
 import { Client as ClientType } from '@/types/client.types';
@@ -72,7 +72,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
             className="h-auto p-4 justify-start"
             asChild
           >
-            <Link to="/clients">
+            <Link to="/dashboard">
               <Users className="h-5 w-5 mr-2" />
               <div className="text-left">
                 <div className="font-medium">Clientes</div>
@@ -84,29 +84,29 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
           <Button 
             variant="outline" 
             className="h-auto p-4 justify-start"
-            asChild
+            onClick={() => navigateToTab('reports')}
           >
-            <Link to="/all-reports">
+            <div className="flex items-center">
               <FileText className="h-5 w-5 mr-2" />
               <div className="text-left">
                 <div className="font-medium">Informes</div>
                 <div className="text-xs text-muted-foreground">Ver todos los informes</div>
               </div>
-            </Link>
+            </div>
           </Button>
           
           <Button 
             variant="outline" 
             className="h-auto p-4 justify-start"
-            asChild
+            onClick={() => navigateToTab('activity')}
           >
-            <Link to="/activity">
+            <div className="flex items-center">
               <Activity className="h-5 w-5 mr-2" />
               <div className="text-left">
                 <div className="font-medium">Actividad</div>
                 <div className="text-xs text-muted-foreground">Ver actividad reciente</div>
               </div>
-            </Link>
+            </div>
           </Button>
           
           <Button 
