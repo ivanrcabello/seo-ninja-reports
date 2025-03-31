@@ -1,11 +1,11 @@
 
 import React from 'react';
-import ShareContentDialog from '../shared/ShareContentDialog';
+import SimpleShareDialog from '../shared/SimpleShareDialog';
 
 interface ShareReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportId: string; // Keep supporting reportId for backwards compatibility
+  reportId: string; 
   reportTitle: string;
   report?: {
     id: string;
@@ -36,22 +36,14 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   const effectiveReportTitle = report?.title || reportTitle;
   const reportData = report || { title: reportTitle };
   
-  if (!effectiveReportId) {
-    console.error('ShareReportDialog: reportId es requerido');
-    return null;
-  }
-
-  console.log('ShareReportDialog - ID:', effectiveReportId);
-  
   return (
-    <ShareContentDialog
+    <SimpleShareDialog
       open={open}
       onOpenChange={onOpenChange}
       contentId={effectiveReportId}
       contentType="report"
-      contentTitle={effectiveReportTitle}
-      contentData={reportData}
-      contentStatus={report?.status || 'completed'}
+      title={effectiveReportTitle}
+      data={reportData}
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}

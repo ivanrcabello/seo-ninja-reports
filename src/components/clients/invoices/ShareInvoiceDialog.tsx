@@ -1,6 +1,6 @@
 
 import React from 'react';
-import ShareContentDialog from '../../shared/ShareContentDialog';
+import SimpleShareDialog from '../../shared/SimpleShareDialog';
 
 interface ShareInvoiceDialogProps {
   open: boolean;
@@ -28,17 +28,14 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
     return null;
   }
 
-  console.log('ShareInvoiceDialog - ID:', invoiceId);
-  
   return (
-    <ShareContentDialog
+    <SimpleShareDialog
       open={open}
       onOpenChange={onOpenChange}
       contentId={invoiceId}
       contentType="invoice"
-      contentTitle={invoiceTitle}
-      contentData={invoiceData || { title: invoiceTitle }}
-      contentStatus="pending"
+      title={invoiceTitle}
+      data={invoiceData || { title: invoiceTitle, status: 'pending' }}
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}

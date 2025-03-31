@@ -1,6 +1,6 @@
 
 import React from 'react';
-import ShareContentDialog from '../../shared/ShareContentDialog';
+import SimpleShareDialog from '../../shared/SimpleShareDialog';
 
 interface ShareProposalDialogProps {
   open: boolean;
@@ -28,17 +28,14 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
     return null;
   }
 
-  console.log('ShareProposalDialog - ID:', proposalId);
-  
   return (
-    <ShareContentDialog
+    <SimpleShareDialog
       open={open}
       onOpenChange={onOpenChange}
       contentId={proposalId}
       contentType="proposal"
-      contentTitle={proposalTitle}
-      contentData={proposalData || { title: proposalTitle }}
-      contentStatus="active"
+      title={proposalTitle}
+      data={proposalData || { title: proposalTitle, status: 'active' }}
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}

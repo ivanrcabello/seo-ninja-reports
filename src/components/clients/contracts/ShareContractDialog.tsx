@@ -1,6 +1,6 @@
 
 import React from 'react';
-import ShareContentDialog from '../../shared/ShareContentDialog';
+import SimpleShareDialog from '../../shared/SimpleShareDialog';
 
 interface ShareContractDialogProps {
   open: boolean;
@@ -11,7 +11,6 @@ interface ShareContractDialogProps {
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
   contractData?: any;
-  onGenerateShareUrl?: () => Promise<string>;
 }
 
 const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
@@ -22,25 +21,21 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
   clientName = '',
   clientWebsite = '',
   onShared,
-  contractData,
-  onGenerateShareUrl
+  contractData
 }) => {
   if (!contractId) {
     console.error('ShareContractDialog: contractId es requerido');
     return null;
   }
 
-  console.log('ShareContractDialog - ID:', contractId);
-  
   return (
-    <ShareContentDialog
+    <SimpleShareDialog
       open={open}
       onOpenChange={onOpenChange}
       contentId={contractId}
       contentType="contract"
-      contentTitle={contractTitle}
-      contentData={contractData || { title: contractTitle }}
-      contentStatus="draft"
+      title={contractTitle}
+      data={contractData || { title: contractTitle, status: 'draft' }}
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}
