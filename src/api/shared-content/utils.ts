@@ -76,7 +76,7 @@ export const logContentAccess = async (contentId: string, contentType: string, o
 };
 
 // Type-safe helper functions for specific content types
-// These will be used by the specific content modules
+// These are for backward compatibility
 
 // Report specific helpers
 export const checkReportExists = (reportId: string) => checkContentExists(reportId, 'report');

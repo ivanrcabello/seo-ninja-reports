@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { InvoiceHeader, InvoiceContent, InvoiceActions } from '@/components/shared-invoice';
 import { fetchInvoiceBySharedUrl } from '@/api/shared-content';
 import { checkContentExists, checkContentPasswordProtection, verifyContentPassword } from '@/api/shared-content';
-import { PasswordProtectionDialog } from '@/components/shared-content/PasswordProtectionDialog';
+import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { SharedInvoice, SharedContentStatus } from '@/types/shared-content';
 import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -76,27 +76,14 @@ const SharedInvoicePage = () => {
       }
 
       // Fetch the invoice
-      const fetchedInvoice = await fetchInvoiceBySharedUrl(invoiceId);
+      const { invoice: fetchedInvoice, error: fetchError } = await fetchInvoiceBySharedUrl(invoiceId);
+      
+      if (fetchError) {
+        throw fetchError;
+      }
       
       if (fetchedInvoice) {
-        // Ensure it meets the SharedInvoice requirements
-        const completeInvoice: SharedInvoice = {
-          id: fetchedInvoice.id,
-          title: fetchedInvoice.title,
-          description: fetchedInvoice.description,
-          amount: fetchedInvoice.amount,
-          status: fetchedInvoice.status as SharedContentStatus,
-          due_date: fetchedInvoice.due_date,
-          payment_method: fetchedInvoice.payment_method,
-          payment_date: fetchedInvoice.payment_date,
-          payment_instructions: fetchedInvoice.payment_instructions,
-          shared_url: fetchedInvoice.shared_url,
-          created_at: fetchedInvoice.created_at || new Date().toISOString(),
-          updated_at: fetchedInvoice.updated_at || new Date().toISOString(),
-          client_name: fetchedInvoice.client_name,
-          client_website: fetchedInvoice.client_website
-        };
-        setInvoice(completeInvoice);
+        setInvoice(fetchedInvoice);
       } else {
         setError('Invoice not found');
       }
@@ -161,7 +148,20 @@ const SharedInvoicePage = () => {
   }
 
   if (isPasswordProtected && !isPasswordVerified) {
-    return <PasswordProtectionDialog onVerifyPassword={verifyPassword} contentType="factura" />;
+    return (
+      <PasswordProtectionDialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Factura Protegida"
+        description="Esta factura está protegida con contraseña. Por favor, introduce la contraseña para acceder."
+        password=""
+        setPassword={() => {}}
+        onVerify={verifyPassword}
+        isVerifying={loading}
+        showError={!!error}
+        errorMessage="Contraseña incorrecta. Por favor, inténtalo de nuevo."
+      />
+    );
   }
 
   if (!invoice) {
@@ -179,7 +179,10 @@ const SharedInvoicePage = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <InvoiceHeader invoice={invoice} />
+      <InvoiceHeader 
+        invoice={invoice} 
+        onPrint={handlePrint}
+      />
       <InvoiceContent invoice={invoice} />
       <InvoiceActions 
         invoice={invoice}

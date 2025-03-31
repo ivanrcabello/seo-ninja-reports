@@ -4,7 +4,6 @@ import { Loader2 } from 'lucide-react';
 import { SignatureSection } from './';
 import { PublicContract } from './types';
 import { ContractActions } from './';
-import { SharedContract } from '@/types/shared-content';
 
 interface ContractContentProps {
   loading: boolean;
@@ -44,19 +43,16 @@ const ContractContent: React.FC<ContractContentProps> = ({
     );
   }
 
-  // Ensure the contract is treated as PublicContract
-  const adaptedContract: PublicContract = contract;
-
   return (
     <div className="my-8">
       {/* Contract document */}
       <div className="bg-white shadow-md rounded-lg p-8 mb-6">
-        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: adaptedContract.content }} />
+        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: contract.content }} />
       </div>
       
       {/* Signature section */}
       <SignatureSection 
-        contract={adaptedContract}
+        contract={contract}
         onOpenSignDialog={onOpenSignDialog}
         onPrint={onPrint}
         onSign={onSign}
@@ -67,7 +63,7 @@ const ContractContent: React.FC<ContractContentProps> = ({
       {/* Contract Actions for mobile display */}
       <div className="mt-6 md:hidden">
         <ContractActions 
-          contract={adaptedContract as SharedContract}
+          contract={contract}
           onOpenSignDialog={onOpenSignDialog}
           onPrint={onPrint}
         />

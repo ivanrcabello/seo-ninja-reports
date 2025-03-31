@@ -26,6 +26,7 @@ export interface SharedReport extends SharedContentBase {
   status: SharedContentStatus;
   content?: any;
   date?: string;
+  error?: Error;
 }
 
 // Propuesta pública compartida
@@ -34,6 +35,7 @@ export interface SharedProposal extends SharedContentBase {
   services?: string[];
   price?: number;
   status: SharedContentStatus;
+  error?: Error;
 }
 
 // Factura pública compartida
@@ -45,6 +47,7 @@ export interface SharedInvoice extends SharedContentBase {
   payment_method?: string;
   payment_date?: string;
   payment_instructions?: string;
+  error?: Error;
 }
 
 // Contrato público compartido
@@ -57,6 +60,7 @@ export interface SharedContract extends SharedContentBase {
   admin_signed: boolean;
   admin_signed_at?: string;
   admin_signature?: string;
+  error?: Error;
 }
 
 // Interfaz para documento compartido (tabla central)
@@ -94,4 +98,11 @@ export interface SharedContentStats {
     country: string;
     count: number;
   }[];
+}
+
+// Interfaz para actualización de firma de contrato
+export interface ContractSignatureUpdate {
+  client_signed: boolean;
+  client_signed_at: string;
+  client_signature: string;
 }

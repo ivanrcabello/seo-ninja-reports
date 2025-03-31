@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedContract } from '@/types/shared-content';
+import { SharedContract, ContractSignatureUpdate } from '@/types/shared-content';
 import { logContentAccess, checkContentExists, verifyContentPassword } from './utils';
 
 /**
@@ -20,7 +20,7 @@ export const logContractAccess = (contractId: string, options: any, eventType: s
 /**
  * Fetch contract by shared URL
  */
-export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<{ contract: SharedContract | null, error: Error | null }> => {
+export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<SharedContract> => {
   try {
     console.log('Fetching contract with shared URL:', sharedUrl);
     
@@ -31,7 +31,7 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<{ con
     if (error) throw error;
     
     if (!data || (Array.isArray(data) && data.length === 0)) {
-      return { contract: null, error: new Error('Contract not found') };
+      throw new Error('Contract not found');
     }
     
     // Handle the case when data is an array
@@ -59,14 +59,14 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<{ con
     // Log successful access
     logContractAccess(sharedUrl, { successful: true }, 'view');
     
-    return { contract, error: null };
+    return contract;
   } catch (error: any) {
     console.error('Error fetching contract:', error);
     
     // Log failed access
     logContractAccess(sharedUrl, { successful: false, error: error.message }, 'error');
     
-    return { contract: null, error };
+    throw error;
   }
 };
 
@@ -75,16 +75,16 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<{ con
  */
 export const updateContractWithSignature = async (
   sharedUrl: string, 
-  clientSignature: string
+  signatureData: ContractSignatureUpdate
 ): Promise<{ success: boolean, error: Error | null }> => {
   try {
     console.log('Updating contract with signature, shared URL:', sharedUrl);
     
     const { data, error } = await supabase.rpc('update_contract_by_shared_url', {
       shared_url_param: sharedUrl,
-      client_signed_param: true,
-      client_signed_at_param: new Date().toISOString(),
-      client_signature_param: clientSignature,
+      client_signed_param: signatureData.client_signed,
+      client_signed_at_param: signatureData.client_signed_at,
+      client_signature_param: signatureData.client_signature,
       status_param: 'signed'
     });
     

@@ -34,7 +34,7 @@ export const logInvoiceAccess = (invoiceId: string, options: any, eventType: str
 /**
  * Fetch invoice by shared URL
  */
-export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<{ invoice: SharedInvoice | null, error: Error | null }> => {
+export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<{ invoice: SharedInvoice, error: Error | null }> => {
   try {
     console.log('Fetching invoice with shared URL:', sharedUrl);
     
@@ -45,7 +45,7 @@ export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<{ invo
     if (error) throw error;
     
     if (!data || (Array.isArray(data) && data.length === 0)) {
-      return { invoice: null, error: new Error('Invoice not found') };
+      return { invoice: null as any, error: new Error('Invoice not found') };
     }
     
     // Handle the case when data is an array
@@ -79,6 +79,6 @@ export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<{ invo
     // Log failed access
     logInvoiceAccess(sharedUrl, { successful: false, error: error.message }, 'error');
     
-    return { invoice: null, error };
+    return { invoice: null as any, error };
   }
 };

@@ -15,6 +15,26 @@ export {
   logContentAccess
 };
 
+// Re-export type-specific helpers for backwards compatibility
+export {
+  checkReportExists,
+  checkReportPassword,
+  verifyReportPassword,
+  logReportAccess,
+  checkInvoiceExists,
+  checkInvoicePassword,
+  verifyInvoicePassword,
+  logInvoiceAccess,
+  checkProposalExists,
+  checkProposalPassword,
+  verifyProposalPassword,
+  logProposalAccess,
+  checkContractExists,
+  checkContractPassword,
+  verifyContractPassword,
+  logContractAccess
+} from './utils';
+
 // Reports - specifically named exports
 export {
   fetchReportByAnyId,

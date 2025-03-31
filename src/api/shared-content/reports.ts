@@ -13,7 +13,7 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
     // First try direct ID
     let { data: report, error } = await supabase
       .from('reports')
-      .select('*')
+      .select('*, clients(name, website)')
       .eq('id', reportId)
       .single();
       
@@ -21,7 +21,7 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
     if (error || !report) {
       const { data, error: sharedUrlError } = await supabase
         .from('reports')
-        .select('*')
+        .select('*, clients(name, website)')
         .eq('shared_url', reportId)
         .single();
         
@@ -46,8 +46,8 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
       content: report.content,
       date: report.date,
       shared_url: report.shared_url,
-      client_name: report.client_name,
-      client_website: report.client_website,
+      client_name: report.clients?.name,
+      client_website: report.clients?.website,
       created_at: report.created_at || new Date().toISOString(),
       updated_at: report.updated_at || new Date().toISOString()
     };
@@ -139,7 +139,7 @@ export const fetchReportOnly = async (reportId: string): Promise<SharedReport | 
   try {
     const { data, error } = await supabase
       .from('reports')
-      .select('*')
+      .select('*, clients(name, website)')
       .eq('id', reportId)
       .single();
     
@@ -158,8 +158,8 @@ export const fetchReportOnly = async (reportId: string): Promise<SharedReport | 
       content: data.content,
       shared_url: data.shared_url,
       date: data.date,
-      client_name: data.client_name || '',
-      client_website: data.client_website || '',
+      client_name: data.clients?.name || '',
+      client_website: data.clients?.website || '',
       created_at: data.created_at,
       updated_at: data.updated_at
     };

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { updateContractWithSignature } from '@/api/shared-content';
 import { PublicContract } from './types';
 import { toast } from 'sonner';
-import { SharedContentStatus } from '@/types/shared-content';
+import { SharedContentStatus, ContractSignatureUpdate } from '@/types/shared-content';
 
 export const useContractActions = (initialContract: PublicContract | null) => {
   const [contract, setContract] = useState<PublicContract | null>(initialContract);
@@ -41,12 +41,13 @@ export const useContractActions = (initialContract: PublicContract | null) => {
       
       // Send to API
       if (contract.shared_url) {
-        await updateContractWithSignature(contract.shared_url, {
+        const signatureData: ContractSignatureUpdate = {
           client_signed: true,
           client_signed_at: now,
           client_signature: signature
-        });
+        };
         
+        await updateContractWithSignature(contract.shared_url, signatureData);
         toast.success('Contrato firmado exitosamente');
       }
     } catch (err: any) {

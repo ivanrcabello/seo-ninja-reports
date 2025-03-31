@@ -1,9 +1,12 @@
 
 import React from 'react';
-import { CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays, Globe, Building } from 'lucide-react';
+import { ArrowLeft, Calendar, AlertCircle, CheckCircle, Download, Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { SharedContract, SharedContentStatus } from '@/types/shared-content';
+import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { SharedContentStatus } from '@/types/shared-content';
 import { PublicContract } from './types';
 
 interface ContractHeaderProps {
@@ -11,120 +14,130 @@ interface ContractHeaderProps {
 }
 
 const ContractHeader: React.FC<ContractHeaderProps> = ({ contract }) => {
-  const getStatusIndicator = () => {
-    if (contract.client_signed && contract.admin_signed) {
-      return (
-        <div className="flex items-center text-green-600">
-          <CheckCircle className="h-5 w-5 mr-2" />
-          <span>Firmado por ambas partes</span>
-        </div>
-      );
-    } else if (contract.client_signed) {
-      return (
-        <div className="flex items-center text-blue-600">
-          <CheckCircle className="h-5 w-5 mr-2" />
-          <span>Firmado por cliente</span>
-        </div>
-      );
-    } else if (contract.admin_signed) {
-      return (
-        <div className="flex items-center text-yellow-600">
-          <Clock className="h-5 w-5 mr-2" />
-          <span>Pendiente de firma de cliente</span>
-        </div>
-      );
-    } else if (contract.status === "signed") {
-      return (
-        <div className="flex items-center text-green-600">
-          <CheckCircle className="h-5 w-5 mr-2" />
-          <span>Firmado</span>
-        </div>
-      );
-    } else if (contract.status === "expired") {
-      return (
-        <div className="flex items-center text-gray-600">
-          <XCircle className="h-5 w-5 mr-2" />
-          <span>Expirado</span>
-        </div>
-      );
-    } else if (contract.status === "cancelled") {
-      return (
-        <div className="flex items-center text-red-600">
-          <AlertTriangle className="h-5 w-5 mr-2" />
-          <span>Cancelado</span>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex items-center text-yellow-600">
-          <Clock className="h-5 w-5 mr-2" />
-          <span>Pendiente de firma</span>
-        </div>
-      );
+  const {
+    title,
+    client_name,
+    created_at,
+    status,
+    admin_signed,
+    client_signed
+  } = contract;
+  
+  const formattedDate = created_at ? format(new Date(created_at), 'dd/MM/yyyy') : '';
+  
+  const getStatusBadge = () => {
+    switch (status) {
+      case "signed":
+        return (
+          <Badge className="bg-green-500 hover:bg-green-600">
+            <CheckCircle className="h-3.5 w-3.5 mr-1" />
+            Firmado
+          </Badge>
+        );
+      case "draft":
+        return (
+          <Badge variant="outline">
+            <Clock className="h-3.5 w-3.5 mr-1" />
+            Borrador
+          </Badge>
+        );
+      case "sent":
+        return (
+          <Badge className="bg-blue-500 hover:bg-blue-600">
+            <Clock className="h-3.5 w-3.5 mr-1" />
+            Enviado
+          </Badge>
+        );
+      case "expired":
+        return (
+          <Badge variant="destructive">
+            <AlertCircle className="h-3.5 w-3.5 mr-1" />
+            Expirado
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge variant="destructive">
+            <AlertCircle className="h-3.5 w-3.5 mr-1" />
+            Cancelado
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary">
+            {status}
+          </Badge>
+        );
     }
   };
-
-  const getStatusClass = () => {
-    if (contract.client_signed && contract.admin_signed) {
-      return "bg-green-100 text-green-800";
-    } else if (contract.client_signed) {
-      return "bg-blue-100 text-blue-800";
-    } else if (contract.admin_signed) {
-      return "bg-yellow-100 text-yellow-800";
-    } else if (["signed"].includes(contract.status as string)) {
-      return "bg-green-100 text-green-800";
-    } else if (["expired"].includes(contract.status as string)) {
-      return "bg-gray-100 text-gray-800";
-    } else if (["cancelled"].includes(contract.status as string)) {
-      return "bg-red-100 text-red-800";
+  
+  const getContractStatus = () => {
+    if (status === "signed") {
+      return "Firmado";
+    } else if (status === "expired") {
+      return "Expirado";
+    } else if (status === "cancelled") {
+      return "Cancelado";
+    } else if (admin_signed && !client_signed) {
+      return "Pendiente de firma del cliente";
+    } else if (!admin_signed && client_signed) {
+      return "Pendiente de firma de la empresa";
     } else {
-      return "bg-yellow-100 text-yellow-800";
+      return "Pendiente de firmas";
     }
   };
-
+  
+  const getContractStatusColor = () => {
+    if (status === "signed") {
+      return "text-green-600";
+    } else if (status === "expired") {
+      return "text-red-600";
+    } else if (status === "cancelled") {
+      return "text-red-600";
+    } else {
+      return "text-amber-600";
+    }
+  };
+  
   return (
-    <div className="bg-white shadow-md rounded-lg mb-6 p-6">
-      <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">{contract.title}</h1>
-          
-          <div className="space-y-1 text-sm text-gray-600">
-            {contract.created_at && (
-              <p className="flex items-center">
-                <CalendarDays className="h-4 w-4 mr-2 inline" />
-                Creado el {format(new Date(contract.created_at), 'd MMMM yyyy', { locale: es })}
-              </p>
-            )}
-            
-            {contract.client_name && (
-              <p className="flex items-center">
-                <Building className="h-4 w-4 mr-2 inline" />
-                Cliente: {contract.client_name}
-              </p>
-            )}
-            
-            {contract.client_website && (
-              <p className="flex items-center">
-                <Globe className="h-4 w-4 mr-2 inline" />
-                <a 
-                  href={contract.client_website.startsWith('http') ? contract.client_website : `https://${contract.client_website}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  {contract.client_website}
-                </a>
-              </p>
-            )}
-          </div>
-        </div>
+    <div className="p-6 bg-white dark:bg-slate-900">
+      <div className="flex items-center justify-between mb-4">
+        <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Volver
+        </Link>
         
-        <div className="w-full md:w-auto">
-          <div className={`px-4 py-2 rounded-full inline-flex items-center ${getStatusClass()}`}>
-            {getStatusIndicator()}
-          </div>
+        <div className="flex items-center gap-2">
+          {getStatusBadge()}
+          <Button size="sm" variant="ghost" className="ml-2 hidden md:flex print:hidden">
+            <Download className="h-4 w-4 mr-1.5" />
+            Descargar PDF
+          </Button>
         </div>
       </div>
+      
+      <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+      
+      <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2 text-sm text-muted-foreground">
+        {client_name && (
+          <div className="inline-flex items-center">
+            Cliente: <span className="font-medium text-foreground ml-1">{client_name}</span>
+          </div>
+        )}
+        
+        {formattedDate && (
+          <div className="inline-flex items-center">
+            <Calendar className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+            {formattedDate}
+          </div>
+        )}
+        
+        <div className={`inline-flex items-center font-medium ${getContractStatusColor()}`}>
+          {getContractStatus()}
+        </div>
+      </div>
+      
+      <Separator className="mt-4" />
     </div>
   );
 };

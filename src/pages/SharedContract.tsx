@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   ContractHeader, 
@@ -8,10 +8,8 @@ import {
   ContractActions,
   useContractData 
 } from '@/components/shared-contract';
-import { PublicContract } from '@/components/shared-contract/types';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { toast } from 'sonner';
-import type { SharedContract as SharedContractType } from '@/types/shared-content';
 
 const SharedContract: React.FC = () => {
   const { contractId = '' } = useParams<{ contractId: string }>();
@@ -23,13 +21,13 @@ const SharedContract: React.FC = () => {
   
   const { 
     contract, 
-    isLoading,
+    loading,
     error,
     isPasswordProtected, 
-    accessGranted, 
+    isPasswordVerified, 
     verifyPassword,
     signContract,
-    logo
+    handlePrint
   } = useContractData(contractId);
   
   const handleVerifyPassword = async () => {
@@ -58,10 +56,6 @@ const SharedContract: React.FC = () => {
     }
   };
   
-  const handlePrint = () => {
-    window.print();
-  };
-  
   const handleSign = async (signature: string) => {
     if (!contract) return;
     
@@ -80,14 +74,8 @@ const SharedContract: React.FC = () => {
     }
   };
   
-  // Convert SharedContract to PublicContract for compatibility
-  const adaptedContract = contract ? {
-    ...contract,
-    status: contract.status
-  } as PublicContract : null;
-  
   // Show password protection dialog
-  if (isPasswordProtected && !accessGranted) {
+  if (isPasswordProtected && !isPasswordVerified) {
     return (
       <PasswordProtectionDialog
         isOpen={true}
@@ -106,16 +94,6 @@ const SharedContract: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
-      {logo && (
-        <div className="flex justify-center pt-8 print:pt-0">
-          <img
-            src={logo}
-            alt="Company Logo"
-            className="h-12 mx-auto mb-6 print:mb-2"
-          />
-        </div>
-      )}
-      
       <div className="container mx-auto px-4 py-8 print:py-2 max-w-4xl">
         <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-0"
           ref={contentRef}
@@ -123,16 +101,15 @@ const SharedContract: React.FC = () => {
           {contract && (
             <>
               <ContractHeader 
-                contract={adaptedContract}
-                logo={null}
+                contract={contract}
               />
               
               <div className="flex flex-col md:flex-row">
                 <div className="flex-1 p-6">
                   <ContractContent
-                    loading={isLoading}
+                    loading={loading}
                     error={error}
-                    contract={adaptedContract}
+                    contract={contract}
                     onOpenSignDialog={() => setIsSignDialogOpen(true)}
                     onPrint={handlePrint}
                     onSign={handleSign}
@@ -152,13 +129,13 @@ const SharedContract: React.FC = () => {
             </>
           )}
           
-          {isLoading && (
+          {loading && (
             <div className="flex justify-center items-center p-12">
               <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
             </div>
           )}
           
-          {error && !isLoading && (
+          {error && !loading && (
             <div className="p-6">
               <h2 className="text-xl font-semibold text-red-500 mb-2">Error</h2>
               <p className="text-slate-600 dark:text-slate-400">{error}</p>
