@@ -20,13 +20,14 @@ interface PageSeo {
 }
 
 const fetchPages = async (): Promise<PageSeo[]> => {
+  // Use the 'from' method with type casting to handle the missing type
   const { data, error } = await supabase
-    .from('page_seo_settings')
+    .from('page_seo_settings' as any)
     .select('*')
     .order('page_name');
   
   if (error) throw error;
-  return data || [];
+  return data as PageSeo[] || [];
 };
 
 const SeoSettings = () => {
@@ -44,7 +45,7 @@ const SeoSettings = () => {
       if (page.id) {
         // Update existing page
         const { data, error } = await supabase
-          .from('page_seo_settings')
+          .from('page_seo_settings' as any)
           .update({
             title: page.title,
             description: page.description,
@@ -58,7 +59,7 @@ const SeoSettings = () => {
       } else {
         // Create new page
         const { data, error } = await supabase
-          .from('page_seo_settings')
+          .from('page_seo_settings' as any)
           .insert({
             page_name: page.page_name,
             title: page.title,
