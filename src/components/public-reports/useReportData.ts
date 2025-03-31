@@ -22,6 +22,9 @@ interface AccessLogOptions {
   source?: string;
 }
 
+/**
+ * Hook for fetching and managing report data by ID
+ */
 const useReportData = (reportId: string) => {
   const [report, setReport] = useState<PublicReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,34 +33,52 @@ const useReportData = (reportId: string) => {
   const [accessGranted, setAccessGranted] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [lastAttempt, setLastAttempt] = useState<Date | null>(null);
 
-  const fetchReport = useCallback(async () => {
-    if (!reportId || reportId.trim() === '') {
-      console.error('No reportId provided');
-      setError('ID de reporte no proporcionado');
-      setIsLoading(false);
-      setNotFound(true);
-      return;
-    }
+  // Validate report ID with UUID format
+  const isValidReportId = useCallback((id: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  }, []);
 
-    console.log(`Starting fetch for report with ID: ${reportId} (Attempt: ${retryCount + 1})`);
-    setIsLoading(true);
-    setError(null);
-    setNotFound(false);
-    setLastAttempt(new Date());
-
+  // Simplify fetch with direct access to public_reports table
+  const fetchReportDirect = useCallback(async () => {
+    console.log(`Fetching report with ID: ${reportId} from public_reports table`);
     try {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(reportId)) {
-        console.error('Invalid UUID format:', reportId);
-        setError('ID de reporte no válido (formato incorrecto)');
-        setIsLoading(false);
-        setNotFound(true);
-        return;
+      // First, check if the report is password protected
+      const { data: protectionData, error: protectionError } = await supabase
+        .rpc('check_report_password_protection', { report_id_param: reportId });
+
+      if (!protectionError) {
+        setIsPasswordProtected(Boolean(protectionData));
+        
+        // If password protected and access not granted, don't fetch content
+        if (protectionData && !accessGranted) {
+          console.log('Report is password protected, waiting for password');
+          setIsLoading(false);
+          return null;
+        }
       }
       
-      console.log('Fetching report directly from reports table...');
+      // Try fetching directly from public_reports view
+      const { data: viewData, error: viewError } = await supabase
+        .from('public_reports')
+        .select('*')
+        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
+        .single();
+
+      if (!viewError && viewData) {
+        console.log('Successfully fetched report from public_reports view:', viewData);
+        
+        // Log successful access
+        logSharedReportAccess(reportId, { 
+          successful: true, 
+          source: 'public_reports_view' 
+        });
+        
+        return viewData as PublicReport;
+      }
+      
+      // Try fetching from reports table directly if public_reports failed
       const { data: reportData, error: reportError } = await supabase
         .from('reports')
         .select(`
@@ -68,19 +89,16 @@ const useReportData = (reportId: string) => {
           status,
           content,
           date,
-          client_id,
-          password,
           shared_url,
-          clients (
-            name,
-            website
-          )
+          password,
+          clients (name, website)
         `)
         .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-        .maybeSingle();
-      
+        .single();
+        
       if (!reportError && reportData) {
-        console.log('Successfully fetched report:', reportData.id);
+        console.log('Successfully fetched report from reports table:', reportData);
+        
         const formattedReport: PublicReport = {
           id: reportData.id,
           title: reportData.title || 'Informe sin título',
@@ -93,115 +111,115 @@ const useReportData = (reportId: string) => {
           client_website: reportData.clients?.website
         };
         
-        const isProtected = Boolean(reportData.password);
-        setIsPasswordProtected(isProtected);
-        
-        if (!isProtected || accessGranted) {
-          setReport(formattedReport);
-        }
-        
+        // Log successful access
         logSharedReportAccess(reportId, { 
           successful: true, 
-          source: 'direct_query' 
+          source: 'reports_table' 
         });
         
-        setIsLoading(false);
-        return;
+        return formattedReport;
       }
       
-      console.log('Trying RPC function get_public_report_by_id...');
+      // As a last resort, try using an RPC function
       const { data: rpcData, error: rpcError } = await supabase
-        .rpc('get_public_report_by_id', { report_id_param: reportId });
-      
-      if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
-        console.log('Successfully fetched report via RPC:', rpcData[0].id);
-        setReport(rpcData[0]);
+        .rpc('get_report_by_any_id', { id_param: reportId });
         
+      if (!rpcError && rpcData) {
+        console.log('Successfully fetched report via RPC function:', rpcData);
+        
+        // Log successful access
         logSharedReportAccess(reportId, { 
           successful: true, 
           source: 'rpc_function' 
         });
         
-        setIsLoading(false);
-        return;
+        return rpcData as PublicReport;
       }
       
-      console.log('Trying public_reports view...');
-      const { data: viewData, error: viewError } = await supabase
-        .from('public_reports')
-        .select('*')
-        .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-        .maybeSingle();
+      console.error('Could not fetch report with any method:');
+      console.error('View error:', viewError);
+      console.error('Reports table error:', reportError);
+      console.error('RPC error:', rpcError);
       
-      if (!viewError && viewData) {
-        console.log('Successfully fetched from public_reports view');
-        setReport(viewData as PublicReport);
-        
-        logSharedReportAccess(reportId, { 
-          successful: true, 
-          source: 'public_reports_view' 
-        });
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('Using direct SQL query as last resort...');
-      const { data: directData, error: directError } = await supabase
-        .rpc('get_report_by_any_id', { id_param: reportId });
-      
-      if (!directError && directData) {
-        console.log('Successfully fetched report via direct SQL:', directData);
-        setReport(directData as PublicReport);
-        
-        logSharedReportAccess(reportId, { 
-          successful: true, 
-          source: 'direct_sql' 
-        });
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      console.error('All attempts failed. Report not found or not accessible.');
-      if (directError) console.error('Direct SQL error:', directError);
-      if (viewError) console.error('View error:', viewError);
-      if (rpcError) console.error('RPC error:', rpcError);
-      if (reportError) console.error('Report error:', reportError);
-      
-      setError('No se pudo encontrar el informe solicitado');
-      setNotFound(true);
-      logSharedReportAccess(reportId, { 
-        successful: false, 
-        error: 'All attempts failed',
-        source: 'exhausted_options'
-      });
+      throw new Error('No se pudo encontrar el informe solicitado');
       
     } catch (err: any) {
-      console.error('Error fetching shared report:', err);
+      console.error('Error in fetchReportDirect:', err);
+      throw err;
+    }
+  }, [reportId, accessGranted]);
+
+  // Main fetch function with error handling and retries
+  const fetchReport = useCallback(async () => {
+    if (!reportId || reportId.trim() === '') {
+      console.error('No reportId provided');
+      setError('ID de reporte no proporcionado');
+      setIsLoading(false);
+      setNotFound(true);
+      return;
+    }
+
+    if (!isValidReportId(reportId)) {
+      console.error('Invalid UUID format:', reportId);
+      setError('ID de reporte no válido (formato incorrecto)');
+      setIsLoading(false);
+      setNotFound(true);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const reportData = await fetchReportDirect();
+      
+      if (reportData) {
+        setReport(reportData);
+        setNotFound(false);
+      } else if (isPasswordProtected && !accessGranted) {
+        // We're just waiting for password, not an error
+        setNotFound(false);
+      } else {
+        setNotFound(true);
+        setError('Informe no encontrado');
+        
+        // Log not found
+        logSharedReportAccess(reportId, { 
+          successful: false, 
+          error: 'Report not found',
+          source: 'not_found'
+        });
+      }
+    } catch (err: any) {
+      console.error('Error fetching report:', err);
       setError(err.message || 'Error al cargar el informe');
       
-      if (retryCount < 3) {
-        console.log(`Will retry fetch (${retryCount + 1}/3)...`);
-        setRetryCount(retryCount + 1);
+      // Only retry a limited number of times
+      if (retryCount < 2) {
+        console.log(`Will retry fetch (attempt ${retryCount + 1}/2)`);
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          fetchReport();
+        }, 1000 * Math.pow(2, retryCount)); // Exponential backoff
       } else {
         setNotFound(true);
         logSharedReportAccess(reportId, { 
           successful: false, 
-          error: err.message || 'Unknown error',
-          source: 'error_with_retries_exhausted'
+          error: err.message || 'Error after retries',
+          source: 'error_with_retries'
         });
       }
     } finally {
       setIsLoading(false);
     }
-  }, [reportId, accessGranted, retryCount]);
+  }, [reportId, isPasswordProtected, accessGranted, fetchReportDirect, retryCount, isValidReportId]);
 
+  // Password verification function 
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       console.log(`Verifying password for report: ${reportId}`);
       const { data, error } = await supabase
-        .rpc<boolean>('verify_shared_report_password', { 
+        .rpc('verify_shared_report_password', { 
           report_id_param: reportId,
           password_param: password
         });
@@ -213,13 +231,24 @@ const useReportData = (reportId: string) => {
       
       const success = Boolean(data);
       console.log(`Password verification result: ${success}`);
-      setAccessGranted(success);
       
-      logSharedReportAccess(reportId, {
-        passwordAttempt: true,
-        successful: success,
-        source: 'password_verification'
-      });
+      if (success) {
+        setAccessGranted(true);
+        
+        // Log successful password verification
+        logSharedReportAccess(reportId, {
+          passwordAttempt: true,
+          successful: true,
+          source: 'password_verification_success'
+        });
+      } else {
+        // Log failed password verification
+        logSharedReportAccess(reportId, {
+          passwordAttempt: true,
+          successful: false,
+          source: 'password_verification_failed'
+        });
+      }
       
       return success;
     } catch (error) {
@@ -228,28 +257,19 @@ const useReportData = (reportId: string) => {
     }
   };
 
+  // Initial fetch on load
   useEffect(() => {
     if (reportId) {
       fetchReport();
     }
   }, [fetchReport]);
-
+  
+  // Effect for retries when access is granted
   useEffect(() => {
-    if (retryCount > 0 && retryCount <= 3 && lastAttempt) {
-      const now = new Date();
-      const timeSinceLastAttempt = now.getTime() - lastAttempt.getTime();
-      const backoffTime = Math.min(1000 * Math.pow(2, retryCount - 1), 8000);
-      
-      if (timeSinceLastAttempt > backoffTime) {
-        const retryTimeout = setTimeout(() => {
-          console.log(`Auto-retrying fetch attempt ${retryCount}/3 after ${backoffTime}ms backoff...`);
-          fetchReport();
-        }, backoffTime);
-        
-        return () => clearTimeout(retryTimeout);
-      }
+    if (accessGranted && reportId) {
+      fetchReport();
     }
-  }, [retryCount, lastAttempt, fetchReport]);
+  }, [accessGranted, fetchReport, reportId]);
 
   return {
     report,

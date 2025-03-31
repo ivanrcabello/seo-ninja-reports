@@ -16,8 +16,7 @@ export const logSharedReportAccess = async (
   eventType: string = 'access'
 ) => {
   try {
-    // Instead of using a non-existent table, we'll log the event to the console
-    // and store data locally for debugging purposes
+    // Log to console and localStorage for debugging without database operations
     console.log('Report access log:', {
       contentId: reportId,
       contentType: 'report',

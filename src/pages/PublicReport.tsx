@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
-import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading, useReportData } from '@/components/public-reports';
+import { PublicReportContent, PublicReportEmpty, PublicReportError, PublicReportHeader, PublicReportLoading } from '@/components/public-reports';
+import useReportData from '@/components/public-reports/useReportData';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
 import { toast } from 'sonner';
 
@@ -35,8 +36,6 @@ const PublicReport: React.FC = () => {
         successful: true,
         action: 'page_view' 
       }, 'page_view');
-    } else {
-      console.error('No reportId parameter found in URL');
     }
   }, [reportId]);
   
@@ -54,8 +53,7 @@ const PublicReport: React.FC = () => {
       const success = await verifyPassword(passwordInput);
       
       if (success) {
-        console.log('Password verification successful, refetching report data');
-        await refetch();
+        console.log('Password verification successful');
         toast.success('Acceso concedido', {
           description: 'Contraseña correcta. Cargando informe...'
         });
@@ -83,7 +81,7 @@ const PublicReport: React.FC = () => {
   // Show loading state
   if (isLoading) {
     console.log('PublicReport: Showing loading state');
-    return <PublicReportLoading timeout={20000} />;
+    return <PublicReportLoading timeout={10000} />;
   }
 
   // Show error state
@@ -101,7 +99,7 @@ const PublicReport: React.FC = () => {
   // Show not found state
   if (notFound) {
     console.log('PublicReport: Report not found, showing empty state');
-    return <PublicReportEmpty onBack={() => navigate('/')} />;
+    return <PublicReportEmpty onBack={() => navigate('/')} onRetry={handleRetry} />;
   }
 
   // Show password protection dialog
@@ -126,7 +124,7 @@ const PublicReport: React.FC = () => {
   // Show empty state if no report found
   if (!report) {
     console.log('PublicReport: No report found, showing empty state');
-    return <PublicReportEmpty onBack={() => navigate('/')} />;
+    return <PublicReportEmpty onBack={() => navigate('/')} onRetry={handleRetry} />;
   }
 
   console.log('PublicReport: Rendering report content:', report);
