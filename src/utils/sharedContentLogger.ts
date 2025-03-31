@@ -16,25 +16,40 @@ export const logSharedReportAccess = async (
   eventType: string = 'access'
 ) => {
   try {
-    const { data, error } = await supabase
-      .from('shared_content_logs')
-      .insert({
-        content_id: reportId,
-        content_type: 'report',
-        event_type: options.action || eventType,
-        is_successful: options.successful,
-        is_password_attempt: options.passwordAttempt || false,
-        error_message: options.error,
+    // Instead of using a non-existent table, we'll log the event to the console
+    // and store data locally for debugging purposes
+    console.log('Report access log:', {
+      contentId: reportId,
+      contentType: 'report',
+      eventType: options.action || eventType,
+      isSuccessful: options.successful,
+      isPasswordAttempt: options.passwordAttempt || false,
+      errorMessage: options.error,
+      source: options.source || 'direct_access',
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Store in localStorage for debugging
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem('report_access_logs') || '[]');
+      existingLogs.push({
+        contentId: reportId,
+        contentType: 'report',
+        eventType: options.action || eventType,
+        isSuccessful: options.successful,
+        isPasswordAttempt: options.passwordAttempt || false,
+        errorMessage: options.error,
         source: options.source || 'direct_access',
-        user_agent: navigator.userAgent,
-        ip_address: null // This is filled on the server side
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
       });
-      
-    if (error) {
-      console.error('Error logging shared report access:', error);
+      localStorage.setItem('report_access_logs', JSON.stringify(existingLogs));
+    } catch (storageError) {
+      console.error('Could not save log to localStorage:', storageError);
     }
     
-    return { data, error };
+    return { data: true, error: null };
   } catch (err) {
     console.error('Exception logging shared report access:', err);
     return { data: null, error: err };
@@ -56,25 +71,39 @@ export const logSharedProposalAccess = async (
   eventType: string = 'access'
 ) => {
   try {
-    const { data, error } = await supabase
-      .from('shared_content_logs')
-      .insert({
-        content_id: proposalId,
-        content_type: 'proposal',
-        event_type: options.action || eventType,
-        is_successful: options.successful,
-        is_password_attempt: options.passwordAttempt || false,
-        error_message: options.error,
+    // Use the same approach as for report access logging
+    console.log('Proposal access log:', {
+      contentId: proposalId,
+      contentType: 'proposal',
+      eventType: options.action || eventType,
+      isSuccessful: options.successful,
+      isPasswordAttempt: options.passwordAttempt || false,
+      errorMessage: options.error,
+      source: options.source || 'direct_access',
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Store in localStorage for debugging
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem('proposal_access_logs') || '[]');
+      existingLogs.push({
+        contentId: proposalId,
+        contentType: 'proposal',
+        eventType: options.action || eventType,
+        isSuccessful: options.successful,
+        isPasswordAttempt: options.passwordAttempt || false,
+        errorMessage: options.error,
         source: options.source || 'direct_access',
-        user_agent: navigator.userAgent,
-        ip_address: null // This is filled on the server side
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
       });
-      
-    if (error) {
-      console.error('Error logging shared proposal access:', error);
+      localStorage.setItem('proposal_access_logs', JSON.stringify(existingLogs));
+    } catch (storageError) {
+      console.error('Could not save log to localStorage:', storageError);
     }
     
-    return { data, error };
+    return { data: true, error: null };
   } catch (err) {
     console.error('Exception logging shared proposal access:', err);
     return { data: null, error: err };

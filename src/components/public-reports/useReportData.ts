@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
@@ -48,7 +47,6 @@ const useReportData = (reportId: string) => {
     setLastAttempt(new Date());
 
     try {
-      // Basic UUID format validation to avoid unnecessary DB queries
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(reportId)) {
         console.error('Invalid UUID format:', reportId);
@@ -58,7 +56,6 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // APPROACH 1: Try to get report directly from the reports table first
       console.log('Fetching report directly from reports table...');
       const { data: reportData, error: reportError } = await supabase
         .from('reports')
@@ -95,16 +92,13 @@ const useReportData = (reportId: string) => {
           client_website: reportData.clients?.website
         };
         
-        // Check if password protected
         const isProtected = Boolean(reportData.password);
         setIsPasswordProtected(isProtected);
         
-        // If not protected or access granted, set the report
         if (!isProtected || accessGranted) {
           setReport(formattedReport);
         }
         
-        // Log access
         logSharedReportAccess(reportId, { 
           successful: true, 
           source: 'direct_query' 
@@ -114,17 +108,16 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // APPROACH 2: Try to use the RPC function
       console.log('Trying RPC function get_public_report_by_id...');
-      const { data: rpcData, error: rpcError } = await supabase
-        .rpc('get_public_report_by_id', { report_id_param: reportId })
-        .limit(1);
+      const rpcResponse = await supabase
+        .rpc('get_public_report_by_id', { report_id_param: reportId });
       
-      if (!rpcError && rpcData && rpcData.length > 0) {
+      const { data: rpcData, error: rpcError } = rpcResponse;
+      
+      if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
         console.log('Successfully fetched report via RPC:', rpcData[0].id);
         setReport(rpcData[0]);
         
-        // Log access
         logSharedReportAccess(reportId, { 
           successful: true, 
           source: 'rpc_function' 
@@ -134,7 +127,6 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // APPROACH 3: Try the public_reports view
       console.log('Trying public_reports view...');
       const { data: viewData, error: viewError } = await supabase
         .from('public_reports')
@@ -146,7 +138,6 @@ const useReportData = (reportId: string) => {
         console.log('Successfully fetched from public_reports view');
         setReport(viewData as PublicReport);
         
-        // Log access
         logSharedReportAccess(reportId, { 
           successful: true, 
           source: 'public_reports_view' 
@@ -156,7 +147,6 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // APPROACH 4: Last resort - direct SQL query through function
       console.log('Using direct SQL query as last resort...');
       const { data: directData, error: directError } = await supabase
         .rpc('get_report_by_any_id', { id_param: reportId });
@@ -165,7 +155,6 @@ const useReportData = (reportId: string) => {
         console.log('Successfully fetched report via direct SQL:', directData);
         setReport(directData as PublicReport);
         
-        // Log access
         logSharedReportAccess(reportId, { 
           successful: true, 
           source: 'direct_sql' 
@@ -175,7 +164,6 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // If we got here, we have exhausted all options
       console.error('All attempts failed. Report not found or not accessible.');
       if (directError) console.error('Direct SQL error:', directError);
       if (viewError) console.error('View error:', viewError);
@@ -194,13 +182,11 @@ const useReportData = (reportId: string) => {
       console.error('Error fetching shared report:', err);
       setError(err.message || 'Error al cargar el informe');
       
-      // Only consider retrying if we haven't exceeded retry count
       if (retryCount < 3) {
         console.log(`Will retry fetch (${retryCount + 1}/3)...`);
         setRetryCount(retryCount + 1);
       } else {
         setNotFound(true);
-        // Log error
         logSharedReportAccess(reportId, { 
           successful: false, 
           error: err.message || 'Unknown error',
@@ -230,7 +216,6 @@ const useReportData = (reportId: string) => {
       console.log(`Password verification result: ${success}`);
       setAccessGranted(success);
       
-      // Log password attempt
       logSharedReportAccess(reportId, {
         passwordAttempt: true,
         successful: success,
@@ -244,21 +229,18 @@ const useReportData = (reportId: string) => {
     }
   };
 
-  // Initial fetch
   useEffect(() => {
     if (reportId) {
       fetchReport();
     }
   }, [fetchReport]);
 
-  // Retry logic with exponential backoff if needed
   useEffect(() => {
     if (retryCount > 0 && retryCount <= 3 && lastAttempt) {
       const now = new Date();
       const timeSinceLastAttempt = now.getTime() - lastAttempt.getTime();
-      const backoffTime = Math.min(1000 * Math.pow(2, retryCount - 1), 8000); // exponential backoff, max 8 seconds
+      const backoffTime = Math.min(1000 * Math.pow(2, retryCount - 1), 8000);
       
-      // Only retry if enough time has passed since last attempt
       if (timeSinceLastAttempt > backoffTime) {
         const retryTimeout = setTimeout(() => {
           console.log(`Auto-retrying fetch attempt ${retryCount}/3 after ${backoffTime}ms backoff...`);
