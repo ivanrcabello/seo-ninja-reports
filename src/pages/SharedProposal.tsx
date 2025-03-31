@@ -1,12 +1,15 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
+import { 
+  checkContentPasswordProtection, 
+  verifyContentPassword
+} from '@/api/shared-content/utils';
+import { getSharedProposal } from '@/services/sharedContentService';
 
 interface SharedProposalData {
   id: string;
@@ -20,7 +23,6 @@ interface SharedProposalData {
   updated_at: string;
   client_name: string;
   client_website?: string;
-  password_protected?: boolean;
 }
 
 const formatPrice = (price?: number) => {
@@ -48,17 +50,9 @@ const SharedProposal = () => {
   const verifyPassword = async (password: string) => {
     try {
       // Call function to verify password
-      const { data, error: verifyError } = await supabase.rpc(
-        'verify_shared_proposal_password', 
-        { 
-          shared_url_param: sharedUrl || '',
-          password_param: password
-        }
-      );
+      const verified = await verifyContentPassword(sharedUrl || '', 'proposal', password);
       
-      if (verifyError) throw new Error(verifyError.message);
-      
-      if (data === true) {
+      if (verified) {
         setAccessGranted(true);
         setIsPasswordDialogOpen(false);
         toast.success('Acceso concedido');
@@ -80,42 +74,31 @@ const SharedProposal = () => {
       
       console.log("Fetching proposal with shared URL:", sharedUrl);
       
-      // Check if proposal is password protected without requiring the password
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_proposal_password_protection', 
-        { 
-          shared_url_param: sharedUrl 
-        }
-      );
-      
-      if (protectionError) throw new Error(protectionError.message);
+      // Check if proposal is password protected
+      const isProtected = await checkContentPasswordProtection(sharedUrl, 'proposal');
       
       // If password protected and access not granted yet, show password dialog
-      if (protectionData === true && !accessGranted) {
+      if (isProtected && !accessGranted) {
         setIsPasswordProtected(true);
         setIsPasswordDialogOpen(true);
         setIsLoading(false);
         return;
       }
       
-      // Fetch from public_proposals directly (no RLS, no authentication required)
-      const { data, error: fetchError } = await supabase
-        .from('public_proposals')
-        .select('*')
-        .eq('shared_url', sharedUrl)
-        .single();
+      // Use service to get the proposal
+      const response = await getSharedProposal(sharedUrl);
       
-      if (fetchError) {
-        console.error("Error fetching proposal:", fetchError);
-        throw new Error(fetchError.message);
+      if (response.error) {
+        console.error("Error fetching proposal:", response.error);
+        throw new Error(response.error);
       }
       
-      if (!data) {
+      if (!response.data) {
         throw new Error('Propuesta no encontrada');
       }
       
-      console.log("Proposal data retrieved successfully:", data);
-      setProposal(data as SharedProposalData);
+      console.log("Proposal data retrieved successfully:", response.data);
+      setProposal(response.data as SharedProposalData);
     } catch (err: any) {
       console.error("Error in fetchProposal:", err);
       setError(err.message || 'No se pudo cargar la propuesta');

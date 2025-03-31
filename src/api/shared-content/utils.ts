@@ -14,8 +14,10 @@ export const logSharedContentAccess = async ({
   options?: AccessLogOptions;
 }) => {
   try {
-    await supabase.functions.invoke('log-content-access', {
-      body: {
+    // Use direct insert instead of function
+    await supabase
+      .from('shared_content_access_logs')
+      .insert({
         content_type: contentType,
         content_id: contentId,
         access_type: accessType,
@@ -23,8 +25,7 @@ export const logSharedContentAccess = async ({
         error_message: options.error_message || null,
         password_attempt: options.password_attempt || false,
         source: options.source || 'web_client'
-      }
-    });
+      });
   } catch (error) {
     console.error('Error logging shared content access:', error);
   }
@@ -35,7 +36,7 @@ export const checkContentExists = async (
   contentType: SharedContentType
 ): Promise<boolean> => {
   try {
-    // Use direct query to check if content exists
+    // Use direct query instead of function
     const { data, error } = await supabase
       .from('shared_content')
       .select('id')
@@ -57,7 +58,7 @@ export const checkContentPasswordProtection = async (
   contentType: SharedContentType
 ): Promise<boolean> => {
   try {
-    // Use direct query to check if content is password protected
+    // Use direct query instead of function
     const { data, error } = await supabase
       .from('shared_content')
       .select('password')

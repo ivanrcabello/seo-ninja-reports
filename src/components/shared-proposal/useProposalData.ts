@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SharedProposalResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
-import { logSharedContentAccess } from '@/api/shared-content/utils';
+import { logSharedContentAccess, verifyContentPassword } from '@/api/shared-content/utils';
+import { getSharedProposal } from '@/services/sharedContentService';
 
 interface UseProposalDataReturn {
   proposal: any;
@@ -29,17 +30,16 @@ const useProposalData = (sharedUrl: string | undefined): UseProposalDataReturn =
     try {
       setIsLoading(true);
       
-      // Check if proposal is password protected
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_proposal_password_protection',
-        { shared_url_param: sharedUrl }
-      );
+      // Use modified service to get protected proposal status
+      const response = await getSharedProposal(sharedUrl);
       
-      if (protectionError) throw new Error(protectionError.message);
+      if (response.error) {
+        throw new Error(response.error);
+      }
       
-      setIsPasswordProtected(protectionData === true);
+      setIsPasswordProtected(!!response.isPasswordProtected);
       
-      if (protectionData === true) {
+      if (response.isPasswordProtected) {
         // Log access attempt for password protected content
         await logSharedContentAccess({
           contentType: 'proposal',
@@ -57,22 +57,11 @@ const useProposalData = (sharedUrl: string | undefined): UseProposalDataReturn =
         return;
       }
       
-      // Fetch proposal data
-      const { data, error: fetchError } = await supabase
-        .from('public_proposals')
-        .select('*')
-        .eq('shared_url', sharedUrl)
-        .single();
-      
-      if (fetchError) {
-        throw new Error(fetchError.message);
-      }
-      
-      if (!data) {
+      if (!response.data) {
         throw new Error('Propuesta no encontrada');
       }
       
-      setProposal(data);
+      setProposal(response.data);
       
       // Log successful access
       await logSharedContentAccess({
@@ -89,7 +78,7 @@ const useProposalData = (sharedUrl: string | undefined): UseProposalDataReturn =
       // Log failed access
       await logSharedContentAccess({
         contentType: 'proposal',
-        contentId: sharedUrl,
+        contentId: sharedUrl || '',
         accessType: 'view',
         options: {
           success: false,
@@ -103,28 +92,22 @@ const useProposalData = (sharedUrl: string | undefined): UseProposalDataReturn =
   
   const checkPassword = async (password: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.rpc(
-        'verify_shared_proposal_password',
-        {
-          shared_url_param: sharedUrl || '',
-          password_param: password
-        }
-      );
+      if (!sharedUrl) return false;
       
-      if (error) throw new Error(error.message);
+      const verified = await verifyContentPassword(sharedUrl, 'proposal', password);
       
       // Log password attempt
       await logSharedContentAccess({
         contentType: 'proposal',
-        contentId: sharedUrl || '',
+        contentId: sharedUrl,
         accessType: 'view',
         options: {
           password_attempt: true,
-          success: data === true
+          success: verified
         }
       });
       
-      if (data === true) {
+      if (verified) {
         // If password is correct, fetch the data
         await fetchProposal();
         return true;

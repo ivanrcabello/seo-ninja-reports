@@ -28,7 +28,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   
-  // Generate a random password when needed
   const generateRandomPassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -38,7 +37,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
     setPassword(result);
   };
   
-  // Generate and get the public link when the dialog opens
   useEffect(() => {
     if (!open) return;
     
@@ -47,7 +45,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         setIsLoading(true);
         setError(null);
         
-        // Check if the report has an existing password
         const { data: reportData, error: reportError } = await supabase
           .from('reports')
           .select('password')
@@ -58,7 +55,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           throw new Error(`Error al obtener el informe: ${reportError.message}`);
         }
         
-        // Set password state based on existing data
         if (reportData.password) {
           setPasswordProtected(true);
           setPassword(reportData.password);
@@ -67,10 +63,9 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           setPassword('');
         }
         
-        // Check if the report already exists in shared_content table
         const { data: existingContent } = await supabase
           .from('shared_content')
-          .select('id')
+          .select('id, shared_url')
           .eq('original_id', reportId)
           .eq('content_type', 'report')
           .single();
@@ -78,7 +73,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         let sharedUrl: string;
         
         if (!existingContent) {
-          // If it doesn't exist, get the report data and create entry in shared_content
           const { data: fullReportData, error: fullReportError } = await supabase
             .from('reports')
             .select('*, clients(name, website)')
@@ -89,7 +83,8 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
             throw new Error(`Error al obtener el informe: ${fullReportError.message}`);
           }
 
-          // Create new shared content entry
+          const newSharedUrl = crypto.randomUUID();
+          
           const { data: insertData, error: insertError } = await supabase
             .from('shared_content')
             .insert([{
@@ -101,33 +96,19 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
               password: fullReportData.password,
               client_name: fullReportData.clients?.name,
               client_website: fullReportData.clients?.website,
-              description: fullReportData.summary
-            }])
-            .select('shared_url')
-            .single();
+              description: fullReportData.summary,
+              shared_url: newSharedUrl
+            }]);
           
           if (insertError) {
             throw new Error(`Error al compartir el informe: ${insertError.message}`);
           }
           
-          sharedUrl = insertData.shared_url;
+          sharedUrl = newSharedUrl;
         } else {
-          // Get the shared URL from the existing entry
-          const { data: sharedContent, error: sharedContentError } = await supabase
-            .from('shared_content')
-            .select('shared_url')
-            .eq('original_id', reportId)
-            .eq('content_type', 'report')
-            .single();
-          
-          if (sharedContentError) {
-            throw new Error(`Error al obtener la URL compartida: ${sharedContentError.message}`);
-          }
-          
-          sharedUrl = sharedContent.shared_url;
+          sharedUrl = existingContent.shared_url;
         }
         
-        // Build the public URL
         const publicUrl = `${window.location.origin}/shared/reports/${sharedUrl}`;
         setShareUrl(publicUrl);
         
@@ -171,7 +152,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
     
     setIsLoading(true);
     try {
-      // Update password in reports table
       const passwordValue = passwordProtected ? password : null;
       
       const { error: reportError } = await supabase
@@ -181,7 +161,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         
       if (reportError) throw new Error('Error al actualizar la contraseña en el informe');
       
-      // Update password in shared_content table if it exists
       const { error: sharedContentError } = await supabase
         .from('shared_content')
         .update({ password: passwordValue })

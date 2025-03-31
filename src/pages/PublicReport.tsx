@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,18 +20,10 @@ const PublicReport = () => {
 
   const verifyPassword = async (password: string) => {
     try {
-      // Call function to verify password
-      const { data, error: verifyError } = await supabase.rpc(
-        'verify_shared_report_password', 
-        { 
-          report_id_param: id || '',
-          password_param: password
-        }
-      );
+      // Call function to verify password from our API utility
+      const verified = await verifyContentPassword(id || '', 'report', password);
       
-      if (verifyError) throw new Error(verifyError.message);
-      
-      if (data === true) {
+      if (verified) {
         setAccessGranted(true);
         setIsPasswordDialogOpen(false);
         toast.success('Acceso concedido');
@@ -53,38 +44,29 @@ const PublicReport = () => {
       setIsLoading(true);
       
       // Check if report is password protected
-      const { data: protectionData, error: protectionError } = await supabase.rpc(
-        'check_report_password_protection', 
-        { report_id_param: id }
-      );
-      
-      if (protectionError) throw new Error(protectionError.message);
+      const isProtected = await checkContentPasswordProtection(id, 'report');
       
       // If password protected and access not granted yet, show password dialog
-      if (protectionData === true && !accessGranted) {
+      if (isProtected && !accessGranted) {
         setIsPasswordProtected(true);
         setIsPasswordDialogOpen(true);
         setIsLoading(false);
         return;
       }
       
-      // Fetch from public_reports view
-      const { data, error: fetchError } = await supabase
-        .from('public_reports')
-        .select('*')
-        .eq('id', id)
-        .single();
+      // Use service to get the report
+      const response = await getSharedReport(id);
       
-      if (fetchError) {
-        console.error("Error fetching report:", fetchError);
-        throw new Error(fetchError.message);
+      if (response.error) {
+        console.error("Error fetching report:", response.error);
+        throw new Error(response.error);
       }
       
-      if (!data) {
+      if (!response.data) {
         throw new Error('Informe no encontrado');
       }
       
-      setReport(data);
+      setReport(response.data);
     } catch (err: any) {
       console.error("Error in fetchReport:", err);
       setError(err.message || 'No se pudo cargar el informe');

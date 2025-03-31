@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { SharedContract } from './types';
+import { SharedContract, PublicContract } from './types';
 import { getSharedContract } from '@/services/sharedContentService';
 
 export function useContractData(id?: string) {
@@ -54,7 +54,20 @@ export function useContractData(id?: string) {
           return;
         }
 
-        setContract(contractResponse.data);
+        // Ensure the contract status is one of the allowed values
+        const contractData = contractResponse.data;
+        const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'] as const;
+        const status = validStatuses.includes(contractData.status as any) 
+          ? contractData.status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
+          : 'draft';
+
+        // Create a properly typed contract object
+        const typedContract: PublicContract = {
+          ...contractData,
+          status: status
+        };
+
+        setContract(typedContract);
       } catch (err: any) {
         console.error('Error fetching contract:', err);
         setError(err.message || 'Error al cargar el contrato');

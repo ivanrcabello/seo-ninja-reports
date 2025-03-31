@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -30,7 +29,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
   const [password, setPassword] = useState('');
   
   const generateRandomPassword = () => {
-    // Genera una contraseña aleatoria de 8 caracteres
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
     for (let i = 0; i < 8; i++) {
@@ -47,7 +45,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
       setError(null);
       
       try {
-        // Verificar si la factura ya tiene un shared_url
         const { data: invoiceData, error: invoiceError } = await supabase
           .from('client_invoices')
           .select('shared_url, client_id, clients(name, website), password')
@@ -60,7 +57,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
         
         let sharedUrl = invoiceData.shared_url;
         
-        // Si hay una contraseña existente, actualizar el estado
         if (invoiceData.password) {
           setPasswordProtected(true);
           setPassword(invoiceData.password);
@@ -69,7 +65,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
           setPassword('');
         }
         
-        // Si no tiene shared_url, generamos uno
         if (!sharedUrl) {
           const { data: updatedInvoice, error: updateError } = await supabase
             .from('client_invoices')
@@ -85,16 +80,14 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
           sharedUrl = updatedInvoice.shared_url;
         }
         
-        // Verificar si ya existe en public_invoices
-        const { data: existingPublic } = await supabase
-          .from('public_invoices')
+        const { data: existingContent } = await supabase
+          .from('shared_content')
           .select('id')
           .eq('shared_url', sharedUrl)
+          .eq('content_type', 'invoice')
           .single();
         
-        // Si no existe en public_invoices, lo creamos
-        if (!existingPublic) {
-          // Obtenemos todos los datos de la factura
+        if (!existingContent) {
           const { data: fullInvoice, error: fullInvoiceError } = await supabase
             .from('client_invoices')
             .select('*')
@@ -105,32 +98,34 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
             throw new Error('Error al obtener datos completos de la factura');
           }
           
-          // Insertamos en public_invoices con type assertion
+          const content = {
+            amount: fullInvoice.amount,
+            due_date: fullInvoice.due_date,
+            payment_method: fullInvoice.payment_method,
+            payment_date: fullInvoice.payment_date,
+            payment_instructions: fullInvoice.payment_instructions
+          };
+          
           const { error: insertError } = await supabase
-            .from('public_invoices')
+            .from('shared_content')
             .insert([{
-              id: fullInvoice.id,
+              original_id: fullInvoice.id,
+              content_type: 'invoice',
               title: fullInvoice.title,
               description: fullInvoice.description,
-              amount: fullInvoice.amount,
+              content: content,
+              password: fullInvoice.password,
               status: fullInvoice.status,
-              due_date: fullInvoice.due_date,
-              payment_method: fullInvoice.payment_method,
-              payment_date: fullInvoice.payment_date,
-              payment_instructions: fullInvoice.payment_instructions,
               shared_url: sharedUrl,
-              created_at: fullInvoice.created_at,
-              updated_at: fullInvoice.updated_at,
               client_name: invoiceData.clients?.name,
               client_website: invoiceData.clients?.website
-            }] as any);
+            }]);
           
           if (insertError) {
             throw new Error('Error al crear factura pública');
           }
         }
         
-        // Construir la URL completa
         const fullUrl = `${window.location.origin}/shared/invoices/${sharedUrl}`;
         setShareUrl(fullUrl);
       } catch (err: any) {
@@ -162,7 +157,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
     
     setIsLoading(true);
     try {
-      // Actualizamos la contraseña en la tabla client_invoices
       const passwordValue = passwordProtected ? password : null;
       
       const { error } = await supabase

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -66,15 +65,16 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
           sharedUrl = updatedProposal.shared_url;
         }
         
-        // Verificar si ya existe en public_proposals
-        const { data: existingPublic } = await supabase
-          .from('public_proposals')
+        // Verificar si ya existe en shared_content
+        const { data: existingContent } = await supabase
+          .from('shared_content')
           .select('id')
           .eq('shared_url', sharedUrl)
+          .eq('content_type', 'proposal')
           .single();
         
-        // Si no existe en public_proposals, lo creamos
-        if (!existingPublic) {
+        // Si no existe en shared_content, lo creamos
+        if (!existingContent) {
           // Obtenemos todos los datos de la propuesta
           const { data: fullProposal, error: fullProposalError } = await supabase
             .from('client_proposals')
@@ -86,22 +86,27 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
             throw new Error('Error al obtener datos completos de la propuesta');
           }
           
-          // Insertamos en public_proposals con type assertion
+          // Prepare content as JSON
+          const content = {
+            services: fullProposal.services,
+            price: fullProposal.price
+          };
+          
+          // Insertamos en shared_content
           const { error: insertError } = await supabase
-            .from('public_proposals')
+            .from('shared_content')
             .insert([{
-              id: fullProposal.id,
+              original_id: fullProposal.id,
+              content_type: 'proposal',
               title: fullProposal.title,
               description: fullProposal.description,
+              content: content,
+              password: fullProposal.password,
               status: fullProposal.status,
-              price: fullProposal.price,
-              services: fullProposal.services,
               shared_url: sharedUrl,
-              created_at: fullProposal.created_at,
-              updated_at: fullProposal.updated_at,
               client_name: proposalData.clients?.name,
               client_website: proposalData.clients?.website
-            }] as any);
+            }]);
           
           if (insertError) {
             throw new Error('Error al crear propuesta pública');

@@ -26,13 +26,16 @@ export const getSharedReport = async (id: string): Promise<SharedReportResponse>
     // Check if password protected
     const isPasswordProtected = data.password ? true : false;
     
+    // Process content to ensure it's properly typed
+    const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+    
     // Return report data with password protection status
     return {
       data: {
         id: data.original_id,
         title: data.title,
         summary: data.description,
-        content: data.content,
+        content: content,
         date: data.created_at,
         client_name: data.client_name,
         client_website: data.client_website
@@ -83,15 +86,18 @@ export const getSharedProposal = async (id: string): Promise<SharedProposalRespo
     // Check if password protected
     const isPasswordProtected = data.password ? true : false;
     
+    // Process content to ensure it's properly typed
+    const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content || {};
+    
     // Return proposal data
     return {
       data: {
         id: data.original_id,
         title: data.title,
         description: data.description,
-        services: data.content?.services || [],
+        services: content.services || [],
         status: data.status,
-        price: data.content?.price,
+        price: content.price,
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,
@@ -141,23 +147,32 @@ export const getSharedContract = async (id: string): Promise<SharedContractRespo
     if (error) throw error;
     if (!data) throw new Error('Contract not found');
     
+    // Process content to ensure it's properly typed
+    const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content || {};
+
+    // Ensure status is one of the valid types
+    const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'];
+    const status = validStatuses.includes(data.status) 
+      ? data.status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
+      : 'draft';
+    
     // Return contract data
     return {
       data: {
         id: data.original_id,
         title: data.title,
-        content: data.content?.content || '',
+        content: content.content || '',
         client_name: data.client_name,
         client_website: data.client_website,
-        status: data.status,
+        status: status,
         created_at: data.created_at,
         updated_at: data.updated_at,
-        client_signed: data.content?.client_signed || false,
-        client_signed_at: data.content?.client_signed_at,
-        client_signature: data.content?.client_signature,
-        admin_signed: data.content?.admin_signed || false,
-        admin_signed_at: data.content?.admin_signed_at,
-        admin_signature: data.content?.admin_signature,
+        client_signed: content.client_signed || false,
+        client_signed_at: content.client_signed_at,
+        client_signature: content.client_signature,
+        admin_signed: content.admin_signed || false,
+        admin_signed_at: content.admin_signed_at,
+        admin_signature: content.admin_signature,
         shared_url: data.shared_url
       }
     };
@@ -205,18 +220,21 @@ export const getSharedInvoice = async (id: string): Promise<SharedInvoiceRespons
     // Check if password protected
     const isPasswordProtected = data.password ? true : false;
     
+    // Process content to ensure it's properly typed
+    const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content || {};
+    
     // Return invoice data
     return {
       data: {
         id: data.original_id,
         title: data.title,
         description: data.description,
-        amount: data.content?.amount || 0,
+        amount: content.amount || 0,
         status: data.status,
-        due_date: data.content?.due_date,
-        payment_method: data.content?.payment_method,
-        payment_date: data.content?.payment_date,
-        payment_instructions: data.content?.payment_instructions,
+        due_date: content.due_date,
+        payment_method: content.payment_method,
+        payment_date: content.payment_date,
+        payment_instructions: content.payment_instructions,
         shared_url: data.shared_url,
         created_at: data.created_at,
         updated_at: data.updated_at,
@@ -262,7 +280,7 @@ export const verifySharedContentPassword = async (
       }
     });
 
-    // Check password
+    // Check password directly
     const { data, error } = await supabase
       .from('shared_content')
       .select('id')
