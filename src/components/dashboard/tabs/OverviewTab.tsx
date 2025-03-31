@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
-import { BarChart3, Users, FileText, Activity } from 'lucide-react';
+import { BarChart3, Users, FileText, Activity, Calendar, Clock } from 'lucide-react';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
 import { Client as ClientType } from '@/types/client.types';
@@ -30,6 +30,13 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
   // Filter by active flag instead of status
   const activeClients = clients.filter(client => client.active).length;
   const totalReports = reports.length;
+
+  // Function to navigate to a specific tab
+  const navigateToTab = (tab: string) => {
+    if (setActiveTab) {
+      setActiveTab(tab);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -70,13 +77,31 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-auto p-4 justify-start">
-            <Link to="/reports">
+            <Link to="/all-reports">
               <FileText className="h-5 w-4 mr-2" />
               <div className="text-left">
                 <div className="font-medium">Informes</div>
                 <div className="text-xs text-muted-foreground">Ver todos los informes</div>
               </div>
             </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-auto p-4 justify-start">
+            <Link to="/activity">
+              <Activity className="h-5 w-4 mr-2" />
+              <div className="text-left">
+                <div className="font-medium">Actividad</div>
+                <div className="text-xs text-muted-foreground">Ver actividad reciente</div>
+              </div>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-auto p-4 justify-start" onClick={() => navigateToTab('calendar')}>
+            <div className="flex items-center">
+              <Calendar className="h-5 w-4 mr-2" />
+              <div className="text-left">
+                <div className="font-medium">Calendario</div>
+                <div className="text-xs text-muted-foreground">Gestionar eventos</div>
+              </div>
+            </div>
           </Button>
         </div>
       </Card>

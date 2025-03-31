@@ -21,6 +21,8 @@ import ClientsTab from '@/components/dashboard/tabs/ClientsTab';
 import ReportsTab from '@/components/dashboard/tabs/ReportsTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
 import ActivityTab from '@/components/dashboard/tabs/ActivityTab';
+import CalendarTab from '@/components/dashboard/tabs/CalendarTab';
+import TasksTab from '@/components/dashboard/tabs/TasksTab';
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -60,7 +62,7 @@ const Dashboard = () => {
   // Calculate business metrics and upcoming deadlines
   useEffect(() => {
     if (!isLoading) {
-      // Mock upcoming events - in a real app these would come from a database
+      // Mock upcoming events - en una aplicación real, estos datos vendrían de la base de datos
       setNextEvents([
         {
           title: 'Reunión mensual de estrategia',
@@ -260,6 +262,8 @@ const Dashboard = () => {
                   <TabsTrigger value="clients">Clientes</TabsTrigger>
                   <TabsTrigger value="reports">Informes</TabsTrigger>
                   <TabsTrigger value="invoices">Facturas</TabsTrigger>
+                  <TabsTrigger value="calendar">Calendario</TabsTrigger>
+                  <TabsTrigger value="tasks">Tareas</TabsTrigger>
                   <TabsTrigger value="activity">Actividad</TabsTrigger>
                 </TabsList>
 
@@ -283,6 +287,18 @@ const Dashboard = () => {
                 <TabsContent value="invoices">
                   <AnimatedContainer animation="fade" delay={400}>
                     <InvoicesTab />
+                  </AnimatedContainer>
+                </TabsContent>
+
+                <TabsContent value="calendar">
+                  <AnimatedContainer animation="fade" delay={400}>
+                    <CalendarTab />
+                  </AnimatedContainer>
+                </TabsContent>
+
+                <TabsContent value="tasks">
+                  <AnimatedContainer animation="fade" delay={400}>
+                    <TasksTab />
                   </AnimatedContainer>
                 </TabsContent>
 
