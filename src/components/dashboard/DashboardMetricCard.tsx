@@ -1,65 +1,46 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { LucideIcon } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface DashboardMetricCardProps {
   title: string;
-  value: number;
-  description: string;
-  icon: React.ElementType | string;
-  trend: string;
-  trendDirection: 'up' | 'down' | 'neutral';
-  linkText: string;
-  linkUrl: string;
-  onClick?: () => void;
+  value: string | number;
+  description?: string;
+  icon?: React.ReactNode;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
+  className?: string;
 }
 
-export const DashboardMetricCard: React.FC<DashboardMetricCardProps> = ({ 
-  title, 
-  value, 
-  description, 
-  icon: Icon,
+export const DashboardMetricCard: React.FC<DashboardMetricCardProps> = ({
+  title,
+  value,
+  description,
+  icon,
   trend,
-  trendDirection,
-  linkText, 
-  linkUrl, 
-  onClick 
+  className,
 }) => {
-  const IconComponent = typeof Icon === 'string' ? null : Icon as LucideIcon;
-
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{title}</CardTitle>
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            {IconComponent ? <IconComponent className="h-5 w-5 text-primary" /> : null}
-          </div>
+    <Card className={cn("p-6", className)}>
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+          <h3 className="text-2xl font-bold">{value}</h3>
+          {trend && (
+            <p className={`text-xs flex items-center mt-1 ${trend.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+              <span className="mr-1">
+                {trend.isPositive ? '↑' : '↓'}
+              </span>
+              {trend.value}%
+            </p>
+          )}
+          {description && <p className="text-sm text-muted-foreground mt-2">{description}</p>}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-1">
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{value}</span>
-            <span className={`text-xs ml-2 ${
-              trendDirection === 'up' ? 'text-green-600' :
-              trendDirection === 'down' ? 'text-red-600' :
-              'text-gray-500'
-            }`}>
-              {trend}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </div>
-      </CardContent>
-      <CardFooter className="pt-2">
-        <Button variant="link" className="p-0 h-auto text-primary" asChild onClick={onClick}>
-          <Link to={linkUrl}>{linkText}</Link>
-        </Button>
-      </CardFooter>
+        {icon && <div className="text-primary">{icon}</div>}
+      </div>
     </Card>
   );
 };

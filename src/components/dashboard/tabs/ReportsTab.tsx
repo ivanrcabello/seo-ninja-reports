@@ -1,94 +1,134 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import AnimatedContainer from '@/components/ui/AnimatedContainer';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useReports } from '@/hooks/useReports';
+import { useClients } from '@/hooks/useClients';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Report } from '@/types/report.types';
+import { Input } from '@/components/ui/input';
+import { FileText, Search, Plus, Calendar, User, File } from 'lucide-react';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
-interface ReportsTabProps {
-  reports: Report[];
-}
+const ReportsTab = () => {
+  const { reports, isLoading } = useReports();
+  const { clients } = useClients();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
 
-const ReportsTab: React.FC<ReportsTabProps> = ({ reports }) => {
+  const filteredReports = reports?.filter(report => 
+    report.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    report.businessName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    getClientName(report.clientId)?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  function getClientName(clientId: string | undefined) {
+    if (!clientId) return 'N/A';
+    
+    const client = clients.find(c => c.id === clientId);
+    return client ? client.name : 'Cliente desconocido';
+  }
+
   return (
-    <AnimatedContainer animation="fade" delay={400} className="mb-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumen de Informes</CardTitle>
-          <CardDescription>
-            Resumen de todos los informes SEO generados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="flex flex-col p-6 bg-primary/5 rounded-lg">
-                <span className="text-sm text-muted-foreground mb-2">Total de informes</span>
-                <span className="text-3xl font-bold">{reports.length}</span>
-              </div>
-              <div className="flex flex-col p-6 bg-primary/5 rounded-lg">
-                <span className="text-sm text-muted-foreground mb-2">Informes este mes</span>
-                <span className="text-3xl font-bold">
-                  {reports.filter(r => {
-                    const date = new Date(r.date);
-                    const now = new Date();
-                    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-                  }).length}
-                </span>
-              </div>
-              <div className="flex flex-col p-6 bg-primary/5 rounded-lg">
-                <span className="text-sm text-muted-foreground mb-2">Última actualización</span>
-                <span className="text-xl font-bold">
-                  {reports.length > 0 
-                    ? format(new Date(reports.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date), 'dd/MM/yyyy')
-                    : 'N/A'}
-                </span>
-              </div>
-            </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl font-bold">Informes SEO</h1>
+        <Button onClick={() => navigate('/reports/new')} className="flex gap-2">
+          <Plus size={16} />
+          Nuevo Informe
+        </Button>
+      </div>
 
-            <div>
-              <h3 className="text-lg font-medium mb-4">Informes por estado</h3>
-              <div className="space-y-4">
-                {(['completed', 'processing', 'failed'] as const).map(status => {
-                  const count = reports.filter(r => r.status === status).length;
-                  const percentage = reports.length > 0 ? (count / reports.length) * 100 : 0;
-                  
-                  return (
-                    <div key={status} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium capitalize">{
-                          status === 'completed' ? 'Completado' : 
-                          status === 'processing' ? 'En proceso' : 
-                          'Fallido'
-                        }</span>
-                        <span className="text-sm text-muted-foreground">{count} ({Math.round(percentage)}%)</span>
-                      </div>
-                      <Progress 
-                        value={percentage} 
-                        indicatorClassName={
-                          status === 'completed' ? 'bg-green-500' :
-                          status === 'processing' ? 'bg-blue-500' :
-                          'bg-red-500'
-                        }
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+      <Card className="border border-border">
+        <CardHeader className="bg-muted/50 px-6">
+          <CardTitle className="text-lg font-medium">Lista de Informes</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar informe..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
+
+          {isLoading ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">Cargando informes...</p>
+            </div>
+          ) : filteredReports?.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground mb-4">No se encontraron informes</p>
+              <Button onClick={() => navigate('/reports/new')} variant="outline" className="gap-2">
+                <Plus size={16} />
+                Crear nuevo informe
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left font-medium text-muted-foreground py-3 px-4">Informe</th>
+                    <th className="text-left font-medium text-muted-foreground py-3 px-4 hidden md:table-cell">Cliente</th>
+                    <th className="text-left font-medium text-muted-foreground py-3 px-4 hidden sm:table-cell">Fecha</th>
+                    <th className="text-left font-medium text-muted-foreground py-3 px-4">Estado</th>
+                    <th className="text-right font-medium text-muted-foreground py-3 px-4">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredReports?.map((report) => (
+                    <tr key={report.id} className="hover:bg-muted/50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-primary/10 p-2 rounded">
+                            <FileText className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="truncate max-w-[150px]">
+                            <p className="font-medium truncate">{report.title || 'Sin título'}</p>
+                            <p className="text-sm text-muted-foreground truncate">{report.businessName || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 hidden md:table-cell">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span>{getClientName(report.clientId)}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 hidden sm:table-cell">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>{report.createdAt ? format(new Date(report.createdAt), 'dd/MM/yyyy') : 'N/A'}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant={report.status === 'completed' ? 'success' : 'default'}>
+                          {report.status === 'completed' ? 'Completado' : 'En progreso'}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to={`/reports/${report.id}`}>
+                            <File className="h-4 w-4" />
+                            <span className="ml-2">Ver</span>
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
-        <CardFooter>
-          <Button asChild>
-            <Link to="/all-reports">Ver todos los informes</Link>
-          </Button>
-        </CardFooter>
       </Card>
-    </AnimatedContainer>
+    </div>
   );
-}
+};
 
 export default ReportsTab;

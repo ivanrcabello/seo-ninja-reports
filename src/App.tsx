@@ -19,6 +19,37 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Index = lazy(() => import('./pages/Index'));
 
+// Main Routes
+const Servicios = lazy(() => import('./pages/Servicios'));
+const Paquetes = lazy(() => import('./pages/Paquetes'));
+const Contacto = lazy(() => import('./pages/Contacto'));
+const Blog = lazy(() => import('./pages/Blog'));
+const Precios = lazy(() => import('./pages/Precios'));
+const Caracteristicas = lazy(() => import('./pages/Caracteristicas'));
+const Guias = lazy(() => import('./pages/Guias'));
+const Documentacion = lazy(() => import('./pages/Documentacion'));
+const Privacidad = lazy(() => import('./pages/Privacidad'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+
+// Service Pages
+const SeoLocal = lazy(() => import('./pages/servicios/SeoLocal'));
+const SeoTecnico = lazy(() => import('./pages/servicios/SeoTecnico'));
+const SeoIA = lazy(() => import('./pages/servicios/SeoIA'));
+const ContenidoSeo = lazy(() => import('./pages/servicios/ContenidoSeo'));
+const SeoCompetencia = lazy(() => import('./pages/servicios/SeoCompetencia'));
+const GoogleBusiness = lazy(() => import('./pages/servicios/GoogleBusiness'));
+const Resenas = lazy(() => import('./pages/servicios/Resenas'));
+
+// Package Pages
+const PackStarter = lazy(() => import('./pages/packs/PackStarter'));
+const PackAscenso = lazy(() => import('./pages/packs/PackAscenso'));
+const PackMaster = lazy(() => import('./pages/packs/PackMaster'));
+
+// Blog Pages
+const BlogDetail = lazy(() => import('./pages/BlogDetail'));
+const BlogAdmin = lazy(() => import('./pages/BlogAdmin'));
+
+// Client and Report Pages
 const ClientDetail = lazy(() => 
   import('./pages/ClientDetail')
     .catch(error => {
@@ -232,6 +263,36 @@ function App() {
                     {/* Rutas públicas */}
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
+
+                    {/* Servicios */}
+                    <Route path="/servicios" element={<Servicios />} />
+                    <Route path="/servicios/seo-local" element={<SeoLocal />} />
+                    <Route path="/servicios/seo-tecnico" element={<SeoTecnico />} />
+                    <Route path="/servicios/seo-ia" element={<SeoIA />} />
+                    <Route path="/servicios/contenido-seo" element={<ContenidoSeo />} />
+                    <Route path="/servicios/seo-competencia" element={<SeoCompetencia />} />
+                    <Route path="/servicios/google-business" element={<GoogleBusiness />} />
+                    <Route path="/servicios/resenas" element={<Resenas />} />
+
+                    {/* Paquetes */}
+                    <Route path="/paquetes" element={<Paquetes />} />
+                    <Route path="/paquetes/starter" element={<PackStarter />} />
+                    <Route path="/paquetes/ascenso" element={<PackAscenso />} />
+                    <Route path="/paquetes/master" element={<PackMaster />} />
+
+                    {/* Blog */}
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/blog/:slug" element={<BlogDetail />} />
+                    <Route path="/admin/blog" element={<BlogAdmin />} />
+
+                    {/* Otras páginas */}
+                    <Route path="/caracteristicas" element={<Caracteristicas />} />
+                    <Route path="/precios" element={<Precios />} />
+                    <Route path="/guias" element={<Guias />} />
+                    <Route path="/documentacion" element={<Documentacion />} />
+                    <Route path="/contacto" element={<Contacto />} />
+                    <Route path="/privacidad" element={<Privacidad />} />
+                    
                     <Route path="/shared/invoices/:sharedUrl" element={<SharedInvoice />} />
                     <Route path="/shared/proposals/:sharedUrl" element={<SharedProposal />} />
                     <Route path="/shared/contracts/:sharedUrl" element={<SharedContract />} />
@@ -250,7 +311,7 @@ function App() {
                     <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
                     <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
 
-                    <Route path="*" element={<Navigate to="/" replace />} />
+                    <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>
               </Router>
