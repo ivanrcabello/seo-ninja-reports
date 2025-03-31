@@ -109,7 +109,25 @@ const SeoSettings = () => {
     { name: 'Contacto', value: 'contacto' },
     { name: 'Política de Privacidad', value: 'privacidad' },
     { name: 'Cookies', value: 'cookies' },
-    { name: 'Términos de Uso', value: 'terminos' }
+    { name: 'Términos de Uso', value: 'terminos' },
+    // Add missing pages
+    { name: 'Precios', value: 'precios' },
+    { name: 'Características', value: 'caracteristicas' },
+    { name: 'Guías', value: 'guias' },
+    { name: 'Documentación', value: 'documentacion' },
+    { name: 'Recursos', value: 'recursos' },
+    // Add service pages
+    { name: 'SEO Local', value: 'seo-local' },
+    { name: 'SEO Técnico', value: 'seo-tecnico' },
+    { name: 'SEO IA', value: 'seo-ia' },
+    { name: 'Contenido SEO', value: 'contenido-seo' },
+    { name: 'SEO Competencia', value: 'seo-competencia' },
+    { name: 'Google Business', value: 'google-business' },
+    { name: 'Reseñas', value: 'resenas' },
+    // Add package pages
+    { name: 'Paquete Starter', value: 'pack-starter' },
+    { name: 'Paquete Ascenso', value: 'pack-ascenso' },
+    { name: 'Paquete Master', value: 'pack-master' }
   ];
   
   return (
