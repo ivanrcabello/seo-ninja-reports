@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedProposal, SharedProposalResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { SharedProposal, SharedProposalResponse, ExistsResponse, ProtectionResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 import { logContentAccess } from './utils';
 
 /**
@@ -30,34 +30,42 @@ export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<Share
 /**
  * Verifica si una propuesta existe
  */
-export const checkProposalExists = async (proposalId: string): Promise<boolean> => {
+export const checkProposalExists = async (proposalId: string): Promise<ExistsResponse> => {
   try {
     const { data, error } = await supabase.rpc('check_shared_content_exists', {
       content_id: proposalId,
       content_type: 'proposal'
     });
     
-    return !!data;
-  } catch (error) {
+    if (error) {
+      return { exists: false, error };
+    }
+    
+    return { exists: !!data, error: null };
+  } catch (error: any) {
     console.error('Error checking proposal existence:', error);
-    return false;
+    return { exists: false, error };
   }
 };
 
 /**
  * Verifica si una propuesta está protegida con contraseña
  */
-export const checkProposalPassword = async (proposalId: string): Promise<boolean> => {
+export const checkProposalPassword = async (proposalId: string): Promise<ProtectionResponse> => {
   try {
     const { data, error } = await supabase.rpc('check_shared_content_password', {
       content_id: proposalId,
       content_type: 'proposal'
     });
     
-    return !!data;
-  } catch (error) {
+    if (error) {
+      return { isProtected: false, error };
+    }
+    
+    return { isProtected: !!data, error: null };
+  } catch (error: any) {
     console.error('Error checking proposal password protection:', error);
-    return false;
+    return { isProtected: false, error };
   }
 };
 

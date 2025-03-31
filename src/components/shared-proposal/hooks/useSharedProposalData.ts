@@ -30,11 +30,11 @@ export const useSharedProposalData = (sharedUrl: string) => {
 
     try {
       // Primero verificar si la propuesta existe
-      const { exists, error: existsError } = await checkProposalExists(sharedUrl);
+      const existsResponse = await checkProposalExists(sharedUrl);
       
-      if (existsError) {
-        logError('useSharedProposalData.checkProposalExists', existsError);
-      } else if (!exists) {
+      if (existsResponse.error) {
+        logError('useSharedProposalData.checkProposalExists', existsResponse.error);
+      } else if (!existsResponse.exists) {
         setError('La propuesta no existe');
         setIsLoading(false);
         logProposalAccess(sharedUrl, { successful: false, error: 'Proposal not found' }, 'check');
@@ -42,15 +42,15 @@ export const useSharedProposalData = (sharedUrl: string) => {
       }
       
       // Verificar si está protegida con contraseña
-      const { isProtected, error: protectionError } = await checkProposalPassword(sharedUrl);
+      const protectionResponse = await checkProposalPassword(sharedUrl);
       
-      if (protectionError) {
-        logError('useSharedProposalData.checkProposalPassword', protectionError);
+      if (protectionResponse.error) {
+        logError('useSharedProposalData.checkProposalPassword', protectionResponse.error);
       } else {
-        setIsPasswordProtected(isProtected);
+        setIsPasswordProtected(protectionResponse.isProtected);
         
         // Si está protegida y no se ha concedido acceso, no obtener contenido aún
-        if (isProtected && !accessGranted) {
+        if (protectionResponse.isProtected && !accessGranted) {
           setIsLoading(false);
           return;
         }

@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedInvoice, SharedInvoiceResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { SharedInvoice, SharedInvoiceResponse, ExistsResponse, ProtectionResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 import { logContentAccess } from './utils';
 
 /**
@@ -30,34 +30,42 @@ export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<Shared
 /**
  * Verifica si una factura existe
  */
-export const checkInvoiceExists = async (invoiceId: string): Promise<boolean> => {
+export const checkInvoiceExists = async (invoiceId: string): Promise<ExistsResponse> => {
   try {
     const { data, error } = await supabase.rpc('check_shared_content_exists', {
       content_id: invoiceId,
       content_type: 'invoice'
     });
     
-    return !!data;
-  } catch (error) {
+    if (error) {
+      return { exists: false, error };
+    }
+    
+    return { exists: !!data, error: null };
+  } catch (error: any) {
     console.error('Error checking invoice existence:', error);
-    return false;
+    return { exists: false, error };
   }
 };
 
 /**
  * Verifica si una factura está protegida con contraseña
  */
-export const checkInvoicePassword = async (invoiceId: string): Promise<boolean> => {
+export const checkInvoicePassword = async (invoiceId: string): Promise<ProtectionResponse> => {
   try {
     const { data, error } = await supabase.rpc('check_shared_content_password', {
       content_id: invoiceId,
       content_type: 'invoice'
     });
     
-    return !!data;
-  } catch (error) {
+    if (error) {
+      return { isProtected: false, error };
+    }
+    
+    return { isProtected: !!data, error: null };
+  } catch (error: any) {
     console.error('Error checking invoice password protection:', error);
-    return false;
+    return { isProtected: false, error };
   }
 };
 

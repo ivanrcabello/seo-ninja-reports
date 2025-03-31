@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { SharedInvoice, SharedInvoiceResponse } from '@/types/shared-content';
-import { fetchInvoiceBySharedUrl, verifyInvoicePassword, logInvoiceAccess } from '@/api/shared-content/invoices';
+import { fetchInvoiceBySharedUrl, verifyInvoicePassword, logInvoiceAccess, checkInvoiceExists, checkInvoicePassword } from '@/api/shared-content/invoices';
 
 interface UseInvoiceDataParams {
   invoiceId: string;
@@ -35,6 +35,34 @@ export const useInvoiceData = ({ invoiceId }: UseInvoiceDataParams): UseInvoiceD
         setIsLoading(true);
         setError(null);
 
+        // Check if invoice exists
+        const existsResponse = await checkInvoiceExists(invoiceId);
+        
+        if (existsResponse.error) {
+          console.error('Error checking if invoice exists:', existsResponse.error);
+          throw existsResponse.error;
+        }
+        
+        if (!existsResponse.exists) {
+          throw new Error('Invoice not found');
+        }
+        
+        // Check if invoice is password protected
+        const protectionResponse = await checkInvoicePassword(invoiceId);
+        
+        if (protectionResponse.error) {
+          console.error('Error checking invoice password protection:', protectionResponse.error);
+        } else {
+          setIsPasswordProtected(protectionResponse.isProtected);
+          
+          // If password protected and access not granted, don't fetch content yet
+          if (protectionResponse.isProtected && !accessGranted) {
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // Fetch invoice data
         const response: SharedInvoiceResponse = await fetchInvoiceBySharedUrl(invoiceId);
         
         if (response.error) {
@@ -78,7 +106,7 @@ export const useInvoiceData = ({ invoiceId }: UseInvoiceDataParams): UseInvoiceD
     };
 
     loadInvoice();
-  }, [invoiceId]);
+  }, [invoiceId, accessGranted]);
 
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
