@@ -27,7 +27,7 @@ const fetchPages = async (): Promise<PageSeo[]> => {
     .order('page_name');
   
   if (error) throw error;
-  return data as PageSeo[] || [];
+  return (data || []) as unknown as PageSeo[];
 };
 
 const SeoSettings = () => {
