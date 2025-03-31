@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SharedReport, SharedReportResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
 import { logError } from '@/lib/errorLogger';
+import { SharedContentRow } from '@/types/supabase-types';
 
 /**
  * Alias para checkContentExists específico para informes
@@ -42,7 +43,7 @@ export const fetchReportBySharedUrl = async (sharedUrl: string): Promise<SharedR
       .select('*')
       .eq('shared_url', sharedUrl)
       .eq('content_type', 'report')
-      .maybeSingle();
+      .single();
       
     if (error) {
       logError('fetchReportBySharedUrl', error);
@@ -58,22 +59,24 @@ export const fetchReportBySharedUrl = async (sharedUrl: string): Promise<SharedR
       return { data: null, error: new Error('Report not found') };
     }
     
+    const rowData = data as SharedContentRow;
+    
     // Mapear a la estructura de SharedReport
     const report: SharedReport = {
-      id: data.id,
-      original_id: data.original_id,
+      id: rowData.id,
+      original_id: rowData.original_id,
       content_type: 'report',
-      title: data.title,
-      description: data.description || '',
-      content: data.content,
-      status: data.status,
-      shared_url: data.shared_url,
-      client_name: data.client_name,
-      client_website: data.client_website,
-      summary: data.description,
-      url: data.content?.url,
-      created_at: data.created_at,
-      updated_at: data.updated_at
+      title: rowData.title,
+      description: rowData.description || '',
+      content: rowData.content,
+      status: rowData.status as any,
+      shared_url: rowData.shared_url,
+      client_name: rowData.client_name,
+      client_website: rowData.client_website,
+      summary: rowData.description,
+      url: rowData.content?.url,
+      created_at: rowData.created_at,
+      updated_at: rowData.updated_at
     };
     
     // Registrar acceso exitoso

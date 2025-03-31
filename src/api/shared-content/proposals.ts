@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SharedProposal, SharedProposalResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
 import { logError } from '@/lib/errorLogger';
+import { SharedContentRow } from '@/types/supabase-types';
 
 /**
  * Alias para checkContentExists específico para propuestas
@@ -42,7 +43,7 @@ export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<Share
       .select('*')
       .eq('shared_url', sharedUrl)
       .eq('content_type', 'proposal')
-      .maybeSingle();
+      .single();
       
     if (error) {
       logError('fetchProposalBySharedUrl', error);
@@ -58,25 +59,27 @@ export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<Share
       return { data: null, error: new Error('Proposal not found') };
     }
     
+    const rowData = data as SharedContentRow;
+    
     // Parse content
-    const content = data.content || {};
+    const contentObj = rowData.content || {};
     
     // Mapear a la estructura de SharedProposal
     const proposal: SharedProposal = {
-      id: data.id,
-      original_id: data.original_id,
+      id: rowData.id,
+      original_id: rowData.original_id,
       content_type: 'proposal',
-      title: data.title,
-      description: data.description || '',
-      content: content,
-      status: data.status,
-      shared_url: data.shared_url,
-      client_name: data.client_name,
-      client_website: data.client_website,
-      services: content.services || [],
-      price: content.price,
-      created_at: data.created_at,
-      updated_at: data.updated_at
+      title: rowData.title,
+      description: rowData.description || '',
+      content: contentObj,
+      status: rowData.status as any,
+      shared_url: rowData.shared_url,
+      client_name: rowData.client_name,
+      client_website: rowData.client_website,
+      services: contentObj.services || [],
+      price: contentObj.price,
+      created_at: rowData.created_at,
+      updated_at: rowData.updated_at
     };
     
     // Registrar acceso exitoso

@@ -47,7 +47,7 @@ const ContractContent: React.FC<ContractContentProps> = ({
     <div className="my-8">
       {/* Contract document */}
       <div className="bg-white shadow-md rounded-lg p-8 mb-6">
-        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: contract.content }} />
+        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: contract.content as string }} />
       </div>
       
       {/* Signature section */}

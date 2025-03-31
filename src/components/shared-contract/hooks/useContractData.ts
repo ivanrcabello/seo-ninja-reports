@@ -1,178 +1,57 @@
 
-import { useState, useEffect } from 'react';
-import { SharedContract, ContractSignatureUpdate, AccessLogOptions, SharedContentStatus } from '@/types/shared-content';
-import { fetchContractBySharedUrl, updateContractWithSignature, checkContentExists, logContentAccess } from '@/api/shared-content';
-import { useParams } from 'react-router-dom';
-import { toast } from 'sonner';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSharedContractData } from './useSharedContractData';
+import { SharedContentStatus } from '@/types/shared-content';
+import { useToast } from '@/components/ui/use-toast';
 
-// Define PublicContract type (referenced in component)
-export type PublicContract = SharedContract;
-
-export const useContractData = (contractId?: string) => {
-  const [contract, setContract] = useState<PublicContract | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPasswordProtected, setIsPasswordProtected] = useState<boolean>(false);
-  const [isPasswordVerified, setIsPasswordVerified] = useState<boolean>(false);
-  const [isSignDialogOpen, setIsSignDialogOpen] = useState<boolean>(false);
-  const params = useParams<{ contractId: string }>();
+export const useContractData = (contractId: string) => {
+  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const printContainerRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   
-  // Use the contractId from props or from route params
-  const id = contractId || params.contractId;
-
-  const fetchContract = async (password?: string) => {
-    if (!id) {
-      setError('Invalid contract ID');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Check if contract exists and is password protected
-      const { exists, error: existsError } = await checkContentExists(id, 'contract');
-      
-      if (existsError) {
-        throw existsError;
-      }
-      
-      if (!exists) {
-        setError('Contract not found');
-        setLoading(false);
-        
-        const options: AccessLogOptions = { 
-          successful: false, 
-          error: 'Contract not found' 
-        };
-        logContentAccess('contract', id, options, 'check');
-        return;
-      }
-      
-      // For contracts, we currently don't use password protection
-      // But the infrastructure is here if needed in the future
-      setIsPasswordProtected(false);
-      setIsPasswordVerified(true);
-      
-      // Fetch contract data
-      const response = await fetchContractBySharedUrl(id);
-      
-      if (response.error) {
-        throw response.error;
-      }
-      
-      if (response.contract) {
-        setContract(response.contract);
-        
-        // Log successful access
-        const options: AccessLogOptions = { successful: true };
-        logContentAccess('contract', id, options, 'view');
-      } else {
-        setError('Contract not found');
-        
-        // Log failed access
-        const options: AccessLogOptions = { 
-          successful: false, 
-          error: 'Contract data not found' 
-        };
-        logContentAccess('contract', id, options, 'data_not_found');
-      }
-    } catch (err: any) {
-      console.error('Error fetching contract:', err);
-      setError(err.message || 'Failed to load contract');
-      
-      // Log error
-      const options: AccessLogOptions = { 
-        successful: false, 
-        error: err.message || 'Unknown error' 
-      };
-      logContentAccess('contract', id, options, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyPassword = async (password: string) => {
-    if (!id) return false;
-
-    try {
-      // This is a placeholder since contracts don't currently use password protection
-      setIsPasswordVerified(true);
-      await fetchContract(password);
-      return true;
-    } catch (err) {
-      console.error('Error verifying password:', err);
-      toast.error('Error verifying password');
-      return false;
-    }
-  };
-
-  const signContract = async (signature: string): Promise<boolean> => {
-    if (!contract || !id) return false;
-
-    try {
-      toast.loading('Firmando contrato...');
-      
-      const now = new Date().toISOString();
-      
-      const signatureData: ContractSignatureUpdate = {
-        client_signed: true,
-        client_signed_at: now,
-        client_signature: signature
-      };
-      
-      // Update contract in the database
-      const { success, error: signError } = await updateContractWithSignature(id, signatureData);
-      
-      if (signError) {
-        throw signError;
-      }
-      
-      // Update contract locally
-      setContract(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          status: "signed" as SharedContentStatus,
-          client_signed: true,
-          client_signed_at: now,
-          client_signature: signature
-        };
-      });
-      
-      toast.dismiss();
-      toast.success('Contrato firmado exitosamente');
-      return true;
-    } catch (err: any) {
-      console.error('Error signing contract:', err);
-      toast.dismiss();
-      toast.error('Error al firmar el contrato. Por favor, inténtelo de nuevo más tarde.');
-      return false;
-    }
-  };
-
-  useEffect(() => {
-    if (id) {
-      fetchContract();
-    }
-  }, [id]);
-
-  const handlePrint = () => {
+  const { 
+    contract, 
+    isLoading, 
+    error, 
+    signContract,
+    refetch
+  } = useSharedContractData(contractId);
+  
+  // Handle printing
+  const handlePrint = useCallback(() => {
     window.print();
-  };
-
+  }, []);
+  
+  // Mock verify password since contracts don't use password protection
+  const verifyPassword = useCallback(async (password: string) => {
+    if (!isPasswordProtected) {
+      return true;
+    }
+    return false;
+  }, [isPasswordProtected]);
+  
+  // Loading contract status
+  useEffect(() => {
+    if (contract && contract.status === 'expired') {
+      toast({
+        variant: 'destructive',
+        title: 'Contrato expirado',
+        description: 'Este contrato ha expirado y ya no puede ser firmado.'
+      });
+    }
+  }, [contract, toast]);
+  
   return {
     contract,
-    loading,
+    loading: isLoading,
     error,
     isPasswordProtected,
     isPasswordVerified,
     verifyPassword,
     signContract,
     handlePrint,
-    isSignDialogOpen,
-    setIsSignDialogOpen
+    refetch
   };
 };
 

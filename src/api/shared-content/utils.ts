@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { ExistsResponse, ProtectionResponse, AccessLogOptions, AccessLogType, SharedContentType } from '@/types/shared-content';
+import { SharedContentRow } from '@/types/supabase-types';
 
 /**
  * Verifica si un contenido compartido existe

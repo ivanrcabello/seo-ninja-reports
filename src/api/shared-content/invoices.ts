@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SharedInvoice, SharedInvoiceResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
 import { logError } from '@/lib/errorLogger';
+import { SharedContentRow } from '@/types/supabase-types';
 
 /**
  * Alias para checkContentExists específico para facturas
@@ -42,7 +43,7 @@ export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<Shared
       .select('*')
       .eq('shared_url', sharedUrl)
       .eq('content_type', 'invoice')
-      .maybeSingle();
+      .single();
       
     if (error) {
       logError('fetchInvoiceBySharedUrl', error);
@@ -58,28 +59,30 @@ export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<Shared
       return { data: null, error: new Error('Invoice not found') };
     }
     
+    const rowData = data as SharedContentRow;
+    
     // Parse content
-    const content = data.content || {};
+    const contentObj = rowData.content || {};
     
     // Mapear a la estructura de SharedInvoice
     const invoice: SharedInvoice = {
-      id: data.id,
-      original_id: data.original_id,
+      id: rowData.id,
+      original_id: rowData.original_id,
       content_type: 'invoice',
-      title: data.title,
-      description: data.description || '',
-      content: content,
-      status: data.status,
-      shared_url: data.shared_url,
-      client_name: data.client_name,
-      client_website: data.client_website,
-      amount: content.amount || 0,
-      due_date: content.due_date,
-      payment_method: content.payment_method,
-      payment_date: content.payment_date,
-      payment_instructions: content.payment_instructions,
-      created_at: data.created_at,
-      updated_at: data.updated_at
+      title: rowData.title,
+      description: rowData.description || '',
+      content: contentObj,
+      status: rowData.status as any,
+      shared_url: rowData.shared_url,
+      client_name: rowData.client_name,
+      client_website: rowData.client_website,
+      amount: contentObj.amount || 0,
+      due_date: contentObj.due_date,
+      payment_method: contentObj.payment_method,
+      payment_date: contentObj.payment_date,
+      payment_instructions: contentObj.payment_instructions,
+      created_at: rowData.created_at,
+      updated_at: rowData.updated_at
     };
     
     // Registrar acceso exitoso

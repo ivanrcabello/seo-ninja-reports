@@ -71,7 +71,7 @@ export const useSharedReportData = (reportId: string) => {
         throw response.error;
       }
       
-      if (!response.report) {
+      if (!response.data) {
         setNotFound(true);
         setError('Informe no encontrado');
         const logOptions: AccessLogOptions = { 
@@ -80,7 +80,7 @@ export const useSharedReportData = (reportId: string) => {
         };
         logContentAccess('report', reportId, logOptions, 'data_not_found');
       } else {
-        setReport(response.report);
+        setReport(response.data);
         const logOptions: AccessLogOptions = { 
           successful: true 
         };

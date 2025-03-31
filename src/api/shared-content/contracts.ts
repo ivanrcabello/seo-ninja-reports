@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SharedContract, SharedContractResponse, AccessLogOptions, AccessLogType, ContractSignatureUpdate } from '@/types/shared-content';
 import { logContentAccess, checkContentExists } from './utils';
 import { logError } from '@/lib/errorLogger';
+import { SharedContentRow } from '@/types/supabase-types';
 
 /**
  * Alias para checkContentExists específico para contratos
@@ -28,7 +29,7 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<Share
       .select('*')
       .eq('shared_url', sharedUrl)
       .eq('content_type', 'contract')
-      .maybeSingle();
+      .single();
       
     if (error) {
       logError('fetchContractBySharedUrl', error);
@@ -44,28 +45,30 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<Share
       return { data: null, error: new Error('Contract not found') };
     }
     
+    const rowData = data as SharedContentRow;
+    
     // Parse content
-    const content = data.content || {};
+    const contentObj = rowData.content || {};
     
     // Mapear a la estructura de SharedContract
     const contract: SharedContract = {
-      id: data.id,
-      original_id: data.original_id,
+      id: rowData.id,
+      original_id: rowData.original_id,
       content_type: 'contract',
-      title: data.title,
-      content: content.contract_content || content.content || '',
-      status: data.status,
-      shared_url: data.shared_url,
-      client_name: data.client_name,
-      client_website: data.client_website,
-      client_signed: content.client_signed || false,
-      client_signed_at: content.client_signed_at,
-      client_signature: content.client_signature,
-      admin_signed: content.admin_signed || false,
-      admin_signed_at: content.admin_signed_at,
-      admin_signature: content.admin_signature,
-      created_at: data.created_at,
-      updated_at: data.updated_at
+      title: rowData.title,
+      content: contentObj.contract_content || contentObj.content || '',
+      status: rowData.status as any,
+      shared_url: rowData.shared_url,
+      client_name: rowData.client_name,
+      client_website: rowData.client_website,
+      client_signed: contentObj.client_signed || false,
+      client_signed_at: contentObj.client_signed_at,
+      client_signature: contentObj.client_signature,
+      admin_signed: contentObj.admin_signed || false,
+      admin_signed_at: contentObj.admin_signed_at,
+      admin_signature: contentObj.admin_signature,
+      created_at: rowData.created_at,
+      updated_at: rowData.updated_at
     };
     
     // Registrar acceso exitoso

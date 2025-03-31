@@ -1,23 +1,14 @@
 
 /**
- * Utility function to log errors to the console in a structured way
+ * Función simple para registrar errores en la consola de manera consistente
  */
-export function logError(context: string, error: unknown, additionalInfo?: Record<string, any>) {
+export const logError = (context: string, error: any) => {
   console.error(`[ERROR] ${context}:`, error);
   
-  if (additionalInfo) {
-    console.error('Additional info:', additionalInfo);
+  if (error.response) {
+    console.error(`Response data:`, error.response.data);
+    console.error(`Status:`, error.response.status);
   }
   
-  // If the error is an actual Error object, log its stack trace
-  if (error instanceof Error) {
-    console.error('Stack trace:', error.stack);
-  }
-}
-
-/**
- * Utility function for debugging
- */
-export function debugLog(context: string, ...data: any[]) {
-  console.log(`[DEBUG] ${context}:`, ...data);
-}
+  // También podríamos enviar este error a un servicio de monitoreo como Sentry
+};

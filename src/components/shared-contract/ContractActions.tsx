@@ -2,10 +2,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Printer, Pencil } from 'lucide-react';
-import { SharedContract } from '@/types/shared-content';
+import { PublicContract } from './types';
 
 interface ContractActionsProps {
-  contract: SharedContract;
+  contract: PublicContract;
   onOpenSignDialog: () => void;
   onPrint: () => void;
 }

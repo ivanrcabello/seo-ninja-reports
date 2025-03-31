@@ -8,7 +8,6 @@ import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PublicContract } from './types';
 import { ContractActions } from './';
-import { SharedContentStatus } from '@/types/shared-content';
 
 interface SignatureSectionProps {
   contract: PublicContract;
@@ -221,8 +220,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({
       
       <div className="mt-6 hidden md:block">
         <ContractActions 
-          // Type casting to match expected type
-          contract={{...contract, status: contract.status as SharedContentStatus}}
+          contract={contract}
           onOpenSignDialog={onOpenSignDialog}
           onPrint={onPrint}
         />

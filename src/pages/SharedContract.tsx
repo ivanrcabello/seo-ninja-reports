@@ -1,15 +1,11 @@
 
 import React, { useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
-  ContractHeader, 
-  ContractContent, 
-  SignatureSection, 
-  ContractActions,
-  useContractData 
-} from '@/components/shared-contract';
+import { ContractHeader, ContractContent } from '@/components/shared-contract';
+import { useContractData } from '@/components/shared-contract/hooks/useContractData';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { toast } from 'sonner';
+import { PublicContract } from '@/components/shared-contract/types';
 
 const SharedContract: React.FC = () => {
   const { contractId = '' } = useParams<{ contractId: string }>();
@@ -60,13 +56,13 @@ const SharedContract: React.FC = () => {
     if (!contract) return;
     
     try {
-      const success = await signContract(signature);
+      const { success, error } = await signContract(signature);
       
       if (success) {
         setIsSignDialogOpen(false);
         toast.success('Contrato firmado correctamente');
       } else {
-        toast.error('No se pudo firmar el contrato');
+        toast.error(error || 'No se pudo firmar el contrato');
       }
     } catch (err) {
       console.error('Error signing contract:', err);
@@ -101,7 +97,7 @@ const SharedContract: React.FC = () => {
           {contract && (
             <>
               <ContractHeader 
-                contract={contract}
+                contract={contract as PublicContract}
               />
               
               <div className="flex flex-col md:flex-row">
@@ -109,20 +105,12 @@ const SharedContract: React.FC = () => {
                   <ContractContent
                     loading={loading}
                     error={error}
-                    contract={contract}
+                    contract={contract as PublicContract}
                     onOpenSignDialog={() => setIsSignDialogOpen(true)}
                     onPrint={handlePrint}
                     onSign={handleSign}
                     isSignDialogOpen={isSignDialogOpen}
                     setIsSignDialogOpen={setIsSignDialogOpen}
-                  />
-                </div>
-                
-                <div className="hidden md:block w-64 p-6 bg-slate-50 dark:bg-slate-900/60 border-l border-slate-200 dark:border-slate-800 print:hidden">
-                  <ContractActions
-                    contract={contract}
-                    onOpenSignDialog={() => setIsSignDialogOpen(true)} 
-                    onPrint={handlePrint}
                   />
                 </div>
               </div>

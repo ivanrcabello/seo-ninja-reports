@@ -50,11 +50,11 @@ export const useSharedContractData = (sharedUrl: string) => {
         throw response.error;
       }
       
-      if (!response.contract) {
+      if (!response.data) {
         throw new Error('No se pudo encontrar el contrato solicitado');
       }
       
-      setContract(response.contract);
+      setContract(response.data);
       
       // Log successful access
       const options: AccessLogOptions = { successful: true };
