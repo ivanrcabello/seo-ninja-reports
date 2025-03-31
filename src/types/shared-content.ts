@@ -109,21 +109,31 @@ export interface ContractSignatureUpdate {
 
 // Interfaces para resultados de API
 export interface SharedReportResponse {
-  report: SharedReport;
+  report: SharedReport | null;
   error: Error | null;
 }
 
 export interface SharedContractResponse {
-  contract: SharedContract;
+  contract: SharedContract | null;
   error: Error | null;
 }
 
 export interface SharedInvoiceResponse {
-  invoice: SharedInvoice;
+  invoice: SharedInvoice | null;
   error: Error | null;
 }
 
 export interface SharedProposalResponse {
-  proposal: SharedProposal;
+  proposal: SharedProposal | null;
   error: Error | null;
 }
+
+// Tipo para los logs de acceso
+export interface AccessLogOptions {
+  successful: boolean;
+  passwordAttempt?: boolean;
+  error?: string;
+  source?: string;
+}
+
+export type AccessLogType = 'view' | 'print' | 'download' | 'password' | 'not_found' | 'error' | 'check' | 'data_not_found';

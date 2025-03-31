@@ -80,6 +80,47 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           
           sharedUrl = newSharedUrl;
           console.log('Generated new shared URL:', sharedUrl);
+          
+          // Check if we need to create a public_reports entry
+          const { data: existingPublicReport } = await supabase
+            .from('public_reports')
+            .select('id')
+            .eq('shared_url', sharedUrl)
+            .maybeSingle();
+            
+          if (!existingPublicReport) {
+            // Get the full report data including client info
+            const { data: fullReport, error: fullReportError } = await supabase
+              .from('reports')
+              .select('*, clients(name, website)')
+              .eq('id', reportId)
+              .single();
+              
+            if (fullReportError) {
+              console.error('Error getting full report:', fullReportError);
+            } else if (fullReport) {
+              // Create public report record
+              const { error: insertError } = await supabase
+                .from('public_reports')
+                .insert({
+                  id: fullReport.id,
+                  title: fullReport.title,
+                  summary: fullReport.summary,
+                  url: fullReport.url,
+                  status: fullReport.status,
+                  content: fullReport.content,
+                  date: fullReport.date,
+                  shared_url: sharedUrl,
+                  password: fullReport.password,
+                  client_name: fullReport.clients?.name,
+                  client_website: fullReport.clients?.website
+                });
+                
+              if (insertError) {
+                console.error('Error creating public report:', insertError);
+              }
+            }
+          }
         }
         
         setSharedUrlId(sharedUrl);
@@ -146,6 +187,18 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         .eq('id', reportId);
         
       if (error) throw new Error('Error al actualizar la contraseña');
+      
+      // Also update in public_reports if it exists
+      if (sharedUrlId) {
+        const { error: publicError } = await supabase
+          .from('public_reports')
+          .update({ password: passwordValue })
+          .eq('shared_url', sharedUrlId);
+          
+        if (publicError) {
+          console.error('Error updating public report password:', publicError);
+        }
+      }
       
       toast.success(passwordProtected 
         ? 'Informe protegido con contraseña' 

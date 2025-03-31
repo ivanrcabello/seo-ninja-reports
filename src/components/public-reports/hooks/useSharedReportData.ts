@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { SharedReport, SharedReportResponse } from '@/types/shared-content';
+import { SharedReport, SharedReportResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 import { 
   checkReportExists, 
   checkReportPassword, 
@@ -30,7 +30,7 @@ export const useSharedReportData = (reportId: string) => {
       setNotFound(false);
       
       // Check if report exists
-      const { exists, error: existsError } = await checkReportExists(reportId);
+      const { exists, error: existsError } = await checkReportExists('report', reportId);
       
       if (existsError) {
         console.error('Error checking if report exists:', existsError);
@@ -40,12 +40,16 @@ export const useSharedReportData = (reportId: string) => {
       if (!exists) {
         setNotFound(true);
         setError('Informe no encontrado');
-        logReportAccess(reportId, { successful: false, error: 'Report not found' }, 'not_found');
+        const logOptions: AccessLogOptions = { 
+          successful: false, 
+          error: 'Report not found' 
+        };
+        logReportAccess('report', reportId, logOptions, 'not_found');
         return;
       }
       
       // Check if it's password protected
-      const { isProtected, error: passwordError } = await checkReportPassword(reportId);
+      const { isProtected, error: passwordError } = await checkReportPassword('report', reportId);
       
       if (passwordError) {
         console.error('Error checking password protection:', passwordError);
@@ -70,15 +74,26 @@ export const useSharedReportData = (reportId: string) => {
       if (!response.report) {
         setNotFound(true);
         setError('Informe no encontrado');
-        logReportAccess(reportId, { successful: false, error: 'Report data not found' }, 'data_not_found');
+        const logOptions: AccessLogOptions = { 
+          successful: false, 
+          error: 'Report data not found' 
+        };
+        logReportAccess('report', reportId, logOptions, 'data_not_found');
       } else {
         setReport(response.report);
-        logReportAccess(reportId, { successful: true }, 'view');
+        const logOptions: AccessLogOptions = { 
+          successful: true 
+        };
+        logReportAccess('report', reportId, logOptions, 'view');
       }
     } catch (err: any) {
       console.error('Error fetching report:', err);
       setError(err.message || 'Error al cargar el informe');
-      logReportAccess(reportId, { successful: false, error: err.message || 'Unknown error' }, 'error');
+      const logOptions: AccessLogOptions = { 
+        successful: false, 
+        error: err.message || 'Unknown error' 
+      };
+      logReportAccess('report', reportId, logOptions, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +107,7 @@ export const useSharedReportData = (reportId: string) => {
   // Function to verify password
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
-      const success = await verifyReportPassword(reportId, password);
+      const success = await verifyReportPassword('report', reportId, password);
       
       if (success) {
         setAccessGranted(true);
