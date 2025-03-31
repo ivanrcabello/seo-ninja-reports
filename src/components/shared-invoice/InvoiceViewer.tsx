@@ -12,10 +12,8 @@ interface InvoiceViewerProps {
 }
 
 const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice }) => {
-  const { content } = invoice;
-  
   // Extract invoice details from content
-  const invoiceData = typeof content === 'string' ? JSON.parse(content) : content;
+  const invoiceData = typeof invoice.content === 'string' ? JSON.parse(invoice.content) : invoice.content;
   
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';

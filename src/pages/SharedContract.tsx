@@ -62,7 +62,8 @@ const SharedContract: React.FC = () => {
     }
   };
 
-  const canSign = !contract?.client_signed && contract?.status !== 'signed' && contract?.status !== 'expired';
+  // Access client_signed property safely with optional chaining
+  const canSign = contract?.client_signed !== true && contract?.status !== 'signed' && contract?.status !== 'expired';
 
   if (loading) {
     return (
