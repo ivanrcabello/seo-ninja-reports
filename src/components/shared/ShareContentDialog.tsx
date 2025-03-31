@@ -15,7 +15,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Link2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { SharedContentType } from '@/types/shared-content';
-import { shareContent } from '@/api/shared-content/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { uuid } from '@supabase/supabase-js/dist/module/lib/helpers';
 
 interface ShareContentDialogProps {
   open: boolean;
@@ -61,36 +62,53 @@ const ShareContentDialog: React.FC<ShareContentDialogProps> = ({
   };
 
   const shareItem = async () => {
-    if (!contentId) return;
+    if (!contentId) {
+      toast.error('ID no especificado');
+      return;
+    }
     
     try {
       setIsSharing(true);
       
-      const sharedUrlId = await shareContent({
-        originalId: contentId,
-        contentType,
-        title: contentTitle,
-        description: contentData.description || '',
-        content: contentData,
-        status: contentStatus,
-        clientName,
-        clientWebsite,
-        isPasswordProtected,
-        password: isPasswordProtected ? password : ''
-      });
+      // Crear UUID para la URL compartida
+      const sharedUrlId = uuid();
       
-      if (sharedUrlId) {
-        // Set state and callback
-        setSharedUrl(`${window.location.origin}/shared/${contentType}s/${sharedUrlId}`);
-        setIsShared(true);
-        if (onShared) onShared(sharedUrlId);
-        
-        toast.success(`${getContentTypeTitle()} compartido exitosamente`);
-      } else {
-        throw new Error(`No se pudo compartir el ${getContentTypeTitle().toLowerCase()}`);
+      // Insertar en shared_content
+      const { error } = await supabase
+        .from('shared_content')
+        .insert({
+          original_id: contentId,
+          content_type: contentType,
+          title: contentTitle,
+          description: contentData?.description || '',
+          content: contentData,
+          status: contentStatus,
+          shared_url: sharedUrlId,
+          password: isPasswordProtected ? password : null,
+          client_name: clientName,
+          client_website: clientWebsite
+        });
+      
+      if (error) {
+        throw error;
       }
+      
+      // Actualizar tabla de informes si es necesario
+      if (contentType === 'report') {
+        await supabase
+          .from('reports')
+          .update({ shared_url: sharedUrlId })
+          .eq('id', contentId);
+      }
+      
+      // Configurar estados y callback
+      setSharedUrl(`${window.location.origin}/shared/${contentType}s/${sharedUrlId}`);
+      setIsShared(true);
+      if (onShared) onShared(sharedUrlId);
+      
+      toast.success(`${getContentTypeTitle()} compartido exitosamente`);
     } catch (error: any) {
-      console.error(`Error sharing ${contentType}:`, error);
+      console.error(`Error al compartir ${contentType}:`, error);
       toast.error(`Error al compartir ${getContentTypeTitle().toLowerCase()}`, {
         description: error.message
       });
