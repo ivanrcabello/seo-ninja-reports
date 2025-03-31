@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logSharedReportAccess } from '@/utils/sharedContentLogger';
@@ -81,7 +82,7 @@ const useReportData = (reportId: string) => {
           title: viewData.title || 'Informe sin título',
           summary: viewData.description,
           content: viewData.content,
-          status: viewData.status as SharedContentStatus,
+          status: parseStatusFromString(viewData.status),
           client_name: viewData.client_name,
           client_website: viewData.client_website,
           date: viewData.created_at
@@ -114,7 +115,7 @@ const useReportData = (reportId: string) => {
           title: reportData.title || 'Informe sin título',
           summary: reportData.summary,
           url: reportData.url,
-          status: reportData.status,
+          status: parseStatusFromString(reportData.status),
           content: reportData.content,
           date: reportData.date,
           client_name: reportData.clients?.name,
@@ -142,6 +143,11 @@ const useReportData = (reportId: string) => {
           successful: true, 
           source: 'rpc_function' 
         });
+        
+        // Ensure status is properly parsed as SharedContentStatus
+        if (rpcData.status) {
+          rpcData.status = parseStatusFromString(rpcData.status);
+        }
         
         return rpcData as PublicReport;
       }
