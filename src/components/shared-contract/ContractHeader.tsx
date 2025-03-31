@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { Clock, FileText, Send, BadgeCheck, Ban } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PublicContract } from './types';
 
-interface ContractHeaderProps {
+export interface ContractHeaderProps {
   contract: PublicContract | null;
   logo: string | null;
 }

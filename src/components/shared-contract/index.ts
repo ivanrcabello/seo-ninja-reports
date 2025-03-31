@@ -10,3 +10,4 @@ export { default as ContractActions } from './ContractActions';
 
 // Re-export types
 export type { SharedContract } from '@/types/shared-content';
+export type { PublicContract } from './types';

@@ -11,7 +11,7 @@ import {
 import { PublicContract } from '@/components/shared-contract/types';
 import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
 import { toast } from 'sonner';
-import { SharedContract } from '@/types/shared-content';
+import type { SharedContract as SharedContractType } from '@/types/shared-content';
 
 const SharedContract: React.FC = () => {
   const { contractId = '' } = useParams<{ contractId: string }>();
@@ -123,10 +123,8 @@ const SharedContract: React.FC = () => {
           {contract && (
             <>
               <ContractHeader 
-                title={contract.title}
-                clientName={contract.client_name || ''}
-                status={contract.status}
-                date={contract.created_at}
+                contract={adaptedContract}
+                logo={null}
               />
               
               <div className="flex flex-col md:flex-row">
