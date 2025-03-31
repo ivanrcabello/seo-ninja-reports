@@ -46,6 +46,34 @@ export const checkInvoicePassword = async (invoiceId: string): Promise<{ isProte
 };
 
 /**
+ * Verify invoice password
+ */
+export const verifyInvoicePassword = async (invoiceId: string, password: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('public_invoices')
+      .select('password')
+      .eq('shared_url', invoiceId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching invoice password:', error);
+      return false;
+    }
+    
+    // If no password is set, or password matches
+    if (!data || !data.password || data.password.trim() === '') {
+      return true;
+    }
+    
+    return data.password === password;
+  } catch (error) {
+    console.error('Error verifying invoice password:', error);
+    return false;
+  }
+};
+
+/**
  * Log invoice access
  */
 export const logInvoiceAccess = (invoiceId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {

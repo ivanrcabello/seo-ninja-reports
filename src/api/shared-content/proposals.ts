@@ -46,6 +46,34 @@ export const checkProposalPassword = async (proposalId: string): Promise<{ isPro
 };
 
 /**
+ * Verify proposal password
+ */
+export const verifyProposalPassword = async (proposalId: string, password: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('public_proposals')
+      .select('password')
+      .eq('shared_url', proposalId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching proposal password:', error);
+      return false;
+    }
+    
+    // If no password is set, or password matches
+    if (!data || !data.password || data.password.trim() === '') {
+      return true;
+    }
+    
+    return data.password === password;
+  } catch (error) {
+    console.error('Error verifying proposal password:', error);
+    return false;
+  }
+};
+
+/**
  * Log proposal access
  */
 export const logProposalAccess = (proposalId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {

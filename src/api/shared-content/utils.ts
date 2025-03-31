@@ -59,20 +59,47 @@ export const checkContentPasswordProtection = async (
   try {
     const tableName = getTableName(contentType);
     
+    // Use Supabase RPC or SQL function call instead of direct table access to avoid type issues
+    // This is more reliable when checking for existence of a column
     const { data, error } = await supabase
-      .from(tableName)
-      .select('password')
-      .eq('shared_url', contentId)
-      .maybeSingle();
+      .rpc('check_content_password_protected', { 
+        content_id: contentId,
+        content_type: contentType
+      });
     
     if (error) throw error;
     
-    // Check if data exists and has a non-empty password
-    const isProtected = !!(data && data.password && typeof data.password === 'string' && data.password.trim() !== '');
-    return { isProtected, error: null };
+    // Check if data exists and has a value
+    return { isProtected: !!data, error: null };
   } catch (error: any) {
     console.error(`Error checking ${contentType} password protection:`, error);
-    return { isProtected: false, error };
+    
+    // Fallback approach: Try direct query but handle case where password column doesn't exist
+    try {
+      const tableName = getTableName(contentType);
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('password')
+        .eq('shared_url', contentId)
+        .maybeSingle();
+      
+      if (error) {
+        // If error is because password column doesn't exist, it's not protected
+        if (error.message.includes("column 'password' does not exist")) {
+          return { isProtected: false, error: null };
+        }
+        throw error;
+      }
+      
+      // Check if data exists and has a non-empty password
+      const isProtected = !!(data && 'password' in data && data.password && typeof data.password === 'string' && data.password.trim() !== '');
+      return { isProtected, error: null };
+      
+    } catch (fallbackError: any) {
+      console.error(`Fallback error checking ${contentType} password protection:`, fallbackError);
+      return { isProtected: false, error: fallbackError };
+    }
   }
 };
 
@@ -85,25 +112,48 @@ export const verifyContentPassword = async (
   password: string
 ): Promise<boolean> => {
   try {
-    const tableName = getTableName(contentType);
-    
+    // Use Supabase RPC function that safely checks the password across tables
     const { data, error } = await supabase
-      .from(tableName)
-      .select('password')
-      .eq('shared_url', contentId)
-      .single();
+      .rpc('verify_content_password', {
+        content_id: contentId,
+        content_type: contentType,
+        password_param: password
+      });
     
     if (error) {
-      console.error(`Error fetching ${contentType} password:`, error);
-      return false;
+      console.error(`Error with RPC verification for ${contentType} password:`, error);
+      
+      // Fallback method if RPC fails - do a direct table query
+      const tableName = getTableName(contentType);
+      
+      try {
+        const { data: directData, error: directError } = await supabase
+          .from(tableName)
+          .select('password')
+          .eq('shared_url', contentId)
+          .single();
+        
+        if (directError) {
+          if (directError.message.includes("column 'password' does not exist")) {
+            return true; // If no password column exists, treat as not password protected
+          }
+          console.error(`Error fetching ${contentType} password:`, directError);
+          return false;
+        }
+        
+        // If no password is set, or password matches
+        if (!directData || !('password' in directData) || !directData.password || typeof directData.password !== 'string') {
+          return true;
+        }
+        
+        return directData.password === password;
+      } catch (directQueryError) {
+        console.error(`Direct query error verifying ${contentType} password:`, directQueryError);
+        return false;
+      }
     }
     
-    // If no password is set, or password matches
-    if (!data || !data.password || typeof data.password !== 'string') {
-      return true;
-    }
-    
-    return data.password === password;
+    return !!data;
   } catch (error) {
     console.error(`Error verifying ${contentType} password:`, error);
     return false;

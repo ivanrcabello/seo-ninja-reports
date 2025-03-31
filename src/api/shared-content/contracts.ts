@@ -110,7 +110,7 @@ export const updateContractWithSignature = async (
           client_signed: signatureData.client_signed,
           client_signed_at: signatureData.client_signed_at,
           client_signature: signatureData.client_signature,
-          status: 'signed'
+          status: 'signed' as SharedContentStatus
         })
         .eq('id', contract.id);
       

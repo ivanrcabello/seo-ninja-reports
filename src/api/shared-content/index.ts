@@ -9,6 +9,10 @@ import {
 
 import { 
   fetchReportByAnyId,
+  checkReportExists,
+  checkReportPassword,
+  verifyReportPassword,
+  logReportAccess,
   updateReportWithPassword
 } from './reports';
 
@@ -48,6 +52,10 @@ export {
   // Reports
   fetchReportByAnyId,
   fetchReportBySharedUrl,
+  checkReportExists,
+  checkReportPassword,
+  verifyReportPassword,
+  logReportAccess,
   updateReportWithPassword,
   
   // Contracts

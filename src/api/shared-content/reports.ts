@@ -60,7 +60,9 @@ export const verifyReportPassword = async (reportId: string, password: string): 
       return false;
     }
     
-    if (!data || !data.password) return true;
+    if (!data || !data.password || data.password.trim() === '') {
+      return true;
+    }
     
     return data.password === password;
   } catch (error) {
@@ -104,7 +106,8 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
         status: status,
         date: publicReportData.date,
         shared_url: publicReportData.shared_url,
-        created_at: publicReportData.created_at || new Date().toISOString(), 
+        // Add created_at and updated_at with default values if they don't exist
+        created_at: publicReportData.created_at || new Date().toISOString(),
         updated_at: publicReportData.updated_at || new Date().toISOString(),
         client_name: publicReportData.client_name,
         client_website: publicReportData.client_website
