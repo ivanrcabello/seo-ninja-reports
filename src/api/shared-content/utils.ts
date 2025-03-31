@@ -1,26 +1,27 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { ExistsResponse, ProtectionResponse, AccessLogOptions, AccessLogType, SharedContentType } from '@/types/shared-content';
-import { SharedContentRow } from '@/types/supabase-types';
+import { AccessLogOptions, AccessLogType, SharedContentType } from '@/types/shared-content';
+import { uuid } from '@supabase/supabase-js/dist/module/lib/helpers';
+import { toast } from 'sonner';
 
 /**
  * Verifica si un contenido compartido existe
  */
-export const checkContentExists = async (
-  contentId: string, 
-  contentType?: SharedContentType
-): Promise<ExistsResponse> => {
+export const checkContentExists = async (contentId: string, contentType: SharedContentType): Promise<{ exists: boolean; error: Error | null }> => {
   try {
     const { data, error } = await supabase.rpc('check_shared_content_exists', {
       content_id: contentId,
       content_type: contentType
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error checking if ${contentType} exists:`, error);
+      return { exists: false, error };
+    }
     
     return { exists: !!data, error: null };
   } catch (error: any) {
-    console.error(`Error verificando si existe el contenido ${contentType}:`, error);
+    console.error(`Error checking if ${contentType} exists:`, error);
     return { exists: false, error };
   }
 };
@@ -28,33 +29,29 @@ export const checkContentExists = async (
 /**
  * Verifica si un contenido está protegido con contraseña
  */
-export const checkContentPasswordProtection = async (
-  contentId: string,
-  contentType?: SharedContentType
-): Promise<ProtectionResponse> => {
+export const checkContentPasswordProtection = async (contentId: string, contentType: SharedContentType): Promise<{ isProtected: boolean; error: Error | null }> => {
   try {
     const { data, error } = await supabase.rpc('check_shared_content_password', {
       content_id: contentId,
       content_type: contentType
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error checking if ${contentType} is password protected:`, error);
+      return { isProtected: false, error };
+    }
     
     return { isProtected: !!data, error: null };
   } catch (error: any) {
-    console.error(`Error verificando protección con contraseña para ${contentType}:`, error);
+    console.error(`Error checking if ${contentType} is password protected:`, error);
     return { isProtected: false, error };
   }
 };
 
 /**
- * Verifica la contraseña de un contenido compartido
+ * Verifica una contraseña para contenido compartido
  */
-export const verifyContentPassword = async (
-  contentId: string,
-  contentType: SharedContentType,
-  password: string
-): Promise<boolean> => {
+export const verifyContentPassword = async (contentId: string, contentType: SharedContentType, password: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase.rpc('verify_shared_content_password', {
       content_id: contentId,
@@ -62,17 +59,20 @@ export const verifyContentPassword = async (
       password_param: password
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error verifying password for ${contentType}:`, error);
+      return false;
+    }
     
     return !!data;
-  } catch (error: any) {
-    console.error(`Error verificando contraseña para ${contentType}:`, error);
+  } catch (error) {
+    console.error(`Error verifying password for ${contentType}:`, error);
     return false;
   }
 };
 
 /**
- * Registra un acceso a un contenido compartido
+ * Registra acceso a contenido compartido
  */
 export const logContentAccess = async (
   contentType: SharedContentType,
@@ -91,6 +91,120 @@ export const logContentAccess = async (
       source: options.source || 'web_client'
     });
   } catch (error) {
-    console.error(`Error registrando acceso a ${contentType}:`, error);
+    console.error(`Error logging ${contentType} access:`, error);
+  }
+};
+
+/**
+ * Comparte contenido (función común para todos los tipos)
+ */
+export const shareContent = async ({
+  originalId,
+  contentType,
+  title,
+  description = '',
+  content,
+  status,
+  clientName = '',
+  clientWebsite = '',
+  isPasswordProtected = false,
+  password = ''
+}: {
+  originalId: string;
+  contentType: SharedContentType;
+  title: string;
+  description?: string;
+  content: any;
+  status: string;
+  clientName?: string;
+  clientWebsite?: string;
+  isPasswordProtected: boolean;
+  password?: string;
+}): Promise<string | null> => {
+  try {
+    // Primero verificar si el contenido ya está compartido
+    const { data: existingShared, error: checkError } = await supabase
+      .from('shared_content')
+      .select('shared_url')
+      .eq('original_id', originalId)
+      .eq('content_type', contentType)
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError;
+    }
+    
+    let sharedUrlId: string;
+    
+    if (existingShared) {
+      // Actualizar contenido compartido existente
+      sharedUrlId = existingShared.shared_url;
+      
+      const { error: updateError } = await supabase
+        .from('shared_content')
+        .update({
+          title,
+          description,
+          content,
+          status,
+          password: isPasswordProtected ? password : null,
+          client_name: clientName,
+          client_website: clientWebsite,
+          updated_at: new Date().toISOString()
+        })
+        .eq('shared_url', sharedUrlId);
+        
+      if (updateError) throw updateError;
+    } else {
+      // Crear nuevo contenido compartido
+      sharedUrlId = uuid();
+      
+      // Insertar en shared_content
+      const { error: insertError } = await supabase
+        .from('shared_content')
+        .insert({
+          original_id: originalId,
+          content_type: contentType,
+          title,
+          description,
+          content,
+          status,
+          shared_url: sharedUrlId,
+          password: isPasswordProtected ? password : null,
+          client_name: clientName,
+          client_website: clientWebsite
+        });
+        
+      if (insertError) throw insertError;
+      
+      // Si es un informe, actualizar también la tabla de informes
+      if (contentType === 'report') {
+        await supabase
+          .from('reports')
+          .update({ shared_url: sharedUrlId })
+          .eq('id', originalId);
+      }
+    }
+    
+    return sharedUrlId;
+  } catch (error: any) {
+    console.error('Error sharing content:', error);
+    toast.error(`Error al compartir ${getTitleForContentType(contentType)}`, {
+      description: error.message
+    });
+    return null;
+  }
+};
+
+/**
+ * Obtiene el título para un tipo de contenido
+ */
+const getTitleForContentType = (contentType: SharedContentType): string => {
+  switch (contentType) {
+    case 'report': return 'el informe';
+    case 'proposal': return 'la propuesta';
+    case 'invoice': return 'la factura';
+    case 'contract': return 'el contrato';
+    default: return 'el contenido';
   }
 };

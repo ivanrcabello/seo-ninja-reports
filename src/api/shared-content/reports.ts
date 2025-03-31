@@ -28,37 +28,32 @@ export const fetchReportBySharedUrl = async (sharedUrl: string): Promise<SharedR
 };
 
 /**
- * Obtiene un informe por cualquier ID (directo o compartido)
+ * Obtiene un informe por cualquier tipo de ID (directo o compartido)
  */
 export const fetchReportByAnyId = async (reportId: string): Promise<SharedReportResponse> => {
   try {
-    // First try by shared_url
-    const { data: sharedData, error: sharedError } = await supabase
-      .from('shared_content')
-      .select('*')
-      .eq('shared_url', reportId)
-      .eq('content_type', 'report')
-      .single();
+    // Primero intentar como URL compartida
+    let response = await fetchReportBySharedUrl(reportId);
     
-    if (sharedData) {
-      return { data: sharedData as SharedReport, error: null };
+    if (response.data) {
+      return response;
     }
     
-    // If not found, try by original_id
-    const { data: originalData, error: originalError } = await supabase
-      .from('shared_content')
-      .select('*')
-      .eq('original_id', reportId)
-      .eq('content_type', 'report')
-      .single();
+    // Luego intentar como ID directo
+    const { data, error } = await supabase.rpc('get_report_by_id', {
+      report_id_param: reportId
+    });
     
-    if (originalData) {
-      return { data: originalData as SharedReport, error: null };
+    if (error) {
+      return { data: null, error };
     }
     
-    return { data: null, error: originalError || sharedError };
+    return { 
+      data: data ? data as SharedReport : null, 
+      error: null 
+    };
   } catch (error: any) {
-    console.error('Error fetching report by ID:', error);
+    console.error('Error fetching report by any ID:', error);
     return { data: null, error };
   }
 };
@@ -66,34 +61,40 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
 /**
  * Verifica si un informe existe
  */
-export const checkReportExists = async (reportId: string): Promise<boolean> => {
+export const checkReportExists = async (reportId: string): Promise<{ exists: boolean; error: Error | null }> => {
   try {
-    const { data, error } = await supabase.rpc('check_shared_content_exists', {
-      content_id: reportId,
-      content_type: 'report'
+    const { data, error } = await supabase.rpc('check_report_exists', {
+      report_id_param: reportId
     });
     
-    return !!data;
-  } catch (error) {
+    if (error) {
+      return { exists: false, error };
+    }
+    
+    return { exists: !!data, error: null };
+  } catch (error: any) {
     console.error('Error checking report existence:', error);
-    return false;
+    return { exists: false, error };
   }
 };
 
 /**
  * Verifica si un informe está protegido con contraseña
  */
-export const checkReportPassword = async (reportId: string): Promise<boolean> => {
+export const checkReportPassword = async (reportId: string): Promise<{ isProtected: boolean; error: Error | null }> => {
   try {
-    const { data, error } = await supabase.rpc('check_shared_content_password', {
-      content_id: reportId,
-      content_type: 'report'
+    const { data, error } = await supabase.rpc('check_report_password_protection', {
+      report_id_param: reportId
     });
     
-    return !!data;
-  } catch (error) {
+    if (error) {
+      return { isProtected: false, error };
+    }
+    
+    return { isProtected: !!data, error: null };
+  } catch (error: any) {
     console.error('Error checking report password protection:', error);
-    return false;
+    return { isProtected: false, error };
   }
 };
 
@@ -102,15 +103,31 @@ export const checkReportPassword = async (reportId: string): Promise<boolean> =>
  */
 export const verifyReportPassword = async (reportId: string, password: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('verify_shared_content_password', {
-      content_id: reportId,
-      content_type: 'report',
+    const { data, error } = await supabase.rpc('verify_shared_report_password', {
+      report_id_param: reportId,
       password_param: password
     });
     
     return !!data;
   } catch (error) {
     console.error('Error verifying report password:', error);
+    return false;
+  }
+};
+
+/**
+ * Actualiza un informe con contraseña
+ */
+export const updateReportWithPassword = async (reportId: string, password: string | null): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('reports')
+      .update({ password: password })
+      .eq('id', reportId);
+      
+    return !error;
+  } catch (error) {
+    console.error('Error updating report with password:', error);
     return false;
   }
 };
@@ -124,30 +141,4 @@ export const logReportAccess = async (
   eventType: AccessLogType = 'view'
 ): Promise<void> => {
   await logContentAccess('report', reportId, options, eventType);
-};
-
-/**
- * Actualiza un informe compartido con contraseña
- */
-export const updateReportWithPassword = async (
-  reportId: string, 
-  password: string | null
-): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase
-      .from('shared_content')
-      .update({ password })
-      .eq('shared_url', reportId)
-      .eq('content_type', 'report');
-    
-    if (error) {
-      console.error('Error updating report with password:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error updating report with password:', error);
-    return false;
-  }
 };
