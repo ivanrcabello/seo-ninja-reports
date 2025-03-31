@@ -23,6 +23,13 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   onShared,
   proposalData
 }) => {
+  if (!proposalId) {
+    console.error('ShareProposalDialog: proposalId es requerido');
+    return null;
+  }
+
+  console.log('ShareProposalDialog - ID:', proposalId);
+  
   return (
     <ShareContentDialog
       open={open}

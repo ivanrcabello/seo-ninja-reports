@@ -23,6 +23,13 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
   onShared,
   invoiceData
 }) => {
+  if (!invoiceId) {
+    console.error('ShareInvoiceDialog: invoiceId es requerido');
+    return null;
+  }
+
+  console.log('ShareInvoiceDialog - ID:', invoiceId);
+  
   return (
     <ShareContentDialog
       open={open}

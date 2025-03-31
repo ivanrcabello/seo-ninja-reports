@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -49,6 +49,19 @@ const ShareContentDialog: React.FC<ShareContentDialogProps> = ({
   const [isShared, setIsShared] = useState(false);
   const [sharedUrl, setSharedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Limpiar el estado cuando se abre/cierra el diálogo
+  useEffect(() => {
+    if (!open) {
+      // Si el diálogo se cierra, resetear estados sólo si no se ha compartido
+      if (!isShared) {
+        setIsPasswordProtected(false);
+        setPassword('');
+        setError(null);
+      }
+    }
+  }, [open, isShared]);
 
   // Obtener el título adecuado según el tipo de contenido
   const getContentTypeTitle = (): string => {
@@ -61,56 +74,85 @@ const ShareContentDialog: React.FC<ShareContentDialogProps> = ({
     }
   };
 
-  const shareItem = async () => {
-    if (!contentId) {
-      toast.error('ID no especificado');
-      return;
+  const validateContentId = (): boolean => {
+    if (!contentId || typeof contentId !== 'string' || contentId.trim() === '') {
+      setError(`Error: ID de ${getContentTypeTitle().toLowerCase()} no válido`);
+      toast.error(`Error: ID de ${getContentTypeTitle().toLowerCase()} no válido`);
+      return false;
     }
+    return true;
+  };
+
+  const shareItem = async () => {
+    // Validar primero que el contentId sea válido
+    if (!validateContentId()) return;
     
     try {
       setIsSharing(true);
+      setError(null);
+      
+      console.log(`Compartiendo ${contentType} con ID: ${contentId}`);
       
       // Crear UUID para la URL compartida
       const sharedUrlId = uuid();
       
+      // Preparar datos para insertar
+      const insertData = {
+        original_id: contentId,
+        content_type: contentType,
+        title: contentTitle || `${getContentTypeTitle()} sin título`,
+        description: contentData?.description || '',
+        content: contentData || {},
+        status: contentStatus,
+        shared_url: sharedUrlId,
+        password: isPasswordProtected ? password : null,
+        client_name: clientName || '',
+        client_website: clientWebsite || ''
+      };
+
+      console.log('Datos a insertar:', insertData);
+      
       // Insertar en shared_content
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('shared_content')
-        .insert({
-          original_id: contentId,
-          content_type: contentType,
-          title: contentTitle,
-          description: contentData?.description || '',
-          content: contentData,
-          status: contentStatus,
-          shared_url: sharedUrlId,
-          password: isPasswordProtected ? password : null,
-          client_name: clientName,
-          client_website: clientWebsite
-        });
+        .insert(insertData)
+        .select();
       
       if (error) {
-        throw error;
+        console.error('Error de Supabase al compartir:', error);
+        throw new Error(`Error al compartir: ${error.message}`);
       }
       
-      // Actualizar tabla de informes si es necesario
+      console.log('Respuesta de inserción:', data);
+      
+      // Actualizar tabla específica según el tipo de contenido
       if (contentType === 'report') {
-        await supabase
+        const { error: updateError } = await supabase
           .from('reports')
           .update({ shared_url: sharedUrlId })
           .eq('id', contentId);
+          
+        if (updateError) {
+          console.warn('No se pudo actualizar la tabla de informes:', updateError);
+        }
       }
       
-      // Configurar estados y callback
-      setSharedUrl(`${window.location.origin}/shared/${contentType}s/${sharedUrlId}`);
+      // Construir la URL completa para compartir
+      const fullSharedUrl = `${window.location.origin}/shared/${contentType}s/${sharedUrlId}`;
+      setSharedUrl(fullSharedUrl);
       setIsShared(true);
-      if (onShared) onShared(sharedUrlId);
+      
+      // Llamar al callback si existe
+      if (onShared) {
+        onShared(sharedUrlId);
+      }
       
       toast.success(`${getContentTypeTitle()} compartido exitosamente`);
     } catch (error: any) {
       console.error(`Error al compartir ${contentType}:`, error);
+      setError(error.message || `Error al compartir ${getContentTypeTitle().toLowerCase()}`);
       toast.error(`Error al compartir ${getContentTypeTitle().toLowerCase()}`, {
-        description: error.message
+        description: error.message || "Ocurrió un error inesperado"
       });
     } finally {
       setIsSharing(false);
@@ -119,13 +161,19 @@ const ShareContentDialog: React.FC<ShareContentDialogProps> = ({
 
   const copyToClipboard = () => {
     if (sharedUrl) {
-      navigator.clipboard.writeText(sharedUrl);
-      setCopied(true);
-      toast.success('Enlace copiado al portapapeles');
-      
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
+      navigator.clipboard.writeText(sharedUrl)
+        .then(() => {
+          setCopied(true);
+          toast.success('Enlace copiado al portapapeles');
+          
+          setTimeout(() => {
+            setCopied(false);
+          }, 2000);
+        })
+        .catch((err) => {
+          console.error('Error al copiar:', err);
+          toast.error('No se pudo copiar el enlace');
+        });
     }
   };
 
@@ -138,6 +186,12 @@ const ShareContentDialog: React.FC<ShareContentDialogProps> = ({
             Compartir {getContentTypeTitle().toLowerCase()} "{contentTitle}" con el cliente.
           </DialogDescription>
         </DialogHeader>
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-3 text-sm mb-4">
+            {error}
+          </div>
+        )}
         
         {!isShared ? (
           <>

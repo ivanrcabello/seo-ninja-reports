@@ -25,6 +25,13 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
   contractData,
   onGenerateShareUrl
 }) => {
+  if (!contractId) {
+    console.error('ShareContractDialog: contractId es requerido');
+    return null;
+  }
+
+  console.log('ShareContractDialog - ID:', contractId);
+  
   return (
     <ShareContentDialog
       open={open}

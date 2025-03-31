@@ -36,6 +36,13 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   const effectiveReportTitle = report?.title || reportTitle;
   const reportData = report || { title: reportTitle };
   
+  if (!effectiveReportId) {
+    console.error('ShareReportDialog: reportId es requerido');
+    return null;
+  }
+
+  console.log('ShareReportDialog - ID:', effectiveReportId);
+  
   return (
     <ShareContentDialog
       open={open}
