@@ -1,6 +1,19 @@
 
-// Base utilities
-export * from './utils';
+// Base utilities - importing these specifically to avoid conflicts
+import { 
+  checkContentExists,
+  checkContentPasswordProtection,
+  verifyContentPassword,
+  logContentAccess
+} from './utils';
+
+// Export these utilities directly
+export {
+  checkContentExists,
+  checkContentPasswordProtection,
+  verifyContentPassword,
+  logContentAccess
+};
 
 // Reports - specifically named exports
 export {

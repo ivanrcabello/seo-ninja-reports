@@ -2,6 +2,9 @@
 // Tipos de estado compartidos entre todos los tipos de contenido
 export type SharedContentStatus = "processing" | "completed" | "failed" | "draft" | "sent" | "accepted" | "rejected" | "pending" | "paid" | "signed" | "expired" | "cancelled";
 
+// Tipos de documentos compartidos
+export type SharedDocumentType = "factura" | "contrato" | "presupuesto" | "propuesta" | "informe";
+
 // Interfaz base para todo contenido compartido
 export interface SharedContentBase {
   id: string;
@@ -54,6 +57,18 @@ export interface SharedContract extends SharedContentBase {
   admin_signed: boolean;
   admin_signed_at?: string;
   admin_signature?: string;
+}
+
+// Interfaz para documento compartido (tabla central)
+export interface SharedDocument {
+  id: string;
+  client_id: string;
+  document_type: SharedDocumentType;
+  document_id: string;
+  shared_date: string;
+  is_active: boolean;
+  password?: string;
+  expiration_date?: string;
 }
 
 // Interfaz para la respuesta de verificación de contraseña

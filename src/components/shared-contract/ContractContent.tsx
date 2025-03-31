@@ -45,11 +45,7 @@ const ContractContent: React.FC<ContractContentProps> = ({
   }
 
   // Ensure the contract is treated as PublicContract
-  const adaptedContract: PublicContract = {
-    ...contract,
-    client_signed: contract.client_signed || false,
-    admin_signed: contract.admin_signed || false
-  };
+  const adaptedContract: PublicContract = contract;
 
   return (
     <div className="my-8">
@@ -71,7 +67,7 @@ const ContractContent: React.FC<ContractContentProps> = ({
       {/* Contract Actions for mobile display */}
       <div className="mt-6 md:hidden">
         <ContractActions 
-          contract={contract as SharedContract}
+          contract={adaptedContract as SharedContract}
           onOpenSignDialog={onOpenSignDialog}
           onPrint={onPrint}
         />
