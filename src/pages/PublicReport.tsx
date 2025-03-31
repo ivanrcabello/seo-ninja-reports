@@ -8,6 +8,8 @@ import PublicReportLoading from '@/components/public-reports/PublicReportLoading
 import PublicReportError from '@/components/public-reports/PublicReportError';
 import PublicReportEmpty from '@/components/public-reports/PublicReportEmpty';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs';
+import BackButton from '@/components/navigation/BackButton';
 import { checkContentPasswordProtection, verifyContentPassword } from '@/api/shared-content/utils';
 import { getSharedReport } from '@/services/sharedContentService';
 
@@ -107,9 +109,20 @@ const PublicReport = () => {
     return <PublicReportEmpty />;
   }
 
+  const breadcrumbItems = [
+    { label: 'Inicio', href: '/' },
+    { label: 'Informes Públicos', href: '/shared/reports' },
+    { label: report.title || 'Informe' },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
+        <div className="mb-6">
+          <Breadcrumbs items={breadcrumbItems} />
+          <BackButton />
+        </div>
+        
         <PublicReportHeader 
           title={report.title} 
           clientName={report.client_name}

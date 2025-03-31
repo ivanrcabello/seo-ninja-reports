@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { format, subDays } from 'date-fns';
@@ -12,9 +11,12 @@ import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
 import { useClientProposals } from '@/hooks/useClientProposals';
 import { useClientContracts } from '@/hooks/useClientContracts';
+import { useClientInvoices } from '@/hooks/useClientInvoices';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
-import { FileText, Calendar, User, Loader2, FileSpreadsheet } from 'lucide-react';
+import { FileText, Calendar, User, Loader2, FileSpreadsheet, Receipt, FileCheck } from 'lucide-react';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs';
+import BackButton from '@/components/navigation/BackButton';
 
 const Activity = () => {
   const { user, loading: authLoading } = useAuth();
@@ -22,23 +24,21 @@ const Activity = () => {
   const { clients, isLoading: clientsLoading } = useClients();
   const { proposals, isLoading: proposalsLoading } = useClientProposals();
   const { contracts, isLoading: contractsLoading } = useClientContracts();
+  const { invoices, isLoading: invoicesLoading } = useClientInvoices();
 
-  // Redirect if not logged in
   if (!user && !authLoading) {
     return <Navigate to="/auth" replace />;
   }
 
-  const isLoading = authLoading || reportsLoading || clientsLoading || proposalsLoading || contractsLoading;
+  const isLoading = authLoading || reportsLoading || clientsLoading || 
+                   proposalsLoading || contractsLoading || invoicesLoading;
 
-  // Get recent activities (last 7 days)
   const sevenDaysAgo = subDays(new Date(), 7);
   
-  // Filter recent reports
   const recentReports = reports
     .filter(report => new Date(report.date) >= sevenDaysAgo)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Filter recent clients
   const recentClients = clients
     .filter(client => {
       try {
@@ -57,7 +57,6 @@ const Activity = () => {
       }
     });
   
-  // Filter recent proposals
   const recentProposals = proposals
     .filter(proposal => {
       try {
@@ -76,7 +75,6 @@ const Activity = () => {
       }
     });
 
-  // Filter recent contracts
   const recentContracts = contracts
     .filter(contract => {
       try {
@@ -94,8 +92,25 @@ const Activity = () => {
         return 0;
       }
     });
+
+  const recentInvoices = invoices
+    .filter(invoice => {
+      try {
+        return new Date(invoice.created_at) >= sevenDaysAgo;
+      } catch (error) {
+        console.error("Invalid date in invoice:", invoice.id, invoice.created_at);
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      try {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } catch (error) {
+        console.error("Error sorting invoices by date:", error);
+        return 0;
+      }
+    });
   
-  // Combine and sort all activities
   const activities = [
     ...recentReports.map(report => ({
       type: 'report',
@@ -137,6 +152,18 @@ const Activity = () => {
         console.error("Error creating activity for contract:", contract.id, error);
         return null;
       }
+    }).filter(Boolean),
+    ...recentInvoices.map(invoice => {
+      try {
+        return {
+          type: 'invoice',
+          date: new Date(invoice.created_at),
+          data: invoice
+        };
+      } catch (error) {
+        console.error("Error creating activity for invoice:", invoice.id, error);
+        return null;
+      }
     }).filter(Boolean)
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
@@ -145,17 +172,29 @@ const Activity = () => {
     return client ? client.name : 'Cliente desconocido';
   };
 
+  const breadcrumbItems = [
+    { label: 'Inicio', href: '/' },
+    { label: 'Panel de Control', href: '/dashboard' },
+    { label: 'Actividad' }
+  ];
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-1 pt-24 pb-16">
         <div className="container px-4 sm:px-6 mx-auto">
-          <AnimatedContainer animation="slide-up" className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2">Actividad Reciente</h1>
-            <p className="text-muted-foreground">
-              Resumen de la actividad de los últimos 7 días
-            </p>
+          <Breadcrumbs items={breadcrumbItems} className="mb-4" />
+          
+          <AnimatedContainer animation="slide-up" className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold mb-2">Actividad Reciente</h1>
+              <p className="text-muted-foreground">
+                Resumen de la actividad de los últimos 7 días
+              </p>
+            </div>
+            
+            <BackButton variant="default" />
           </AnimatedContainer>
           
           {isLoading ? (
@@ -186,7 +225,8 @@ const Activity = () => {
                             activity.type === 'report' ? 'bg-primary/10' : 
                             activity.type === 'client' ? 'bg-green-500/10' :
                             activity.type === 'proposal' ? 'bg-blue-500/10' :
-                            'bg-purple-500/10'
+                            activity.type === 'contract' ? 'bg-purple-500/10' :
+                            'bg-amber-500/10'
                           }`}>
                             {activity.type === 'report' ? (
                               <FileText className="h-5 w-5 text-primary" />
@@ -194,8 +234,10 @@ const Activity = () => {
                               <User className="h-5 w-5 text-green-500" />
                             ) : activity.type === 'proposal' ? (
                               <FileSpreadsheet className="h-5 w-5 text-blue-500" />
+                            ) : activity.type === 'contract' ? (
+                              <FileCheck className="h-5 w-5 text-purple-500" />
                             ) : (
-                              <FileSpreadsheet className="h-5 w-5 text-purple-500" />
+                              <Receipt className="h-5 w-5 text-amber-500" />
                             )}
                           </div>
                           <div className="flex-1">
@@ -216,18 +258,46 @@ const Activity = () => {
                               <Link to={`/clients/${(activity.data as any).client_id}`} className="block mt-1 font-medium hover:text-primary transition-colors">
                                 Nueva propuesta: {(activity.data as any).title || 'Sin título'}
                               </Link>
-                            ) : (
+                            ) : activity.type === 'contract' ? (
                               <Link to={`/clients/${(activity.data as any).client_id}`} className="block mt-1 font-medium hover:text-primary transition-colors">
                                 Nuevo contrato: {(activity.data as any).title || 'Sin título'}
                               </Link>
+                            ) : (
+                              <Link to={`/clients/${(activity.data as any).client_id}`} className="block mt-1 font-medium hover:text-primary transition-colors">
+                                Nueva factura: {(activity.data as any).title || `Factura #${(activity.data as any).id.slice(0, 8)}`}
+                              </Link>
                             )}
-                            {(activity.type === 'report' || activity.type === 'proposal' || activity.type === 'contract') && (
+                            {(activity.type === 'report' || activity.type === 'proposal' || 
+                              activity.type === 'contract' || activity.type === 'invoice') && (
                               <p className="text-sm text-muted-foreground mt-1">
                                 Cliente: {getClientName(
                                   activity.type === 'report' 
                                     ? (activity.data as Report).clientId 
                                     : (activity.data as any).client_id
                                 )}
+                              </p>
+                            )}
+                            
+                            {(activity.type === 'invoice' || activity.type === 'contract') && (
+                              <p className="text-xs mt-1">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                                  (activity.data as any).status === 'paid' || (activity.data as any).status === 'signed' 
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                    : (activity.data as any).status === 'pending' || (activity.data as any).status === 'sent'
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
+                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                                }`}>
+                                  {activity.type === 'invoice' ? (
+                                    (activity.data as any).status === 'paid' ? 'Pagada' :
+                                    (activity.data as any).status === 'pending' ? 'Pendiente' :
+                                    (activity.data as any).status === 'cancelled' ? 'Cancelada' : 'Borrador'
+                                  ) : (
+                                    (activity.data as any).status === 'signed' ? 'Firmado' :
+                                    (activity.data as any).status === 'sent' ? 'Enviado' :
+                                    (activity.data as any).status === 'expired' ? 'Expirado' :
+                                    (activity.data as any).status === 'cancelled' ? 'Cancelado' : 'Borrador'
+                                  )}
+                                </span>
                               </p>
                             )}
                           </div>

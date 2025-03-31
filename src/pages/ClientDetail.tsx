@@ -10,6 +10,8 @@ import useClients from '@/hooks/useClients';
 import useReports from '@/hooks/useReports';
 import Layout from '@/components/layout/Layout';
 import { toast } from 'sonner';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs';
+import BackButton from '@/components/navigation/BackButton';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -112,10 +114,27 @@ const ClientDetail = () => {
     }
   }, [activeTab]);
 
+  // Create breadcrumb items
+  const breadcrumbItems = client ? [
+    { label: 'Inicio', href: '/' },
+    { label: 'Panel de Control', href: '/dashboard' },
+    { label: 'Clientes', href: '/dashboard#clients' },
+    { label: client.name }
+  ] : [];
+
   return (
     <Layout>
       <main className="flex-1 pt-24 pb-16">
         <div className="container px-4 sm:px-6 mx-auto">
+          {!isLoading && client && (
+            <div className="mb-6">
+              <Breadcrumbs items={breadcrumbItems} />
+              <div className="mt-4">
+                <BackButton />
+              </div>
+            </div>
+          )}
+          
           {isLoading ? (
             <ClientLoadingState />
           ) : !client ? (
