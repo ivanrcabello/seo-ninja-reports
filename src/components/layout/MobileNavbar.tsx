@@ -1,8 +1,11 @@
 
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { X, Home, BookOpen, Briefcase, FileText, Phone, LogIn, UserPlus } from 'lucide-react';
+import { 
+  X, Home, BookOpen, Briefcase, FileText, Phone, LogIn, 
+  UserPlus, ChevronDown, ChevronUp, Layout, Package, Newspaper 
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 
@@ -10,8 +13,81 @@ interface MobileNavbarProps {
   closeMenu: () => void;
 }
 
+interface SubmenuProps {
+  title: string;
+  items: {
+    title: string;
+    href: string;
+    icon?: React.ReactNode;
+  }[];
+  closeMenu: () => void;
+}
+
+const Submenu: React.FC<SubmenuProps> = ({ title, items, closeMenu }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  return (
+    <div className="border-b border-border pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full text-left py-2"
+      >
+        <span className="font-medium">{title}</span>
+        {isOpen ? (
+          <ChevronUp className="h-4 w-4" />
+        ) : (
+          <ChevronDown className="h-4 w-4" />
+        )}
+      </button>
+      
+      {isOpen && (
+        <div className="pl-4 mt-2 space-y-2">
+          {items.map((item, i) => (
+            <Link
+              key={i}
+              to={item.href}
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors py-1"
+              onClick={closeMenu}
+            >
+              {item.icon}
+              <span>{item.title}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
   const { user } = useAuth();
+  
+  const serviciosItems = [
+    { title: 'SEO Local', href: '/servicios/seo-local' },
+    { title: 'SEO Técnico', href: '/servicios/seo-tecnico' },
+    { title: 'SEO con IA', href: '/servicios/seo-ia' },
+    { title: 'Contenido SEO', href: '/servicios/contenido-seo' },
+    { title: 'Ver todos', href: '/servicios' }
+  ];
+  
+  const paquetesItems = [
+    { title: 'Pack Starter', href: '/paquetes/starter' },
+    { title: 'Pack Ascenso', href: '/paquetes/ascenso' },
+    { title: 'Pack Master', href: '/paquetes/master' },
+    { title: 'Comparar paquetes', href: '/paquetes' }
+  ];
+  
+  const recursosItems = [
+    { title: 'Blog', href: '/blog' },
+    { title: 'Guías SEO', href: '/guias' },
+    { title: 'Documentación', href: '/documentacion' },
+    { title: 'Características', href: '/caracteristicas' }
+  ];
+  
+  const plataformaItems = [
+    { title: 'Características', href: '/caracteristicas' },
+    { title: 'Planes y precios', href: '/precios' }
+  ];
   
   return (
     <Sheet>
@@ -31,61 +107,39 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
           </SheetTitle>
         </SheetHeader>
         
-        <div className="flex flex-col gap-5">
+        <div className="mb-6">
           <Link 
             to="/" 
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
+            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors py-2"
             onClick={closeMenu}
           >
             <Home className="h-4 w-4" />
             <span>Inicio</span>
           </Link>
-          
-          <Link 
-            to="/servicios" 
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-            onClick={closeMenu}
-          >
-            <Briefcase className="h-4 w-4" />
-            <span>Servicios</span>
-          </Link>
-          
-          <Link 
-            to="/productos" 
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-            onClick={closeMenu}
-          >
-            <BookOpen className="h-4 w-4" />
-            <span>Productos</span>
-          </Link>
-          
-          <Link 
-            to="/recursos" 
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-            onClick={closeMenu}
-          >
-            <FileText className="h-4 w-4" />
-            <span>Recursos</span>
-          </Link>
-          
-          <Link 
-            to="/contacto" 
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-            onClick={closeMenu}
-          >
-            <Phone className="h-4 w-4" />
-            <span>Contacto</span>
-          </Link>
         </div>
         
-        <div className="mt-8 pt-8 border-t border-border">
+        <Submenu title="Servicios" items={serviciosItems} closeMenu={closeMenu} />
+        <Submenu title="Paquetes" items={paquetesItems} closeMenu={closeMenu} />
+        <Submenu title="Recursos" items={recursosItems} closeMenu={closeMenu} />
+        <Submenu title="Plataforma SaaS" items={plataformaItems} closeMenu={closeMenu} />
+        
+        <Link 
+          to="/contacto" 
+          className="flex items-center gap-2 text-foreground hover:text-primary transition-colors py-2 border-b border-border pb-4 mb-4"
+          onClick={closeMenu}
+        >
+          <Phone className="h-4 w-4" />
+          <span>Contacto</span>
+        </Link>
+        
+        <div className="pt-4">
           {user ? (
             <Button asChild className="w-full mb-4" onClick={closeMenu}>
               <Link to="/dashboard">Panel de administración</Link>
             </Button>
           ) : (
             <>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 mb-6">
                 <Link 
                   to="/auth" 
                   className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
@@ -105,7 +159,7 @@ const MobileNavbar: React.FC<MobileNavbarProps> = ({ closeMenu }) => {
                 </Link>
               </div>
               
-              <div className="mt-6 flex flex-col gap-3">
+              <div className="flex flex-col gap-3">
                 <Button asChild variant="outline" className="w-full" onClick={closeMenu}>
                   <Link to="/portal">Área de clientes</Link>
                 </Button>

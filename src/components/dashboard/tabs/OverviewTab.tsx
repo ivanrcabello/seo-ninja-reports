@@ -1,178 +1,205 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { PieChart, BarChart3, ArrowUpRight } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { DashboardMetricCard } from '../DashboardMetricCard';
-import { Client } from '@/types/client.types';
-import { Report } from '@/types/report.types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Clock, FileText, PlusCircle, Users } from 'lucide-react';
+import DashboardMetricCard from '../DashboardMetricCard';
 
-interface OverviewTabProps {
-  clients: Client[];
-  reports: Report[];
-  trackSectionVisibility: (sectionId: string) => void;
-  setActiveTab: (tab: string) => void;
-}
-
-const OverviewTab: React.FC<OverviewTabProps> = ({ 
-  clients, 
-  reports, 
-  trackSectionVisibility,
-  setActiveTab 
-}) => {
-  // Get reports created in the last 7 days
-  const recentReportsCount = reports.filter(
-    r => new Date(r.date) > new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
-  ).length;
-
-  // Get counts by industry for charts
-  const industryCount = clients.reduce((acc, client) => {
-    const industry = client.industry || 'Sin categoría';
-    acc[industry] = (acc[industry] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  // Get activity data - most recent reports
-  const recentActivity = reports
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+const OverviewTab = () => {
+  const quickLinks = [
+    { 
+      title: 'Nuevo cliente', 
+      description: 'Añadir un nuevo cliente a la plataforma', 
+      icon: <Users className="h-5 w-5" />, 
+      href: '/dashboard?action=new-client'
+    },
+    { 
+      title: 'Nuevo informe', 
+      description: 'Crear un nuevo informe SEO', 
+      icon: <FileText className="h-5 w-5" />, 
+      href: '/reports/new'
+    },
+    { 
+      title: 'Actividad reciente', 
+      description: 'Ver la actividad reciente en la plataforma', 
+      icon: <Clock className="h-5 w-5" />, 
+      href: '/activity'
+    },
+    { 
+      title: 'Añadir tarea', 
+      description: 'Crear una nueva tarea para un cliente', 
+      icon: <PlusCircle className="h-5 w-5" />, 
+      href: '/dashboard?action=new-task'
+    }
+  ];
 
   return (
-    <>
-      <AnimatedContainer animation="fade" delay={200} className="mb-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <DashboardMetricCard
-            title="Total Clientes"
-            value={clients.length}
-            description="Clientes activos en tu cuenta"
-            icon={clients.length > 0 ? "+10%" : "0%"}
-            trend={clients.length > 0 ? "+10%" : "0%"}
-            trendDirection="up"
-            linkText="Ver todos los clientes"
-            linkUrl="#clients"
-            onClick={() => {
-              setActiveTab("clients");
-              trackSectionVisibility('clients');
-            }}
-          />
-          <DashboardMetricCard
-            title="Total Informes"
-            value={reports.length}
-            description="Informes SEO generados"
-            icon={reports.length > 0 ? "+15%" : "0%"}
-            trend={reports.length > 0 ? "+15%" : "0%"}
-            trendDirection="up"
-            linkText="Ver todos los informes"
-            linkUrl="/all-reports"
-          />
-          <DashboardMetricCard
-            title="Actividad Reciente"
-            value={recentReportsCount}
-            description="Informes creados en los últimos 7 días"
-            icon={recentReportsCount > 0 ? "+5%" : "0%"}
-            trend={recentReportsCount > 0 ? "+5%" : "0%"}
-            trendDirection="up"
-            linkUrl="/activity"
-            linkText="Ver actividad reciente"
-          />
-        </div>
-      </AnimatedContainer>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
+    <div className="space-y-8">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <DashboardMetricCard 
+          title="Clientes activos" 
+          value="12" 
+          change="+2"
+          trend="up"
+          href="/dashboard#clients"
+        />
+        <DashboardMetricCard 
+          title="Informes generados" 
+          value="48" 
+          change="+8" 
+          trend="up"
+          href="/reports"
+        />
+        <DashboardMetricCard 
+          title="Propuestas pendientes" 
+          value="3" 
+          change="0" 
+          trend="neutral"
+          href="/dashboard?tab=proposals"
+        />
+        <DashboardMetricCard 
+          title="Facturas por cobrar" 
+          value="5" 
+          change="-2" 
+          trend="down"
+          href="/dashboard?tab=invoices"
+        />
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Enlaces rápidos</CardTitle>
+          <CardDescription>
+            Acciones comunes para gestionar su negocio
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {quickLinks.map((link, i) => (
+            <Link
+              key={i}
+              to={link.href}
+              className="group rounded-lg border border-border p-4 transition-all hover:bg-accent"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="rounded-lg bg-muted p-2">{link.icon}</span>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+              </div>
+              <h3 className="font-medium">{link.title}</h3>
+              <p className="text-sm text-muted-foreground">{link.description}</p>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Distribución por Industria</CardTitle>
-              <PieChart className="h-5 w-5 text-muted-foreground" />
-            </div>
+            <CardTitle>Actividad reciente</CardTitle>
             <CardDescription>
-              Distribución de clientes por sector
+              Últimas acciones realizadas en la plataforma
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {Object.keys(industryCount).length > 0 ? (
-              <div className="space-y-4">
-                {Object.entries(industryCount).map(([industry, count]) => (
-                  <div key={industry} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{industry}</span>
-                      <span className="text-sm text-muted-foreground">{count} clientes</span>
-                    </div>
-                    <Progress 
-                      value={(count / clients.length) * 100} 
-                      indicatorClassName={
-                        industry === 'E-commerce' ? 'bg-blue-500' :
-                        industry === 'Educación' ? 'bg-green-500' :
-                        industry === 'Salud' ? 'bg-purple-500' :
-                        industry === 'Tecnología' ? 'bg-amber-500' :
-                        undefined
-                      }
-                    />
-                  </div>
-                ))}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    Informe SEO generado para Clínica Dental Sonrisas
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Hace 2 horas
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-muted-foreground">No hay datos disponibles</p>
+              
+              <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    Nuevo cliente añadido: Restaurante El Rincón
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Hace 5 horas
+                  </p>
+                </div>
               </div>
-            )}
+              
+              <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    Tarea completada: Optimización GBP para Fontanería Rápida
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Hace 1 día
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Button variant="link" size="sm" className="mt-4 w-full" asChild>
+              <Link to="/activity">Ver toda la actividad</Link>
+            </Button>
           </CardContent>
         </Card>
-
-        <Card>
+        
+        <Card className="col-span-3">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Actividad Reciente</CardTitle>
-              <BarChart3 className="h-5 w-5 text-muted-foreground" />
-            </div>
+            <CardTitle>Próximas tareas</CardTitle>
             <CardDescription>
-              Últimos informes creados
+              Tareas pendientes para esta semana
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {recentActivity.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivity.map((report) => {
-                  const client = clients.find(c => c.id === report.clientId);
-                  return (
-                    <div key={report.id} className="flex items-center justify-between pb-4 border-b">
-                      <div>
-                        <p className="font-medium">{report.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {client?.name || 'Cliente desconocido'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm">
-                          {format(new Date(report.date), 'dd MMM yyyy', { locale: es })}
-                        </p>
-                        <Link to={`/reports/${report.id}`} className="text-sm text-primary flex items-center">
-                          Ver <ArrowUpRight className="h-3 w-3 ml-1" />
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+                <input type="checkbox" className="h-4 w-4 rounded border-primary text-primary" />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    Actualizar contenido web para Abogados Unidos SL
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Vence: Mañana
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-muted-foreground">No hay actividad reciente</p>
+              
+              <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+                <input type="checkbox" className="h-4 w-4 rounded border-primary text-primary" />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    Enviar propuesta a Fisioterapia Bienestar
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Vence: En 2 días
+                  </p>
+                </div>
               </div>
-            )}
+              
+              <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+                <input type="checkbox" className="h-4 w-4 rounded border-primary text-primary" />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    Revisar posiciones de keywords para Electricistas 24h
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Vence: En 3 días
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardContent>
-          <CardFooter>
-            <Link to="/activity" className="text-primary text-sm hover:underline">
-              Ver todo el historial de actividad
-            </Link>
-          </CardFooter>
         </Card>
       </div>
-    </>
+    </div>
   );
-}
+};
 
 export default OverviewTab;
