@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -54,7 +55,7 @@ const PackAscenso = () => {
         <PackDetailHeader 
           title="Pack Ascenso"
           description="Para empresas que buscan crecer y consolidar su posicionamiento local"
-          price="399€"
+          price="350€"
           period="/mes"
           isPrimary={true}
         />
@@ -97,7 +98,7 @@ const PackAscenso = () => {
                   </div>
                   
                   <div className="mb-6">
-                    <div className="text-3xl font-bold">399€<span className="text-lg font-normal text-muted-foreground">/mes</span></div>
+                    <div className="text-3xl font-bold">350€<span className="text-lg font-normal text-muted-foreground">/mes</span></div>
                     <p className="text-muted-foreground text-sm">Contrato mínimo de 3 meses</p>
                   </div>
                   

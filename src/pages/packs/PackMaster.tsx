@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -59,7 +60,7 @@ const PackMaster = () => {
         <PackDetailHeader 
           title="Pack Master"
           description="La solución definitiva para dominar las búsquedas locales en su sector"
-          price="799€"
+          price="650€"
           period="/mes"
         />
         
@@ -97,7 +98,7 @@ const PackMaster = () => {
                   </div>
                   
                   <div className="mb-6">
-                    <div className="text-3xl font-bold">799€<span className="text-lg font-normal text-muted-foreground">/mes</span></div>
+                    <div className="text-3xl font-bold">650€<span className="text-lg font-normal text-muted-foreground">/mes</span></div>
                     <p className="text-muted-foreground text-sm">Contrato mínimo de 3 meses</p>
                   </div>
                   
