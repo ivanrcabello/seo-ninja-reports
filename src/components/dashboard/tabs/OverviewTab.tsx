@@ -7,26 +7,14 @@ import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard'
 import { BarChart3, Users, FileText, Activity } from 'lucide-react';
 import useReports from '@/hooks/useReports';
 import useClients from '@/hooks/useClients';
+import { Client as ClientType } from '@/types/client.types';
 
-// Define interfaces for the component props and the data types
-export interface Client {
-  id: string;
-  name: string;
-  status?: 'active' | 'inactive' | 'pending';
-  // Add other client properties as needed
-}
-
-export interface Report {
-  id: string;
-  title: string;
-  // Add other report properties as needed
-}
-
+// Define interfaces for the component props
 export interface OverviewTabProps {
   trackSectionVisibility?: (sectionId: string) => void;
   setActiveTab?: React.Dispatch<React.SetStateAction<string>>;
-  clients?: Client[];
-  reports?: Report[];
+  clients?: ClientType[];
+  reports?: any[];
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setActiveTab, clients: propClients, reports: propReports }) => {
@@ -39,8 +27,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
 
   // Calculate metrics
   const totalClients = clients.length;
-  // Safely check for status property before filtering
-  const activeClients = clients.filter(client => client.status === 'active').length;
+  // Filter by active flag instead of status
+  const activeClients = clients.filter(client => client.active).length;
   const totalReports = reports.length;
 
   return (
