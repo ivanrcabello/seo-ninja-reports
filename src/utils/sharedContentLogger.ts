@@ -1,110 +1,97 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { AccessLogOptions, AccessLogType } from '@/types/shared-content';
 
 /**
- * Log when a shared report is accessed
+ * Logs access to shared reports
  */
 export const logSharedReportAccess = async (
-  reportId: string, 
-  options: {
-    successful: boolean;
-    passwordAttempt?: boolean;
-    error?: string;
-    action?: string;
-    source?: string;
-  },
-  eventType: string = 'access'
-) => {
+  reportId: string,
+  options: AccessLogOptions,
+  eventType: AccessLogType = 'view'
+): Promise<void> => {
   try {
-    // Log to console and localStorage for debugging without database operations
-    console.log('Report access log:', {
-      contentId: reportId,
-      contentType: 'report',
-      eventType: options.action || eventType,
-      isSuccessful: options.successful,
-      isPasswordAttempt: options.passwordAttempt || false,
-      errorMessage: options.error,
-      source: options.source || 'direct_access',
-      userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString()
+    await supabase.rpc('log_shared_content_access', {
+      content_type: 'report',
+      content_id: reportId,
+      access_type: eventType,
+      successful: options.successful,
+      error_message: options.error || null,
+      password_attempt: options.passwordAttempt || false,
+      source: options.source || 'web_client'
     });
-    
-    // Store in localStorage for debugging
-    try {
-      const existingLogs = JSON.parse(localStorage.getItem('report_access_logs') || '[]');
-      existingLogs.push({
-        contentId: reportId,
-        contentType: 'report',
-        eventType: options.action || eventType,
-        isSuccessful: options.successful,
-        isPasswordAttempt: options.passwordAttempt || false,
-        errorMessage: options.error,
-        source: options.source || 'direct_access',
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString()
-      });
-      localStorage.setItem('report_access_logs', JSON.stringify(existingLogs));
-    } catch (storageError) {
-      console.error('Could not save log to localStorage:', storageError);
-    }
-    
-    return { data: true, error: null };
-  } catch (err) {
-    console.error('Exception logging shared report access:', err);
-    return { data: null, error: err };
+  } catch (error) {
+    console.error('Error logging report access:', error);
+    // Non-blocking error - we don't want to disrupt the user experience
+    // if logging fails
   }
 };
 
 /**
- * Log when a shared proposal is accessed
+ * Logs access to shared proposals
  */
 export const logSharedProposalAccess = async (
-  proposalId: string, 
-  options: {
-    successful: boolean;
-    passwordAttempt?: boolean;
-    error?: string;
-    action?: string;
-    source?: string;
-  },
-  eventType: string = 'access'
-) => {
+  proposalId: string,
+  options: AccessLogOptions,
+  eventType: AccessLogType = 'view'
+): Promise<void> => {
   try {
-    // Use the same approach as for report access logging
-    console.log('Proposal access log:', {
-      contentId: proposalId,
-      contentType: 'proposal',
-      eventType: options.action || eventType,
-      isSuccessful: options.successful,
-      isPasswordAttempt: options.passwordAttempt || false,
-      errorMessage: options.error,
-      source: options.source || 'direct_access',
-      userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString()
+    await supabase.rpc('log_shared_content_access', {
+      content_type: 'proposal',
+      content_id: proposalId,
+      access_type: eventType,
+      successful: options.successful,
+      error_message: options.error || null,
+      password_attempt: options.passwordAttempt || false,
+      source: options.source || 'web_client'
     });
-    
-    // Store in localStorage for debugging
-    try {
-      const existingLogs = JSON.parse(localStorage.getItem('proposal_access_logs') || '[]');
-      existingLogs.push({
-        contentId: proposalId,
-        contentType: 'proposal',
-        eventType: options.action || eventType,
-        isSuccessful: options.successful,
-        isPasswordAttempt: options.passwordAttempt || false,
-        errorMessage: options.error,
-        source: options.source || 'direct_access',
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString()
-      });
-      localStorage.setItem('proposal_access_logs', JSON.stringify(existingLogs));
-    } catch (storageError) {
-      console.error('Could not save log to localStorage:', storageError);
-    }
-    
-    return { data: true, error: null };
-  } catch (err) {
-    console.error('Exception logging shared proposal access:', err);
-    return { data: null, error: err };
+  } catch (error) {
+    console.error('Error logging proposal access:', error);
+  }
+};
+
+/**
+ * Logs access to shared invoices
+ */
+export const logSharedInvoiceAccess = async (
+  invoiceId: string,
+  options: AccessLogOptions,
+  eventType: AccessLogType = 'view'
+): Promise<void> => {
+  try {
+    await supabase.rpc('log_shared_content_access', {
+      content_type: 'invoice',
+      content_id: invoiceId,
+      access_type: eventType,
+      successful: options.successful,
+      error_message: options.error || null,
+      password_attempt: options.passwordAttempt || false,
+      source: options.source || 'web_client'
+    });
+  } catch (error) {
+    console.error('Error logging invoice access:', error);
+  }
+};
+
+/**
+ * Logs access to shared contracts
+ */
+export const logSharedContractAccess = async (
+  contractId: string,
+  options: AccessLogOptions,
+  eventType: AccessLogType = 'view'
+): Promise<void> => {
+  try {
+    await supabase.rpc('log_shared_content_access', {
+      content_type: 'contract',
+      content_id: contractId,
+      access_type: eventType,
+      successful: options.successful,
+      error_message: options.error || null,
+      password_attempt: options.passwordAttempt || false,
+      source: options.source || 'web_client'
+    });
+  } catch (error) {
+    console.error('Error logging contract access:', error);
   }
 };

@@ -1,10 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Lock, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 interface PasswordProtectionDialogProps {
   isOpen: boolean;
@@ -16,10 +16,10 @@ interface PasswordProtectionDialogProps {
   onVerify: () => void;
   isVerifying: boolean;
   showError: boolean;
-  errorMessage?: string;
+  errorMessage: string;
 }
 
-const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
+export const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
   isOpen,
   onClose,
   title,
@@ -29,7 +29,7 @@ const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
   onVerify,
   isVerifying,
   showError,
-  errorMessage = 'La contraseña es incorrecta. Por favor, inténtalo de nuevo.'
+  errorMessage
 }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,45 +40,42 @@ const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mx-auto bg-primary/10 p-3 rounded-full mb-4">
-            <Lock className="h-6 w-6 text-primary" />
-          </div>
-          <DialogTitle className="text-center">{title}</DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
             {description}
           </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Ingresa la contraseña"
-              className={showError ? "border-destructive focus-visible:ring-destructive" : ""}
-              autoComplete="off"
-            />
-            {showError && (
-              <p className="text-sm text-destructive">
-                {errorMessage}
-              </p>
-            )}
-          </div>
-          
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isVerifying || !password.trim()}>
-              {isVerifying ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verificando...
-                </>
-              ) : (
-                'Acceder'
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-2 pb-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Introduce la contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoFocus
+              />
+              {showError && (
+                <div className="text-sm flex items-center text-destructive mt-2">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errorMessage}
+                </div>
               )}
-            </Button>
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isVerifying || !password}>
+                {isVerifying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Verificar'
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

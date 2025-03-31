@@ -12,7 +12,7 @@ export const useContractData = (contractId: string) => {
   
   const { 
     contract, 
-    loading, // Changed from isLoading to loading to match the property name in useSharedContractData
+    loading, 
     error, 
     signContract,
     refetch
@@ -44,7 +44,7 @@ export const useContractData = (contractId: string) => {
   
   return {
     contract,
-    loading, // Ensure we're returning the correct property name
+    loading, 
     error,
     isPasswordProtected,
     isPasswordVerified,

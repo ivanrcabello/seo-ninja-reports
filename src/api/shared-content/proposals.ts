@@ -1,37 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { SharedProposal, SharedProposalResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
-import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
-import { logError } from '@/lib/errorLogger';
-import { SharedContentRow } from '@/types/supabase-types';
-
-/**
- * Alias para checkContentExists específico para propuestas
- */
-export const checkProposalExists = async (proposalId: string): Promise<{ exists: boolean; error: Error | null }> => {
-  return checkContentExists(proposalId, 'proposal');
-};
-
-/**
- * Alias para checkContentPasswordProtection específico para propuestas
- */
-export const checkProposalPassword = async (proposalId: string): Promise<{ isProtected: boolean; error: Error | null }> => {
-  return checkContentPasswordProtection(proposalId, 'proposal');
-};
-
-/**
- * Alias para verifyContentPassword específico para propuestas
- */
-export const verifyProposalPassword = async (proposalId: string, password: string): Promise<boolean> => {
-  return verifyContentPassword(proposalId, 'proposal', password);
-};
-
-/**
- * Alias para logContentAccess específico para propuestas
- */
-export const logProposalAccess = (proposalId: string, options: AccessLogOptions, eventType: AccessLogType = 'view') => {
-  return logContentAccess('proposal', proposalId, options, eventType);
-};
+import { logContentAccess } from './utils';
 
 /**
  * Obtiene una propuesta por su URL compartida
@@ -44,57 +14,78 @@ export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<Share
       .eq('shared_url', sharedUrl)
       .eq('content_type', 'proposal')
       .single();
-      
+    
     if (error) {
-      logError('fetchProposalBySharedUrl', error);
-      throw error;
+      console.error('Error fetching proposal by shared URL:', error);
+      return { data: null, error };
     }
     
-    if (!data) {
-      logProposalAccess(sharedUrl, { 
-        successful: false, 
-        error: 'Proposal not found' 
-      }, 'not_found');
-      
-      return { data: null, error: new Error('Proposal not found') };
-    }
-    
-    const rowData = data as SharedContentRow;
-    
-    // Parse content
-    const contentObj = rowData.content || {};
-    
-    // Mapear a la estructura de SharedProposal
-    const proposal: SharedProposal = {
-      id: rowData.id,
-      original_id: rowData.original_id,
-      content_type: 'proposal',
-      title: rowData.title,
-      description: rowData.description || '',
-      content: contentObj,
-      status: rowData.status as any,
-      shared_url: rowData.shared_url,
-      client_name: rowData.client_name,
-      client_website: rowData.client_website,
-      services: contentObj.services || [],
-      price: contentObj.price,
-      created_at: rowData.created_at,
-      updated_at: rowData.updated_at
-    };
-    
-    // Registrar acceso exitoso
-    logProposalAccess(sharedUrl, { successful: true }, 'view');
-    
-    return { data: proposal, error: null };
+    return { data: data as SharedProposal, error: null };
   } catch (error: any) {
-    logError('fetchProposalBySharedUrl', error);
-    
-    // Registrar acceso fallido
-    logProposalAccess(sharedUrl, { 
-      successful: false, 
-      error: error.message || 'Unknown error' 
-    }, 'error');
-    
+    console.error('Error fetching proposal by shared URL:', error);
     return { data: null, error };
   }
+};
+
+/**
+ * Verifica si una propuesta existe
+ */
+export const checkProposalExists = async (proposalId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('check_shared_content_exists', {
+      content_id: proposalId,
+      content_type: 'proposal'
+    });
+    
+    return !!data;
+  } catch (error) {
+    console.error('Error checking proposal existence:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si una propuesta está protegida con contraseña
+ */
+export const checkProposalPassword = async (proposalId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('check_shared_content_password', {
+      content_id: proposalId,
+      content_type: 'proposal'
+    });
+    
+    return !!data;
+  } catch (error) {
+    console.error('Error checking proposal password protection:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica la contraseña de una propuesta
+ */
+export const verifyProposalPassword = async (proposalId: string, password: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('verify_shared_content_password', {
+      content_id: proposalId,
+      content_type: 'proposal',
+      password_param: password
+    });
+    
+    return !!data;
+  } catch (error) {
+    console.error('Error verifying proposal password:', error);
+    return false;
+  }
+};
+
+/**
+ * Registra acceso a una propuesta compartida
+ */
+export const logProposalAccess = async (
+  proposalId: string,
+  options: AccessLogOptions,
+  eventType: AccessLogType = 'view'
+): Promise<void> => {
+  await logContentAccess('proposal', proposalId, options, eventType);
 };
