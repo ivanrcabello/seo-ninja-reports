@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { SharedInvoice } from '@/types/shared-content';
+import { SharedInvoice, SharedInvoiceResponse } from '@/types/shared-content';
 import { 
   fetchInvoiceBySharedUrl, 
   checkInvoiceExists, 
@@ -55,17 +55,17 @@ const useInvoiceData = (sharedUrl: string) => {
       }
 
       // Fetch invoice data
-      const { invoice: invoiceData, error: fetchError } = await fetchInvoiceBySharedUrl(sharedUrl);
+      const response: SharedInvoiceResponse = await fetchInvoiceBySharedUrl(sharedUrl);
       
-      if (fetchError) {
-        throw fetchError;
+      if (response.error) {
+        throw response.error;
       }
       
-      if (!invoiceData) {
+      if (!response.data) {
         throw new Error('No se pudo encontrar la factura solicitada');
       }
       
-      setInvoice(invoiceData);
+      setInvoice(response.data);
       logInvoiceAccess(sharedUrl, { successful: true }, 'view');
       
     } catch (err: any) {

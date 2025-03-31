@@ -156,12 +156,7 @@ const SharedContract: React.FC = () => {
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
       <AnimatedContainer animation="fade">
-        <ContractHeader 
-          title={contract.title} 
-          client={contract.client_name || ''} 
-          canSign={!contract.client_signed}
-          status={contract.status}
-        />
+        <ContractHeader contract={publicContract} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
           <TabsList className="mb-4 w-full grid grid-cols-2">
@@ -181,7 +176,7 @@ const SharedContract: React.FC = () => {
               onPrint={handlePrint}
               loading={false}
               error={null}
-              onSign={() => {}}
+              onSign={handleSign}
               isSignDialogOpen={isSignDialogOpen}
               setIsSignDialogOpen={setIsSignDialogOpen}
             />

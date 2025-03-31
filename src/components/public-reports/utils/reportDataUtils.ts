@@ -1,7 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { SharedReport } from '@/types/shared-content';
+import { SharedReport, SharedContentStatus } from '@/types/shared-content';
 import { logError } from '@/lib/errorLogger';
-import { SharedContentStatus } from "@/types/shared-content";
 
 export interface ReportAccessOptions {
   successful: boolean;
@@ -132,7 +132,7 @@ export const fetchReportBySharedUrl = async (sharedUrl: string): Promise<SharedR
       title: data.title,
       description: data.description || '',
       content: data.content,
-      status: data.status,
+      status: parseStatusFromString(data.status),
       shared_url: data.shared_url,
       password: data.password,
       client_name: data.client_name,

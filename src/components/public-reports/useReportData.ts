@@ -294,3 +294,18 @@ const useReportData = (reportId: string) => {
 };
 
 export default useReportData;
+
+const parseStatusFromString = (status: string): SharedContentStatus => {
+  const validStatuses: SharedContentStatus[] = [
+    "processing", "completed", "failed", "draft", "sent", 
+    "accepted", "rejected", "pending", "paid", "signed", 
+    "expired", "cancelled"
+  ];
+  
+  if (validStatuses.includes(status as SharedContentStatus)) {
+    return status as SharedContentStatus;
+  }
+  
+  // Default fallback
+  return "draft";
+};

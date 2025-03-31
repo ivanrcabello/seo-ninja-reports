@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
-import { SharedContract, SharedContractResponse } from '@/types/shared-content';
-import { fetchContractBySharedUrl, logContractAccess } from '@/api/shared-content/contracts';
+import { SharedContract, SharedContractResponse, ContractSignatureUpdate } from '@/types/shared-content';
+import { fetchContractBySharedUrl, logContractAccess, updateContractWithSignature } from '@/api/shared-content/contracts';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseSharedContractDataResult {
   contract: SharedContract | null;
@@ -69,26 +70,23 @@ export const useSharedContractData = (contractId: string): UseSharedContractData
     if (!contract) return false;
     
     try {
-      // Call the signSharedContract function from API (we'll implement this)
-      const signData = {
+      // Create the signature update data
+      const signData: ContractSignatureUpdate = {
         client_signed: true,
         client_signed_at: new Date().toISOString(),
         client_signature: signature,
-        status: 'signed' as const
+        status: 'signed'
       };
       
-      // Update the contract in the database
-      const { error } = await supabase
-        .from('shared_content')
-        .update(signData)
-        .eq('shared_url', contractId);
-        
-      if (error) throw error;
+      // Update the contract using the API function
+      const success = await updateContractWithSignature(contractId, signData);
+      
+      if (!success) throw new Error('Failed to update contract');
       
       // Log successful signing
       logContractAccess(contractId, { 
         successful: true 
-      }, 'sign');
+      }, 'check');
       
       // Update local contract state
       await loadContract();
@@ -101,7 +99,7 @@ export const useSharedContractData = (contractId: string): UseSharedContractData
       logContractAccess(contractId, { 
         successful: false,
         error: 'Failed to sign contract' 
-      }, 'sign');
+      }, 'check');
       
       return false;
     }
