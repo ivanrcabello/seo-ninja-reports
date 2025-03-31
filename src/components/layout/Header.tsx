@@ -1,98 +1,109 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { Menu } from 'lucide-react';
-import MobileNavbar from './MobileNavbar';
-import DesktopNavbar from './DesktopNavbar';
-import { toast } from 'sonner';
-import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
+import Navbar from './Navbar';
+import { fetchLogoFromSettings } from '@/components/settings/logo/logoService';
 
-const Header = () => {
+const Header: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoLoading, setLogoLoading] = useState<boolean>(true);
+  const isMobile = useIsMobile();
+  const location = useLocation();
   const { user, signOut } = useAuth();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const cachedLogo = localStorage.getItem('app_logo_url');
+    if (cachedLogo) {
+      setLogoUrl(cachedLogo);
+      setLogoLoading(false);
+    }
+    
+    fetchLogo();
   }, []);
 
-  const handleSignOut = async () => {
+  const fetchLogo = async () => {
     try {
-      await signOut();
-      toast.success('Sesión cerrada correctamente');
-      navigate('/');
+      setLogoLoading(true);
+      const logoUrl = await fetchLogoFromSettings();
+      
+      if (logoUrl) {
+        setLogoUrl(logoUrl);
+        localStorage.setItem('app_logo_url', logoUrl);
+      } else {
+        setLogoUrl('/lovable-uploads/a7c0f8be-be1f-47d8-a699-df8d64d1ca21.png');
+      }
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      toast.error('Error al cerrar sesión');
+      console.error('Error fetching logo:', error);
+      setLogoUrl('/lovable-uploads/a7c0f8be-be1f-47d8-a699-df8d64d1ca21.png');
+    } finally {
+      setLogoLoading(false);
     }
   };
 
-  return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-background/80 backdrop-blur shadow-sm' : 'bg-transparent'
-    }`}>
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-700">
-              SoySeoLocal
-            </Link>
-          </div>
+  const isAuthPage = location.pathname === '/auth';
+  if (isAuthPage) return null;
 
-          <DesktopNavbar />
-          
-          <div className="hidden md:flex items-center gap-2">
-            {user ? (
-              <>
-                <Button asChild size="sm">
-                  <Link to="/dashboard">Panel de administración</Link>
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleSignOut}>
-                  Cerrar sesión
-                </Button>
-              </>
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const closeMenu = () => setIsMenuOpen(false);
+
+  return (
+    <header className="fixed top-0 left-0 w-full z-50 bg-background/95 backdrop-blur-sm border-b">
+      <div className="container mx-auto px-4 sm:px-6 py-2">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="flex items-center space-x-2">
+            {logoLoading ? (
+              <div className="h-10 w-40 bg-gray-200 animate-pulse rounded"></div>
+            ) : logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt="SeoLocal" 
+                className="h-10 w-auto object-contain"
+                onError={() => {
+                  console.error('Error loading logo image');
+                  setLogoUrl('/lovable-uploads/a7c0f8be-be1f-47d8-a699-df8d64d1ca21.png');
+                }}
+              />
             ) : (
-              <>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/auth">Iniciar sesión</Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/registro">Registrarse</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/portal">Área de clientes</Link>
-                </Button>
-                <Button asChild size="sm">
-                  <Link to="/auth">Acceso administración</Link>
-                </Button>
-              </>
+              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-emerald-800">
+                SeoLocal.com
+              </span>
             )}
-          </div>
-          
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="md:hidden"
-              >
+          </Link>
+
+          {/* Desktop navigation */}
+          {!isMobile && (
+            <Navbar isMobile={false} />
+          )}
+
+          {/* Mobile menu button */}
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMenu}
+              className="rounded-full md:hidden"
+            >
+              {isMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
                 <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <MobileNavbar
-              closeMenu={() => setIsMobileMenuOpen(false)}
-              handleSignOut={handleSignOut}
-            />
-          </Sheet>
+              )}
+            </Button>
+          )}
         </div>
+
+        {/* Mobile menu dropdown */}
+        {isMobile && isMenuOpen && (
+          <div className="absolute top-full left-0 w-full bg-background p-4 border-b animate-slide-down">
+            <Navbar isMobile={true} closeMenu={closeMenu} />
+          </div>
+        )}
       </div>
     </header>
   );

@@ -18,7 +18,6 @@ const SeverityBadge: React.FC<SeverityBadgeProps> = ({
     | 'destructive'
     | 'outline'
     | 'secondary'
-    | 'success'
     | 'warning';
   
   let label = severity;

@@ -3,6 +3,7 @@ import React from 'react';
 import { LogOut, LayoutDashboard, Newspaper, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/context/AuthContext';
 import MobileNavLink from './MobileNavLink';
 
 // Define the User interface that matches what's used in AuthContext
@@ -16,7 +17,7 @@ interface User {
 interface MobileUserNavProps {
   user: User;
   closeMenu: () => void;
-  handleSignOut: () => Promise<void>;
+  handleSignOut: () => void;
 }
 
 const MobileUserNav: React.FC<MobileUserNavProps> = ({ 
@@ -71,10 +72,7 @@ const MobileUserNav: React.FC<MobileUserNavProps> = ({
         <Button
           variant="ghost"
           className="justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-          onClick={async () => {
-            await handleSignOut();
-            closeMenu();
-          }}
+          onClick={handleSignOut}
         >
           <LogOut className="mr-2 h-4 w-4" />
           Cerrar sesión

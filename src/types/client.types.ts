@@ -1,3 +1,4 @@
+
 export interface Client {
   id: string;
   name: string;
@@ -74,26 +75,4 @@ export interface ClientNote {
   content: string;
   created_at: string;
   updated_at: string;
-}
-
-export interface ClientTask {
-  id: string;
-  client_id: string;
-  title: string;
-  description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'delayed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  due_date?: string;
-  assigned_to?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ClientTaskInput {
-  title: string;
-  description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'delayed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  due_date?: string;
-  assigned_to?: string;
 }

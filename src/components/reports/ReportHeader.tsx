@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Edit2, ExternalLink, Share2, FileText, Download, Calendar, Globe, PenLine, CheckCircle } from 'lucide-react';
@@ -42,8 +43,10 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
   
   const toggleEditMode = () => {
     if (isEditing) {
+      // Remove the query parameter when exiting edit mode
       navigate(`/reports/${reportId}`);
     } else {
+      // Add the query parameter when entering edit mode
       navigate(`/reports/${reportId}?mode=edit`);
     }
     setIsEditing(!isEditing);
@@ -122,6 +125,7 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
     );
   }
   
+  // Simple variant (default)
   return (
     <div className="w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">

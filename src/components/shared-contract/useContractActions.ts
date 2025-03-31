@@ -1,79 +1,120 @@
 
-import { useState } from 'react';
-import { updateContractWithSignature } from '@/api/shared-content';
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { PublicContract } from './types';
 import { toast } from 'sonner';
-import { SharedContentStatus, ContractSignatureUpdate } from '@/types/shared-content';
 
-export const useContractActions = (initialContract: PublicContract | null) => {
-  const [contract, setContract] = useState<PublicContract | null>(initialContract);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  const refreshContract = (newContract: PublicContract) => {
-    setContract(newContract);
-  };
-  
-  const signContract = async (signature: string) => {
-    if (!contract) {
-      setError('No contract loaded');
-      return;
-    }
-    
-    setLoading(true);
-    setError(null);
-    
+export const useContractActions = (
+  id: string | undefined, 
+  contract: PublicContract | null,
+  setContract: React.Dispatch<React.SetStateAction<PublicContract | null>>
+) => {
+  const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
+
+  const handleSignContract = useCallback(async (signature: string) => {
     try {
+      if (!id || !contract) {
+        toast.error('No se puede firmar el contrato: Información faltante');
+        return;
+      }
+      
       const now = new Date().toISOString();
       
-      // Optimistically update the UI
+      // Use the SECURITY DEFINER function to update the contract
+      const { data, error } = await supabase
+        .rpc('update_contract_by_shared_url', {
+          shared_url_param: id,
+          client_signed_param: true,
+          client_signed_at_param: now,
+          client_signature_param: signature,
+          // If the admin already signed, change the status to 'signed'
+          status_param: contract.admin_signed ? 'signed' : null
+        });
+        
+      if (error) {
+        console.error('Error updating contract:', error);
+        throw error;
+      }
+      
+      console.log('Contract updated successfully:', data);
+      
+      // Update the local state
       setContract(prev => {
         if (!prev) return null;
-        
         return {
           ...prev,
-          status: "signed" as SharedContentStatus,
           client_signed: true,
           client_signed_at: now,
-          client_signature: signature
+          client_signature: signature,
+          ...(prev.admin_signed ? { status: 'signed' } : {})
         };
       });
       
-      // Send to API
-      if (contract.shared_url) {
-        const signatureData: ContractSignatureUpdate = {
-          client_signed: true,
-          client_signed_at: now,
-          client_signature: signature
-        };
-        
-        await updateContractWithSignature(contract.shared_url, signatureData);
-        toast.success('Contrato firmado exitosamente');
-      }
-    } catch (err: any) {
-      console.error('Error signing contract:', err);
-      setError(err.message || 'Failed to sign contract');
-      toast.error('Error al firmar el contrato');
-      
-      // Revert optimistic update if there was an error
-      setContract(initialContract);
-    } finally {
-      setLoading(false);
+      setIsSignDialogOpen(false);
+      toast.success('Contrato firmado exitosamente');
+    } catch (error: any) {
+      console.error('Error signing contract:', error);
+      toast.error('Error al firmar el contrato: ' + error.message);
     }
-  };
-  
-  const handlePrint = () => {
-    window.print();
-  };
-  
+  }, [id, contract, setContract]);
+
+  const handlePrint = useCallback(() => {
+    if (!contract) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('El navegador bloqueó la ventana emergente. Por favor, permita ventanas emergentes para imprimir.');
+      return;
+    }
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${contract.title} - Contrato</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; }
+            .signatures { margin-top: 50px; display: flex; justify-content: space-between; }
+            .signature-box { border-top: 1px solid #000; padding-top: 10px; text-align: center; width: 40%; }
+          </style>
+        </head>
+        <body>
+          <h1 style="text-align: center;">${contract.title}</h1>
+          <div>${contract.content}</div>
+          
+          <div class="signatures">
+            <div class="signature-box">
+              ${contract.admin_signature ? `
+                <img src="${contract.admin_signature}" style="max-height: 60px;" />
+                <p>Firma Administrador</p>
+                <p>Fecha: ${contract.admin_signed_at ? new Date(contract.admin_signed_at).toLocaleDateString('es-ES') : 'No firmado'}</p>
+              ` : 'Administrador (Pendiente de firma)'}
+            </div>
+            
+            <div class="signature-box">
+              ${contract.client_signature ? `
+                <img src="${contract.client_signature}" style="max-height: 60px;" />
+                <p>Firma Cliente</p>
+                <p>Fecha: ${contract.client_signed_at ? new Date(contract.client_signed_at).toLocaleDateString('es-ES') : 'No firmado'}</p>
+              ` : 'Cliente (Pendiente de firma)'}
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Imprimir después de que todo el contenido esté cargado
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  }, [contract]);
+
   return {
-    contract,
-    loading,
-    error,
-    signContract,
-    refreshContract,
+    isSignDialogOpen,
+    setIsSignDialogOpen,
+    handleSignContract,
     handlePrint
   };
 };
-
-export default useContractActions;

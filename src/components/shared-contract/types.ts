@@ -1,23 +1,7 @@
 
-import { SharedContentStatus, SharedContract } from '@/types/shared-content';
+import { ClientContract } from '@/types/client.types';
 
-// Type alias for SharedContract to maintain compatibility with PublicContract
-export type PublicContract = {
-  id: string;
-  title: string;
-  content: string;
+export interface PublicContract extends Omit<ClientContract, 'client_id'> {
   client_name?: string;
   client_website?: string;
-  status: SharedContentStatus;
-  created_at: string;
-  updated_at: string;
-  client_signed: boolean;
-  client_signed_at?: string;
-  client_signature?: string;
-  admin_signed: boolean;
-  admin_signed_at?: string;
-  admin_signature?: string;
-  shared_url: string;
-  content_type?: string;
-  original_id?: string;
-};
+}

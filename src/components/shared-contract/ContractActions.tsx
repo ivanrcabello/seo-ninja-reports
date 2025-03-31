@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Printer, Pencil } from 'lucide-react';
+import { Pencil, Download } from 'lucide-react';
 import { PublicContract } from './types';
 
 interface ContractActionsProps {
@@ -10,48 +10,34 @@ interface ContractActionsProps {
   onPrint: () => void;
 }
 
-const ContractActions: React.FC<ContractActionsProps> = ({
-  contract,
-  onOpenSignDialog,
-  onPrint
+const ContractActions: React.FC<ContractActionsProps> = ({ 
+  contract, 
+  onOpenSignDialog, 
+  onPrint 
 }) => {
-  const canSign = !contract.client_signed && 
-    contract.status !== "cancelled" && 
-    contract.status !== "expired";
-
+  if (!contract) return null;
+  
   return (
-    <div className="flex flex-col space-y-2">
-      {canSign && (
+    <div className="w-full flex flex-col sm:flex-row sm:justify-between gap-4">
+      {/* Botón para firmar si el cliente aún no ha firmado */}
+      {!contract.client_signed && contract.status !== 'cancelled' && contract.status !== 'expired' && (
         <Button 
           onClick={onOpenSignDialog}
-          className="flex items-center justify-center gap-2"
+          className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
         >
-          <Pencil className="h-4 w-4" />
-          Firmar contrato
+          <Pencil className="h-4 w-4 mr-2" />
+          Firmar como Cliente
         </Button>
       )}
       
-      <Button 
-        variant="outline"
-        onClick={onPrint}
-        className="flex items-center justify-center gap-2"
-      >
-        <Printer className="h-4 w-4" />
-        Imprimir contrato
-      </Button>
-      
+      {/* Botón para descargar/imprimir siempre visible */}
       <Button 
         variant="outline" 
-        className="flex items-center justify-center gap-2"
-        asChild
+        onClick={onPrint}
+        className="w-full sm:w-auto"
       >
-        <a href="#" onClick={(e) => {
-          e.preventDefault();
-          onPrint();
-        }}>
-          <Download className="h-4 w-4" />
-          Descargar contrato
-        </a>
+        <Download className="h-4 w-4 mr-2" />
+        Imprimir / Guardar PDF
       </Button>
     </div>
   );

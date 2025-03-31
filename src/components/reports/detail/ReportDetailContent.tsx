@@ -50,13 +50,6 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
     );
   }
 
-  console.log("Rendering ReportDetailContent with report:", { 
-    id: report.id, 
-    title: report.title, 
-    status: report.status,
-    hasContent: !!report.content
-  });
-
   return (
     <>
       <AnimatedContainer animation="slide-down" className="mb-6">
@@ -71,18 +64,16 @@ const ReportDetailContent: React.FC<ReportDetailContentProps> = ({
             setIsEditing={setIsEditing}
             reportId={report.id}
           />
-          <ReportDetailActions 
-            onDeleteReport={handleDeleteReport} 
-            reportId={report.id}
-            reportTitle={report.title}
-          />
+          <ReportDetailActions onDeleteReport={handleDeleteReport} />
         </div>
       </AnimatedContainer>
       
       <AnimatedContainer animation="fade" delay={100}>
-        <div className="w-full">
-          <ReportViewer report={report} />
-        </div>
+        {report && (
+          <div className="w-full">
+            <ReportViewer />
+          </div>
+        )}
       </AnimatedContainer>
     </>
   );
