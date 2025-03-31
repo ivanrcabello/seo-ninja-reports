@@ -8,7 +8,6 @@ import {
   checkReportPassword,
   fetchFromPublicReportsView,
   fetchReportWithRpc,
-  fetchReportWithJoin,
   fetchReportOnly,
   verifyReportPassword
 } from '../utils/reportDataUtils';
@@ -87,17 +86,7 @@ const useReportData = (reportId: string) => {
         return;
       }
       
-      // APPROACH 3: Direct join query
-      const { report: joinReport, error: joinError } = await fetchReportWithJoin(reportId);
-      
-      if (!joinError && joinReport) {
-        setReport(joinReport);
-        logSharedReportAccess(reportId, { successful: true }, 'direct_join');
-        setIsLoading(false);
-        return;
-      }
-      
-      // APPROACH 4: Reports table only
+      // APPROACH 3: Direct query fallback
       const { report: reportOnly, error: reportOnlyError } = await fetchReportOnly(reportId);
       
       if (!reportOnlyError && reportOnly) {
