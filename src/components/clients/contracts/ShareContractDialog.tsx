@@ -11,6 +11,7 @@ interface ShareContractDialogProps {
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
   contractData?: any;
+  onGenerateShareUrl?: () => Promise<string>;
 }
 
 const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
@@ -21,7 +22,8 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
   clientName = '',
   clientWebsite = '',
   onShared,
-  contractData
+  contractData,
+  onGenerateShareUrl
 }) => {
   if (!contractId) {
     console.error('ShareContractDialog: contractId es requerido');
@@ -39,6 +41,7 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}
+      onGenerateShareUrl={onGenerateShareUrl}
     />
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ interface SimpleShareDialogProps {
   clientName?: string;
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
+  onGenerateShareUrl?: () => Promise<string>;
 }
 
 const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
@@ -30,7 +30,8 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
   data,
   clientName,
   clientWebsite,
-  onShared
+  onShared,
+  onGenerateShareUrl
 }) => {
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [password, setPassword] = useState('');
@@ -39,7 +40,6 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Obtener el título adecuado según el tipo de contenido
   const getContentTypeTitle = (): string => {
     switch (contentType) {
       case 'report': return 'Informe';
@@ -61,6 +61,20 @@ const SimpleShareDialog: React.FC<SimpleShareDialogProps> = ({
     setError(null);
 
     try {
+      if (onGenerateShareUrl) {
+        console.log('Using custom share URL generator');
+        const generatedUrl = await onGenerateShareUrl();
+        setSharedUrl(generatedUrl);
+        
+        if (onShared) {
+          onShared(generatedUrl);
+        }
+        
+        toast.success(`${getContentTypeTitle()} compartido exitosamente`);
+        setIsSharing(false);
+        return;
+      }
+      
       const result = await shareContent({
         contentId,
         contentType,
