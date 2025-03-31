@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Calendar, CheckCircle, ExternalLink } from 'lucide-react';
+import { FileText, Calendar, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -14,10 +14,11 @@ interface Contract {
   id: string;
   title: string;
   status: string;
+  created_at: string;
   client_signed: boolean;
   client_signed_at?: string;
-  created_at: string;
-  updated_at: string;
+  admin_signed: boolean;
+  admin_signed_at?: string;
   shared_url?: string;
 }
 
@@ -52,31 +53,22 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
 
   const viewContract = (contract: Contract) => {
     if (contract.shared_url) {
+      // Open in a new tab with proper URL structure
       window.open(`/shared/contracts/${contract.shared_url}`, '_blank');
     } else {
       toast.error('Este contrato no tiene un enlace compartido válido');
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'signed':
-      case 'firmado':
-        return <Badge className="bg-green-500">Firmado</Badge>;
-      case 'sent':
-      case 'enviado':
-        return <Badge className="bg-yellow-500">Enviado</Badge>;
-      case 'draft':
-      case 'borrador':
-        return <Badge variant="outline">Borrador</Badge>;
-      case 'expired':
-      case 'expirado':
-        return <Badge className="bg-red-500">Expirado</Badge>;
-      case 'cancelled':
-      case 'cancelado':
-        return <Badge variant="outline" className="bg-slate-500 text-white">Cancelado</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  const getStatusBadge = (contract: Contract) => {
+    if (contract.status === 'signed' || (contract.client_signed && contract.admin_signed)) {
+      return <Badge className="bg-green-500">Firmado</Badge>;
+    } else if (contract.client_signed) {
+      return <Badge className="bg-blue-500">Firmado por cliente</Badge>;
+    } else if (contract.admin_signed) {
+      return <Badge className="bg-yellow-500">Pendiente de firma</Badge>;
+    } else {
+      return <Badge variant="outline">Borrador</Badge>;
     }
   };
 
@@ -84,7 +76,7 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Tus Contratos</h2>
       <p className="text-muted-foreground">
-        Aquí encontrarás todos tus contratos y podrás ver su estado y firmarlos si es necesario.
+        Aquí encontrarás todos tus contratos y podrás revisarlos y firmarlos.
       </p>
       
       <Card>
@@ -98,33 +90,48 @@ const ClientPortalContracts: React.FC<ClientPortalContractsProps> = ({ clientId 
           ) : contracts.length > 0 ? (
             <div className="space-y-4">
               {contracts.map(contract => (
-                <div key={contract.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                <div 
+                  key={contract.id} 
+                  className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  onClick={() => viewContract(contract)}
+                >
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{contract.title}</h3>
-                      {getStatusBadge(contract.status)}
+                      {getStatusBadge(contract)}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       <Calendar className="inline h-3 w-3 mr-1" />
                       {format(new Date(contract.created_at), 'dd/MM/yyyy')}
-                      {contract.client_signed && (
-                        <span className="ml-2 text-green-500 flex items-center text-xs">
-                          <CheckCircle className="inline h-3 w-3 mr-1" />
-                          Firmado el {contract.client_signed_at ? 
-                            format(new Date(contract.client_signed_at), 'dd/MM/yyyy') : 
-                            format(new Date(contract.updated_at), 'dd/MM/yyyy')}
-                        </span>
-                      )}
+                      
+                      <span className="ml-3">
+                        {contract.client_signed ? 
+                          <CheckCircle className="inline h-3 w-3 text-green-500 mr-1" /> : 
+                          <XCircle className="inline h-3 w-3 text-muted-foreground mr-1" />
+                        }
+                        Firma cliente
+                      </span>
+                      
+                      <span className="ml-3">
+                        {contract.admin_signed ? 
+                          <CheckCircle className="inline h-3 w-3 text-green-500 mr-1" /> : 
+                          <XCircle className="inline h-3 w-3 text-muted-foreground mr-1" />
+                        }
+                        Firma empresa
+                      </span>
                     </p>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => viewContract(contract)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      viewContract(contract);
+                    }}
                     disabled={!contract.shared_url}
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    {!contract.client_signed && contract.status.toLowerCase() !== 'cancelled' ? 'Firmar contrato' : 'Ver contrato'}
+                    Ver contrato
                     <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 </div>

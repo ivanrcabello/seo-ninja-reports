@@ -35,7 +35,10 @@ export const useContractData = (sharedUrl: string) => {
       
       if (existsError) {
         console.error('Error checking if contract exists:', existsError);
-      } else if (!exists) {
+        throw existsError;
+      }
+      
+      if (!exists) {
         setError('El contrato no existe');
         setIsLoading(false);
         logContractAccess(sharedUrl, { successful: false, error: 'Contract not found' }, 'check');
@@ -47,15 +50,16 @@ export const useContractData = (sharedUrl: string) => {
       
       if (passwordError) {
         console.error('Error checking contract password:', passwordError);
-      } else {
-        setIsPasswordProtected(isProtected);
-        console.log(`Contract is password protected: ${isProtected}`);
-        
-        // If password protected and access not granted, don't fetch content yet
-        if (isProtected && !accessGranted) {
-          setIsLoading(false);
-          return;
-        }
+        throw passwordError;
+      } 
+      
+      setIsPasswordProtected(isProtected);
+      console.log(`Contract is password protected: ${isProtected}`);
+      
+      // If password protected and access not granted, don't fetch content yet
+      if (isProtected && !accessGranted) {
+        setIsLoading(false);
+        return;
       }
 
       // Fetch contract data
@@ -69,7 +73,7 @@ export const useContractData = (sharedUrl: string) => {
         setError('No se pudo encontrar el contrato solicitado');
         logContractAccess(sharedUrl, { successful: false, error: 'Contract data not found' }, 'data_not_found');
       } else {
-        console.log('Contract data loaded successfully:', contractData);
+        console.log('Contract data loaded successfully');
         setContract(contractData);
         logContractAccess(sharedUrl, { successful: true }, 'view');
         
@@ -99,6 +103,7 @@ export const useContractData = (sharedUrl: string) => {
       
       if (success) {
         setAccessGranted(success);
+        fetchContract();
       }
       
       return success;

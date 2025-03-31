@@ -4,25 +4,54 @@ import { SharedInvoice } from '@/types/shared-content';
 import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
 
 /**
+ * Check if an invoice exists
+ */
+export const checkInvoiceExists = async (invoiceId: string): Promise<{ exists: boolean, error: Error | null }> => {
+  return checkContentExists(invoiceId, 'invoice');
+};
+
+/**
+ * Check if an invoice is password protected
+ */
+export const checkInvoicePassword = async (invoiceId: string): Promise<{ isProtected: boolean, error: Error | null }> => {
+  return checkContentPasswordProtection(invoiceId, 'invoice');
+};
+
+/**
+ * Verify an invoice's password
+ */
+export const verifyInvoicePassword = async (invoiceId: string, password: string): Promise<boolean> => {
+  return verifyContentPassword(invoiceId, 'invoice', password);
+};
+
+/**
+ * Log invoice access
+ */
+export const logInvoiceAccess = (invoiceId: string, options: any, eventType: string = 'access') => {
+  return logContentAccess(invoiceId, 'invoice', options, eventType);
+};
+
+/**
  * Fetch invoice by shared URL
  */
 export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<{ invoice: SharedInvoice | null, error: Error | null }> => {
   try {
     console.log('Fetching invoice with shared URL:', sharedUrl);
     
-    const { data, error } = await supabase.rpc('get_public_invoice_by_shared_url', {
+    const { data, error } = await supabase.rpc('get_invoice_by_shared_url', {
       shared_url_param: sharedUrl
     });
     
     if (error) throw error;
     
     if (!data || (Array.isArray(data) && data.length === 0)) {
-      return { invoice: null, error: null };
+      return { invoice: null, error: new Error('Invoice not found') };
     }
     
     // Handle the case when data is an array
     const invoiceData = Array.isArray(data) ? data[0] : data;
     
+    // Create a properly typed invoice object
     const invoice: SharedInvoice = {
       id: invoiceData.id,
       title: invoiceData.title,
@@ -52,32 +81,4 @@ export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<{ invo
     
     return { invoice: null, error };
   }
-};
-
-/**
- * Log invoice access
- */
-export const logInvoiceAccess = (invoiceId: string, options: any, eventType: string = 'access') => {
-  return logContentAccess(invoiceId, 'invoice', options, eventType);
-};
-
-/**
- * Check if an invoice is password protected
- */
-export const checkInvoicePassword = async (invoiceId: string): Promise<{ isProtected: boolean, error: Error | null }> => {
-  return checkContentPasswordProtection(invoiceId, 'invoice');
-};
-
-/**
- * Verify an invoice's password
- */
-export const verifyInvoicePassword = async (invoiceId: string, password: string): Promise<boolean> => {
-  return verifyContentPassword(invoiceId, 'invoice', password);
-};
-
-/**
- * Check if an invoice exists
- */
-export const checkInvoiceExists = async (invoiceId: string): Promise<{ exists: boolean, error: Error | null }> => {
-  return checkContentExists(invoiceId, 'invoice');
 };

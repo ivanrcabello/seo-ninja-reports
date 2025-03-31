@@ -395,6 +395,13 @@ export type Database = {
             referencedRelation: "client_contracts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "client_portal_contracts_original_contract_id_fkey"
+            columns: ["original_contract_id"]
+            isOneToOne: false
+            referencedRelation: "public_contracts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       client_portal_invoices: {
@@ -2085,6 +2092,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string | null
+          password: string | null
           payment_date: string | null
           payment_instructions: string | null
           payment_method: string | null
@@ -2102,6 +2110,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string | null
+          password: string | null
           price: number | null
           services: string[] | null
           shared_url: string | null
@@ -2147,6 +2156,20 @@ export type Database = {
           p_account_id: string
           p_current_password: string
           p_new_password: string
+        }
+        Returns: boolean
+      }
+      check_content_exists: {
+        Args: {
+          content_id: string
+          content_type: string
+        }
+        Returns: boolean
+      }
+      check_content_password_protected: {
+        Args: {
+          content_id: string
+          content_type: string
         }
         Returns: boolean
       }
@@ -2289,6 +2312,28 @@ export type Database = {
           url: string | null
         }[]
       }
+      get_contract_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          content: string
+          status: string
+          client_signed: boolean
+          client_signed_at: string
+          client_signature: string
+          admin_signed: boolean
+          admin_signed_at: string
+          admin_signature: string
+          shared_url: string
+          created_at: string
+          updated_at: string
+          client_name: string
+          client_website: string
+        }[]
+      }
       get_crawl_headings: {
         Args: {
           crawl_id_param: string
@@ -2303,6 +2348,28 @@ export type Database = {
           heading_position: number
         }[]
       }
+      get_invoice_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          amount: number
+          status: string
+          due_date: string
+          payment_method: string
+          payment_date: string
+          payment_instructions: string
+          shared_url: string
+          password: string
+          created_at: string
+          updated_at: string
+          client_name: string
+          client_website: string
+        }[]
+      }
       get_page_headings: {
         Args: {
           page_id_param: string
@@ -2315,6 +2382,25 @@ export type Database = {
           heading_type: string
           content: string
           heading_position: number
+        }[]
+      }
+      get_proposal_by_shared_url: {
+        Args: {
+          shared_url_param: string
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          services: string[]
+          price: number
+          status: string
+          shared_url: string
+          password: string
+          created_at: string
+          updated_at: string
+          client_name: string
+          client_website: string
         }[]
       }
       get_public_contract_by_shared_url: {
@@ -2457,6 +2543,14 @@ export type Database = {
           email: string
           is_valid: boolean
         }[]
+      }
+      verify_content_password: {
+        Args: {
+          content_id: string
+          content_type: string
+          password_param: string
+        }
+        Returns: boolean
       }
       verify_shared_invoice_password: {
         Args: {

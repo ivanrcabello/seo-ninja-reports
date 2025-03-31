@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Calendar, ExternalLink } from 'lucide-react';
+import { ClipboardList, Calendar, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -14,9 +14,9 @@ interface Proposal {
   id: string;
   title: string;
   description?: string;
+  price?: number;
   status: string;
   created_at: string;
-  price?: number;
   shared_url?: string;
 }
 
@@ -51,6 +51,7 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
 
   const viewProposal = (proposal: Proposal) => {
     if (proposal.shared_url) {
+      // Open in a new tab with proper URL structure
       window.open(`/shared/proposals/${proposal.shared_url}`, '_blank');
     } else {
       toast.error('Esta propuesta no tiene un enlace compartido válido');
@@ -80,7 +81,7 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Tus Propuestas</h2>
       <p className="text-muted-foreground">
-        Aquí encontrarás todas las propuestas de servicios compartidas contigo.
+        Aquí encontrarás todas las propuestas comerciales que hemos preparado para ti.
       </p>
       
       <Card>
@@ -94,22 +95,22 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
           ) : proposals.length > 0 ? (
             <div className="space-y-4">
               {proposals.map(proposal => (
-                <div key={proposal.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                <div 
+                  key={proposal.id} 
+                  className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  onClick={() => viewProposal(proposal)}
+                >
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{proposal.title}</h3>
                       {getStatusBadge(proposal.status)}
                     </div>
-                    {proposal.description && (
-                      <p className="text-sm text-muted-foreground truncate max-w-md">
-                        {proposal.description}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-sm text-muted-foreground">
                       <Calendar className="inline h-3 w-3 mr-1" />
                       {format(new Date(proposal.created_at), 'dd/MM/yyyy')}
+                      
                       {proposal.price && (
-                        <span className="ml-2 font-medium">
+                        <span className="ml-3 font-medium">
                           {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(proposal.price)}
                         </span>
                       )}
@@ -118,10 +119,13 @@ const ClientPortalProposals: React.FC<ClientPortalProposalsProps> = ({ clientId 
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => viewProposal(proposal)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      viewProposal(proposal);
+                    }}
                     disabled={!proposal.shared_url}
                   >
-                    <FileText className="h-4 w-4 mr-2" />
+                    <ClipboardList className="h-4 w-4 mr-2" />
                     Ver propuesta
                     <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>

@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { PublicReport } from '@/types/shared-content';
-import { logContentAccess, checkContentExists, checkContentPasswordProtection, verifyContentPassword } from './utils';
+import { checkContentExists, checkContentPasswordProtection, verifyContentPassword, logContentAccess } from './utils';
 
 /**
  * Check if a report exists
@@ -32,170 +32,146 @@ export const logReportAccess = (reportId: string, options: any, eventType: strin
 };
 
 /**
- * Fetch report from public_reports view
+ * Fetch report from public view using the RPC function
  */
-export const fetchFromPublicReportsView = async (reportId: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+export const fetchFromPublicReportsView = async (sharedUrl: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
   try {
-    console.log('Fetching report from public_reports view:', reportId);
-    
-    const { data, error } = await supabase
-      .from('public_reports')
-      .select('*')
-      .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
-      .maybeSingle();
-    
-    if (error) throw error;
-    
-    if (!data) {
-      return { report: null, error: null };
-    }
-    
-    const publicReport: PublicReport = {
-      id: data.id,
-      title: data.title,
-      summary: data.summary,
-      url: data.url,
-      status: data.status as "processing" | "completed" | "failed",
-      content: data.content,
-      date: data.date,
-      client_name: data.client_name,
-      client_website: data.client_website,
-      shared_url: data.shared_url
-    };
-    
-    return { report: publicReport, error: null };
-  } catch (error: any) {
-    console.error('Error fetching from public_reports view:', error);
-    return { report: null, error: error };
-  }
-};
-
-/**
- * Fetch report using RPC
- */
-export const fetchReportWithRpc = async (reportId: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
-  try {
-    console.log('Fetching report with RPC:', reportId);
-    
-    // Try to fetch by shared URL first
     const { data, error } = await supabase.rpc('get_report_by_shared_url', {
-      shared_url_param: reportId
+      shared_url_param: sharedUrl
     });
     
     if (error) throw error;
     
-    if (!data) {
-      // If not found by shared URL, try to fetch by ID using another function
-      const { data: idData, error: idError } = await supabase.rpc('get_report_by_any_id', {
-        id_param: reportId
-      });
-      
-      if (idError) throw idError;
-      
-      if (!idData) {
-        return { report: null, error: null };
-      }
-      
-      return { 
-        report: {
-          ...idData,
-          status: idData.status as "processing" | "completed" | "failed"
-        } as PublicReport, 
-        error: null 
-      };
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return { report: null, error: new Error('Report not found') };
     }
     
-    return { 
-      report: {
-        ...data,
-        status: data.status as "processing" | "completed" | "failed"
-      } as PublicReport, 
-      error: null 
+    // Handle result being an array
+    const reportData = Array.isArray(data) ? data[0] : data;
+    
+    // Transform to expected format
+    const report: PublicReport = {
+      id: reportData.id,
+      title: reportData.title,
+      summary: reportData.summary,
+      url: reportData.url,
+      status: reportData.status,
+      content: reportData.content,
+      date: reportData.date,
+      shared_url: reportData.shared_url,
+      client_name: reportData.client_name,
+      client_website: reportData.client_website
     };
+    
+    return { report, error: null };
   } catch (error: any) {
-    console.error('Error fetching with RPC:', error);
-    return { report: null, error: error };
+    console.error('Error fetching report from view:', error);
+    return { report: null, error };
   }
 };
 
 /**
- * Fetch report directly from reports table
+ * Fetch report using RPC directly
  */
-export const fetchReportOnly = async (reportId: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+export const fetchReportWithRpc = async (sharedUrl: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
   try {
-    console.log('Fetching report directly:', reportId);
+    const { data, error } = await supabase.rpc('get_report_by_shared_url', {
+      shared_url_param: sharedUrl
+    });
     
-    // Try with direct ID
+    if (error) throw error;
+    
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return { report: null, error: new Error('Report not found') };
+    }
+    
+    // Format report data
+    const reportItem = Array.isArray(data) ? data[0] : data;
+    const report: PublicReport = {
+      id: reportItem.id,
+      title: reportItem.title,
+      summary: reportItem.summary,
+      url: reportItem.url,
+      status: reportItem.status,
+      content: reportItem.content,
+      date: reportItem.date,
+      shared_url: reportItem.shared_url,
+      client_name: reportItem.client_name,
+      client_website: reportItem.client_website
+    };
+    
+    return { report, error: null };
+  } catch (error: any) {
+    console.error('Error fetching report with RPC:', error);
+    return { report: null, error };
+  }
+};
+
+/**
+ * Fetch report by any identifier (shared_url or id)
+ */
+export const fetchReportByAnyId = async (reportId: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+  // Try different fetching methods
+  let result = await fetchFromPublicReportsView(reportId);
+  
+  if (result.report) {
+    logReportAccess(reportId, { successful: true, method: 'public_view' }, 'view');
+    return result;
+  }
+  
+  // Try RPC method
+  result = await fetchReportWithRpc(reportId);
+  
+  if (result.report) {
+    logReportAccess(reportId, { successful: true, method: 'rpc' }, 'view');
+    return result;
+  }
+  
+  // Try direct query as last resort
+  result = await fetchReportOnly(reportId);
+  
+  if (result.report) {
+    logReportAccess(reportId, { successful: true, method: 'direct_query' }, 'view');
+    return result;
+  }
+  
+  logReportAccess(reportId, { successful: false, error: 'Report not found' }, 'error');
+  return { report: null, error: new Error('Report not found') };
+};
+
+/**
+ * Fetch report with direct query
+ */
+export const fetchReportOnly = async (sharedUrl: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+  try {
     const { data, error } = await supabase
-      .from('reports')
-      .select(`
-        id,
-        title,
-        summary,
-        url,
-        status,
-        content,
-        date,
-        shared_url,
-        clients (
-          name,
-          website
-        )
-      `)
-      .or(`id.eq.${reportId},shared_url.eq.${reportId}`)
+      .from('public_reports')
+      .select('*')
+      .eq('shared_url', sharedUrl)
       .maybeSingle();
     
     if (error) throw error;
     
     if (!data) {
-      return { report: null, error: null };
+      return { report: null, error: new Error('Report not found') };
     }
     
-    const publicReport: PublicReport = {
+    const report: PublicReport = {
       id: data.id,
       title: data.title,
       summary: data.summary,
       url: data.url,
-      status: data.status as "processing" | "completed" | "failed",
+      status: data.status,
       content: data.content,
       date: data.date,
-      client_name: data.clients?.name,
-      client_website: data.clients?.website,
-      shared_url: data.shared_url
+      shared_url: data.shared_url,
+      client_name: data.client_name,
+      client_website: data.client_website
     };
     
-    return { report: publicReport, error: null };
+    return { report, error: null };
   } catch (error: any) {
     console.error('Error fetching report directly:', error);
-    return { report: null, error: error };
-  }
-};
-
-/**
- * Main function to fetch report by ID or shared URL
- */
-export const fetchReportByAnyId = async (reportId: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
-  try {
-    // Try each method in sequence
-    const methods = [
-      fetchFromPublicReportsView,
-      fetchReportWithRpc,
-      fetchReportOnly
-    ];
-    
-    for (const method of methods) {
-      const { report, error } = await method(reportId);
-      
-      // If we got a report or a definitive error, return it
-      if (report || (error && error.message !== 'Not found')) {
-        return { report, error };
-      }
-    }
-    
-    // If we get here, all methods failed
-    return { report: null, error: new Error('Report not found') };
-  } catch (error: any) {
-    console.error('Error in fetchReportByAnyId:', error);
     return { report: null, error };
   }
 };

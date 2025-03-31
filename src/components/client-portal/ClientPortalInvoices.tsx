@@ -51,6 +51,7 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
 
   const viewInvoice = (invoice: Invoice) => {
     if (invoice.shared_url) {
+      // Open in a new tab with proper URL structure
       window.open(`/shared/invoices/${invoice.shared_url}`, '_blank');
     } else {
       toast.error('Esta factura no tiene un enlace compartido válido');
@@ -94,7 +95,11 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
           ) : invoices.length > 0 ? (
             <div className="space-y-4">
               {invoices.map(invoice => (
-                <div key={invoice.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                <div 
+                  key={invoice.id} 
+                  className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  onClick={() => viewInvoice(invoice)}
+                >
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{invoice.title}</h3>
@@ -113,7 +118,10 @@ const ClientPortalInvoices: React.FC<ClientPortalInvoicesProps> = ({ clientId })
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => viewInvoice(invoice)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      viewInvoice(invoice);
+                    }}
                     disabled={!invoice.shared_url}
                   >
                     <CreditCard className="h-4 w-4 mr-2" />

@@ -49,7 +49,7 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
   const viewReport = (report: Report) => {
     // Use the shared_url for viewing reports
     if (report.shared_url) {
-      // Open in a new window/tab
+      // Open in a new tab with proper URL structure
       window.open(`/shared/reports/${report.shared_url}`, '_blank');
     } else {
       toast.error('Este informe no tiene un enlace compartido válido');
@@ -74,7 +74,11 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
           ) : reports.length > 0 ? (
             <div className="space-y-4">
               {reports.map(report => (
-                <div key={report.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                <div 
+                  key={report.id} 
+                  className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  onClick={() => viewReport(report)}
+                >
                   <div>
                     <h3 className="font-medium">{report.title}</h3>
                     <p className="text-sm text-muted-foreground">
@@ -85,7 +89,10 @@ const ClientPortalReports: React.FC<ClientPortalReportsProps> = ({ clientId }) =
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => viewReport(report)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      viewReport(report);
+                    }}
                     disabled={!report.shared_url}
                   >
                     <FileText className="h-4 w-4 mr-2" />
