@@ -14,6 +14,7 @@ interface ShareContentDialogProps {
   clientName?: string;
   clientWebsite?: string;
   onShared?: (sharedUrl: string) => void;
+  onGenerateShareUrl?: () => Promise<string>;
 }
 
 // Este componente ahora es solo un wrapper alrededor del nuevo SimpleShareDialog
@@ -27,7 +28,8 @@ const ShareContentDialog: React.FC<ShareContentDialogProps> = ({
   contentData,
   clientName = '',
   clientWebsite = '',
-  onShared
+  onShared,
+  onGenerateShareUrl
 }) => {
   // Advertencia de uso
   console.warn('ShareContentDialog está obsoleto. Use SimpleShareDialog en su lugar.');
@@ -43,6 +45,7 @@ const ShareContentDialog: React.FC<ShareContentDialogProps> = ({
       clientName={clientName}
       clientWebsite={clientWebsite}
       onShared={onShared}
+      onGenerateShareUrl={onGenerateShareUrl}
     />
   );
 };
