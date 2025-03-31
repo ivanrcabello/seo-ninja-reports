@@ -106,9 +106,9 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
         status: status,
         date: publicReportData.date,
         shared_url: publicReportData.shared_url,
-        // Add created_at and updated_at with default values if they don't exist
-        created_at: publicReportData.created_at || new Date().toISOString(),
-        updated_at: publicReportData.updated_at || new Date().toISOString(),
+        // Add default values for created_at and updated_at if they don't exist
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         client_name: publicReportData.client_name,
         client_website: publicReportData.client_website
       };
@@ -147,8 +147,8 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
       status: status,
       date: reportData.date,
       shared_url: reportData.shared_url,
-      created_at: reportData.created_at,
-      updated_at: reportData.updated_at,
+      created_at: reportData.created_at || new Date().toISOString(),
+      updated_at: reportData.updated_at || new Date().toISOString(),
       client_name: reportData.clients?.name,
       client_website: reportData.clients?.website
     };

@@ -1,27 +1,29 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ProposalContent, ProposalHeader } from '@/components/shared-proposal';
-import PasswordProtectionDialog from '@/components/shared/PasswordProtectionDialog';
-import { toast } from 'sonner';
 import { useProposalData } from '@/components/shared-proposal/hooks/useProposalData';
+import { ProposalContent, ProposalHeader } from '@/components/shared-proposal';
+import { PasswordProtectionDialog } from '@/components/shared';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const SharedProposal: React.FC = () => {
-  const { proposalId = '' } = useParams<{ proposalId: string }>();
+  const { proposalId } = useParams<{ proposalId: string }>();
   const [passwordInput, setPasswordInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [showError, setShowError] = useState(false);
   
   const { 
-    proposal,
-    loading, // Note: using loading instead of isLoading
-    error,
-    isPasswordProtected,
-    isPasswordVerified, // Note: using isPasswordVerified instead of accessGranted
+    proposal, 
+    loading, 
+    error, 
+    isPasswordProtected, 
+    isPasswordVerified,
     verifyPassword,
-    handlePrint
-  } = useProposalData(proposalId);
-  
+    handlePrint,
+    refetch
+  } = useProposalData(proposalId || '');
+
   const handleVerifyPassword = async () => {
     if (!passwordInput.trim()) {
       setShowError(true);
@@ -47,8 +49,7 @@ const SharedProposal: React.FC = () => {
       setVerifying(false);
     }
   };
-  
-  // Show password protection dialog
+
   if (isPasswordProtected && !isPasswordVerified) {
     return (
       <PasswordProtectionDialog
@@ -65,26 +66,58 @@ const SharedProposal: React.FC = () => {
       />
     );
   }
-  
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-primary" />
+          <h2 className="text-xl font-medium">Cargando propuesta...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md mx-auto p-6 bg-background border border-border rounded-lg shadow-sm">
+          <h2 className="text-xl font-semibold mb-4 text-red-600 dark:text-red-500">Error</h2>
+          <p className="mb-4 text-muted-foreground">{error}</p>
+          <button 
+            onClick={() => refetch()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!proposal) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md mx-auto p-6 bg-background border border-border rounded-lg shadow-sm">
+          <h2 className="text-xl font-semibold mb-2">Propuesta no encontrada</h2>
+          <p className="text-muted-foreground mb-6">La propuesta que buscas no existe o ha sido eliminada.</p>
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
-      <div className="container mx-auto px-4 py-8 print:py-2 max-w-4xl">
-        <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-0">
-          {proposal ? (
-            <>
-              <ProposalHeader proposal={proposal} />
-              <ProposalContent proposal={proposal} onPrint={handlePrint} />
-            </>
-          ) : loading ? (
-            <div className="flex justify-center items-center p-12">
-              <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
-            </div>
-          ) : (
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-red-500 mb-2">Error</h2>
-              <p className="text-slate-600 dark:text-slate-400">{error || 'No se pudo cargar la propuesta.'}</p>
-            </div>
-          )}
+    <div className="min-h-screen bg-background">
+      <ProposalHeader proposal={proposal} />
+      <div className="container mx-auto py-8">
+        <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+          <ProposalContent proposal={proposal} onPrint={handlePrint} />
         </div>
       </div>
     </div>
