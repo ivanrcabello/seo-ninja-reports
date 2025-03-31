@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedInvoice, SharedInvoiceResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { SharedInvoice, SharedInvoiceResponse, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
 import { logContentAccess } from './utils';
 
 /**
@@ -71,13 +71,15 @@ export const fetchInvoiceBySharedUrl = async (sharedUrl: string): Promise<Shared
       return { invoice: null, error: new Error('Invoice not found') };
     }
     
+    const status = data.status as SharedContentStatus;
+    
     // Create a properly typed invoice object
     const invoice: SharedInvoice = {
       id: data.id,
       title: data.title,
       description: data.description,
       amount: data.amount,
-      status: data.status,
+      status: status,
       due_date: data.due_date,
       payment_method: data.payment_method,
       payment_date: data.payment_date,

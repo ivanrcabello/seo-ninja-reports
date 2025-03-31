@@ -1,12 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedContract, SharedContractResponse, ContractSignatureUpdate, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { SharedContract, SharedContractResponse, ContractSignatureUpdate, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
 import { logContentAccess } from './utils';
 
 /**
  * Check if a contract exists
  */
-export const checkContractExists = async (contractId: string): Promise<{ exists: boolean, error: Error | null }> => {
+export const checkContractExists = async (contractId: string): Promise<{ exists: boolean; error: Error | null }> => {
   try {
     const { data, error } = await supabase
       .from('public_contracts')
@@ -47,11 +47,13 @@ export const fetchContractBySharedUrl = async (sharedUrl: string): Promise<Share
       return { contract: null, error: new Error('Contract not found') };
     }
     
+    const status = data.status as SharedContentStatus;
+    
     const contract: SharedContract = {
       id: data.id,
       title: data.title,
       content: data.content,
-      status: data.status,
+      status: status,
       client_signed: data.client_signed,
       client_signed_at: data.client_signed_at,
       client_signature: data.client_signature,
@@ -87,7 +89,7 @@ export const updateContractWithSignature = async (
         client_signed: signatureData.client_signed,
         client_signed_at: signatureData.client_signed_at,
         client_signature: signatureData.client_signature,
-        status: 'signed'
+        status: 'signed' as SharedContentStatus
       })
       .eq('shared_url', contractId);
     

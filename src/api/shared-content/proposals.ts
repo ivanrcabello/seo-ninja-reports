@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedProposal, SharedProposalResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { SharedProposal, SharedProposalResponse, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
 import { logContentAccess } from './utils';
 
 /**
@@ -71,6 +71,8 @@ export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<Share
       return { proposal: null, error: new Error('Proposal not found') };
     }
     
+    const status = data.status as SharedContentStatus;
+    
     // Create a properly typed proposal object
     const proposal: SharedProposal = {
       id: data.id,
@@ -78,7 +80,7 @@ export const fetchProposalBySharedUrl = async (sharedUrl: string): Promise<Share
       description: data.description,
       services: data.services,
       price: data.price,
-      status: data.status,
+      status: status,
       created_at: data.created_at,
       updated_at: data.updated_at,
       shared_url: data.shared_url,

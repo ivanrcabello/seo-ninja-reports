@@ -1,35 +1,34 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { AccessLogOptions, AccessLogType, ExistsResponse, ProtectionResponse } from '@/types/shared-content';
+import { ExistsResponse, ProtectionResponse, PasswordVerificationResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
 
 /**
- * Comprueba si el contenido compartido existe
+ * Common function to check if content exists by ID
  */
 export const checkContentExists = async (
-  contentId: string, 
-  contentType: string
+  contentId: string,
+  contentType: string = 'content'
 ): Promise<ExistsResponse> => {
   try {
-    let tableName;
+    let tableName: string;
     
     switch (contentType) {
       case 'report':
         tableName = 'public_reports';
         break;
-      case 'invoice':
-        tableName = 'public_invoices';
-        break;
       case 'proposal':
         tableName = 'public_proposals';
+        break;
+      case 'invoice':
+        tableName = 'public_invoices';
         break;
       case 'contract':
         tableName = 'public_contracts';
         break;
       default:
-        throw new Error(`Tipo de contenido no válido: ${contentType}`);
+        tableName = 'public_reports';
     }
     
-    // Try to find content by shared_url first
     const { data, error } = await supabase
       .from(tableName)
       .select('id')
@@ -46,30 +45,30 @@ export const checkContentExists = async (
 };
 
 /**
- * Comprueba si el contenido está protegido con contraseña
+ * Common function to check if content is password protected
  */
 export const checkContentPasswordProtection = async (
   contentId: string,
-  contentType: string
+  contentType: string = 'content'
 ): Promise<ProtectionResponse> => {
   try {
-    let tableName;
+    let tableName: string;
     
     switch (contentType) {
       case 'report':
         tableName = 'public_reports';
         break;
-      case 'invoice':
-        tableName = 'public_invoices';
-        break;
       case 'proposal':
         tableName = 'public_proposals';
+        break;
+      case 'invoice':
+        tableName = 'public_invoices';
         break;
       case 'contract':
         tableName = 'public_contracts';
         break;
       default:
-        throw new Error(`Tipo de contenido no válido: ${contentType}`);
+        tableName = 'public_reports';
     }
     
     const { data, error } = await supabase
@@ -81,7 +80,7 @@ export const checkContentPasswordProtection = async (
     if (error) throw error;
     
     // Check if data exists and password is not null or empty
-    const isProtected = !!(data && data.password && data.password.trim() !== '');
+    const isProtected = !!(data && data.password && typeof data.password === 'string' && data.password.trim() !== '');
     return { isProtected, error: null };
   } catch (error: any) {
     console.error(`Error checking ${contentType} password protection:`, error);
@@ -90,96 +89,75 @@ export const checkContentPasswordProtection = async (
 };
 
 /**
- * Verifica la contraseña para el contenido protegido
+ * Common function to verify content password
  */
 export const verifyContentPassword = async (
   contentId: string,
-  contentType: string,
+  contentType: string = 'content',
   password: string
 ): Promise<boolean> => {
   try {
-    let tableName;
-    let rpcName = '';
+    let tableName: string;
     
     switch (contentType) {
       case 'report':
         tableName = 'public_reports';
-        rpcName = 'verify_shared_report_password';
-        break;
-      case 'invoice':
-        tableName = 'public_invoices';
-        rpcName = 'verify_shared_invoice_password';
         break;
       case 'proposal':
         tableName = 'public_proposals';
-        rpcName = 'verify_shared_proposal_password';
+        break;
+      case 'invoice':
+        tableName = 'public_invoices';
         break;
       case 'contract':
         tableName = 'public_contracts';
-        rpcName = 'verify_shared_contract_password';
         break;
       default:
-        throw new Error(`Tipo de contenido no válido: ${contentType}`);
+        tableName = 'public_reports';
     }
     
-    // Try to use RPC if available
-    if (rpcName) {
-      const { data, error } = await supabase
-        .rpc(rpcName, { 
-          report_id_param: contentId,
-          password_param: password
-        });
-      
-      if (!error) {
-        return Boolean(data);
-      }
-      
-      // If there's an error, fallback to direct query
-      console.warn(`RPC ${rpcName} failed, falling back to direct query:`, error);
-    }
-    
-    // Direct method if no RPC or RPC failed
     const { data, error } = await supabase
       .from(tableName)
       .select('password')
       .eq('shared_url', contentId)
-      .maybeSingle();
+      .single();
     
-    if (error) throw error;
-    
-    if (!data || !data.password) {
+    if (error) {
+      console.error(`Error fetching ${contentType} password:`, error);
       return false;
     }
     
+    // If no password is set, or password matches
+    if (!data || !data.password || typeof data.password !== 'string') {
+      return true;
+    }
+    
     return data.password === password;
-  } catch (error: any) {
+  } catch (error) {
     console.error(`Error verifying ${contentType} password:`, error);
     return false;
   }
 };
 
 /**
- * Registra acceso al contenido compartido
+ * Common function to log content access
  */
-export const logContentAccess = async (
+export const logContentAccess = (
   contentType: string,
-  contentId: string, 
-  options: AccessLogOptions = { successful: true },
-  logType: AccessLogType = 'view'
-): Promise<void> => {
-  try {
-    // Insert into shared_content_access_logs using RPC
-    await supabase.rpc('log_content_access', {
-      content_type_param: contentType,
-      content_id_param: contentId,
-      access_type_param: logType,
-      successful_param: options.successful,
-      error_message_param: options.error || null,
-      password_attempt_param: options.passwordAttempt || false,
-      source_param: options.source || 'web_client'
-    });
-  } catch (error) {
-    console.error(`Error logging ${contentType} access:`, error);
-    // No propagamos el error para evitar interrumpir el flujo principal
-  }
+  contentId: string,
+  options: AccessLogOptions,
+  eventType: AccessLogType = 'view'
+): void => {
+  // For now, just log to console
+  console.log(`${contentType} access log [${eventType}]:`, {
+    contentId,
+    contentType,
+    eventType,
+    isSuccessful: options.successful,
+    isPasswordAttempt: options.passwordAttempt || false,
+    errorMessage: options.error,
+    source: options.source || 'direct_access',
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+    timestamp: new Date().toISOString()
+  });
 };

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { SharedContract, ContractSignatureUpdate, AccessLogOptions, AccessLogType, SharedContentStatus } from '@/types/shared-content';
-import { fetchContractBySharedUrl, updateContractWithSignature, checkContentExists, checkContentPasswordProtection, verifyContentPassword, logContractAccess } from '@/api/shared-content';
+import { fetchContractBySharedUrl, updateContractWithSignature, checkContractExists, checkContractPassword, verifyContractPassword, logContractAccess } from '@/api/shared-content';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -32,7 +32,7 @@ export const useContractData = (contractId?: string) => {
       setError(null);
 
       // Check if contract exists and is password protected
-      const { exists, error: existsError } = await checkContentExists(id, 'contract');
+      const { exists, error: existsError } = await checkContractExists(id);
       
       if (existsError) {
         throw existsError;
@@ -50,14 +50,14 @@ export const useContractData = (contractId?: string) => {
       setIsPasswordVerified(true);
       
       // Fetch contract data
-      const { contract: contractData, error: fetchError } = await fetchContractBySharedUrl(id);
+      const response = await fetchContractBySharedUrl(id);
       
-      if (fetchError) {
-        throw fetchError;
+      if (response.error) {
+        throw response.error;
       }
       
-      if (contractData) {
-        setContract(contractData);
+      if (response.contract) {
+        setContract(response.contract);
         
         // Log successful access
         const logOptions: AccessLogOptions = { successful: true };
@@ -91,7 +91,7 @@ export const useContractData = (contractId?: string) => {
     if (!id) return false;
 
     try {
-      const verified = await verifyContentPassword(id, 'contract', password);
+      const verified = await verifyContractPassword(id, password);
       
       if (verified) {
         setIsPasswordVerified(true);

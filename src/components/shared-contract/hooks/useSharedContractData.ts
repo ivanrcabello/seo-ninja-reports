@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { SharedContract, ContractSignatureUpdate, SharedContractResponse } from '@/types/shared-content';
+import { SharedContract, ContractSignatureUpdate, AccessLogOptions, AccessLogType, SharedContractResponse } from '@/types/shared-content';
 import { 
   fetchContractBySharedUrl, 
   checkContractExists,

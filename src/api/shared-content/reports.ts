@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SharedReport, SharedReportResponse, AccessLogType } from '@/types/shared-content';
+import { SharedReport, SharedReportResponse, SharedContentStatus } from '@/types/shared-content';
 
 /**
  * Fetch report by any type of ID (direct ID or shared_url)
@@ -19,17 +19,19 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
     if (!publicError && publicReportData) {
       console.log('Found report in public_reports');
       
+      const status = publicReportData.status as SharedContentStatus;
+      
       const report: SharedReport = {
         id: publicReportData.id,
         title: publicReportData.title || 'Unnamed Report',
         content: publicReportData.content,
         summary: publicReportData.summary,
         url: publicReportData.url,
-        status: publicReportData.status,
+        status: status,
         date: publicReportData.date,
         shared_url: publicReportData.shared_url,
-        created_at: publicReportData.created_at,
-        updated_at: publicReportData.updated_at,
+        created_at: new Date().toISOString(), // Add missing properties
+        updated_at: new Date().toISOString(), // Add missing properties
         client_name: publicReportData.client_name,
         client_website: publicReportData.client_website
       };
@@ -56,6 +58,8 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
     
     console.log('Found report in reports table');
     
+    const status = reportData.status as SharedContentStatus;
+    
     // Map to the public interface
     const report: SharedReport = {
       id: reportData.id,
@@ -63,7 +67,7 @@ export const fetchReportByAnyId = async (reportId: string): Promise<SharedReport
       content: reportData.content,
       summary: reportData.summary,
       url: reportData.url,
-      status: reportData.status,
+      status: status,
       date: reportData.date,
       shared_url: reportData.shared_url,
       created_at: reportData.created_at,

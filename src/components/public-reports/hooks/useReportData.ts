@@ -3,11 +3,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { SharedReport } from '@/types/shared-content';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  logReportAccess, 
-  checkReportExists, 
-  checkReportPassword, 
-  verifyReportPassword 
-} from '@/api/shared-content/reports';
+  checkReportExists,
+  checkReportPassword,
+  verifyReportPassword,
+  logReportAccess
+} from '@/api/shared-content';
 
 interface PublicReport {
   id: string;
@@ -189,7 +189,7 @@ const useReportData = (reportId: string) => {
           successful: false, 
           error: 'Report not found',
           source: 'not_found'
-        });
+        }, 'not_found');
       }
     } catch (err: any) {
       console.error('Error fetching report:', err);
@@ -208,7 +208,7 @@ const useReportData = (reportId: string) => {
           successful: false, 
           error: err.message || 'Error after retries',
           source: 'error_with_retries'
-        });
+        }, 'error');
       }
     } finally {
       setIsLoading(false);
