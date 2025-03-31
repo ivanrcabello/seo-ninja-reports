@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
 import { BarChart3, Users, FileText, Activity } from 'lucide-react';
-import useReports from '@/hooks/useReports'; // Fixed import
-import useClients from '@/hooks/useClients'; // Fixed import
+import useReports from '@/hooks/useReports';
+import useClients from '@/hooks/useClients';
 
 // Define interfaces for the component props and the data types
 export interface Client {
@@ -39,6 +39,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ trackSectionVisibility, setAc
 
   // Calculate metrics
   const totalClients = clients.length;
+  // Check if each client has a status property before filtering
   const activeClients = clients.filter(client => client.status === 'active').length;
   const totalReports = reports.length;
 
