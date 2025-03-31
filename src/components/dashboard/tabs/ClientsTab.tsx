@@ -7,7 +7,7 @@ import ClientList from '@/components/dashboard/ClientList';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Client } from './OverviewTab';
+import { Client } from '@/types/client.types';
 
 export interface ClientsTabProps {
   clients?: Client[];
