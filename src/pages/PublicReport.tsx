@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PublicReportContent from '@/components/public-reports/PublicReportContent';
 import PublicReportHeader from '@/components/public-reports/PublicReportHeader';
@@ -8,6 +8,8 @@ import PublicReportLoading from '@/components/public-reports/PublicReportLoading
 import PublicReportError from '@/components/public-reports/PublicReportError';
 import PublicReportEmpty from '@/components/public-reports/PublicReportEmpty';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
+import { checkContentPasswordProtection, verifyContentPassword } from '@/api/shared-content/utils';
+import { getSharedReport } from '@/services/sharedContentService';
 
 const PublicReport = () => {
   const { id } = useParams<{ id: string }>();
