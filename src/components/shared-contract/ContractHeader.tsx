@@ -4,6 +4,7 @@ import { Clock, FileText, Send, BadgeCheck, Ban } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PublicContract } from './types';
+import { SharedContentStatus } from '@/types/shared-content';
 
 export interface ContractHeaderProps {
   contract: PublicContract | null;
@@ -51,15 +52,15 @@ function getStatusIcon(contract: PublicContract | null) {
   if (!contract) return <FileText className="h-5 w-5" />;
     
   switch (contract.status) {
-    case 'draft':
+    case "draft":
       return <FileText className="h-5 w-5 text-muted-foreground" />;
-    case 'sent':
+    case "sent":
       return <Send className="h-5 w-5 text-blue-500" />;
-    case 'signed':
+    case "signed":
       return <BadgeCheck className="h-5 w-5 text-green-500" />;
-    case 'expired':
+    case "expired":
       return <Clock className="h-5 w-5 text-yellow-500" />;
-    case 'cancelled':
+    case "cancelled":
       return <Ban className="h-5 w-5 text-red-500" />;
     default:
       return <FileText className="h-5 w-5" />;
@@ -70,11 +71,11 @@ function getStatusLabel(contract: PublicContract | null) {
   if (!contract) return 'Desconocido';
     
   switch (contract.status) {
-    case 'draft': return 'Borrador';
-    case 'sent': return 'Enviado';
-    case 'signed': return 'Firmado';
-    case 'expired': return 'Vencido';
-    case 'cancelled': return 'Cancelado';
+    case "draft": return 'Borrador';
+    case "sent": return 'Enviado';
+    case "signed": return 'Firmado';
+    case "expired": return 'Vencido';
+    case "cancelled": return 'Cancelado';
     default: return 'Desconocido';
   }
 }
@@ -83,11 +84,11 @@ function getStatusColor(contract: PublicContract | null) {
   if (!contract) return 'bg-muted text-muted-foreground';
     
   switch (contract.status) {
-    case 'draft': return 'bg-muted text-muted-foreground';
-    case 'sent': return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
-    case 'signed': return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
-    case 'expired': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300';
-    case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
+    case "draft": return 'bg-muted text-muted-foreground';
+    case "sent": return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
+    case "signed": return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
+    case "expired": return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300';
+    case "cancelled": return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
     default: return 'bg-muted text-muted-foreground';
   }
 }

@@ -16,5 +16,5 @@ export interface PublicContract {
   admin_signature?: string;
   created_at: string;
   updated_at: string;
-  shared_url: string;  // Changed from optional to required
+  shared_url: string;
 }

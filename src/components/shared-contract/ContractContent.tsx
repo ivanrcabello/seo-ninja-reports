@@ -9,7 +9,7 @@ import { SharedContract } from '@/types/shared-content';
 interface ContractContentProps {
   loading: boolean;
   error: string | null;
-  contract: PublicContract | SharedContract | null;
+  contract: PublicContract | null;
   onOpenSignDialog: () => void;
   onPrint: () => void;
   onSign: (signature: string) => void;
@@ -44,16 +44,23 @@ const ContractContent: React.FC<ContractContentProps> = ({
     );
   }
 
+  // Ensure the contract is treated as PublicContract
+  const adaptedContract: PublicContract = {
+    ...contract,
+    client_signed: contract.client_signed || false,
+    admin_signed: contract.admin_signed || false
+  };
+
   return (
     <div className="my-8">
       {/* Contract document */}
       <div className="bg-white shadow-md rounded-lg p-8 mb-6">
-        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: contract.content }} />
+        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: adaptedContract.content }} />
       </div>
       
       {/* Signature section */}
       <SignatureSection 
-        contract={contract}
+        contract={adaptedContract}
         onOpenSignDialog={onOpenSignDialog}
         onPrint={onPrint}
         onSign={onSign}
@@ -64,7 +71,7 @@ const ContractContent: React.FC<ContractContentProps> = ({
       {/* Contract Actions for mobile display */}
       <div className="mt-6 md:hidden">
         <ContractActions 
-          contract={contract}
+          contract={contract as SharedContract}
           onOpenSignDialog={onOpenSignDialog}
           onPrint={onPrint}
         />

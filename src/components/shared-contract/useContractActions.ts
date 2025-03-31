@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PublicContract } from './types';
+import { SharedContentStatus } from '@/types/shared-content';
 import { toast } from 'sonner';
 
 export const useContractActions = (
@@ -28,7 +29,7 @@ export const useContractActions = (
           client_signed_at_param: now,
           client_signature_param: signature,
           // If the admin already signed, change the status to 'signed'
-          status_param: contract.admin_signed ? 'signed' : null
+          status_param: contract.admin_signed ? "signed" : null
         });
         
       if (error) {
@@ -46,7 +47,7 @@ export const useContractActions = (
           client_signed: true,
           client_signed_at: now,
           client_signature: signature,
-          ...(prev.admin_signed ? { status: 'signed' } : {})
+          ...(prev.admin_signed ? { status: "signed" as SharedContentStatus } : {})
         };
       });
       

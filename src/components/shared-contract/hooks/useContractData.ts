@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { SharedContract } from '@/types/shared-content';
+import { SharedContract, SharedContentStatus } from '@/types/shared-content';
 import { 
   fetchContractBySharedUrl, 
   updateContractWithSignature,
@@ -132,7 +132,7 @@ export const useContractData = (sharedUrl: string) => {
             client_signed: true,
             client_signed_at: new Date().toISOString(),
             client_signature: signature,
-            status: 'signed' as SharedContentStatus
+            status: "signed" as SharedContentStatus
           };
         });
         

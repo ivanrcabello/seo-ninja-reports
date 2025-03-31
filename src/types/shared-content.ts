@@ -1,6 +1,6 @@
 
 // Tipos de estado compartidos entre todos los tipos de contenido
-export type SharedContentStatus = "processing" | "completed" | "failed" | "draft" | "sent" | "accepted" | "rejected" | "pending" | "paid";
+export type SharedContentStatus = "processing" | "completed" | "failed" | "draft" | "sent" | "accepted" | "rejected" | "pending" | "paid" | "signed" | "expired" | "cancelled";
 
 // Interfaz base para todo contenido compartido
 export interface SharedContentBase {
@@ -8,7 +8,7 @@ export interface SharedContentBase {
   title: string;
   shared_url: string;
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
   client_name?: string;
   client_website?: string;
 }
@@ -48,10 +48,10 @@ export interface SharedInvoice extends SharedContentBase {
 export interface SharedContract extends SharedContentBase {
   content: string;
   status: SharedContentStatus;
-  client_signed?: boolean;
+  client_signed: boolean;
   client_signed_at?: string;
   client_signature?: string;
-  admin_signed?: boolean;
+  admin_signed: boolean;
   admin_signed_at?: string;
   admin_signature?: string;
 }

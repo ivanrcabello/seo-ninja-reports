@@ -16,8 +16,8 @@ const ContractActions: React.FC<ContractActionsProps> = ({
   onPrint
 }) => {
   const canSign = !contract.client_signed && 
-    contract.status !== 'cancelled' && 
-    contract.status !== 'expired';
+    contract.status !== "cancelled" && 
+    contract.status !== "expired";
 
   return (
     <div className="flex flex-col space-y-2">

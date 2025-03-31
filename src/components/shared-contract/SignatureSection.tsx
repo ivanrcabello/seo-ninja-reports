@@ -74,7 +74,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({
       
       <div className="w-full flex flex-col sm:flex-row sm:justify-between gap-4">
         {/* Botón para firmar si el cliente aún no ha firmado */}
-        {!contract.client_signed && contract.status !== 'cancelled' && contract.status !== 'expired' && (
+        {!contract.client_signed && contract.status !== "cancelled" && contract.status !== "expired" && (
           <Button 
             onClick={onOpenSignDialog}
             className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"

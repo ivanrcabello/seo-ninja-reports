@@ -92,6 +92,7 @@ const SharedInvoice: React.FC = () => {
     ...invoice,
     // Ensure required fields are present
     created_at: invoice.created_at || new Date().toISOString(),
+    updated_at: invoice.updated_at || new Date().toISOString(),
     status: invoice.status as SharedInvoiceType['status']
   } : null;
   
