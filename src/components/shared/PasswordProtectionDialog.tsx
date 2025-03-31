@@ -1,9 +1,16 @@
 
-import React from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Lock, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Lock, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 interface PasswordProtectionDialogProps {
   isOpen: boolean;
@@ -28,7 +35,7 @@ const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
   onVerify,
   isVerifying,
   showError,
-  errorMessage = 'Contraseña incorrecta. Por favor, inténtalo de nuevo.'
+  errorMessage = "Contraseña incorrecta. Por favor, inténtalo de nuevo."
 }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,43 +44,49 @@ const PasswordProtectionDialog: React.FC<PasswordProtectionDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Lock className="text-primary h-6 w-6" />
-          </div>
-          <DialogTitle className="text-center">{title}</DialogTitle>
-          <DialogDescription className="text-center">{description}</DialogDescription>
+          <DialogTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            {title}
+          </DialogTitle>
+          <DialogDescription>
+            {description}
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Input
-              id="password"
               type="password"
               placeholder="Introduce la contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={showError ? 'border-red-500 focus-visible:ring-red-500' : ''}
               autoFocus
               disabled={isVerifying}
+              className={showError ? 'border-red-500' : ''}
             />
             
             {showError && (
-              <div className="flex items-start gap-2 text-red-500 text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5" />
+              <div className="flex items-center text-red-500 text-sm gap-2">
+                <AlertCircle className="h-4 w-4" />
                 <span>{errorMessage}</span>
               </div>
             )}
           </div>
           
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isVerifying || !password.trim()}
-          >
-            {isVerifying ? 'Verificando...' : 'Acceder al informe'}
-          </Button>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isVerifying || !password.trim()}>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                'Verificar'
+              )}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

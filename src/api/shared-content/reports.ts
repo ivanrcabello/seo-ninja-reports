@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PublicReport } from '@/types/shared-content';
+import { SharedReport } from '@/types/shared-content';
 import { checkContentExists, checkContentPasswordProtection, verifyContentPassword, logContentAccess } from './utils';
 
 /**
@@ -34,7 +34,7 @@ export const logReportAccess = (reportId: string, options: any, eventType: strin
 /**
  * Fetch report from public view using the RPC function
  */
-export const fetchFromPublicReportsView = async (sharedUrl: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+export const fetchFromPublicReportsView = async (sharedUrl: string): Promise<{ report: SharedReport | null, error: Error | null }> => {
   try {
     const { data, error } = await supabase.rpc('get_report_by_shared_url', {
       shared_url_param: sharedUrl
@@ -50,7 +50,7 @@ export const fetchFromPublicReportsView = async (sharedUrl: string): Promise<{ r
     const reportData = Array.isArray(data) ? data[0] : data;
     
     // Transform to expected format
-    const report: PublicReport = {
+    const report: SharedReport = {
       id: reportData.id,
       title: reportData.title,
       summary: reportData.summary,
@@ -73,7 +73,7 @@ export const fetchFromPublicReportsView = async (sharedUrl: string): Promise<{ r
 /**
  * Fetch report using RPC directly
  */
-export const fetchReportWithRpc = async (sharedUrl: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+export const fetchReportWithRpc = async (sharedUrl: string): Promise<{ report: SharedReport | null, error: Error | null }> => {
   try {
     const { data, error } = await supabase.rpc('get_report_by_shared_url', {
       shared_url_param: sharedUrl
@@ -87,7 +87,7 @@ export const fetchReportWithRpc = async (sharedUrl: string): Promise<{ report: P
     
     // Format report data
     const reportItem = Array.isArray(data) ? data[0] : data;
-    const report: PublicReport = {
+    const report: SharedReport = {
       id: reportItem.id,
       title: reportItem.title,
       summary: reportItem.summary,
@@ -110,7 +110,7 @@ export const fetchReportWithRpc = async (sharedUrl: string): Promise<{ report: P
 /**
  * Fetch report by any identifier (shared_url or id)
  */
-export const fetchReportByAnyId = async (reportId: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+export const fetchReportByAnyId = async (reportId: string): Promise<{ report: SharedReport | null, error: Error | null }> => {
   // Try different fetching methods
   let result = await fetchFromPublicReportsView(reportId);
   
@@ -142,7 +142,7 @@ export const fetchReportByAnyId = async (reportId: string): Promise<{ report: Pu
 /**
  * Fetch report with direct query
  */
-export const fetchReportOnly = async (sharedUrl: string): Promise<{ report: PublicReport | null, error: Error | null }> => {
+export const fetchReportOnly = async (sharedUrl: string): Promise<{ report: SharedReport | null, error: Error | null }> => {
   try {
     const { data, error } = await supabase
       .from('public_reports')
@@ -156,7 +156,7 @@ export const fetchReportOnly = async (sharedUrl: string): Promise<{ report: Publ
       return { report: null, error: new Error('Report not found') };
     }
     
-    const report: PublicReport = {
+    const report: SharedReport = {
       id: data.id,
       title: data.title,
       summary: data.summary,

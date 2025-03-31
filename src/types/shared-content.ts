@@ -1,43 +1,37 @@
 
-// Types for shared content (reports, invoices, contracts, etc.)
+// Tipos de estado compartidos entre todos los tipos de contenido
+export type SharedContentStatus = "processing" | "completed" | "failed" | "draft" | "sent" | "accepted" | "rejected" | "pending" | "paid";
 
-// Basic shared report type
-export interface PublicReport {
+// Interfaz base para todo contenido compartido
+export interface SharedContentBase {
   id: string;
   title: string;
+  shared_url: string;
+  created_at?: string;
+  updated_at?: string;
+  client_name?: string;
+  client_website?: string;
+}
+
+// Informe público compartido
+export interface SharedReport extends SharedContentBase {
   summary?: string;
   url?: string;
-  status: "processing" | "completed" | "failed";
+  status: string;
   content?: any;
   date?: string;
-  client_name?: string;
-  client_website?: string;
-  shared_url?: string;
 }
 
-// Extended shared contract type
-export interface SharedContract {
-  id: string;
-  title: string;
-  content: string;
+// Propuesta pública compartida
+export interface SharedProposal extends SharedContentBase {
+  description?: string;
+  services?: string[];
+  price?: number;
   status: string;
-  client_name?: string;
-  client_website?: string;
-  client_signed: boolean;
-  client_signed_at?: string;
-  client_signature?: string;
-  admin_signed: boolean;
-  admin_signed_at?: string;
-  admin_signature?: string;
-  created_at: string;
-  updated_at: string;
-  shared_url?: string;
 }
 
-// Shared invoice type
-export interface SharedInvoice {
-  id: string;
-  title: string;
+// Factura pública compartida
+export interface SharedInvoice extends SharedContentBase {
   description?: string;
   amount: number;
   status: string;
@@ -45,24 +39,41 @@ export interface SharedInvoice {
   payment_method?: string;
   payment_date?: string;
   payment_instructions?: string;
-  client_name?: string;
-  client_website?: string;
-  created_at: string;
-  updated_at: string;
-  shared_url?: string;
 }
 
-// Shared proposal type
-export interface SharedProposal {
-  id: string;
-  title: string;
-  description?: string;
-  services?: string[];
-  price?: number;
+// Contrato público compartido
+export interface SharedContract extends SharedContentBase {
+  content: string;
   status: string;
-  client_name?: string;
-  client_website?: string;
-  created_at: string;
-  updated_at: string;
-  shared_url?: string;
+  client_signed?: boolean;
+  client_signed_at?: string;
+  client_signature?: string;
+  admin_signed?: boolean;
+  admin_signed_at?: string;
+  admin_signature?: string;
+}
+
+// Interfaz para la respuesta de verificación de contraseña
+export interface PasswordVerificationResponse {
+  success: boolean;
+  message?: string;
+}
+
+// Opciones comunes para compartir contenido
+export interface SharedContentOptions {
+  password?: string;
+  expiration_date?: string;
+  can_download?: boolean;
+  notify_on_view?: boolean;
+}
+
+// Interfaz para estadísticas de visualización
+export interface SharedContentStats {
+  views: number;
+  unique_views: number;
+  last_viewed_at?: string;
+  viewer_locations?: {
+    country: string;
+    count: number;
+  }[];
 }

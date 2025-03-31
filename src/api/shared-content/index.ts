@@ -1,49 +1,15 @@
 
-// Main API for shared content (contracts, reports, proposals, invoices)
-export { 
-  // Contract functions
-  checkContractExists,
-  checkContractPassword,
-  verifyContractPassword,
-  fetchContractBySharedUrl,
-  updateContractSignature,
-  logContractAccess
-} from './contracts';
+// Utils
+export * from './utils';
 
-export {
-  // Report functions
-  checkReportExists,
-  checkReportPassword,
-  verifyReportPassword,
-  fetchReportByAnyId,
-  logReportAccess,
-  fetchFromPublicReportsView,
-  fetchReportWithRpc,
-  fetchReportOnly
-} from './reports';
+// Reports
+export * from './reports';
 
-export {
-  // Proposal functions
-  checkProposalExists,
-  checkProposalPassword,
-  verifyProposalPassword,
-  fetchProposalBySharedUrl,
-  logProposalAccess
-} from './proposals';
+// Invoices
+export * from './invoices';
 
-export {
-  // Invoice functions
-  checkInvoiceExists,
-  checkInvoicePassword,
-  verifyInvoicePassword,
-  fetchInvoiceBySharedUrl,
-  logInvoiceAccess
-} from './invoices';
+// Proposals
+export * from './proposals';
 
-// Common utility functions
-export {
-  checkContentExists,
-  checkContentPasswordProtection,
-  verifyContentPassword,
-  logContentAccess
-} from './utils';
+// Contracts
+export * from './contracts';
