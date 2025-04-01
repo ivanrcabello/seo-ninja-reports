@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { Menu, User } from 'lucide-react';
+import { Menu, User, Settings, Newspaper, LogOut } from 'lucide-react';
 import MobileNavbar from './MobileNavbar';
 import DesktopNavbar from './DesktopNavbar';
+import UserDropdown from './UserDropdown';
 
 const Header = () => {
   const { user } = useAuth();
@@ -37,12 +38,7 @@ const Header = () => {
           
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <Button variant="outline" asChild>
-                <Link to="/dashboard">
-                  <User className="h-4 w-4 mr-2" />
-                  Área de admin
-                </Link>
-              </Button>
+              <UserDropdown user={user} />
             ) : (
               <Button variant="outline" asChild>
                 <Link to="/auth">

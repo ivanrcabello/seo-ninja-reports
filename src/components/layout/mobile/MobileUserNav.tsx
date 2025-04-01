@@ -67,21 +67,21 @@ const MobileUserNav: React.FC<MobileUserNavProps> = ({
         </MobileNavLink>
         
         <MobileNavLink 
-          to="/blog-admin" 
-          icon={Newspaper}
-          onClick={closeMenu}
-          variant="outline"
-        >
-          Blog Admin
-        </MobileNavLink>
-        
-        <MobileNavLink 
           to="/settings" 
           icon={Settings}
           onClick={closeMenu}
           variant="outline"
         >
           Configuración
+        </MobileNavLink>
+        
+        <MobileNavLink 
+          to="/admin/blog" 
+          icon={Newspaper}
+          onClick={closeMenu}
+          variant="outline"
+        >
+          Blog Admin
         </MobileNavLink>
         
         <Button
