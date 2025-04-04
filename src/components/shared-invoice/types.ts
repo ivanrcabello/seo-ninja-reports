@@ -20,3 +20,19 @@ export interface SharedInvoice {
   client_name: string;
   client_website?: string;
 }
+
+export interface FiscalSettings {
+  id: number;
+  company_name: string;
+  tax_id: string;
+  address: string;
+  postal_code: string;
+  city: string;
+  province: string;
+  country: string;
+  phone: string;
+  email: string;
+  website: string;
+  created_at: string;
+  updated_at: string;
+}

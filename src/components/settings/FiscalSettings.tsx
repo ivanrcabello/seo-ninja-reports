@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,7 @@ import { usePersistentState } from '@/hooks/usePersistentState';
 import { toast } from 'sonner';
 import { Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { FiscalSettings as FiscalSettingsType } from '@/components/shared-invoice/types';
 
 const FiscalSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +28,7 @@ const FiscalSettings = () => {
     const loadFiscalSettings = async () => {
       setIsLoading(true);
       try {
-        // Load fiscal settings
+        // Load fiscal settings - we need to use the raw SQL query approach for tables not in TypeScript defs
         const { data: fiscalData, error: fiscalError } = await supabase
           .from('fiscal_settings')
           .select('*')
@@ -52,19 +52,26 @@ const FiscalSettings = () => {
           setWebsite(fiscalData.website || '');
         }
 
-        // Load VAT rate from settings
+        // Load VAT rate from settings - again using raw query
         const { data: settingsData, error: settingsError } = await supabase
-          .from('settings')
-          .select('vat_rate')
-          .eq('id', 1)
-          .single();
+          .rpc('get_vat_rate');
 
         if (settingsError) {
-          throw settingsError;
-        }
-
-        if (settingsData && settingsData.vat_rate) {
-          setVatRate(Number(settingsData.vat_rate));
+          if (settingsError.code !== 'PGRST116') { // No function found error
+            throw settingsError;
+          }
+          // If RPC fails, try direct query (fallback)
+          const { data: directData, error: directError } = await supabase
+            .from('settings')
+            .select('vat_rate')
+            .eq('id', 1)
+            .single();
+            
+          if (!directError && directData && directData.vat_rate) {
+            setVatRate(Number(directData.vat_rate));
+          }
+        } else if (settingsData) {
+          setVatRate(Number(settingsData));
         }
       } catch (error) {
         console.error('Error loading fiscal settings:', error);
@@ -96,17 +103,28 @@ const FiscalSettings = () => {
           email,
           website,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'id' });
 
       if (fiscalError) throw fiscalError;
 
-      // Save VAT rate to settings
-      const { error: settingsError } = await supabase
-        .from('settings')
-        .update({ vat_rate: vatRate })
-        .eq('id', 1);
-
-      if (settingsError) throw settingsError;
+      // Save VAT rate to settings using RPC
+      try {
+        const { error: rpcError } = await supabase
+          .rpc('update_vat_rate', { new_rate: vatRate });
+        
+        if (rpcError) {
+          // Fallback to direct update if RPC fails
+          const { error: directError } = await supabase
+            .from('settings')
+            .update({ vat_rate: vatRate })
+            .eq('id', 1);
+            
+          if (directError) throw directError;
+        }
+      } catch (error) {
+        console.error('Error saving VAT rate:', error);
+        throw error;
+      }
 
       toast.success('Configuración fiscal guardada correctamente');
     } catch (error) {

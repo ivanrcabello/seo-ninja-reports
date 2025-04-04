@@ -3,24 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SharedInvoice } from './types';
+import { SharedInvoice, FiscalSettings } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InvoiceContentProps {
   invoice: SharedInvoice;
-}
-
-interface FiscalSettings {
-  company_name: string;
-  tax_id: string;
-  address: string;
-  postal_code: string;
-  city: string;
-  province: string;
-  country: string;
-  phone: string;
-  email: string;
-  website: string;
 }
 
 const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
@@ -37,7 +24,8 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
           
         if (error) throw error;
         
-        setFiscalSettings(data as FiscalSettings);
+        // Type assertion since TypeScript doesn't know about this table
+        setFiscalSettings(data as unknown as FiscalSettings);
       } catch (err) {
         console.error('Error loading fiscal settings:', err);
       }

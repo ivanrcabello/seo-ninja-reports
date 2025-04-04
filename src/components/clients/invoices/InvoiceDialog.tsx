@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -48,9 +47,19 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   useEffect(() => {
     const fetchDefaultVatRate = async () => {
       try {
+        // Try to get VAT rate using RPC first
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('get_vat_rate');
+          
+        if (!rpcError && rpcData) {
+          setVatRate(rpcData.toString());
+          return;
+        }
+        
+        // Fallback to direct query
         const { data, error } = await supabase
           .from('settings')
-          .select('vat_rate')
+          .select('*')
           .eq('id', 1)
           .single();
         
