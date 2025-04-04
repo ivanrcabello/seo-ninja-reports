@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,7 @@ const FiscalSettings = () => {
     const loadFiscalSettings = async () => {
       setIsLoading(true);
       try {
-        // Load fiscal settings - we need to use the raw SQL query approach for tables not in TypeScript defs
+        // Load fiscal settings
         const { data: fiscalData, error: fiscalError } = await supabase
           .from('fiscal_settings')
           .select('*')
@@ -40,25 +41,27 @@ const FiscalSettings = () => {
         }
 
         if (fiscalData) {
-          setCompanyName(fiscalData.company_name || '');
-          setTaxId(fiscalData.tax_id || '');
-          setAddress(fiscalData.address || '');
-          setPostalCode(fiscalData.postal_code || '');
-          setCity(fiscalData.city || '');
-          setProvince(fiscalData.province || '');
-          setCountry(fiscalData.country || 'España');
-          setPhone(fiscalData.phone || '');
-          setEmail(fiscalData.email || '');
-          setWebsite(fiscalData.website || '');
+          // Use type assertion to tell TypeScript this is a FiscalSettingsType
+          const fiscalSettings = fiscalData as unknown as FiscalSettingsType;
+          setCompanyName(fiscalSettings.company_name || '');
+          setTaxId(fiscalSettings.tax_id || '');
+          setAddress(fiscalSettings.address || '');
+          setPostalCode(fiscalSettings.postal_code || '');
+          setCity(fiscalSettings.city || '');
+          setProvince(fiscalSettings.province || '');
+          setCountry(fiscalSettings.country || 'España');
+          setPhone(fiscalSettings.phone || '');
+          setEmail(fiscalSettings.email || '');
+          setWebsite(fiscalSettings.website || '');
         }
 
-        // Load VAT rate from settings - again using raw query
-        const { data: settingsData, error: settingsError } = await supabase
-          .rpc('get_vat_rate');
+        // Load VAT rate using wrapper function
+        const { data: vatRateData, error: vatRateError } = await supabase
+          .rpc('get_vat_rate_wrapper');
 
-        if (settingsError) {
-          if (settingsError.code !== 'PGRST116') { // No function found error
-            throw settingsError;
+        if (vatRateError) {
+          if (vatRateError.code !== 'PGRST116') { // No function found error
+            throw vatRateError;
           }
           // If RPC fails, try direct query (fallback)
           const { data: directData, error: directError } = await supabase
@@ -70,8 +73,8 @@ const FiscalSettings = () => {
           if (!directError && directData && directData.vat_rate) {
             setVatRate(Number(directData.vat_rate));
           }
-        } else if (settingsData) {
-          setVatRate(Number(settingsData));
+        } else if (vatRateData !== null) {
+          setVatRate(Number(vatRateData));
         }
       } catch (error) {
         console.error('Error loading fiscal settings:', error);
@@ -107,10 +110,10 @@ const FiscalSettings = () => {
 
       if (fiscalError) throw fiscalError;
 
-      // Save VAT rate to settings using RPC
+      // Save VAT rate using wrapper function
       try {
         const { error: rpcError } = await supabase
-          .rpc('update_vat_rate', { new_rate: vatRate });
+          .rpc('update_vat_rate_wrapper', { new_rate: vatRate });
         
         if (rpcError) {
           // Fallback to direct update if RPC fails

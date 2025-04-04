@@ -36,3 +36,13 @@ export interface FiscalSettings {
   created_at: string;
   updated_at: string;
 }
+
+// Extend the Database type to include our new functions
+declare module '@supabase/supabase-js' {
+  interface SupabaseClient {
+    rpc<T>(
+      fn: 'get_vat_rate_wrapper' | 'update_vat_rate_wrapper' | string,
+      params?: object
+    ): { data: T | null; error: Error | null };
+  }
+}

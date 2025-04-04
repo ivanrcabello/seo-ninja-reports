@@ -24,7 +24,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
           
         if (error) throw error;
         
-        // Type assertion since TypeScript doesn't know about this table
+        // Type assertion to FiscalSettings
         setFiscalSettings(data as unknown as FiscalSettings);
       } catch (err) {
         console.error('Error loading fiscal settings:', err);
