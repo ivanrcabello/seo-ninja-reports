@@ -7,7 +7,6 @@ import ApiSettings from '@/components/settings/ApiSettings';
 import LogoUpload from '@/components/settings/LogoUpload';
 import SeoSettings from '@/components/settings/SeoSettings';
 import ResetSystem from '@/components/settings/ResetSystem';
-import FiscalSettings from '@/components/settings/FiscalSettings';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2, Info } from 'lucide-react';
@@ -111,7 +110,6 @@ const Settings = () => {
               <Tabs defaultValue="apis" className="space-y-4">
                 <TabsList>
                   <TabsTrigger value="apis">APIs</TabsTrigger>
-                  <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
                   <TabsTrigger value="branding">Marca</TabsTrigger>
                   <TabsTrigger value="seo">SEO</TabsTrigger>
                   <TabsTrigger value="system">Sistema</TabsTrigger>
@@ -124,10 +122,6 @@ const Settings = () => {
                     brightDataPassword={brightDataPassword}
                     setBrightDataPassword={setBrightDataPassword}
                   />
-                </TabsContent>
-                
-                <TabsContent value="fiscal">
-                  <FiscalSettings />
                 </TabsContent>
                 
                 <TabsContent value="branding">

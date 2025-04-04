@@ -3,4 +3,4 @@ export { default as InvoiceContent } from './InvoiceContent';
 export { default as InvoiceHeader } from './InvoiceHeader';
 export { default as InvoiceActions } from './InvoiceActions';
 export * from './types';
-export { useInvoiceData } from './useInvoiceData';
+export { default as useInvoiceData } from './useInvoiceData';

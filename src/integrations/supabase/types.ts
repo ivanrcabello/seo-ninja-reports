@@ -732,54 +732,6 @@ export type Database = {
         }
         Relationships: []
       }
-      fiscal_settings: {
-        Row: {
-          address: string | null
-          city: string | null
-          company_name: string | null
-          country: string | null
-          created_at: string | null
-          email: string | null
-          id: number
-          phone: string | null
-          postal_code: string | null
-          province: string | null
-          tax_id: string | null
-          updated_at: string | null
-          website: string | null
-        }
-        Insert: {
-          address?: string | null
-          city?: string | null
-          company_name?: string | null
-          country?: string | null
-          created_at?: string | null
-          email?: string | null
-          id: number
-          phone?: string | null
-          postal_code?: string | null
-          province?: string | null
-          tax_id?: string | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Update: {
-          address?: string | null
-          city?: string | null
-          company_name?: string | null
-          country?: string | null
-          created_at?: string | null
-          email?: string | null
-          id?: number
-          phone?: string | null
-          postal_code?: string | null
-          province?: string | null
-          tax_id?: string | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
       google_business_listings: {
         Row: {
           address: string | null
@@ -2073,7 +2025,6 @@ export type Database = {
           openai_key: string | null
           updated_at: string
           value_serp_key: string | null
-          vat_rate: number | null
         }
         Insert: {
           created_at?: string
@@ -2085,7 +2036,6 @@ export type Database = {
           openai_key?: string | null
           updated_at?: string
           value_serp_key?: string | null
-          vat_rate?: number | null
         }
         Update: {
           created_at?: string
@@ -2097,7 +2047,6 @@ export type Database = {
           openai_key?: string | null
           updated_at?: string
           value_serp_key?: string | null
-          vat_rate?: number | null
         }
         Relationships: []
       }
@@ -2545,10 +2494,6 @@ export type Database = {
           password: string
         }[]
       }
-      get_vat_rate_wrapper: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
       insert_public_report: {
         Args: {
           report_data: Json
@@ -2639,12 +2584,6 @@ export type Database = {
           status_param?: string
         }
         Returns: boolean
-      }
-      update_vat_rate_wrapper: {
-        Args: {
-          new_rate: number
-        }
-        Returns: undefined
       }
       validate_client_portal_session: {
         Args: {

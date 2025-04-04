@@ -1,3 +1,4 @@
+
 // TypeScript types for SEO crawler functionality
 
 // Crawl settings interface
@@ -118,7 +119,7 @@ export interface CrawlHeading {
   position: number;
   created_at?: string;
   seo_crawler_pages?: { url: string };
-  page_url?: string; 
+  page_url?: string; // Added this property to fix the errors
 }
 
 // Saved crawl settings type

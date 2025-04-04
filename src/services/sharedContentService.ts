@@ -1,216 +1,380 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { SharedContentType, SharedReportResponse, SharedProposalResponse, SharedContractResponse, SharedInvoiceResponse } from '@/types/shared-content';
+import { logSharedContentAccess } from '@/api/shared-content/utils';
 
-/**
- * Check if a shared content exists
- */
-export async function checkSharedContentExists(contentId: string, contentType?: string) {
+export const getSharedReport = async (id: string): Promise<SharedReportResponse> => {
   try {
-    const { data, error } = await supabase
-      .rpc('check_content_exists', { 
-        content_id: contentId,
-        content_type: contentType
-      });
-    
-    if (error) throw error;
-    
-    return { exists: !!data, error: null };
-  } catch (error: any) {
-    console.error('Error checking if content exists:', error);
-    return { exists: false, error: error.message };
-  }
-}
+    // Log access attempt
+    await logSharedContentAccess({
+      contentType: 'report',
+      contentId: id,
+      accessType: 'view'
+    });
 
-/**
- * Check if content is password protected
- */
-export async function checkContentPasswordProtection(contentId: string, contentType?: string) {
-  try {
+    // Fetch the shared report
     const { data, error } = await supabase
-      .rpc('check_content_password_protected', { 
-        content_id: contentId,
-        content_type: contentType
-      });
-    
-    if (error) throw error;
-    
-    return { isProtected: !!data, error: null };
-  } catch (error: any) {
-    console.error('Error checking content password protection:', error);
-    return { isProtected: false, error: error.message };
-  }
-}
+      .from('shared_content')
+      .select('*')
+      .eq('shared_url', id)
+      .eq('content_type', 'report')
+      .single();
 
-/**
- * Verify content password
- */
-export async function verifyContentPassword(contentId: string, contentType: string, password: string) {
-  try {
-    const { data, error } = await supabase
-      .rpc('verify_content_password', { 
-        content_id: contentId,
-        content_type: contentType,
-        password_param: password
-      });
-    
     if (error) throw error;
-    
-    return { verified: !!data, error: null };
-  } catch (error: any) {
-    console.error('Error verifying content password:', error);
-    return { verified: false, error: error.message };
-  }
-}
+    if (!data) throw new Error('Report not found');
 
-/**
- * Log shared content access
- */
-export async function logSharedContentAccess(
-  contentType: string,
-  contentId: string,
-  accessType: string,
-  successful: boolean = true,
-  errorMessage?: string,
-  passwordAttempt: boolean = false,
-  source: string = 'web_client'
-) {
-  try {
-    const { data, error } = await supabase
-      .rpc('log_shared_content_access', { 
-        content_type: contentType,
-        content_id: contentId,
-        access_type: accessType,
-        successful,
-        error_message: errorMessage,
-        password_attempt: passwordAttempt,
-        source
-      });
+    // Check if password protected
+    const isPasswordProtected = data.password ? true : false;
     
-    if (error) throw error;
+    // Process content to ensure it's properly typed
+    const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
     
-    return { success: true, logId: data, error: null };
-  } catch (error: any) {
-    console.error('Error logging shared content access:', error);
-    return { success: false, logId: null, error: error.message };
-  }
-}
-
-/**
- * Get shared contract by URL
- */
-export async function getSharedContract(sharedUrl: string) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_contract_by_shared_url', { 
-        shared_url_param: sharedUrl
-      });
-    
-    if (error) throw error;
-    
-    // Check if data is an array and has at least one item
-    const result = Array.isArray(data) && data.length > 0 ? data[0] : data;
-    
-    return { data: result, error: null };
-  } catch (error: any) {
-    console.error('Error fetching shared contract:', error);
-    return { data: null, error: error.message };
-  }
-}
-
-/**
- * Get shared proposal by URL
- */
-export async function getSharedProposal(sharedUrl: string) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_proposal_by_shared_url', { 
-        shared_url_param: sharedUrl
-      });
-    
-    if (error) throw error;
-    
-    // Check if data is an array and has at least one item
-    const result = Array.isArray(data) && data.length > 0 ? data[0] : data;
-    
-    // Check for password protection
-    const { isProtected } = await checkContentPasswordProtection(sharedUrl, 'proposal');
-    
-    return { data: result, error: null, isPasswordProtected: isProtected };
-  } catch (error: any) {
-    console.error('Error fetching shared proposal:', error);
-    return { data: null, error: error.message };
-  }
-}
-
-/**
- * Get shared invoice by URL
- */
-export async function getSharedInvoice(sharedUrl: string) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_invoice_by_shared_url', { 
-        shared_url_param: sharedUrl
-      });
-    
-    if (error) throw error;
-    
-    // Check if data is an array and has at least one item
-    const result = Array.isArray(data) && data.length > 0 ? data[0] : data;
-    
-    return { data: result, error: null };
-  } catch (error: any) {
-    console.error('Error fetching shared invoice:', error);
-    return { data: null, error: error.message };
-  }
-}
-
-/**
- * Get shared report by URL
- */
-export async function getSharedReport(sharedUrl: string) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_public_report_by_shared_url', { 
-        shared_url_param: sharedUrl
-      });
-    
-    if (error) throw error;
-    
-    // Check if data is an array and has at least one item
-    const result = Array.isArray(data) && data.length > 0 ? data[0] : data;
-    
-    return { data: result, error: null };
+    // Return report data with password protection status
+    return {
+      data: {
+        id: data.original_id,
+        title: data.title,
+        summary: data.description,
+        content: content,
+        date: data.created_at,
+        client_name: data.client_name,
+        client_website: data.client_website
+      },
+      isPasswordProtected
+    };
   } catch (error: any) {
     console.error('Error fetching shared report:', error);
-    return { data: null, error: error.message };
+    
+    // Log failed access
+    await logSharedContentAccess({
+      contentType: 'report',
+      contentId: id,
+      accessType: 'view',
+      options: {
+        success: false,
+        error_message: error.message
+      }
+    });
+    
+    return {
+      data: null,
+      error: error.message || 'Error fetching shared report'
+    };
   }
-}
+};
 
-/**
- * Update shared contract with signature
- */
-export async function updateSharedContractWithSignature(
-  sharedUrl: string,
-  clientSigned: boolean,
-  clientSignedAt: string,
-  clientSignature: string,
-  status: string = 'signed'
-) {
+export const getSharedProposal = async (id: string): Promise<SharedProposalResponse> => {
   try {
+    // Log access attempt
+    await logSharedContentAccess({
+      contentType: 'proposal',
+      contentId: id,
+      accessType: 'view'
+    });
+
+    // Fetch the shared proposal
     const { data, error } = await supabase
-      .rpc('update_shared_contract_with_signature', { 
-        shared_url_param: sharedUrl,
-        client_signed_param: clientSigned,
-        client_signed_at_param: clientSignedAt,
-        client_signature_param: clientSignature,
-        status_param: status
-      });
+      .from('shared_content')
+      .select('*')
+      .eq('shared_url', id)
+      .eq('content_type', 'proposal')
+      .single();
+
+    if (error) throw error;
+    if (!data) throw new Error('Proposal not found');
+
+    // Check if password protected
+    const isPasswordProtected = data.password ? true : false;
+    
+    // Process content to ensure it's properly typed
+    const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content || {};
+    
+    // Return proposal data
+    return {
+      data: {
+        id: data.original_id,
+        title: data.title,
+        description: data.description,
+        services: content.services || [],
+        status: data.status,
+        price: content.price,
+        shared_url: data.shared_url,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        client_name: data.client_name,
+        client_website: data.client_website
+      },
+      isPasswordProtected
+    };
+  } catch (error: any) {
+    console.error('Error fetching shared proposal:', error);
+    
+    // Log failed access
+    await logSharedContentAccess({
+      contentType: 'proposal',
+      contentId: id,
+      accessType: 'view',
+      options: {
+        success: false,
+        error_message: error.message
+      }
+    });
+    
+    return {
+      data: null,
+      error: error.message || 'Error fetching shared proposal'
+    };
+  }
+};
+
+export const getSharedContract = async (id: string): Promise<SharedContractResponse> => {
+  try {
+    console.log('Fetching shared contract with ID:', id);
+    
+    // Log access attempt
+    await logSharedContentAccess({
+      contentType: 'contract',
+      contentId: id,
+      accessType: 'view'
+    });
+
+    // First, try to fetch from shared_content table
+    const { data, error } = await supabase
+      .from('shared_content')
+      .select('*')
+      .eq('shared_url', id)
+      .eq('content_type', 'contract')
+      .single();
+
+    if (error) {
+      console.error('Error fetching shared contract from shared_content:', error);
+      
+      // If not found in shared_content, try the legacy client_contracts table directly
+      const { data: directData, error: directError } = await supabase
+        .rpc('get_public_contract_by_shared_url', { shared_url_param: id });
+      
+      if (directError) {
+        console.error('Error fetching shared contract directly:', directError);
+        throw directError;
+      }
+      
+      if (!directData || directData.length === 0) {
+        console.error('Contract not found with shared_url:', id);
+        throw new Error('Contract not found');
+      }
+      
+      // Use the first result if multiple are returned
+      const contractData = Array.isArray(directData) ? directData[0] : directData;
+      
+      console.log('Fetched contract directly:', contractData);
+      
+      // Ensure status is one of the valid types
+      const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'];
+      const status = validStatuses.includes(contractData.status) 
+        ? contractData.status
+        : 'draft';
+      
+      // Return contract data
+      return {
+        data: {
+          id: contractData.id,
+          title: contractData.title,
+          content: contractData.content,
+          client_name: contractData.client_name,
+          client_website: contractData.client_website,
+          status: status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled',
+          created_at: contractData.created_at,
+          updated_at: contractData.updated_at,
+          client_signed: contractData.client_signed || false,
+          client_signed_at: contractData.client_signed_at,
+          client_signature: contractData.client_signature,
+          admin_signed: contractData.admin_signed || false,
+          admin_signed_at: contractData.admin_signed_at,
+          admin_signature: contractData.admin_signature,
+          shared_url: contractData.shared_url
+        }
+      };
+    }
+    
+    if (!data) {
+      console.error('Contract not found with shared_url:', id);
+      throw new Error('Contract not found');
+    }
+    
+    console.log('Fetched shared contract data:', data);
+    
+    // Process content to ensure it's properly typed
+    const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content || {};
+    console.log('Parsed contract content:', content);
+
+    // Ensure status is one of the valid types
+    const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'];
+    const status = validStatuses.includes(data.status) 
+      ? data.status
+      : 'draft';
+    
+    // Return contract data
+    return {
+      data: {
+        id: data.original_id,
+        title: data.title,
+        content: content.content || '',
+        client_name: data.client_name,
+        client_website: data.client_website,
+        status: status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled',
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        client_signed: content.client_signed || false,
+        client_signed_at: content.client_signed_at,
+        client_signature: content.client_signature,
+        admin_signed: content.admin_signed || false,
+        admin_signed_at: content.admin_signed_at,
+        admin_signature: content.admin_signature,
+        shared_url: data.shared_url
+      }
+    };
+  } catch (error: any) {
+    console.error('Error fetching shared contract:', error);
+    
+    // Log failed access
+    await logSharedContentAccess({
+      contentType: 'contract',
+      contentId: id,
+      accessType: 'view',
+      options: {
+        success: false,
+        error_message: error.message
+      }
+    });
+    
+    return {
+      data: null,
+      error: error.message || 'Error fetching shared contract'
+    };
+  }
+};
+
+export const getSharedInvoice = async (id: string): Promise<SharedInvoiceResponse> => {
+  try {
+    // Log access attempt
+    await logSharedContentAccess({
+      contentType: 'invoice',
+      contentId: id,
+      accessType: 'view'
+    });
+
+    // Fetch the shared invoice
+    const { data, error } = await supabase
+      .from('shared_content')
+      .select('*')
+      .eq('shared_url', id)
+      .eq('content_type', 'invoice')
+      .single();
+
+    if (error) throw error;
+    if (!data) throw new Error('Invoice not found');
+
+    // Check if password protected
+    const isPasswordProtected = data.password ? true : false;
+    
+    // Process content to ensure it's properly typed
+    const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content || {};
+    
+    // Return invoice data
+    return {
+      data: {
+        id: data.original_id,
+        title: data.title,
+        description: data.description,
+        amount: content.amount || 0,
+        status: data.status,
+        due_date: content.due_date,
+        payment_method: content.payment_method,
+        payment_date: content.payment_date,
+        payment_instructions: content.payment_instructions,
+        shared_url: data.shared_url,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        client_name: data.client_name,
+        client_website: data.client_website
+      },
+      isPasswordProtected
+    };
+  } catch (error: any) {
+    console.error('Error fetching shared invoice:', error);
+    
+    // Log failed access
+    await logSharedContentAccess({
+      contentType: 'invoice',
+      contentId: id,
+      accessType: 'view',
+      options: {
+        success: false,
+        error_message: error.message
+      }
+    });
+    
+    return {
+      data: null,
+      error: error.message || 'Error fetching shared invoice'
+    };
+  }
+};
+
+export const verifySharedContentPassword = async (
+  contentId: string,
+  contentType: SharedContentType,
+  password: string
+): Promise<boolean> => {
+  try {
+    // Log password attempt
+    await logSharedContentAccess({
+      contentType,
+      contentId,
+      accessType: 'password_attempt',
+      options: {
+        password_attempt: true
+      }
+    });
+
+    // Check password directly
+    const { data, error } = await supabase
+      .from('shared_content')
+      .select('id')
+      .eq('shared_url', contentId)
+      .eq('content_type', contentType)
+      .eq('password', password)
+      .single();
     
     if (error) throw error;
     
-    return { success: true, data, error: null };
-  } catch (error: any) {
-    console.error('Error updating shared contract with signature:', error);
-    return { success: false, data: null, error: error.message };
+    // Log success or failure
+    await logSharedContentAccess({
+      contentType,
+      contentId,
+      accessType: 'password_attempt',
+      options: {
+        success: !!data,
+        password_attempt: true
+      }
+    });
+    
+    return !!data;
+  } catch (error) {
+    console.error('Error verifying shared content password:', error);
+    
+    // Log failure
+    await logSharedContentAccess({
+      contentType,
+      contentId,
+      accessType: 'password_attempt',
+      options: {
+        success: false,
+        password_attempt: true,
+        error_message: 'Error verifying password'
+      }
+    });
+    
+    return false;
   }
-}
+};

@@ -1,81 +1,41 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SharedInvoice, FiscalSettings } from './types';
-import { useFiscalSettings } from '@/hooks/useFiscalSettings';
+import { SharedInvoice } from './types';
 
 interface InvoiceContentProps {
   invoice: SharedInvoice;
 }
 
 const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
-  const { fiscalSettings } = useFiscalSettings();
-  
   return (
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Factura {invoice.invoice_number || ''}</CardTitle>
+          <CardTitle>Detalles de la Factura</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-8 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              {fiscalSettings && (
-                <div className="border-b pb-4 mb-4">
-                  <h3 className="font-bold text-lg mb-2">Datos del Emisor</h3>
-                  <p className="font-semibold">{fiscalSettings.company_name}</p>
-                  <p>CIF/NIF: {fiscalSettings.tax_id}</p>
-                  <p>{fiscalSettings.address}</p>
-                  <p>{fiscalSettings.postal_code} {fiscalSettings.city}</p>
-                  <p>{fiscalSettings.province}, {fiscalSettings.country}</p>
-                  {fiscalSettings.phone && <p>Teléfono: {fiscalSettings.phone}</p>}
-                  {fiscalSettings.email && <p>Email: {fiscalSettings.email}</p>}
-                  {fiscalSettings.website && <p>Web: {fiscalSettings.website}</p>}
-                </div>
-              )}
-              
-              <h3 className="font-bold text-lg mb-2">Cliente</h3>
-              <p className="font-semibold">{invoice.client_name}</p>
+              <p className="text-sm font-medium text-muted-foreground">Cliente</p>
+              <p className="text-lg font-semibold">{invoice.client_name}</p>
               {invoice.client_website && (
-                <p>{invoice.client_website}</p>
+                <p className="text-sm text-muted-foreground">{invoice.client_website}</p>
               )}
             </div>
             
-            <div className="space-y-4">
-              <div className="border rounded-md p-4 bg-muted/50">
-                <div className="grid grid-cols-2 gap-2">
-                  <p className="text-sm font-medium text-muted-foreground">Nº de Factura</p>
-                  <p className="text-sm text-right">{invoice.invoice_number || '-'}</p>
-                  
-                  <p className="text-sm font-medium text-muted-foreground">Fecha de emisión</p>
-                  <p className="text-sm text-right">{format(new Date(invoice.created_at), 'dd/MM/yyyy', { locale: es })}</p>
-                  
-                  {invoice.due_date && (
-                    <>
-                      <p className="text-sm font-medium text-muted-foreground">Fecha de vencimiento</p>
-                      <p className="text-sm text-right">{format(new Date(invoice.due_date), 'dd/MM/yyyy', { locale: es })}</p>
-                    </>
-                  )}
-                  
-                  <p className="text-sm font-medium text-muted-foreground">Estado</p>
-                  <p className="text-sm text-right">
-                    <span className={`px-2 py-0.5 rounded-full text-xs inline-block
-                      ${invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 
-                        invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                        invoice.status === 'overdue' ? 'bg-red-100 text-red-800' : 
-                        'bg-gray-100 text-gray-800'}`}
-                    >
-                      {invoice.status === 'paid' ? 'Pagada' : 
-                        invoice.status === 'pending' ? 'Pendiente' : 
-                        invoice.status === 'overdue' ? 'Vencida' : 
-                        invoice.status === 'cancelled' ? 'Cancelada' : 
-                        invoice.status}
-                    </span>
-                  </p>
-                </div>
-              </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Fecha de emisión</p>
+              <p>{format(new Date(invoice.created_at), 'PPP', { locale: es })}</p>
+              
+              {invoice.due_date && (
+                <>
+                  <p className="text-sm font-medium text-muted-foreground mt-2">Fecha de vencimiento</p>
+                  <p>{format(new Date(invoice.due_date), 'PPP', { locale: es })}</p>
+                </>
+              )}
             </div>
           </div>
           
@@ -85,51 +45,13 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
               <p className="mb-4 text-muted-foreground">{invoice.description}</p>
             )}
             
-            <div className="border rounded-md mb-4 overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Concepto</th>
-                    <th className="px-4 py-3 text-right">Importe</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-t">
-                    <td className="px-4 py-3">{invoice.title}</td>
-                    <td className="px-4 py-3 text-right">
-                      {invoice.subtotal 
-                        ? invoice.subtotal.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
-                        : (invoice.amount * 0.8264).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                    </td>
-                  </tr>
-                </tbody>
-                <tfoot className="bg-muted/50">
-                  <tr className="border-t">
-                    <td className="px-4 py-3 font-medium">Base imponible</td>
-                    <td className="px-4 py-3 text-right">
-                      {invoice.subtotal 
-                        ? invoice.subtotal.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
-                        : (invoice.amount * 0.8264).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 font-medium">
-                      IVA ({invoice.vat_rate || fiscalSettings?.vat_rate || 21}%)
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {invoice.vat_amount 
-                        ? invoice.vat_amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
-                        : (invoice.amount * 0.1736).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                    </td>
-                  </tr>
-                  <tr className="border-t">
-                    <td className="px-4 py-3 font-bold">Total</td>
-                    <td className="px-4 py-3 text-right font-bold">
-                      {invoice.amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+            <div className="bg-muted p-4 rounded-md mb-4">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Importe total</span>
+                <span className="text-2xl font-bold">
+                  {invoice.amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                </span>
+              </div>
             </div>
             
             {invoice.payment_instructions && (
