@@ -54,7 +54,7 @@ export const useFiscalSettings = () => {
         setFiscalSettings({
           ...fiscalData as FiscalSettings,
           vat_rate: vatRate
-        } as FiscalSettings);
+        });
       } else {
         // Create empty settings with default values
         setFiscalSettings({
@@ -69,6 +69,7 @@ export const useFiscalSettings = () => {
           phone: '',
           email: '',
           website: '',
+          vat_rate: vatRate,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
@@ -87,22 +88,28 @@ export const useFiscalSettings = () => {
     setError(null);
     
     try {
+      const settingsToSave = { ...settings };
+      const vatRate = settingsToSave.vat_rate;
+      
+      // Remove vat_rate before saving to fiscal_settings as it's not in that table
+      delete settingsToSave.vat_rate;
+      
       // Save fiscal settings data
       const { error: fiscalError } = await supabase
         .from('fiscal_settings')
         .upsert({
           id: 1,
-          ...settings,
+          ...settingsToSave,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
 
       if (fiscalError) throw fiscalError;
 
       // Save VAT rate if included
-      if (settings.vat_rate !== undefined) {
+      if (vatRate !== undefined) {
         try {
           const { error: rpcError } = await supabase
-            .rpc('update_vat_rate_wrapper', { new_rate: settings.vat_rate });
+            .rpc('update_vat_rate_wrapper', { new_rate: vatRate });
           
           if (rpcError) {
             console.warn('RPC error when updating VAT rate:', rpcError);
@@ -110,7 +117,7 @@ export const useFiscalSettings = () => {
             // Fallback - direct update
             const { error: directError } = await supabase
               .from('settings')
-              .update({ vat_rate: settings.vat_rate })
+              .update({ vat_rate: vatRate })
               .eq('id', 1);
               
             if (directError) throw directError;

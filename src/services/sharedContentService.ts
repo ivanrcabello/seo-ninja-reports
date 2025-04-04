@@ -108,11 +108,9 @@ export async function getSharedContract(sharedUrl: string) {
     if (error) throw error;
     
     // Check if data is an array and has at least one item
-    if (Array.isArray(data) && data.length > 0) {
-      return { data: data[0], error: null };
-    }
+    const result = Array.isArray(data) && data.length > 0 ? data[0] : data;
     
-    return { data, error: null };
+    return { data: result, error: null };
   } catch (error: any) {
     console.error('Error fetching shared contract:', error);
     return { data: null, error: error.message };
@@ -132,11 +130,12 @@ export async function getSharedProposal(sharedUrl: string) {
     if (error) throw error;
     
     // Check if data is an array and has at least one item
-    if (Array.isArray(data) && data.length > 0) {
-      return { data: data[0], error: null };
-    }
+    const result = Array.isArray(data) && data.length > 0 ? data[0] : data;
     
-    return { data, error: null };
+    // Check for password protection
+    const { isProtected } = await checkContentPasswordProtection(sharedUrl, 'proposal');
+    
+    return { data: result, error: null, isPasswordProtected: isProtected };
   } catch (error: any) {
     console.error('Error fetching shared proposal:', error);
     return { data: null, error: error.message };
@@ -156,13 +155,33 @@ export async function getSharedInvoice(sharedUrl: string) {
     if (error) throw error;
     
     // Check if data is an array and has at least one item
-    if (Array.isArray(data) && data.length > 0) {
-      return { data: data[0], error: null };
-    }
+    const result = Array.isArray(data) && data.length > 0 ? data[0] : data;
     
-    return { data, error: null };
+    return { data: result, error: null };
   } catch (error: any) {
     console.error('Error fetching shared invoice:', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
+ * Get shared report by URL
+ */
+export async function getSharedReport(sharedUrl: string) {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_public_report_by_shared_url', { 
+        shared_url_param: sharedUrl
+      });
+    
+    if (error) throw error;
+    
+    // Check if data is an array and has at least one item
+    const result = Array.isArray(data) && data.length > 0 ? data[0] : data;
+    
+    return { data: result, error: null };
+  } catch (error: any) {
+    console.error('Error fetching shared report:', error);
     return { data: null, error: error.message };
   }
 }

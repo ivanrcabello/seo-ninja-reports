@@ -85,8 +85,11 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         
         let headingsData: CrawlHeading[] = [];
         try {
-          headingsData = await getCrawlHeadings(crawlId);
-          console.log('Headings data:', headingsData);
+          const headingsResponse = await getCrawlHeadings(crawlId);
+          if (headingsResponse && headingsResponse.data) {
+            headingsData = headingsResponse.data;
+            console.log('Headings data:', headingsData);
+          }
         } catch (err) {
           console.error('Failed to fetch headings:', err);
           headingsData = [];
@@ -152,9 +155,14 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       
       if (filteredPageHeadings.length === 0) {
         try {
-          const headingsData = await getPageHeadings(page.id);
-          console.log(`Fetched ${headingsData.length} headings for page ${page.id}`);
-          setPageHeadings(headingsData);
+          const headingsResponse = await getPageHeadings(page.id);
+          if (headingsResponse && headingsResponse.data) {
+            const headingsData = headingsResponse.data;
+            console.log(`Fetched ${headingsData.length} headings for page ${page.id}`);
+            setPageHeadings(headingsData);
+          } else {
+            setPageHeadings([]);
+          }
         } catch (err) {
           console.error('Error fetching page headings directly:', err);
           setPageHeadings([]);

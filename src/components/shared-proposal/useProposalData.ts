@@ -37,9 +37,11 @@ const useProposalData = (sharedUrl: string | undefined): UseProposalDataReturn =
         throw new Error(response.error);
       }
       
-      setIsPasswordProtected(!!response.isPasswordProtected);
+      // Check if the response has isPasswordProtected property
+      const isProtected = response.isPasswordProtected || false;
+      setIsPasswordProtected(isProtected);
       
-      if (response.isPasswordProtected) {
+      if (isProtected) {
         // Log access attempt for password protected content
         await logSharedContentAccess({
           contentType: 'proposal',
