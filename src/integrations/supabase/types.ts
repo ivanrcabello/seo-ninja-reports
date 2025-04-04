@@ -172,11 +172,19 @@ export type Database = {
       client_invoices: {
         Row: {
           amount: number
+          billing_address: string | null
+          billing_email: string | null
+          billing_name: string | null
+          billing_tax_id: string | null
+          client_address: string | null
           client_id: string
+          client_tax_id: string | null
           created_at: string
           description: string | null
           due_date: string | null
           id: string
+          includes_vat: boolean | null
+          invoice_number: string | null
           password: string | null
           payment_date: string | null
           payment_instructions: string | null
@@ -188,11 +196,19 @@ export type Database = {
         }
         Insert: {
           amount: number
+          billing_address?: string | null
+          billing_email?: string | null
+          billing_name?: string | null
+          billing_tax_id?: string | null
+          client_address?: string | null
           client_id: string
+          client_tax_id?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
           id?: string
+          includes_vat?: boolean | null
+          invoice_number?: string | null
           password?: string | null
           payment_date?: string | null
           payment_instructions?: string | null
@@ -204,11 +220,19 @@ export type Database = {
         }
         Update: {
           amount?: number
+          billing_address?: string | null
+          billing_email?: string | null
+          billing_name?: string | null
+          billing_tax_id?: string | null
+          client_address?: string | null
           client_id?: string
+          client_tax_id?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
           id?: string
+          includes_vat?: boolean | null
+          invoice_number?: string | null
           password?: string | null
           payment_date?: string | null
           payment_instructions?: string | null

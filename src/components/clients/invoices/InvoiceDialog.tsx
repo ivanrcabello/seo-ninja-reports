@@ -143,6 +143,8 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         includes_vat: includesVat
       };
 
+      console.log("Submitting invoice data:", invoiceData);
+
       if (editingInvoice) {
         await updateInvoice(editingInvoice.id, invoiceData);
       } else {
