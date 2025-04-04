@@ -1,6 +1,7 @@
 
 export interface SharedInvoice {
   id: string;
+  invoice_number?: string;
   title: string;
   description?: string;
   amount: number;
@@ -14,4 +15,11 @@ export interface SharedInvoice {
   updated_at: string;
   client_name: string;
   client_website?: string;
+  client_address?: string;
+  client_tax_id?: string;
+  billing_name?: string;
+  billing_address?: string;
+  billing_tax_id?: string;
+  billing_email?: string;
+  includes_vat?: boolean;
 }

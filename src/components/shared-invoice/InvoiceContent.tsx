@@ -3,6 +3,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { SharedInvoice } from './types';
 
 interface InvoiceContentProps {
@@ -18,28 +19,65 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Cliente</p>
-              <p className="text-lg font-semibold">{invoice.client_name}</p>
-              {invoice.client_website && (
-                <p className="text-sm text-muted-foreground">{invoice.client_website}</p>
-              )}
+            {/* Client Information */}
+            <div className="space-y-3">
+              <h3 className="font-medium text-base">Datos del cliente</h3>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Cliente</p>
+                <p className="text-lg font-semibold">{invoice.client_name}</p>
+                {invoice.client_website && (
+                  <p className="text-sm text-muted-foreground">{invoice.client_website}</p>
+                )}
+                {invoice.client_tax_id && (
+                  <p className="text-sm text-muted-foreground">DNI/CIF: {invoice.client_tax_id}</p>
+                )}
+                {invoice.client_address && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.client_address}</p>
+                )}
+              </div>
             </div>
             
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Fecha de emisión</p>
-              <p>{format(new Date(invoice.created_at), 'PPP', { locale: es })}</p>
-              
-              {invoice.due_date && (
-                <>
-                  <p className="text-sm font-medium text-muted-foreground mt-2">Fecha de vencimiento</p>
-                  <p>{format(new Date(invoice.due_date), 'PPP', { locale: es })}</p>
-                </>
-              )}
+            {/* Invoice Information */}
+            <div className="space-y-3">
+              <h3 className="font-medium text-base">Datos de la factura</h3>
+              <div>
+                {invoice.invoice_number && (
+                  <>
+                    <p className="text-sm font-medium text-muted-foreground">Número de factura</p>
+                    <p className="font-semibold">{invoice.invoice_number}</p>
+                  </>
+                )}
+                
+                <p className="text-sm font-medium text-muted-foreground mt-2">Fecha de emisión</p>
+                <p>{format(new Date(invoice.created_at), 'PPP', { locale: es })}</p>
+                
+                {invoice.due_date && (
+                  <>
+                    <p className="text-sm font-medium text-muted-foreground mt-2">Fecha de vencimiento</p>
+                    <p>{format(new Date(invoice.due_date), 'PPP', { locale: es })}</p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           
-          <div className="pt-4 border-t">
+          {/* Billing entity information */}
+          {(invoice.billing_name || invoice.billing_tax_id || invoice.billing_address || invoice.billing_email) && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-medium text-base mb-2">Datos del emisor</h3>
+                {invoice.billing_name && <p className="font-semibold">{invoice.billing_name}</p>}
+                {invoice.billing_tax_id && <p className="text-sm">DNI/CIF: {invoice.billing_tax_id}</p>}
+                {invoice.billing_address && <p className="text-sm whitespace-pre-line">{invoice.billing_address}</p>}
+                {invoice.billing_email && <p className="text-sm">{invoice.billing_email}</p>}
+              </div>
+            </>
+          )}
+          
+          <Separator />
+          
+          <div className="pt-2">
             <h3 className="text-lg font-semibold mb-4">{invoice.title}</h3>
             {invoice.description && (
               <p className="mb-4 text-muted-foreground">{invoice.description}</p>
@@ -47,7 +85,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
             
             <div className="bg-muted p-4 rounded-md mb-4">
               <div className="flex justify-between items-center">
-                <span className="font-medium">Importe total</span>
+                <span className="font-medium">Importe total {invoice.includes_vat !== false ? '(IVA incluido)' : ''}</span>
                 <span className="text-2xl font-bold">
                   {invoice.amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
                 </span>

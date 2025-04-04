@@ -11,9 +11,11 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ClientInvoice } from '@/types/client.types';
 import { useClientInvoices } from '@/hooks/useClientInvoices';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useClients } from '@/hooks/useClients';
 
 interface InvoiceDialogProps {
   clientId: string;
@@ -31,7 +33,11 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   editingInvoice
 }) => {
   const { createInvoice, updateInvoice } = useClientInvoices(clientId);
+  const { getClient } = useClients();
+  const client = getClient(clientId);
+
   const [title, setTitle] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<'pending' | 'paid' | 'cancelled' | 'overdue'>('pending');
@@ -39,29 +45,73 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [paymentInstructions, setPaymentInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
+  // Client details for invoice
+  const [clientTaxId, setClientTaxId] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
+  
+  // Billing entity details
+  const [billingName, setBillingName] = useState('');
+  const [billingTaxId, setBillingTaxId] = useState('');
+  const [billingAddress, setBillingAddress] = useState('');
+  const [billingEmail, setBillingEmail] = useState('');
+  
+  // VAT inclusion
+  const [includesVat, setIncludesVat] = useState(true);
+
+  // Expand/collapse sections
+  const [showClientDetails, setShowClientDetails] = useState(false);
+  const [showBillingDetails, setShowBillingDetails] = useState(false);
 
   // Reset form when dialog opens/closes or editing invoice changes
   useEffect(() => {
     if (open && editingInvoice) {
       setTitle(editingInvoice.title);
+      setInvoiceNumber(editingInvoice.invoice_number || '');
       setDescription(editingInvoice.description || '');
       setAmount(editingInvoice.amount.toString());
       setStatus(editingInvoice.status as any);
       setDueDate(editingInvoice.due_date ? new Date(editingInvoice.due_date) : undefined);
       setPaymentInstructions(editingInvoice.payment_instructions || '');
+      
+      // Client details
+      setClientTaxId(editingInvoice.client_tax_id || '');
+      setClientAddress(editingInvoice.client_address || '');
+      
+      // Billing details
+      setBillingName(editingInvoice.billing_name || '');
+      setBillingTaxId(editingInvoice.billing_tax_id || '');
+      setBillingAddress(editingInvoice.billing_address || '');
+      setBillingEmail(editingInvoice.billing_email || '');
+      
+      // VAT
+      setIncludesVat(editingInvoice.includes_vat !== false);
     } else if (open) {
       // Clear form for new invoice
       setTitle('');
+      setInvoiceNumber('');
       setDescription('');
       setAmount('');
       setStatus('pending');
       setDueDate(undefined);
       setPaymentInstructions('');
+      
+      // Set default client address if available
+      if (client) {
+        setClientAddress(client.address || '');
+        setClientTaxId(client.tax_id || '');
+      }
+      
+      setBillingName('');
+      setBillingTaxId('');
+      setBillingAddress('');
+      setBillingEmail('');
+      setIncludesVat(true);
     }
 
     // Clear errors
     setFormErrors({});
-  }, [open, editingInvoice]);
+  }, [open, editingInvoice, client]);
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -88,12 +138,20 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
     try {
       const invoiceData = {
         title,
+        invoice_number: invoiceNumber.trim() || null,
         description: description.trim() || null,
         amount: Number(amount),
         status,
         due_date: dueDate ? dueDate.toISOString() : null,
         payment_instructions: paymentInstructions.trim() || null,
-        client_id: clientId
+        client_id: clientId,
+        client_tax_id: clientTaxId.trim() || null,
+        client_address: clientAddress.trim() || null,
+        billing_name: billingName.trim() || null,
+        billing_tax_id: billingTaxId.trim() || null,
+        billing_address: billingAddress.trim() || null,
+        billing_email: billingEmail.trim() || null,
+        includes_vat: includesVat
       };
 
       if (editingInvoice) {
@@ -112,7 +170,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editingInvoice ? 'Editar factura' : 'Crear nueva factura'}
@@ -123,18 +181,30 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Título de la factura</Label>
-            <Input 
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ej: Servicios SEO - Junio 2024"
-              className={formErrors.title ? 'border-destructive' : ''}
-            />
-            {formErrors.title && (
-              <p className="text-sm text-destructive">{formErrors.title}</p>
-            )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Título de la factura</Label>
+              <Input 
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ej: Servicios SEO - Junio 2024"
+                className={formErrors.title ? 'border-destructive' : ''}
+              />
+              {formErrors.title && (
+                <p className="text-sm text-destructive">{formErrors.title}</p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="invoice-number">Número de factura</Label>
+              <Input 
+                id="invoice-number"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="Ej: F-2024-001"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -147,20 +217,136 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
               rows={3}
             />
           </div>
+          
+          {/* Client details section - collapsible */}
+          <div className="border rounded-md shadow-sm">
+            <button
+              type="button"
+              className="w-full px-4 py-2 flex justify-between items-center hover:bg-muted/50 transition-colors"
+              onClick={() => setShowClientDetails(!showClientDetails)}
+            >
+              <h3 className="font-medium">Datos del cliente</h3>
+              {showClientDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            
+            {showClientDetails && (
+              <div className="p-4 space-y-4 border-t">
+                <div className="space-y-2">
+                  <Label htmlFor="client-name">Nombre del cliente</Label>
+                  <Input 
+                    id="client-name"
+                    value={clientName || ''}
+                    disabled
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="client-tax-id">DNI/CIF del cliente</Label>
+                  <Input 
+                    id="client-tax-id"
+                    value={clientTaxId}
+                    onChange={(e) => setClientTaxId(e.target.value)}
+                    placeholder="Ej: B12345678"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="client-address">Dirección del cliente</Label>
+                  <Textarea 
+                    id="client-address"
+                    value={clientAddress}
+                    onChange={(e) => setClientAddress(e.target.value)}
+                    placeholder="Dirección completa del cliente"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Billing entity details section - collapsible */}
+          <div className="border rounded-md shadow-sm">
+            <button
+              type="button"
+              className="w-full px-4 py-2 flex justify-between items-center hover:bg-muted/50 transition-colors"
+              onClick={() => setShowBillingDetails(!showBillingDetails)}
+            >
+              <h3 className="font-medium">Datos de facturación (emisor)</h3>
+              {showBillingDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            
+            {showBillingDetails && (
+              <div className="p-4 space-y-4 border-t">
+                <div className="space-y-2">
+                  <Label htmlFor="billing-name">Nombre o razón social</Label>
+                  <Input 
+                    id="billing-name"
+                    value={billingName}
+                    onChange={(e) => setBillingName(e.target.value)}
+                    placeholder="Ej: SEO Local Consultores S.L."
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="billing-tax-id">DNI/CIF</Label>
+                  <Input 
+                    id="billing-tax-id"
+                    value={billingTaxId}
+                    onChange={(e) => setBillingTaxId(e.target.value)}
+                    placeholder="Ej: B12345678"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="billing-email">Correo electrónico</Label>
+                  <Input 
+                    id="billing-email"
+                    type="email"
+                    value={billingEmail}
+                    onChange={(e) => setBillingEmail(e.target.value)}
+                    placeholder="Ej: facturacion@tuempresa.es"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="billing-address">Dirección</Label>
+                  <Textarea 
+                    id="billing-address"
+                    value={billingAddress}
+                    onChange={(e) => setBillingAddress(e.target.value)}
+                    placeholder="Dirección completa del emisor"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Importe (€)</Label>
-              <Input 
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className={formErrors.amount ? 'border-destructive' : ''}
-              />
+              <div className="flex items-center gap-2">
+                <Input 
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  className={formErrors.amount ? 'border-destructive' : ''}
+                />
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="vat-included" 
+                    checked={includesVat}
+                    onCheckedChange={(checked) => setIncludesVat(checked as boolean)}
+                  />
+                  <Label htmlFor="vat-included" className="text-sm">
+                    IVA incluido
+                  </Label>
+                </div>
+              </div>
               {formErrors.amount && (
                 <p className="text-sm text-destructive">{formErrors.amount}</p>
               )}

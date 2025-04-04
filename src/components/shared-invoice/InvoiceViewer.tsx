@@ -49,6 +49,9 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice, onPrint }) => {
         <CardHeader className="bg-muted/30 print:bg-transparent border-b flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <div>
             <h2 className="text-2xl font-bold">{invoice.title}</h2>
+            {invoice.invoice_number && (
+              <p className="text-sm text-muted-foreground">Nº: {invoice.invoice_number}</p>
+            )}
             <div className="text-sm text-muted-foreground">
               Cliente: {invoice.client_name}
               {invoice.client_website && (
@@ -69,29 +72,59 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice, onPrint }) => {
         <CardContent className="p-6 space-y-8">
           {/* Invoice details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Client details */}
+            <div className="space-y-3">
+              <h3 className="font-medium">Datos del cliente</h3>
+              <div className="space-y-1">
+                <p className="font-semibold">{invoice.client_name}</p>
+                {invoice.client_tax_id && <p className="text-sm">DNI/CIF: {invoice.client_tax_id}</p>}
+                {invoice.client_address && <p className="text-sm whitespace-pre-line">{invoice.client_address}</p>}
+              </div>
+            </div>
+            
+            {/* Billing entity details */}
+            {(invoice.billing_name || invoice.billing_tax_id || invoice.billing_address || invoice.billing_email) && (
+              <div className="space-y-3">
+                <h3 className="font-medium">Datos del emisor</h3>
+                <div className="space-y-1">
+                  {invoice.billing_name && <p className="font-semibold">{invoice.billing_name}</p>}
+                  {invoice.billing_tax_id && <p className="text-sm">DNI/CIF: {invoice.billing_tax_id}</p>}
+                  {invoice.billing_address && <p className="text-sm whitespace-pre-line">{invoice.billing_address}</p>}
+                  {invoice.billing_email && <p className="text-sm">{invoice.billing_email}</p>}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-3">
             <div>
               <h3 className="font-medium text-sm text-muted-foreground mb-1">Descripción</h3>
               <p className="whitespace-pre-line">{invoice.description || '—'}</p>
             </div>
-            <div className="space-y-3">
-              <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Fecha de vencimiento</h3>
-                <p>{formatDate(invoice.due_date)}</p>
-              </div>
-              
-              <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Estado de pago</h3>
-                <Badge variant="outline" className={statusInfo.className.replace('bg-', 'text-')}>
-                  {statusInfo.label}
-                </Badge>
-              </div>
-              
-              {invoice.status === 'paid' && invoice.payment_date && (
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+              <div className="space-y-3">
                 <div>
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Fecha de pago</h3>
-                  <p>{formatDate(invoice.payment_date)}</p>
+                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Fecha de vencimiento</h3>
+                  <p>{formatDate(invoice.due_date)}</p>
                 </div>
-              )}
+                
+                <div>
+                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Estado de pago</h3>
+                  <Badge variant="outline" className={statusInfo.className.replace('bg-', 'text-')}>
+                    {statusInfo.label}
+                  </Badge>
+                </div>
+                
+                {invoice.status === 'paid' && invoice.payment_date && (
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Fecha de pago</h3>
+                    <p>{formatDate(invoice.payment_date)}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
@@ -119,7 +152,7 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice, onPrint }) => {
           
           {/* Total amount */}
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">Importe total</h3>
+            <h3 className="text-xl font-bold">Importe total {invoice.includes_vat !== false ? '(IVA incluido)' : ''}</h3>
             <div className="text-2xl font-bold">{formatCurrency(invoice.amount)}</div>
           </div>
         </CardContent>

@@ -20,6 +20,8 @@ export interface Client {
   updated_at: string;
   user_id: string;
   active: boolean;
+  address?: string;
+  tax_id?: string;
 }
 
 export interface ClientProposal {
@@ -55,6 +57,7 @@ export interface ClientContract {
 export interface ClientInvoice {
   id: string;
   client_id: string;
+  invoice_number?: string;
   title: string;
   description?: string;
   amount: number;
@@ -66,6 +69,13 @@ export interface ClientInvoice {
   shared_url?: string;
   created_at: string;
   updated_at: string;
+  client_tax_id?: string;
+  client_address?: string;
+  billing_name?: string;
+  billing_tax_id?: string;
+  billing_address?: string;
+  billing_email?: string;
+  includes_vat?: boolean;
 }
 
 export interface ClientNote {
