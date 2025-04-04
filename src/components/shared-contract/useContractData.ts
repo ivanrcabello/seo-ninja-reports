@@ -55,20 +55,7 @@ export function useContractData(sharedUrl?: string) {
           return;
         }
 
-        // Ensure the contract status is one of the allowed values
-        const contractData = contractResponse.data;
-        const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'] as const;
-        const status = validStatuses.includes(contractData.status as any) 
-          ? contractData.status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
-          : 'draft';
-
-        // Create a properly typed contract object
-        const typedContract: PublicContract = {
-          ...contractData,
-          status: status
-        };
-
-        setContract(typedContract);
+        setContract(contractResponse.data);
       } catch (err: any) {
         console.error('Error fetching contract:', err);
         setError(err.message || 'Error al cargar el contrato');

@@ -1,19 +1,77 @@
 
-import { useState, useCallback } from 'react';
-import { PublicContract } from './types';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { SharedContract, PublicContract } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useContractActions(
-  contractId?: string,
-  contract: PublicContract | null = null,
-  setContract?: React.Dispatch<React.SetStateAction<PublicContract | null>>
+  sharedUrl?: string, 
+  contract: SharedContract = null,
+  setContract?: (contract: SharedContract) => void
 ) {
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
 
-  const handlePrint = useCallback(() => {
-    if (!contract) return;
+  const handleSignContract = async (signature: string) => {
+    if (!sharedUrl || !contract) {
+      toast.error('No se puede firmar el contrato');
+      return;
+    }
 
+    try {
+      // Current date for signature timestamp
+      const now = new Date().toISOString();
+      
+      // Call the RPC function to update the contract with signature
+      const { data, error } = await supabase
+        .rpc('update_shared_contract_with_signature', {
+          shared_url_param: sharedUrl,
+          client_signed_param: true,
+          client_signed_at_param: now,
+          client_signature_param: signature,
+          status_param: 'signed'
+        });
+
+      if (error) {
+        console.error('Error signing contract:', error);
+        throw error;
+      }
+
+      // Also try to update the original contract if possible
+      try {
+        await supabase
+          .rpc('update_contract_by_shared_url', {
+            shared_url_param: sharedUrl,
+            client_signed_param: true,
+            client_signed_at_param: now,
+            client_signature_param: signature,
+            status_param: 'signed'
+          });
+      } catch (originalContractError) {
+        console.warn('Could not update original contract, but shared contract was updated:', originalContractError);
+      }
+
+      // Update local state
+      if (setContract && contract) {
+        setContract({
+          ...contract,
+          client_signed: true,
+          client_signed_at: now,
+          client_signature: signature,
+          status: 'signed'
+        });
+      }
+
+      setIsSignDialogOpen(false);
+      toast.success('Contrato firmado correctamente');
+    } catch (err: any) {
+      console.error('Error signing contract:', err);
+      toast.error(err.message || 'Error al firmar el contrato');
+    }
+  };
+
+  const handlePrint = () => {
+    if (!contract) return;
+    
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast.error('No se pudo abrir la ventana de impresión');
@@ -26,13 +84,19 @@ export function useContractActions(
           <title>${contract.title}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 40px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .content { margin-bottom: 50px; }
             .signature { margin-top: 50px; display: flex; justify-content: space-between; }
             .signature-box { border-top: 1px solid #000; padding-top: 10px; width: 40%; text-align: center; }
           </style>
         </head>
         <body>
-          <h1 style="text-align: center;">${contract.title}</h1>
-          <div>${contract.content}</div>
+          <div class="header">
+            <h1>${contract.title}</h1>
+            ${contract.client_name ? `<p>Cliente: ${contract.client_name}</p>` : ''}
+          </div>
+          
+          <div class="content">${contract.content}</div>
           
           <div class="signature">
             <div class="signature-box">
@@ -60,110 +124,13 @@ export function useContractActions(
     // Wait for content to load before printing
     setTimeout(() => {
       printWindow.print();
-    }, 300);
-  }, [contract]);
-
-  const handleSignContract = useCallback(async (signature: string) => {
-    if (!contractId || !contract || !setContract) {
-      toast.error('No se puede firmar el contrato en este momento');
-      return;
-    }
-
-    try {
-      console.log('Signing contract with shared URL:', contractId);
-      
-      // Get the original contract ID from shared_content
-      const { data: sharedContentData, error: sharedContentError } = await supabase
-        .from('shared_content')
-        .select('original_id, content')
-        .eq('shared_url', contractId)
-        .eq('content_type', 'contract')
-        .single();
-        
-      if (sharedContentError) {
-        console.error('Error fetching original contract ID:', sharedContentError);
-        throw sharedContentError;
-      }
-      
-      if (!sharedContentData?.original_id) {
-        throw new Error('No se encontró el contrato original');
-      }
-      
-      const originalContractId = sharedContentData.original_id;
-      console.log('Original contract ID:', originalContractId);
-      
-      // Update the original contract with the signature
-      const now = new Date().toISOString();
-      const updateData = {
-        client_signed: true,
-        client_signed_at: now,
-        client_signature: signature
-      };
-      
-      // Check if admin has already signed, if so, mark contract as fully signed
-      const currentContent = typeof sharedContentData.content === 'string' 
-        ? JSON.parse(sharedContentData.content) 
-        : sharedContentData.content || {};
-      
-      if (currentContent.admin_signed) {
-        updateData['status'] = 'signed';
-      }
-      
-      const { error: updateError } = await supabase
-        .from('client_contracts')
-        .update(updateData)
-        .eq('id', originalContractId);
-        
-      if (updateError) {
-        console.error('Error updating original contract:', updateError);
-        throw updateError;
-      }
-      
-      // Also update the shared_content record
-      const updatedContent = {
-        ...currentContent,
-        client_signed: true,
-        client_signed_at: now,
-        client_signature: signature
-      };
-      
-      const { error: updateSharedError } = await supabase
-        .from('shared_content')
-        .update({
-          content: updatedContent,
-          status: currentContent.admin_signed ? 'signed' : 'sent'
-        })
-        .eq('shared_url', contractId)
-        .eq('content_type', 'contract');
-        
-      if (updateSharedError) {
-        console.error('Error updating shared content:', updateSharedError);
-        throw updateSharedError;
-      }
-      
-      // Update the local contract state
-      setContract({
-        ...contract,
-        client_signed: true,
-        client_signed_at: now,
-        client_signature: signature,
-        status: currentContent.admin_signed ? 'signed' : contract.status
-      });
-      
-      // Close the signature dialog and show success message
-      setIsSignDialogOpen(false);
-      toast.success('Contrato firmado exitosamente');
-      
-    } catch (error: any) {
-      console.error('Error signing contract:', error);
-      toast.error('Error al firmar el contrato: ' + (error.message || 'Error desconocido'));
-    }
-  }, [contractId, contract, setContract]);
+    }, 500);
+  };
 
   return {
     isSignDialogOpen,
     setIsSignDialogOpen,
-    handlePrint,
-    handleSignContract
+    handleSignContract,
+    handlePrint
   };
 }

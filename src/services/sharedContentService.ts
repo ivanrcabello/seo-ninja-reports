@@ -138,7 +138,7 @@ export const getSharedContract = async (id: string): Promise<SharedContractRespo
       accessType: 'view'
     });
 
-    // Fetch the shared contract
+    // First, try to fetch from shared_content table
     const { data, error } = await supabase
       .from('shared_content')
       .select('*')
@@ -147,8 +147,53 @@ export const getSharedContract = async (id: string): Promise<SharedContractRespo
       .single();
 
     if (error) {
-      console.error('Error fetching shared contract from DB:', error);
-      throw error;
+      console.error('Error fetching shared contract from shared_content:', error);
+      
+      // If not found in shared_content, try the legacy client_contracts table directly
+      const { data: directData, error: directError } = await supabase
+        .rpc('get_public_contract_by_shared_url', { shared_url_param: id });
+      
+      if (directError) {
+        console.error('Error fetching shared contract directly:', directError);
+        throw directError;
+      }
+      
+      if (!directData || directData.length === 0) {
+        console.error('Contract not found with shared_url:', id);
+        throw new Error('Contract not found');
+      }
+      
+      // Use the first result if multiple are returned
+      const contractData = Array.isArray(directData) ? directData[0] : directData;
+      
+      console.log('Fetched contract directly:', contractData);
+      
+      // Ensure status is one of the valid types
+      const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'];
+      const status = validStatuses.includes(contractData.status) 
+        ? contractData.status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
+        : 'draft';
+      
+      // Return contract data
+      return {
+        data: {
+          id: contractData.id,
+          title: contractData.title,
+          content: contractData.content,
+          client_name: contractData.client_name,
+          client_website: contractData.client_website,
+          status: status,
+          created_at: contractData.created_at,
+          updated_at: contractData.updated_at,
+          client_signed: contractData.client_signed || false,
+          client_signed_at: contractData.client_signed_at,
+          client_signature: contractData.client_signature,
+          admin_signed: contractData.admin_signed || false,
+          admin_signed_at: contractData.admin_signed_at,
+          admin_signature: contractData.admin_signature,
+          shared_url: contractData.shared_url
+        }
+      };
     }
     
     if (!data) {
