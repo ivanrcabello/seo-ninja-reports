@@ -4,6 +4,11 @@ export interface SharedInvoice {
   title: string;
   description?: string;
   amount: number;
+  subtotal?: number;
+  vat_rate?: number;
+  vat_amount?: number;
+  invoice_number?: string;
+  invoice_year?: number;
   status: 'pending' | 'paid' | 'cancelled' | 'overdue';
   due_date?: string;
   payment_method?: string;

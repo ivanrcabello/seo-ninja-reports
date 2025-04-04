@@ -48,7 +48,9 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice, onPrint }) => {
       <Card className="shadow-md print:shadow-none print:border-none">
         <CardHeader className="bg-muted/30 print:bg-transparent border-b flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <div>
-            <h2 className="text-2xl font-bold">{invoice.title}</h2>
+            <h2 className="text-2xl font-bold">
+              {invoice.invoice_number ? `Factura ${invoice.invoice_number}` : invoice.title}
+            </h2>
             <div className="text-sm text-muted-foreground">
               Cliente: {invoice.client_name}
               {invoice.client_website && (
@@ -97,6 +99,54 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice, onPrint }) => {
           
           <Separator />
           
+          {/* Payment details */}
+          <div className="border rounded-md overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="px-4 py-3 text-left">Concepto</th>
+                  <th className="px-4 py-3 text-right">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t">
+                  <td className="px-4 py-3">{invoice.title}</td>
+                  <td className="px-4 py-3 text-right">
+                    {invoice.subtotal 
+                      ? formatCurrency(invoice.subtotal)
+                      : formatCurrency(invoice.amount * 0.8264)}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot className="bg-muted/50">
+                <tr className="border-t">
+                  <td className="px-4 py-3 font-medium">Base imponible</td>
+                  <td className="px-4 py-3 text-right">
+                    {invoice.subtotal 
+                      ? formatCurrency(invoice.subtotal)
+                      : formatCurrency(invoice.amount * 0.8264)}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 font-medium">
+                    IVA ({invoice.vat_rate || 21}%)
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {invoice.vat_amount 
+                      ? formatCurrency(invoice.vat_amount)
+                      : formatCurrency(invoice.amount * 0.1736)}
+                  </td>
+                </tr>
+                <tr className="border-t">
+                  <td className="px-4 py-3 font-bold">Total</td>
+                  <td className="px-4 py-3 text-right font-bold">
+                    {formatCurrency(invoice.amount)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          
           {/* Payment instructions */}
           {invoice.payment_instructions && (
             <div>
@@ -114,14 +164,6 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice, onPrint }) => {
               <p>{invoice.payment_method}</p>
             </div>
           )}
-          
-          <Separator />
-          
-          {/* Total amount */}
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">Importe total</h3>
-            <div className="text-2xl font-bold">{formatCurrency(invoice.amount)}</div>
-          </div>
         </CardContent>
       </Card>
     </div>

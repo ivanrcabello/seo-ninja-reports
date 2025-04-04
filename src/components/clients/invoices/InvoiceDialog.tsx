@@ -14,6 +14,7 @@ import { useClientInvoices } from '@/hooks/useClientInvoices';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InvoiceDialogProps {
   clientId: string;
@@ -33,6 +34,9 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const { createInvoice, updateInvoice } = useClientInvoices(clientId);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [subtotal, setSubtotal] = useState('');
+  const [vatRate, setVatRate] = useState('21');
+  const [vatAmount, setVatAmount] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<'pending' | 'paid' | 'cancelled' | 'overdue'>('pending');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
@@ -40,11 +44,63 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Load default VAT rate from settings when the component mounts
+  useEffect(() => {
+    const fetchDefaultVatRate = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('vat_rate')
+          .eq('id', 1)
+          .single();
+        
+        if (error) throw error;
+        
+        if (data && data.vat_rate) {
+          setVatRate(data.vat_rate.toString());
+        }
+      } catch (err) {
+        console.error('Error loading default VAT rate:', err);
+      }
+    };
+    
+    fetchDefaultVatRate();
+  }, []);
+
+  // Calculate VAT amount and total when subtotal or VAT rate changes
+  useEffect(() => {
+    if (subtotal && parseFloat(subtotal) > 0 && vatRate) {
+      const subtotalValue = parseFloat(subtotal);
+      const vatRateValue = parseFloat(vatRate);
+      const calculatedVatAmount = (subtotalValue * vatRateValue) / 100;
+      const calculatedTotal = subtotalValue + calculatedVatAmount;
+      
+      setVatAmount(calculatedVatAmount.toFixed(2));
+      setAmount(calculatedTotal.toFixed(2));
+    }
+  }, [subtotal, vatRate]);
+
+  // Calculate subtotal and VAT amount when total changes (backward calculation)
+  useEffect(() => {
+    if (amount && parseFloat(amount) > 0 && vatRate && !subtotal) {
+      const totalValue = parseFloat(amount);
+      const vatRateValue = parseFloat(vatRate);
+      const calculatedSubtotal = totalValue / (1 + (vatRateValue / 100));
+      const calculatedVatAmount = totalValue - calculatedSubtotal;
+      
+      setSubtotal(calculatedSubtotal.toFixed(2));
+      setVatAmount(calculatedVatAmount.toFixed(2));
+    }
+  }, [amount, vatRate, subtotal]);
+
   // Reset form when dialog opens/closes or editing invoice changes
   useEffect(() => {
     if (open && editingInvoice) {
       setTitle(editingInvoice.title);
       setDescription(editingInvoice.description || '');
+      setSubtotal(editingInvoice.subtotal?.toString() || '');
+      setVatRate(editingInvoice.vat_rate?.toString() || '21');
+      setVatAmount(editingInvoice.vat_amount?.toString() || '');
       setAmount(editingInvoice.amount.toString());
       setStatus(editingInvoice.status as any);
       setDueDate(editingInvoice.due_date ? new Date(editingInvoice.due_date) : undefined);
@@ -53,6 +109,8 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       // Clear form for new invoice
       setTitle('');
       setDescription('');
+      setSubtotal('');
+      setVatAmount('');
       setAmount('');
       setStatus('pending');
       setDueDate(undefined);
@@ -70,8 +128,10 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       errors.title = 'El título es obligatorio';
     }
 
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      errors.amount = 'El importe debe ser un número positivo';
+    // Check if either subtotal or amount is provided
+    if ((!subtotal || isNaN(Number(subtotal)) || Number(subtotal) <= 0) && 
+        (!amount || isNaN(Number(amount)) || Number(amount) <= 0)) {
+      errors.subtotal = 'El importe sin IVA o el importe total debe ser un número positivo';
     }
 
     setFormErrors(errors);
@@ -89,6 +149,9 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       const invoiceData = {
         title,
         description: description.trim() || null,
+        subtotal: subtotal ? Number(subtotal) : null,
+        vat_rate: vatRate ? Number(vatRate) : 21,
+        vat_amount: vatAmount ? Number(vatAmount) : null,
         amount: Number(amount),
         status,
         due_date: dueDate ? dueDate.toISOString() : null,
@@ -148,24 +211,67 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Importe (€)</Label>
+              <Label htmlFor="subtotal">Importe sin IVA (€)</Label>
+              <Input 
+                id="subtotal"
+                type="number"
+                step="0.01"
+                min="0"
+                value={subtotal}
+                onChange={(e) => {
+                  setSubtotal(e.target.value);
+                  // Clear amount to recalculate based on subtotal
+                  if (e.target.value) setAmount('');
+                }}
+                placeholder="0.00"
+                className={formErrors.subtotal ? 'border-destructive' : ''}
+              />
+              {formErrors.subtotal && (
+                <p className="text-sm text-destructive">{formErrors.subtotal}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vat-rate">Tipo de IVA (%)</Label>
+              <Input 
+                id="vat-rate"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={vatRate}
+                onChange={(e) => setVatRate(e.target.value)}
+                placeholder="21"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="amount">Importe total con IVA (€)</Label>
               <Input 
                 id="amount"
                 type="number"
                 step="0.01"
                 min="0"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  // Clear subtotal to recalculate based on total
+                  if (e.target.value) setSubtotal('');
+                }}
                 placeholder="0.00"
-                className={formErrors.amount ? 'border-destructive' : ''}
               />
-              {formErrors.amount && (
-                <p className="text-sm text-destructive">{formErrors.amount}</p>
-              )}
             </div>
+          </div>
+          
+          {vatAmount && (
+            <div className="bg-muted p-3 rounded text-sm">
+              <span className="font-medium">IVA ({vatRate}%):</span> {parseFloat(vatAmount).toFixed(2)}€
+            </div>
+          )}
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="status">Estado</Label>
               <Select
@@ -183,40 +289,40 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="due-date">Fecha de vencimiento (opcional)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="due-date"
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dueDate && "text-muted-foreground"
-                  )}
+            <div className="space-y-2">
+              <Label htmlFor="due-date">Fecha de vencimiento (opcional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="due-date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, 'PPP', { locale: es }) : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-auto p-0 z-50 bg-background" 
+                  align="start"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(dueDate, 'PPP', { locale: es }) : "Seleccionar fecha"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-auto p-0 z-50 bg-background" 
-                align="start"
-              >
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={(date) => {
-                    console.log("Date selected:", date);
-                    setDueDate(date);
-                  }}
-                  initialFocus
-                  locale={es}
-                />
-              </PopoverContent>
-            </Popover>
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={(date) => {
+                      console.log("Date selected:", date);
+                      setDueDate(date);
+                    }}
+                    initialFocus
+                    locale={es}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           <div className="space-y-2">
