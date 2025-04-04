@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -119,22 +118,35 @@ export async function getClientPortalActivity(accountId: string) {
   }
 }
 
-// Estas funciones serán utilizadas por la aplicación del portal del cliente (separada)
 export async function authenticateClientPortal(email: string, password: string): Promise<ClientPortalSession | null> {
   try {
+    console.log('Attempting authentication with email:', email);
+    
     const { data, error } = await supabase.rpc('authenticate_client_portal_account', {
       p_email: email,
       p_password: password
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Authentication RPC error:', error);
+      throw error;
+    }
     
-    // Asegurarse de que estamos devolviendo un objeto único, no un array
-    if (!data) return null;
+    console.log('Authentication response data:', data);
     
-    // Si es un array, tomamos el primer elemento
-    if (Array.isArray(data) && data.length > 0) {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      console.log('No valid session data returned');
+      return null;
+    }
+    
+    if (Array.isArray(data)) {
       const sessionData = data[0];
+      if (!sessionData || !sessionData.account_id || !sessionData.client_id || !sessionData.token) {
+        console.log('Invalid session data structure in array');
+        return null;
+      }
+      
+      console.log('Valid session created from array data');
       return {
         account_id: sessionData.account_id,
         client_id: sessionData.client_id,
@@ -143,11 +155,12 @@ export async function authenticateClientPortal(email: string, password: string):
       };
     }
     
-    // Si no es un array, asegurarnos de que tiene la estructura correcta
     if (typeof data === 'object' && 'account_id' in data && 'client_id' in data && 'token' in data && 'expires_at' in data) {
+      console.log('Valid session created from object data');
       return data as ClientPortalSession;
     }
     
+    console.log('Unrecognized data format from authentication');
     return null;
   } catch (error: any) {
     console.error('Error authenticating client portal:', error);

@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authenticateClientPortal } from '@/services/clientPortalService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, Users } from 'lucide-react';
+import { AlertCircle, Users, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
@@ -17,18 +17,48 @@ const ClientPortal = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Check if user is already logged in on mount
+  useEffect(() => {
+    const storedSession = localStorage.getItem('clientPortalSession');
+    if (storedSession) {
+      try {
+        const session = JSON.parse(storedSession);
+        if (new Date(session.expires_at) > new Date()) {
+          // Session is valid, redirect to dashboard
+          navigate('/portal/dashboard');
+        } else {
+          // Session is expired, remove it
+          localStorage.removeItem('clientPortalSession');
+        }
+      } catch (err) {
+        console.error('Error parsing stored session:', err);
+        localStorage.removeItem('clientPortalSession');
+      }
+    }
+  }, [navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    if (!email || !password) {
+      setError('Por favor, ingrese su email y contraseña');
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('Sending login request for:', email);
       const session = await authenticateClientPortal(email, password);
       
       if (!session) {
+        console.log('No session returned from auth');
         setError('Credenciales inválidas. Por favor, verifica tu email y contraseña.');
         return;
       }
+      
+      console.log('Login successful, session:', session);
       
       // Store session in localStorage
       localStorage.setItem('clientPortalSession', JSON.stringify(session));
@@ -37,8 +67,8 @@ const ClientPortal = () => {
       toast.success('Inicio de sesión exitoso');
       navigate('/portal/dashboard');
     } catch (err: any) {
+      console.error('Login error details:', err);
       setError(err.message || 'Error al iniciar sesión. Intenta de nuevo más tarde.');
-      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
@@ -101,7 +131,12 @@ const ClientPortal = () => {
             </CardContent>
             <CardFooter className="flex flex-col space-y-2">
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Iniciando sesión...
+                  </>
+                ) : 'Iniciar Sesión'}
               </Button>
               <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
                 ¿Eres administrador? 

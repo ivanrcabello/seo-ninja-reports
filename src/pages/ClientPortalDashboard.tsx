@@ -42,38 +42,47 @@ const ClientPortalDashboard = () => {
   const [contracts, setContracts] = useState<SharedDocument[]>([]);
   const [invoices, setInvoices] = useState<SharedDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
     // Check if user is logged in
-    const storedSession = localStorage.getItem('clientPortalSession');
-    
-    if (!storedSession) {
-      navigate('/portal');
-      return;
-    }
-    
-    try {
-      const parsedSession = JSON.parse(storedSession) as ClientPortalSession;
+    const checkSession = () => {
+      const storedSession = localStorage.getItem('clientPortalSession');
       
-      // Check if session is expired
-      if (new Date(parsedSession.expires_at) < new Date()) {
-        handleLogout();
-        toast.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      if (!storedSession) {
+        navigate('/portal');
         return;
       }
       
-      setSession(parsedSession);
-      fetchClientData(parsedSession.client_id);
-    } catch (err) {
-      console.error('Error parsing session:', err);
-      navigate('/portal');
-    }
+      try {
+        const parsedSession = JSON.parse(storedSession) as ClientPortalSession;
+        
+        // Check if session is expired
+        if (new Date(parsedSession.expires_at) < new Date()) {
+          setIsSessionExpired(true);
+          handleLogout();
+          toast.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+          return;
+        }
+        
+        console.log('Authenticated for client ID:', parsedSession.client_id);
+        setSession(parsedSession);
+        fetchClientData(parsedSession.client_id);
+      } catch (err) {
+        console.error('Error parsing session:', err);
+        navigate('/portal');
+      }
+    };
+    
+    checkSession();
   }, [navigate]);
 
   const fetchClientData = async (clientId: string) => {
     setIsLoading(true);
     try {
+      console.log('Fetching data for client ID:', clientId);
+      
       // Fetch client data
       const { data: client, error: clientError } = await supabase
         .from('clients')
@@ -81,10 +90,15 @@ const ClientPortalDashboard = () => {
         .eq('id', clientId)
         .single();
       
-      if (clientError) throw clientError;
+      if (clientError) {
+        console.error('Client data fetch error:', clientError);
+        throw clientError;
+      }
+      
+      console.log('Client data:', client);
       setClientData(client);
       
-      // Fetch shared documents
+      // Fetch shared documents in parallel
       await Promise.all([
         fetchSharedDocuments(clientId, 'report', setReports),
         fetchSharedDocuments(clientId, 'proposal', setProposals),
@@ -116,7 +130,12 @@ const ClientPortalDashboard = () => {
           .not('shared_url', 'is', null)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Reports fetch error:', error);
+          throw error;
+        }
+        
+        console.log(`Fetched ${reportsData?.length || 0} reports`);
         
         data = reportsData.map(item => ({
           id: item.id,
@@ -135,7 +154,12 @@ const ClientPortalDashboard = () => {
           .not('shared_url', 'is', null)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Proposals fetch error:', error);
+          throw error;
+        }
+        
+        console.log(`Fetched ${proposalsData?.length || 0} proposals`);
         
         data = proposalsData.map(item => ({
           id: item.id,
@@ -154,7 +178,12 @@ const ClientPortalDashboard = () => {
           .not('shared_url', 'is', null)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Contracts fetch error:', error);  
+          throw error;
+        }
+        
+        console.log(`Fetched ${contractsData?.length || 0} contracts`);
         
         data = contractsData.map(item => ({
           id: item.id,
@@ -173,7 +202,12 @@ const ClientPortalDashboard = () => {
           .not('shared_url', 'is', null)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Invoices fetch error:', error);
+          throw error;
+        }
+        
+        console.log(`Fetched ${invoicesData?.length || 0} invoices`);
         
         data = invoicesData.map(item => ({
           id: item.id,
@@ -203,7 +237,9 @@ const ClientPortalDashboard = () => {
     
     localStorage.removeItem('clientPortalSession');
     navigate('/portal');
-    toast.success('Sesión cerrada exitosamente');
+    if (!isSessionExpired) {
+      toast.success('Sesión cerrada exitosamente');
+    }
   };
   
   if (isLoading) {
