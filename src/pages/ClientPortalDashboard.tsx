@@ -8,6 +8,7 @@ import { LogOut, FileText, CreditCard, ClipboardList, User, Loader2 } from 'luci
 import { logoutClientPortal } from '@/services/clientPortalService';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import SharedDocumentList from '@/components/client-portal/SharedDocumentList';
 
 interface ClientPortalSession {
   account_id: string;
@@ -105,10 +106,10 @@ const ClientPortalDashboard = () => {
     setData: React.Dispatch<React.SetStateAction<SharedDocument[]>>
   ) => {
     try {
-      let query;
+      let data: SharedDocument[] = [];
       
       if (type === 'report') {
-        const { data, error } = await supabase
+        const { data: reportsData, error } = await supabase
           .from('reports')
           .select('id, title, status, created_at, shared_url')
           .eq('client_id', clientId)
@@ -117,7 +118,7 @@ const ClientPortalDashboard = () => {
         
         if (error) throw error;
         
-        const formattedData = data.map(item => ({
+        data = reportsData.map(item => ({
           id: item.id,
           title: item.title,
           type: 'report' as const,
@@ -125,12 +126,9 @@ const ClientPortalDashboard = () => {
           date: item.created_at,
           shared_url: item.shared_url
         }));
-        
-        setData(formattedData);
-      }
-      
+      } 
       else if (type === 'proposal') {
-        const { data, error } = await supabase
+        const { data: proposalsData, error } = await supabase
           .from('client_proposals')
           .select('id, title, status, created_at, shared_url')
           .eq('client_id', clientId)
@@ -139,7 +137,7 @@ const ClientPortalDashboard = () => {
         
         if (error) throw error;
         
-        const formattedData = data.map(item => ({
+        data = proposalsData.map(item => ({
           id: item.id,
           title: item.title,
           type: 'proposal' as const,
@@ -147,12 +145,9 @@ const ClientPortalDashboard = () => {
           date: item.created_at,
           shared_url: item.shared_url
         }));
-        
-        setData(formattedData);
       }
-      
       else if (type === 'contract') {
-        const { data, error } = await supabase
+        const { data: contractsData, error } = await supabase
           .from('client_contracts')
           .select('id, title, status, created_at, shared_url')
           .eq('client_id', clientId)
@@ -161,7 +156,7 @@ const ClientPortalDashboard = () => {
         
         if (error) throw error;
         
-        const formattedData = data.map(item => ({
+        data = contractsData.map(item => ({
           id: item.id,
           title: item.title,
           type: 'contract' as const,
@@ -169,12 +164,9 @@ const ClientPortalDashboard = () => {
           date: item.created_at,
           shared_url: item.shared_url
         }));
-        
-        setData(formattedData);
       }
-      
       else if (type === 'invoice') {
-        const { data, error } = await supabase
+        const { data: invoicesData, error } = await supabase
           .from('client_invoices')
           .select('id, title, status, created_at, shared_url')
           .eq('client_id', clientId)
@@ -183,7 +175,7 @@ const ClientPortalDashboard = () => {
         
         if (error) throw error;
         
-        const formattedData = data.map(item => ({
+        data = invoicesData.map(item => ({
           id: item.id,
           title: item.title,
           type: 'invoice' as const,
@@ -191,12 +183,12 @@ const ClientPortalDashboard = () => {
           date: item.created_at,
           shared_url: item.shared_url
         }));
-        
-        setData(formattedData);
       }
       
+      setData(data);
     } catch (err) {
       console.error(`Error fetching ${type}s:`, err);
+      setData([]);
     }
   };
   
@@ -212,22 +204,6 @@ const ClientPortalDashboard = () => {
     localStorage.removeItem('clientPortalSession');
     navigate('/portal');
     toast.success('Sesión cerrada exitosamente');
-  };
-
-  const getShareUrl = (doc: SharedDocument) => {
-    const baseUrl = window.location.origin;
-    
-    if (doc.type === 'report') {
-      return `${baseUrl}/shared/reports/${doc.shared_url}`;
-    } else if (doc.type === 'proposal') {
-      return `${baseUrl}/shared/proposals/${doc.shared_url}`;
-    } else if (doc.type === 'contract') {
-      return `${baseUrl}/shared/contracts/${doc.shared_url}`;
-    } else if (doc.type === 'invoice') {
-      return `${baseUrl}/shared/invoices/${doc.shared_url}`;
-    }
-    
-    return '#';
   };
   
   if (isLoading) {
@@ -328,29 +304,11 @@ const ClientPortalDashboard = () => {
             
             <Card>
               <CardContent className="pt-6">
-                {reports.length > 0 ? (
-                  <div className="divide-y">
-                    {reports.map(report => (
-                      <div key={report.id} className="py-4 flex justify-between items-center">
-                        <div>
-                          <h3 className="font-medium">{report.title}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(report.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={getShareUrl(report)} target="_blank" rel="noopener noreferrer">
-                            Ver informe
-                          </a>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay informes disponibles en este momento.
-                  </p>
-                )}
+                <SharedDocumentList 
+                  documents={reports} 
+                  type="report"
+                  emptyMessage="No hay informes disponibles en este momento."
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -363,41 +321,11 @@ const ClientPortalDashboard = () => {
             
             <Card>
               <CardContent className="pt-6">
-                {invoices.length > 0 ? (
-                  <div className="divide-y">
-                    {invoices.map(invoice => (
-                      <div key={invoice.id} className="py-4 flex justify-between items-center">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">{invoice.title}</h3>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                              invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {invoice.status === 'paid' ? 'Pagada' :
-                               invoice.status === 'pending' ? 'Pendiente' :
-                               invoice.status === 'overdue' ? 'Vencida' : 'Cancelada'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(invoice.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={getShareUrl(invoice)} target="_blank" rel="noopener noreferrer">
-                            Ver factura
-                          </a>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay facturas disponibles en este momento.
-                  </p>
-                )}
+                <SharedDocumentList 
+                  documents={invoices} 
+                  type="invoice"
+                  emptyMessage="No hay facturas disponibles en este momento."
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -410,41 +338,11 @@ const ClientPortalDashboard = () => {
             
             <Card>
               <CardContent className="pt-6">
-                {proposals.length > 0 ? (
-                  <div className="divide-y">
-                    {proposals.map(proposal => (
-                      <div key={proposal.id} className="py-4 flex justify-between items-center">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">{proposal.title}</h3>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              proposal.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                              proposal.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                              proposal.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {proposal.status === 'accepted' ? 'Aceptada' :
-                               proposal.status === 'sent' ? 'Enviada' :
-                               proposal.status === 'rejected' ? 'Rechazada' : 'Borrador'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(proposal.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={getShareUrl(proposal)} target="_blank" rel="noopener noreferrer">
-                            Ver propuesta
-                          </a>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay propuestas disponibles en este momento.
-                  </p>
-                )}
+                <SharedDocumentList 
+                  documents={proposals} 
+                  type="proposal"
+                  emptyMessage="No hay propuestas disponibles en este momento."
+                />
               </CardContent>
             </Card>
           </TabsContent>

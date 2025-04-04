@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
-import ClientPortalLogin from '@/pages/ClientPortalLogin';
+import ClientPortal from '@/pages/ClientPortal';
 import ClientPortalDashboard from '@/pages/ClientPortalDashboard';
 
 // Add portal routes
 export const clientPortalRoutes: RouteObject[] = [
   {
     path: '/portal',
-    element: <ClientPortalLogin />
+    element: <ClientPortal />
   },
   {
     path: '/portal/dashboard',
