@@ -17,6 +17,9 @@ const allRoutes: RouteObject[] = [
 ];
 
 // Create the router with all routes
-export const router = createBrowserRouter(allRoutes);
+export const router = createBrowserRouter(allRoutes, {
+  // Add a basename if needed and ensure correct history handling
+  // basename: '/',
+});
 
 export default router;

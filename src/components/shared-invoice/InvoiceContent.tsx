@@ -111,6 +111,14 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Contact Information Footer */}
+      <div className="text-center text-sm text-muted-foreground">
+        <p className="font-medium">¿Necesitas ayuda?</p>
+        <p>info@seo-ninja.es</p>
+        <p>+34 654 633 796</p>
+        <p>C/ Mestre Racional 1, 46005 Valencia</p>
+      </div>
     </div>
   );
 };
