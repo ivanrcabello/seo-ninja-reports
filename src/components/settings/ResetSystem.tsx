@@ -66,10 +66,10 @@ const ResetSystem = () => {
       await supabase.from('seo_crawler_crawls').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await supabase.from('seo_crawler_settings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       
-      // Finalmente, eliminar los clientes
+      // Eliminar los clientes
       await supabase.from('clients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       
-      toast.success('Sistema reiniciado correctamente. Se han eliminado todos los datos.');
+      toast.success('Sistema reiniciado correctamente. Se han eliminado todos los datos, incluyendo los clientes.');
       handleCloseDialog();
     } catch (error: any) {
       console.error('Error al reiniciar el sistema:', error);
@@ -124,7 +124,7 @@ const ResetSystem = () => {
           <DialogHeader>
             <DialogTitle>¿Estás seguro?</DialogTitle>
             <DialogDescription>
-              Esta acción eliminará TODOS los datos del sistema. No hay forma de recuperar esta información.
+              Esta acción eliminará TODOS los datos del sistema, incluyendo todos los clientes. No hay forma de recuperar esta información.
             </DialogDescription>
           </DialogHeader>
           

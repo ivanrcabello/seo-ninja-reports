@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SharedInvoice } from './types';
 
-const useInvoiceData = (sharedUrl: string) => {
+export function useInvoiceData(sharedUrl: string) {
   const [invoice, setInvoice] = useState<SharedInvoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +48,6 @@ const useInvoiceData = (sharedUrl: string) => {
     error,
     refetch: fetchInvoice
   };
-};
+}
 
-export default useInvoiceData;
+// We're removing the default export and only using named export
