@@ -86,7 +86,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
           // Insert into shared_content
           const { error: insertError } = await supabase
             .from('shared_content')
-            .insert([{
+            .insert({
               original_id: invoiceData.id,
               content_type: 'invoice',
               title: invoiceData.title,
@@ -101,8 +101,9 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
               billing_tax_id: invoiceData.billing_tax_id,
               billing_address: invoiceData.billing_address,
               billing_email: invoiceData.billing_email,
-              includes_vat: invoiceData.includes_vat
-            }]);
+              includes_vat: invoiceData.includes_vat,
+              status: invoiceData.status
+            });
           
           if (insertError) {
             console.error('Error creating shared content:', insertError);

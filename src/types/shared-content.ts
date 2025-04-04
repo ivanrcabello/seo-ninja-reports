@@ -104,6 +104,13 @@ export interface SharedInvoiceResponse {
     updated_at: string;
     client_name: string;
     client_website?: string;
+    client_address?: string;
+    client_tax_id?: string;
+    billing_name?: string;
+    billing_tax_id?: string;
+    billing_address?: string;
+    billing_email?: string;
+    includes_vat?: boolean;
   } | null;
   isPasswordProtected?: boolean;
   error?: string;

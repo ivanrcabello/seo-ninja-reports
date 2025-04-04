@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   SharedInvoiceResponse, 
@@ -22,16 +23,17 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     
     if (sharedData) {
       // If found in shared_content, format and return
+      const content = sharedData.content as Record<string, any> || {};
       return {
         data: {
           id: sharedData.id,
           title: sharedData.title,
           description: sharedData.description || undefined,
-          amount: sharedData.content?.amount || 0,
-          status: sharedData.content?.status || 'pending',
+          amount: content.amount || 0,
+          status: content.status || 'pending',
           due_date: sharedData.due_date,
-          payment_method: sharedData.content?.payment_method,
-          payment_date: sharedData.content?.payment_date,
+          payment_method: content.payment_method,
+          payment_date: content.payment_date,
           payment_instructions: sharedData.payment_instructions,
           shared_url: sharedData.shared_url,
           created_at: sharedData.created_at,
@@ -72,4 +74,71 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
   }
 }
 
-// Keep the rest of the service functions as they are
+export async function getSharedReport(sharedUrl: string): Promise<SharedReportResponse> {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_report_by_shared_url', {
+        shared_url_param: sharedUrl
+      });
+      
+    if (error) {
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      return { data: null, error: 'Informe no encontrado' };
+    }
+    
+    const report = data[0];
+    return { data: report };
+  } catch (error: any) {
+    console.error('Error fetching shared report:', error);
+    return { data: null, error: error.message || 'Error al obtener el informe' };
+  }
+}
+
+export async function getSharedProposal(sharedUrl: string): Promise<SharedProposalResponse> {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_proposal_by_shared_url', {
+        shared_url_param: sharedUrl
+      });
+      
+    if (error) {
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      return { data: null, error: 'Propuesta no encontrada' };
+    }
+    
+    const proposal = data[0];
+    return { data: proposal };
+  } catch (error: any) {
+    console.error('Error fetching shared proposal:', error);
+    return { data: null, error: error.message || 'Error al obtener la propuesta' };
+  }
+}
+
+export async function getSharedContract(sharedUrl: string): Promise<SharedContractResponse> {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_contract_by_shared_url', {
+        shared_url_param: sharedUrl
+      });
+      
+    if (error) {
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      return { data: null, error: 'Contrato no encontrado' };
+    }
+    
+    const contract = data[0];
+    return { data: contract };
+  } catch (error: any) {
+    console.error('Error fetching shared contract:', error);
+    return { data: null, error: error.message || 'Error al obtener el contrato' };
+  }
+}

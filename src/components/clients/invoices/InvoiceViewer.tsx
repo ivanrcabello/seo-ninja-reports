@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -297,6 +298,8 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
           onOpenChange={setIsShareDialogOpen}
           invoiceId={invoice.id}
           invoiceTitle={invoice.title}
+          clientName={clientName || 'Cliente'}
+          clientWebsite={invoice.client_website}
         />
       )}
     </>
