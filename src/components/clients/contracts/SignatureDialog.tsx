@@ -10,6 +10,7 @@ interface SignatureDialogProps {
   onSign: (signature: string) => void;
   title?: string;
   description?: string;
+  isAdmin?: boolean;
 }
 
 const SignatureDialog: React.FC<SignatureDialogProps> = ({
