@@ -4,36 +4,15 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SharedInvoice, FiscalSettings } from './types';
-import { supabase } from '@/integrations/supabase/client';
+import { useFiscalSettings } from '@/hooks/useFiscalSettings';
 
 interface InvoiceContentProps {
   invoice: SharedInvoice;
 }
 
 const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
-  const [fiscalSettings, setFiscalSettings] = useState<FiscalSettings | null>(null);
+  const { fiscalSettings } = useFiscalSettings();
   
-  useEffect(() => {
-    const fetchFiscalSettings = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('fiscal_settings')
-          .select('*')
-          .eq('id', 1)
-          .single();
-          
-        if (error) throw error;
-        
-        // Type assertion to FiscalSettings
-        setFiscalSettings(data as unknown as FiscalSettings);
-      } catch (err) {
-        console.error('Error loading fiscal settings:', err);
-      }
-    };
-    
-    fetchFiscalSettings();
-  }, []);
-
   return (
     <div className="space-y-8">
       <Card>
@@ -135,7 +114,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
                   </tr>
                   <tr>
                     <td className="px-4 py-3 font-medium">
-                      IVA ({invoice.vat_rate || 21}%)
+                      IVA ({invoice.vat_rate || fiscalSettings?.vat_rate || 21}%)
                     </td>
                     <td className="px-4 py-3 text-right">
                       {invoice.vat_amount 

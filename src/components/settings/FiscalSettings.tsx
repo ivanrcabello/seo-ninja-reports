@@ -1,141 +1,58 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { usePersistentState } from '@/hooks/usePersistentState';
-import { toast } from 'sonner';
 import { Save } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { FiscalSettings as FiscalSettingsType } from '@/components/shared-invoice/types';
+import { useFiscalSettings } from '@/hooks/useFiscalSettings';
 
 const FiscalSettings = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [companyName, setCompanyName] = useState('');
-  const [taxId, setTaxId] = useState('');
-  const [address, setAddress] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [city, setCity] = useState('');
-  const [province, setProvince] = useState('');
-  const [country, setCountry] = useState('España');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [website, setWebsite] = useState('');
-  const [vatRate, setVatRate] = usePersistentState<number>('vatRate', 21);
+  const { fiscalSettings, isLoading, saveFiscalSettings } = useFiscalSettings();
+  
+  const [companyName, setCompanyName] = useState(fiscalSettings?.company_name || '');
+  const [taxId, setTaxId] = useState(fiscalSettings?.tax_id || '');
+  const [address, setAddress] = useState(fiscalSettings?.address || '');
+  const [postalCode, setPostalCode] = useState(fiscalSettings?.postal_code || '');
+  const [city, setCity] = useState(fiscalSettings?.city || '');
+  const [province, setProvince] = useState(fiscalSettings?.province || '');
+  const [country, setCountry] = useState(fiscalSettings?.country || 'España');
+  const [phone, setPhone] = useState(fiscalSettings?.phone || '');
+  const [email, setEmail] = useState(fiscalSettings?.email || '');
+  const [website, setWebsite] = useState(fiscalSettings?.website || '');
+  const [vatRate, setVatRate] = useState<number>(fiscalSettings?.vat_rate || 21);
 
-  // Load fiscal settings from database
-  useEffect(() => {
-    const loadFiscalSettings = async () => {
-      setIsLoading(true);
-      try {
-        // Load fiscal settings
-        const { data: fiscalData, error: fiscalError } = await supabase
-          .from('fiscal_settings')
-          .select('*')
-          .eq('id', 1)
-          .single();
-
-        if (fiscalError && fiscalError.code !== 'PGRST116') { // No rows returned
-          throw fiscalError;
-        }
-
-        if (fiscalData) {
-          // Use type assertion to tell TypeScript this is a FiscalSettingsType
-          const fiscalSettings = fiscalData as unknown as FiscalSettingsType;
-          setCompanyName(fiscalSettings.company_name || '');
-          setTaxId(fiscalSettings.tax_id || '');
-          setAddress(fiscalSettings.address || '');
-          setPostalCode(fiscalSettings.postal_code || '');
-          setCity(fiscalSettings.city || '');
-          setProvince(fiscalSettings.province || '');
-          setCountry(fiscalSettings.country || 'España');
-          setPhone(fiscalSettings.phone || '');
-          setEmail(fiscalSettings.email || '');
-          setWebsite(fiscalSettings.website || '');
-        }
-
-        // Load VAT rate using wrapper function
-        const { data: vatRateData, error: vatRateError } = await supabase
-          .rpc('get_vat_rate_wrapper');
-
-        if (vatRateError) {
-          if (vatRateError.code !== 'PGRST116') { // No function found error
-            throw vatRateError;
-          }
-          // If RPC fails, try direct query (fallback)
-          const { data: directData, error: directError } = await supabase
-            .from('settings')
-            .select('vat_rate')
-            .eq('id', 1)
-            .single();
-            
-          if (!directError && directData && directData.vat_rate) {
-            setVatRate(Number(directData.vat_rate));
-          }
-        } else if (vatRateData !== null) {
-          setVatRate(Number(vatRateData));
-        }
-      } catch (error) {
-        console.error('Error loading fiscal settings:', error);
-        toast.error('Error al cargar la configuración fiscal');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadFiscalSettings();
-  }, [setVatRate]);
+  // Update form values when fiscal settings are loaded
+  React.useEffect(() => {
+    if (fiscalSettings) {
+      setCompanyName(fiscalSettings.company_name || '');
+      setTaxId(fiscalSettings.tax_id || '');
+      setAddress(fiscalSettings.address || '');
+      setPostalCode(fiscalSettings.postal_code || '');
+      setCity(fiscalSettings.city || '');
+      setProvince(fiscalSettings.province || '');
+      setCountry(fiscalSettings.country || 'España');
+      setPhone(fiscalSettings.phone || '');
+      setEmail(fiscalSettings.email || '');
+      setWebsite(fiscalSettings.website || '');
+      setVatRate(fiscalSettings.vat_rate || 21);
+    }
+  }, [fiscalSettings]);
 
   const handleSaveSettings = async () => {
-    setIsLoading(true);
-    try {
-      // Save fiscal settings
-      const { error: fiscalError } = await supabase
-        .from('fiscal_settings')
-        .upsert({
-          id: 1,
-          company_name: companyName,
-          tax_id: taxId,
-          address,
-          postal_code: postalCode,
-          city,
-          province,
-          country,
-          phone,
-          email,
-          website,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
-
-      if (fiscalError) throw fiscalError;
-
-      // Save VAT rate using wrapper function
-      try {
-        const { error: rpcError } = await supabase
-          .rpc('update_vat_rate_wrapper', { new_rate: vatRate });
-        
-        if (rpcError) {
-          // Fallback to direct update if RPC fails
-          const { error: directError } = await supabase
-            .from('settings')
-            .update({ vat_rate: vatRate })
-            .eq('id', 1);
-            
-          if (directError) throw directError;
-        }
-      } catch (error) {
-        console.error('Error saving VAT rate:', error);
-        throw error;
-      }
-
-      toast.success('Configuración fiscal guardada correctamente');
-    } catch (error) {
-      console.error('Error saving fiscal settings:', error);
-      toast.error('Error al guardar la configuración fiscal');
-    } finally {
-      setIsLoading(false);
-    }
+    await saveFiscalSettings({
+      company_name: companyName,
+      tax_id: taxId,
+      address,
+      postal_code: postalCode,
+      city,
+      province,
+      country,
+      phone,
+      email,
+      website,
+      vat_rate: vatRate
+    });
   };
 
   return (

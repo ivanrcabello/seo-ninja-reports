@@ -14,7 +14,7 @@ import { useClientInvoices } from '@/hooks/useClientInvoices';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { useFiscalSettings } from '@/hooks/useFiscalSettings';
 
 interface InvoiceDialogProps {
   clientId: string;
@@ -32,6 +32,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   editingInvoice
 }) => {
   const { createInvoice, updateInvoice } = useClientInvoices(clientId);
+  const { fiscalSettings } = useFiscalSettings();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [subtotal, setSubtotal] = useState('');
@@ -44,38 +45,12 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Load default VAT rate from settings when the component mounts
+  // Load default VAT rate from fiscal settings when the component mounts
   useEffect(() => {
-    const fetchDefaultVatRate = async () => {
-      try {
-        // Try to get VAT rate using wrapper function first
-        const { data: rpcData, error: rpcError } = await supabase
-          .rpc('get_vat_rate_wrapper');
-          
-        if (!rpcError && rpcData !== null) {
-          setVatRate(rpcData.toString());
-          return;
-        }
-        
-        // Fallback to direct query
-        const { data, error } = await supabase
-          .from('settings')
-          .select('vat_rate')
-          .eq('id', 1)
-          .single();
-        
-        if (error) throw error;
-        
-        if (data && data.vat_rate) {
-          setVatRate(data.vat_rate.toString());
-        }
-      } catch (err) {
-        console.error('Error loading default VAT rate:', err);
-      }
-    };
-    
-    fetchDefaultVatRate();
-  }, []);
+    if (fiscalSettings?.vat_rate) {
+      setVatRate(fiscalSettings.vat_rate.toString());
+    }
+  }, [fiscalSettings]);
 
   // Calculate VAT amount and total when subtotal or VAT rate changes
   useEffect(() => {
@@ -109,7 +84,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setTitle(editingInvoice.title);
       setDescription(editingInvoice.description || '');
       setSubtotal(editingInvoice.subtotal?.toString() || '');
-      setVatRate(editingInvoice.vat_rate?.toString() || '21');
+      setVatRate(editingInvoice.vat_rate?.toString() || fiscalSettings?.vat_rate?.toString() || '21');
       setVatAmount(editingInvoice.vat_amount?.toString() || '');
       setAmount(editingInvoice.amount.toString());
       setStatus(editingInvoice.status as any);
@@ -125,11 +100,13 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setStatus('pending');
       setDueDate(undefined);
       setPaymentInstructions('');
+      // Set default VAT rate from settings
+      setVatRate(fiscalSettings?.vat_rate?.toString() || '21');
     }
 
     // Clear errors
     setFormErrors({});
-  }, [open, editingInvoice]);
+  }, [open, editingInvoice, fiscalSettings]);
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -160,7 +137,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         title,
         description: description.trim() || null,
         subtotal: subtotal ? Number(subtotal) : null,
-        vat_rate: vatRate ? Number(vatRate) : 21,
+        vat_rate: vatRate ? Number(vatRate) : fiscalSettings?.vat_rate || 21,
         vat_amount: vatAmount ? Number(vatAmount) : null,
         amount: Number(amount),
         status,

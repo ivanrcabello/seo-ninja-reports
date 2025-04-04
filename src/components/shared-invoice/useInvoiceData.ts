@@ -1,53 +1,49 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SharedInvoice } from './types';
 
-const useInvoiceData = (sharedUrl: string) => {
+export const useInvoiceData = (sharedUrl: string | undefined) => {
   const [invoice, setInvoice] = useState<SharedInvoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchInvoice = useCallback(async () => {
-    if (!sharedUrl) {
-      setError('URL no válida');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const { data, error } = await supabase
-        .rpc('get_public_invoice_by_shared_url', { shared_url_param: sharedUrl });
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        setError('Factura no encontrada');
-        setInvoice(null);
-      } else {
-        setInvoice(data[0] as SharedInvoice);
+  useEffect(() => {
+    const fetchInvoiceData = async () => {
+      if (!sharedUrl) {
+        setIsLoading(false);
+        setError('Missing shared URL');
+        return;
       }
-    } catch (err: any) {
-      console.error('Error fetching shared invoice:', err);
-      setError(err.message || 'Error al cargar la factura');
-    } finally {
-      setIsLoading(false);
-    }
+
+      try {
+        setIsLoading(true);
+        
+        // Get invoice data using the function
+        const { data, error } = await supabase
+          .rpc('get_public_invoice_by_shared_url', { shared_url_param: sharedUrl });
+          
+        if (error) throw error;
+        
+        // Check if we got results
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          throw new Error('Invoice not found');
+        }
+        
+        // Extract the invoice data (it might be an array with one element)
+        const invoiceData = Array.isArray(data) ? data[0] : data;
+        
+        setInvoice(invoiceData as SharedInvoice);
+      } catch (error: any) {
+        console.error('Error fetching invoice data:', error);
+        setError(error.message || 'Error loading invoice');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchInvoiceData();
   }, [sharedUrl]);
 
-  useEffect(() => {
-    fetchInvoice();
-  }, [fetchInvoice]);
-
-  return {
-    invoice,
-    isLoading,
-    error,
-    refetch: fetchInvoice
-  };
+  return { invoice, isLoading, error };
 };
-
-export default useInvoiceData;
