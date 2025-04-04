@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Client } from '@/types/client.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,26 +8,26 @@ import BlurredCard from '@/components/ui/BlurredCard';
 import { FileText, PlusCircle, Receipt } from 'lucide-react';
 import { useClientInvoices } from '@/hooks/useClientInvoices';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface ClientInvoicesListProps {
   client: Client;
 }
 
 const ClientInvoicesList: React.FC<ClientInvoicesListProps> = ({ client }) => {
+  const navigate = useNavigate();
   const { 
     invoices,
     isLoading,
-    fetchInvoices,
-    createInvoice
+    fetchInvoices
   } = useClientInvoices(client.id);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
 
   const handleCreateInvoice = () => {
-    // This would typically open a dialog to create a new invoice
-    console.log('Create invoice for', client.name);
+    navigate(`/clients/${client.id}?tab=invoices`);
   };
 
   return (
@@ -55,6 +55,7 @@ const ClientInvoicesList: React.FC<ClientInvoicesListProps> = ({ client }) => {
               <div 
                 key={invoice.id}
                 className="p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+                onClick={() => navigate(`/clients/${client.id}?tab=invoices&invoiceId=${invoice.id}`)}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>

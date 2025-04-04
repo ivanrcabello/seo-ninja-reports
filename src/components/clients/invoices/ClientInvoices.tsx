@@ -9,6 +9,7 @@ import InvoicesList from './InvoicesList';
 import InvoiceDialog from './InvoiceDialog';
 import InvoicesHeader from './InvoicesHeader';
 import InvoiceViewer from './InvoiceViewer';
+import { useLocation } from 'react-router-dom';
 
 interface ClientInvoicesProps {
   clientId: string;
@@ -22,6 +23,7 @@ const ClientInvoices: React.FC<ClientInvoicesProps> = ({ clientId, clientName })
   const [viewingInvoice, setViewingInvoice] = useState<ClientInvoice | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isMounted = useRef(true);
+  const location = useLocation();
 
   console.log("ClientInvoices rendered with clientId:", clientId);
   console.log("Invoices data:", invoices);
@@ -51,6 +53,25 @@ const ClientInvoices: React.FC<ClientInvoicesProps> = ({ clientId, clientName })
       setViewingInvoice(null);
     };
   }, [clientId, fetchInvoices]);
+
+  // Handle URL parameters for invoice operations
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const invoiceId = params.get('invoiceId');
+    const edit = params.get('edit');
+    
+    if (invoiceId && invoices && invoices.length > 0) {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (invoice) {
+        if (edit === 'true') {
+          setEditingInvoice(invoice);
+          setIsInvoiceDialogOpen(true);
+        } else {
+          setViewingInvoice(invoice);
+        }
+      }
+    }
+  }, [location.search, invoices]);
 
   // Handle browser back button with popstate event
   useEffect(() => {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -148,6 +149,7 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
         await createInvoice(invoiceData as any);
       }
 
+      // Close modal and let parent component know to refresh
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving invoice:', error);

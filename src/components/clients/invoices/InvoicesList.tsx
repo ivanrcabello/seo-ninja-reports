@@ -22,6 +22,8 @@ const InvoicesList: React.FC<InvoicesListProps> = ({
   onDeleteInvoice,
   onViewInvoice
 }) => {
+  console.log("InvoicesList received invoices:", invoices);
+
   if (isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -35,7 +37,7 @@ const InvoicesList: React.FC<InvoicesListProps> = ({
     );
   }
 
-  if (invoices.length === 0) {
+  if (!invoices || invoices.length === 0) {
     return (
       <div className="text-center p-8 border rounded-lg bg-background">
         <h3 className="text-lg font-semibold mb-2">No hay facturas</h3>
