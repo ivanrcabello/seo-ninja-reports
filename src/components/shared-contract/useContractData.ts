@@ -55,7 +55,23 @@ export function useContractData(sharedUrl?: string) {
           return;
         }
 
-        setContract(contractResponse.data);
+        // Ensure the status is one of the valid contract statuses
+        const contractData = contractResponse.data;
+        
+        // Validate the status is one of the expected values, or default to 'draft'
+        const validStatuses: Array<"draft" | "sent" | "signed" | "expired" | "cancelled"> = [
+          "draft", "sent", "signed", "expired", "cancelled"
+        ];
+        
+        const typedStatus = validStatuses.includes(contractData.status as any) 
+          ? contractData.status as "draft" | "sent" | "signed" | "expired" | "cancelled"
+          : "draft";
+        
+        // Set contract with properly typed status
+        setContract({
+          ...contractData,
+          status: typedStatus
+        });
       } catch (err: any) {
         console.error('Error fetching contract:', err);
         setError(err.message || 'Error al cargar el contrato');

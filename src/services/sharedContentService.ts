@@ -171,7 +171,7 @@ export const getSharedContract = async (id: string): Promise<SharedContractRespo
       // Ensure status is one of the valid types
       const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'];
       const status = validStatuses.includes(contractData.status) 
-        ? contractData.status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
+        ? contractData.status
         : 'draft';
       
       // Return contract data
@@ -182,7 +182,7 @@ export const getSharedContract = async (id: string): Promise<SharedContractRespo
           content: contractData.content,
           client_name: contractData.client_name,
           client_website: contractData.client_website,
-          status: status,
+          status: status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled',
           created_at: contractData.created_at,
           updated_at: contractData.updated_at,
           client_signed: contractData.client_signed || false,
@@ -210,7 +210,7 @@ export const getSharedContract = async (id: string): Promise<SharedContractRespo
     // Ensure status is one of the valid types
     const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'];
     const status = validStatuses.includes(data.status) 
-      ? data.status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
+      ? data.status
       : 'draft';
     
     // Return contract data
@@ -221,7 +221,7 @@ export const getSharedContract = async (id: string): Promise<SharedContractRespo
         content: content.content || '',
         client_name: data.client_name,
         client_website: data.client_website,
-        status: status,
+        status: status as 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled',
         created_at: data.created_at,
         updated_at: data.updated_at,
         client_signed: content.client_signed || false,
