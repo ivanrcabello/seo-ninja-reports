@@ -1,106 +1,140 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Download } from 'lucide-react';
 import { PublicContract } from './types';
+import { PenLine, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import SignatureDialog from '@/components/clients/contracts/SignatureDialog';
 
 interface SignatureSectionProps {
   contract: PublicContract;
   onOpenSignDialog: () => void;
+  onPrint: () => void;
   onSign: (signature: string) => void;
   isSignDialogOpen: boolean;
   setIsSignDialogOpen: (open: boolean) => void;
-  onPrint: () => void;
 }
 
-const SignatureSection: React.FC<SignatureSectionProps> = ({ 
-  contract, 
-  onOpenSignDialog, 
+const SignatureSection: React.FC<SignatureSectionProps> = ({
+  contract,
+  onOpenSignDialog,
   onSign,
   isSignDialogOpen,
-  setIsSignDialogOpen,
-  onPrint 
+  setIsSignDialogOpen
 }) => {
-  if (!contract) return null;
+  const canSign = (
+    contract.status !== 'signed' && 
+    contract.status !== 'expired' && 
+    contract.status !== 'cancelled' && 
+    !contract.client_signed
+  );
   
   return (
-    <div className="mt-8 p-6 bg-muted/30 rounded-lg border">
-      <h2 className="text-xl font-semibold mb-4">Firmas</h2>
+    <div className="bg-muted/50 rounded-lg p-6 mb-6">
+      <h3 className="text-lg font-medium mb-4">Estado del contrato</h3>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-        {/* Admin signature box */}
-        <div className="border rounded-md p-4 bg-background">
-          <h3 className="text-sm font-medium mb-2">Firma del Administrador</h3>
-          <div className="h-24 flex items-center justify-center">
-            {contract.admin_signature ? (
-              <img 
-                src={contract.admin_signature} 
-                alt="Firma del administrador" 
-                className="max-h-full object-contain" 
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground">Pendiente de firma</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Status information */}
+        <div>
+          <div className="bg-white p-4 rounded-md shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              {contract.status === 'signed' ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              ) : contract.status === 'expired' ? (
+                <Clock className="h-5 w-5 text-red-500" />
+              ) : contract.status === 'cancelled' ? (
+                <AlertCircle className="h-5 w-5 text-red-500" />
+              ) : (
+                <Clock className="h-5 w-5 text-amber-500" />
+              )}
+              <span className="font-medium">
+                {contract.status === 'draft' ? 'Borrador' :
+                 contract.status === 'sent' ? 'Enviado' :
+                 contract.status === 'signed' ? 'Firmado' :
+                 contract.status === 'expired' ? 'Expirado' :
+                 'Cancelado'}
+              </span>
+            </div>
+            
+            <p className="text-sm text-muted-foreground mb-4">
+              {contract.status === 'signed' 
+                ? 'Este contrato ha sido firmado por ambas partes y está en vigor.'
+                : contract.status === 'expired'
+                ? 'Este contrato ha expirado y ya no puede ser firmado.'
+                : contract.status === 'cancelled'
+                ? 'Este contrato ha sido cancelado.'
+                : contract.status === 'sent'
+                ? 'Este contrato está pendiente de firma.'
+                : 'Este contrato está en fase de borrador.'}
+            </p>
+            
+            {canSign && (
+              <Button 
+                size="sm" 
+                onClick={onOpenSignDialog}
+                className="w-full flex items-center gap-2"
+              >
+                <PenLine className="h-4 w-4" />
+                Firmar contrato
+              </Button>
             )}
           </div>
-          {contract.admin_signed && contract.admin_signed_at && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Firmado el: {new Date(contract.admin_signed_at).toLocaleDateString()}
-            </p>
-          )}
         </div>
         
-        {/* Client signature box */}
-        <div className="border rounded-md p-4 bg-background">
-          <h3 className="text-sm font-medium mb-2">Firma del Cliente</h3>
-          <div className="h-24 flex items-center justify-center">
-            {contract.client_signature ? (
-              <img 
-                src={contract.client_signature} 
-                alt="Firma del cliente" 
-                className="max-h-full object-contain" 
-              />
+        {/* Signatures */}
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-md shadow-sm">
+            <h4 className="font-medium mb-2">Firma Administrador</h4>
+            {contract.admin_signed ? (
+              <div>
+                <div className="border rounded-md p-2 mb-2">
+                  <img 
+                    src={contract.admin_signature} 
+                    alt="Firma administrador" 
+                    className="h-14 object-contain mx-auto"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Firmado el {new Date(contract.admin_signed_at!).toLocaleDateString()}
+                </p>
+              </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Pendiente de firma</p>
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Pendiente de firma
+              </p>
             )}
           </div>
-          {contract.client_signed && contract.client_signed_at && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Firmado el: {new Date(contract.client_signed_at).toLocaleDateString()}
-            </p>
-          )}
+          
+          <div className="bg-white p-4 rounded-md shadow-sm">
+            <h4 className="font-medium mb-2">Firma Cliente</h4>
+            {contract.client_signed ? (
+              <div>
+                <div className="border rounded-md p-2 mb-2">
+                  <img 
+                    src={contract.client_signature} 
+                    alt="Firma cliente" 
+                    className="h-14 object-contain mx-auto"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Firmado el {new Date(contract.client_signed_at!).toLocaleDateString()}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Pendiente de firma
+              </p>
+            )}
+          </div>
         </div>
       </div>
       
-      <div className="w-full flex flex-col sm:flex-row sm:justify-between gap-4">
-        {/* Botón para firmar si el cliente aún no ha firmado */}
-        {!contract.client_signed && contract.status !== 'cancelled' && contract.status !== 'expired' && (
-          <Button 
-            onClick={onOpenSignDialog}
-            className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
-          >
-            <Pencil className="h-4 w-4 mr-2" />
-            Firmar como Cliente
-          </Button>
-        )}
-        
-        {/* Botón para descargar/imprimir siempre visible */}
-        <Button 
-          variant="outline" 
-          onClick={onPrint}
-          className="w-full sm:w-auto"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Imprimir / Guardar PDF
-        </Button>
-      </div>
-      
-      {/* Signature dialog */}
-      <SignatureDialog 
+      {/* Signature Dialog */}
+      <SignatureDialog
         open={isSignDialogOpen}
         onOpenChange={setIsSignDialogOpen}
         onSign={onSign}
-        isAdmin={false}
+        title="Firmar Contrato"
+        description={`Al firmar este contrato, confirmas que has leído y aceptas los términos y condiciones establecidos en "${contract.title}".`}
       />
     </div>
   );

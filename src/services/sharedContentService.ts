@@ -129,6 +129,8 @@ export const getSharedProposal = async (id: string): Promise<SharedProposalRespo
 
 export const getSharedContract = async (id: string): Promise<SharedContractResponse> => {
   try {
+    console.log('Fetching shared contract with ID:', id);
+    
     // Log access attempt
     await logSharedContentAccess({
       contentType: 'contract',
@@ -144,11 +146,21 @@ export const getSharedContract = async (id: string): Promise<SharedContractRespo
       .eq('content_type', 'contract')
       .single();
 
-    if (error) throw error;
-    if (!data) throw new Error('Contract not found');
+    if (error) {
+      console.error('Error fetching shared contract from DB:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.error('Contract not found with shared_url:', id);
+      throw new Error('Contract not found');
+    }
+    
+    console.log('Fetched shared contract data:', data);
     
     // Process content to ensure it's properly typed
     const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content || {};
+    console.log('Parsed contract content:', content);
 
     // Ensure status is one of the valid types
     const validStatuses = ['draft', 'sent', 'signed', 'expired', 'cancelled'];

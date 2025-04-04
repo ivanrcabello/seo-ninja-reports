@@ -17,4 +17,4 @@ export interface PublicContract {
   shared_url: string;
 }
 
-export type SharedContract = PublicContract;
+export type SharedContract = PublicContract | null;

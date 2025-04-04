@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientContract } from '@/types/client.types';
@@ -194,6 +193,64 @@ export const useClientContracts = (clientId?: string) => {
             : contract
         )
       );
+      
+      // Now create/update a record in shared_content table
+      const existingContract = contracts.find(c => c.id === id);
+      
+      if (existingContract) {
+        // Prepare content object for shared_content
+        const contractContent = {
+          content: existingContract.content,
+          client_signed: existingContract.client_signed,
+          client_signed_at: existingContract.client_signed_at,
+          client_signature: existingContract.client_signature,
+          admin_signed: existingContract.admin_signed,
+          admin_signed_at: existingContract.admin_signed_at,
+          admin_signature: existingContract.admin_signature
+        };
+        
+        // Get client details
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('name, website')
+          .eq('id', existingContract.client_id)
+          .single();
+        
+        // Check if entry already exists in shared_content
+        const { data: existingSharedContent } = await supabase
+          .from('shared_content')
+          .select('id')
+          .eq('shared_url', shareId)
+          .eq('content_type', 'contract')
+          .single();
+        
+        if (existingSharedContent) {
+          // Update existing shared content
+          await supabase
+            .from('shared_content')
+            .update({
+              content: contractContent,
+              status: existingContract.status,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingSharedContent.id);
+        } else {
+          // Create new shared content entry
+          await supabase
+            .from('shared_content')
+            .insert({
+              original_id: existingContract.id,
+              content_type: 'contract',
+              title: existingContract.title,
+              description: '',
+              content: contractContent,
+              shared_url: shareId,
+              status: existingContract.status,
+              client_name: clientData?.name || '',
+              client_website: clientData?.website || ''
+            });
+        }
+      }
       
       const fullShareUrl = `${window.location.origin}/shared/contracts/${shareId}`;
       console.log('Full share URL:', fullShareUrl);

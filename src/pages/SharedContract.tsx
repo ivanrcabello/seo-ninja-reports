@@ -8,18 +8,17 @@ import {
   useContractData,
   useContractActions
 } from '@/components/shared-contract';
-import SignatureDialog from '@/components/clients/contracts/SignatureDialog';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 
 const SharedContract = () => {
-  const { id } = useParams<{ id: string }>();
-  const { contract, setContract, loading, error, logo } = useContractData(id);
+  const { sharedUrl } = useParams<{ sharedUrl: string }>();
+  const { contract, setContract, loading, error, logo } = useContractData(sharedUrl);
   const { 
     isSignDialogOpen, 
     setIsSignDialogOpen, 
     handleSignContract, 
     handlePrint 
-  } = useContractActions(id, contract, setContract);
+  } = useContractActions(sharedUrl, contract, setContract);
 
   if (loading) {
     return (
@@ -76,8 +75,6 @@ const SharedContract = () => {
           <ContactInfo />
         </div>
       </div>
-      
-      {/* SignatureDialog will be conditionally rendered within ContractContent */}
     </>
   );
 };

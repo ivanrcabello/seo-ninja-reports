@@ -57,6 +57,7 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
     try {
       const url = await onGenerateShareUrl();
       if (isMounted.current) {
+        console.log('Generated share URL:', url);
         setShareUrl(url);
       }
     } catch (error) {

@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SharedContract, PublicContract } from './types';
 import { getSharedContract } from '@/services/sharedContentService';
 
-export function useContractData(id?: string) {
+export function useContractData(sharedUrl?: string) {
   const [contract, setContract] = useState<SharedContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export function useContractData(id?: string) {
   }, []);
 
   useEffect(() => {
-    if (!id) {
+    if (!sharedUrl) {
       setLoading(false);
       setError('ID de contrato no proporcionado');
       return;
@@ -42,7 +42,8 @@ export function useContractData(id?: string) {
       setError(null);
 
       try {
-        const contractResponse = await getSharedContract(id);
+        console.log('Fetching contract with shared URL:', sharedUrl);
+        const contractResponse = await getSharedContract(sharedUrl);
         
         if (contractResponse.error) {
           setError(contractResponse.error);
@@ -78,7 +79,7 @@ export function useContractData(id?: string) {
     };
 
     fetchContract();
-  }, [id]);
+  }, [sharedUrl]);
 
   return { contract, setContract, loading, error, logo };
 }

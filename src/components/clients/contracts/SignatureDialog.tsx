@@ -1,204 +1,184 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Check, X, RefreshCw } from 'lucide-react';
+import { Brush, Save, RotateCcw } from 'lucide-react';
 
 interface SignatureDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSign: (signature: string) => void;
-  isAdmin: boolean;
+  title?: string;
+  description?: string;
 }
 
 const SignatureDialog: React.FC<SignatureDialogProps> = ({
   open,
   onOpenChange,
   onSign,
-  isAdmin
+  title = "Firma",
+  description = "Dibuja tu firma en el área a continuación."
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
   
-  // Initialize canvas when dialog opens
-  useEffect(() => {
-    if (!open) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Set canvas properties
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000000';
-    
-    // Set canvas dimensions to match displayed size
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasSignature(false);
-    
-    // Cleanup function
-    return () => {
-      setIsDrawing(false);
-      setHasSignature(false);
-    };
+  // Set up canvas when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setupCanvas();
+    }
   }, [open]);
   
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const setupCanvas = () => {
+    if (!canvasRef.current) return;
+    
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const context = canvas.getContext('2d');
     
-    setIsDrawing(true);
-    setHasSignature(true);
+    if (context) {
+      // Clear canvas and set styles
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.lineWidth = 2;
+      context.lineCap = 'round';
+      context.strokeStyle = '#000000';
+      
+      // Draw bottom guide line
+      context.beginPath();
+      context.moveTo(10, canvas.height - 10);
+      context.lineTo(canvas.width - 10, canvas.height - 10);
+      context.stroke();
+      
+      setHasSignature(false);
+    }
+  };
+  
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
     
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
     
-    // Get the correct coordinates
-    const rect = canvas.getBoundingClientRect();
-    const x = e.type.includes('mouse') 
-      ? (e as React.MouseEvent).clientX - rect.left 
-      : (e as React.TouchEvent).touches[0].clientX - rect.left;
-    const y = e.type.includes('mouse') 
-      ? (e as React.MouseEvent).clientY - rect.top 
-      : (e as React.TouchEvent).touches[0].clientY - rect.top;
-    
-    // Begin the path at the current position
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    
-    // Prevent default behavior to avoid scrolling on touch devices
-    e.preventDefault();
+    if (context) {
+      setIsDrawing(true);
+      
+      const { offsetX, offsetY } = getCoordinates(e);
+      
+      context.beginPath();
+      context.moveTo(offsetX, offsetY);
+    }
   };
   
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
+    if (!isDrawing || !canvasRef.current) return;
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const context = canvas.getContext('2d');
     
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Get the correct coordinates
-    const rect = canvas.getBoundingClientRect();
-    const x = e.type.includes('mouse') 
-      ? (e as React.MouseEvent).clientX - rect.left 
-      : (e as React.TouchEvent).touches[0].clientX - rect.left;
-    const y = e.type.includes('mouse') 
-      ? (e as React.MouseEvent).clientY - rect.top 
-      : (e as React.TouchEvent).touches[0].clientY - rect.top;
-    
-    // Draw line to the current position
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    
-    // Prevent default behavior to avoid scrolling on touch devices
-    e.preventDefault();
+    if (context) {
+      const { offsetX, offsetY } = getCoordinates(e);
+      
+      context.lineTo(offsetX, offsetY);
+      context.stroke();
+      setHasSignature(true);
+    }
   };
   
-  const endDrawing = () => {
+  const stopDrawing = () => {
     setIsDrawing(false);
+  };
+  
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return { offsetX: 0, offsetY: 0 };
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
     
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.closePath();
+    if ('touches' in e) {
+      const touch = e.touches[0];
+      return {
+        offsetX: touch.clientX - rect.left,
+        offsetY: touch.clientY - rect.top
+      };
+    } else {
+      return {
+        offsetX: e.nativeEvent.offsetX,
+        offsetY: e.nativeEvent.offsetY
+      };
+    }
   };
   
   const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasSignature(false);
+    setupCanvas();
   };
   
   const saveSignature = () => {
     if (!canvasRef.current) return;
     
-    try {
-      const signatureImage = canvasRef.current.toDataURL('image/png');
-      onSign(signatureImage);
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error saving signature:', error);
-    }
+    const canvas = canvasRef.current;
+    const dataUrl = canvas.toDataURL('image/png');
+    
+    onSign(dataUrl);
   };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {isAdmin ? 'Firma como Administrador' : 'Firma como Cliente'}
-          </DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Dibuja tu firma en el área blanca de abajo
+            {description}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex flex-col items-center space-y-4">
-          <div className="border rounded-md w-full bg-background overflow-hidden">
+        <div className="mt-4">
+          <div 
+            className="border-2 border-muted rounded-md mb-4 overflow-hidden"
+            style={{ touchAction: 'none' }}
+          >
             <canvas
               ref={canvasRef}
-              className="w-full h-[200px] cursor-crosshair touch-none"
+              width={500}
+              height={200}
               onMouseDown={startDrawing}
               onMouseMove={draw}
-              onMouseUp={endDrawing}
-              onMouseLeave={endDrawing}
+              onMouseUp={stopDrawing}
+              onMouseLeave={stopDrawing}
               onTouchStart={startDrawing}
               onTouchMove={draw}
-              onTouchEnd={endDrawing}
-              onTouchCancel={endDrawing}
+              onTouchEnd={stopDrawing}
+              className="w-full cursor-crosshair bg-white"
             />
           </div>
           
-          <div className="flex justify-center gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm"
+          <div className="flex justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
               onClick={clearCanvas}
+              className="flex items-center gap-2"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RotateCcw className="h-4 w-4" />
               Borrar
+            </Button>
+            
+            <Button
+              type="button"
+              onClick={saveSignature}
+              disabled={!hasSignature}
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Guardar firma
             </Button>
           </div>
         </div>
         
-        <DialogFooter className="mt-4 flex gap-2">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => onOpenChange(false)}
-          >
-            <X className="h-4 w-4 mr-2" />
-            Cancelar
-          </Button>
-          
-          <Button 
-            type="button" 
-            onClick={saveSignature}
-            disabled={!hasSignature}
-          >
-            <Check className="h-4 w-4 mr-2" />
-            Firmar documento
-          </Button>
+        <DialogFooter className="mt-4">
+          <div className="flex w-full items-center gap-2 text-xs text-muted-foreground">
+            <Brush className="h-4 w-4" />
+            <span>Dibuja tu firma arrastrando el cursor o tu dedo en el área.</span>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

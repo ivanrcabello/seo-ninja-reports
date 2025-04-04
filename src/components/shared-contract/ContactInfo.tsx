@@ -1,16 +1,29 @@
 
 import React from 'react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 const ContactInfo: React.FC = () => {
   return (
-    <div className="text-center text-sm text-muted-foreground mt-8">
-      <p>Si tienes alguna pregunta sobre este contrato, puedes contactarnos en:</p>
-      <div className="mt-2">
-        <a href="mailto:info@soyseolocal.com" className="text-primary hover:underline">info@soyseolocal.com</a>
-        <span className="mx-2">|</span>
-        <a href="tel:+34600000000" className="text-primary hover:underline">+34 600 000 000</a>
+    <footer className="text-center bg-white rounded-lg p-6 shadow-md">
+      <h3 className="font-medium mb-4">¿Necesitas ayuda?</h3>
+      
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm">
+        <a href="mailto:contacto@example.com" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+          <Mail className="h-4 w-4" />
+          <span>contacto@example.com</span>
+        </a>
+        
+        <a href="tel:+123456789" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+          <Phone className="h-4 w-4" />
+          <span>+123 456 789</span>
+        </a>
+        
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <MapPin className="h-4 w-4" />
+          <span>C/ Ejemplo, 123, 28001 Madrid</span>
+        </div>
       </div>
-    </div>
+    </footer>
   );
 };
 
