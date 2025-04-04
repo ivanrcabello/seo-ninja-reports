@@ -33,7 +33,7 @@ export interface FiscalSettings {
   phone: string;
   email: string;
   website: string;
-  vat_rate?: number; // Add vat_rate property
+  vat_rate?: number; // Include vat_rate property
   created_at: string;
   updated_at: string;
 }

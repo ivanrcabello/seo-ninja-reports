@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { CrawlHeading } from '@/services/seo-crawler/types';
 
 export interface HeadingData {
   id: string;
@@ -14,7 +15,7 @@ export interface HeadingData {
 /**
  * Gets all headings for a specific crawl
  */
-export async function getCrawlHeadings(crawlId: string) {
+export async function getCrawlHeadings(crawlId: string): Promise<{data: CrawlHeading[], error: any}> {
   try {
     const { data, error } = await supabase
       .rpc('get_crawl_headings', { crawl_id_param: crawlId });
@@ -24,7 +25,20 @@ export async function getCrawlHeadings(crawlId: string) {
       return { data: [], error };
     }
     
-    return { data: data as HeadingData[], error: null };
+    // Map the database result to match the CrawlHeading type
+    const headings = Array.isArray(data) ? data.map((heading: HeadingData) => ({
+      id: heading.id,
+      crawl_id: heading.crawl_id,
+      page_id: heading.page_id,
+      page_url: heading.page_url,
+      heading_type: heading.heading_type,
+      content: heading.content,
+      position: heading.heading_position, // Map to position instead of heading_position
+      created_at: new Date().toISOString(),
+      seo_crawler_pages: { url: heading.page_url }
+    })) : [];
+    
+    return { data: headings as CrawlHeading[], error: null };
   } catch (err) {
     console.error('Exception fetching crawl headings:', err);
     return { data: [], error: err };
@@ -34,7 +48,7 @@ export async function getCrawlHeadings(crawlId: string) {
 /**
  * Gets all headings for a specific page
  */
-export async function getPageHeadings(pageId: string) {
+export async function getPageHeadings(pageId: string): Promise<{data: CrawlHeading[], error: any}> {
   try {
     const { data, error } = await supabase
       .rpc('get_page_headings', { page_id_param: pageId });
@@ -44,7 +58,20 @@ export async function getPageHeadings(pageId: string) {
       return { data: [], error };
     }
     
-    return { data: data as HeadingData[], error: null };
+    // Map the database result to match the CrawlHeading type
+    const headings = Array.isArray(data) ? data.map((heading: HeadingData) => ({
+      id: heading.id,
+      crawl_id: heading.crawl_id,
+      page_id: heading.page_id,
+      page_url: heading.page_url,
+      heading_type: heading.heading_type,
+      content: heading.content,
+      position: heading.heading_position, // Map to position instead of heading_position
+      created_at: new Date().toISOString(),
+      seo_crawler_pages: { url: heading.page_url }
+    })) : [];
+    
+    return { data: headings as CrawlHeading[], error: null };
   } catch (err) {
     console.error('Exception fetching page headings:', err);
     return { data: [], error: err };

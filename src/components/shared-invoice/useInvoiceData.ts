@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SharedInvoice } from './types';
@@ -47,3 +46,6 @@ export const useInvoiceData = (sharedUrl: string | undefined) => {
 
   return { invoice, isLoading, error };
 };
+
+// Export as named export to match import in index.ts
+export { useInvoiceData };

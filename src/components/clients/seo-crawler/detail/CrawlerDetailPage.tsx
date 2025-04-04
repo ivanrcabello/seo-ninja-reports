@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlHeading } from '@/services/seo-crawler/types';
@@ -56,13 +55,13 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         
         let issuesData: CrawlIssue[] = [];
         try {
-          issuesData = await getCrawlIssues(crawlId);
-          console.log('Issues data:', issuesData);
+          const issuesResponse = await getCrawlIssues(crawlId);
+          console.log('Issues data:', issuesResponse);
           
           const tempIssuesByType: Record<string, CrawlIssue[]> = {};
           const tempIssuesBySeverity: Record<string, CrawlIssue[]> = {};
           
-          issuesData.forEach((issue: CrawlIssue) => {
+          issuesResponse.forEach((issue: CrawlIssue) => {
             if (!issue.issue_type || !issue.severity) return;
             
             if (!tempIssuesByType[issue.issue_type]) {
@@ -157,9 +156,8 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         try {
           const headingsResponse = await getPageHeadings(page.id);
           if (headingsResponse && headingsResponse.data) {
-            const headingsData = headingsResponse.data;
-            console.log(`Fetched ${headingsData.length} headings for page ${page.id}`);
-            setPageHeadings(headingsData);
+            console.log(`Fetched ${headingsResponse.data.length} headings for page ${page.id}`);
+            setPageHeadings(headingsResponse.data);
           } else {
             setPageHeadings([]);
           }
