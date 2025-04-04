@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer';
 import ApiSettings from '@/components/settings/ApiSettings';
 import LogoUpload from '@/components/settings/LogoUpload';
 import SeoSettings from '@/components/settings/SeoSettings';
+import ResetSystem from '@/components/settings/ResetSystem';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2, Info } from 'lucide-react';
@@ -111,6 +112,7 @@ const Settings = () => {
                   <TabsTrigger value="apis">APIs</TabsTrigger>
                   <TabsTrigger value="branding">Marca</TabsTrigger>
                   <TabsTrigger value="seo">SEO</TabsTrigger>
+                  <TabsTrigger value="system">Sistema</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="apis" className="space-y-4">
@@ -128,6 +130,10 @@ const Settings = () => {
                 
                 <TabsContent value="seo">
                   <SeoSettings />
+                </TabsContent>
+                
+                <TabsContent value="system" className="space-y-4">
+                  <ResetSystem />
                 </TabsContent>
               </Tabs>
             </AnimatedContainer>
