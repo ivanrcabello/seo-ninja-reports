@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import { CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useClients } from '@/hooks/useClients';
+import useClients from '@/hooks/useClients';
 
 interface InvoiceDialogProps {
   clientId: string;
@@ -46,24 +45,19 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
-  // Client details for invoice
   const [clientTaxId, setClientTaxId] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   
-  // Billing entity details
   const [billingName, setBillingName] = useState('');
   const [billingTaxId, setBillingTaxId] = useState('');
   const [billingAddress, setBillingAddress] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
   
-  // VAT inclusion
   const [includesVat, setIncludesVat] = useState(true);
 
-  // Expand/collapse sections
   const [showClientDetails, setShowClientDetails] = useState(false);
   const [showBillingDetails, setShowBillingDetails] = useState(false);
 
-  // Reset form when dialog opens/closes or editing invoice changes
   useEffect(() => {
     if (open && editingInvoice) {
       setTitle(editingInvoice.title);
@@ -74,20 +68,16 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setDueDate(editingInvoice.due_date ? new Date(editingInvoice.due_date) : undefined);
       setPaymentInstructions(editingInvoice.payment_instructions || '');
       
-      // Client details
       setClientTaxId(editingInvoice.client_tax_id || '');
       setClientAddress(editingInvoice.client_address || '');
       
-      // Billing details
       setBillingName(editingInvoice.billing_name || '');
       setBillingTaxId(editingInvoice.billing_tax_id || '');
       setBillingAddress(editingInvoice.billing_address || '');
       setBillingEmail(editingInvoice.billing_email || '');
       
-      // VAT
       setIncludesVat(editingInvoice.includes_vat !== false);
     } else if (open) {
-      // Clear form for new invoice
       setTitle('');
       setInvoiceNumber('');
       setDescription('');
@@ -96,7 +86,6 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setDueDate(undefined);
       setPaymentInstructions('');
       
-      // Set default client address if available
       if (client) {
         setClientAddress(client.address || '');
         setClientTaxId(client.tax_id || '');
@@ -109,7 +98,6 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
       setIncludesVat(true);
     }
 
-    // Clear errors
     setFormErrors({});
   }, [open, editingInvoice, client]);
 
@@ -218,7 +206,6 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             />
           </div>
           
-          {/* Client details section - collapsible */}
           <div className="border rounded-md shadow-sm">
             <button
               type="button"
@@ -264,7 +251,6 @@ const InvoiceDialog: React.FC<InvoiceDialogProps> = ({
             )}
           </div>
           
-          {/* Billing entity details section - collapsible */}
           <div className="border rounded-md shadow-sm">
             <button
               type="button"
