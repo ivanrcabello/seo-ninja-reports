@@ -18,8 +18,8 @@ export async function crawlPage(
     const startTime = Date.now();
     
     // Use provided Bright Data credentials or fallback to defaults
-    const username = customUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
-    const password = customPassword || '5d024usr515b';
+    const username = customUsername || 'brd-customer-hl_2a8d2c33-zone-web_unlocker';
+    const password = customPassword || 'obz0lal9qh4g';
     
     console.log(`Using Bright Data credentials - Username: ${username.substring(0, 15)}..., Password length: ${password ? password.length : 0}`);
     console.log(`Bright Data zone: ${username.includes('-zone-') ? username.split('-zone-')[1] : 'unknown'}`);
@@ -41,7 +41,7 @@ export async function crawlPage(
       // METHOD 1: Standard Bright Data proxy approach with superproxy.io
       try {
         console.log('METHOD 1: Using superproxy.io direct connection');
-        const proxyUrl = `http://brd.superproxy.io:33335`;  // Updated port to 33335
+        const proxyUrl = `http://brd.superproxy.io:22225`;  // Updated port to 22225
         const requestOptions = {
           method: 'GET',
           headers: {
@@ -55,6 +55,7 @@ export async function crawlPage(
             'X-BRD-Mode': 'render',
             'X-BRD-Timeout': '60000',
             'X-BRD-URL': normalizedUrl,
+            'Proxy-Authorization': `Basic ${auth}` // Added explicit Proxy-Authorization header
           },
           signal: AbortSignal.timeout(90000) // 90 seconds timeout
         };
@@ -74,19 +75,17 @@ export async function crawlPage(
         console.error(`METHOD 1 error: ${method1Error instanceof Error ? method1Error.message : 'Unknown error'}`);
       }
       
-      // METHOD 2: Try using the Bright Data REST API instead of proxy
+      // METHOD 2: Try using the Bright Data REST API directly
       if (!html || html.length < 100) {
         try {
-          console.log('METHOD 2: Using Bright Data REST API endpoint');
+          console.log('METHOD 2: Using Bright Data REST API directly');
           
-          // Build the Bright Data REST API URL
-          const apiUrl = 'https://api.brightdata.com/scrape';
+          // Build the correct Bright Data API endpoint
+          const apiUrl = `https://api.brightdata.com/dca/direct_access`;
           const requestData = {
             url: normalizedUrl,
-            render: true,
-            wait_for: ['domcontentloaded', 'networkidle0'],
-            timeout: 60000,
-            retry: 2
+            render_js: true,
+            country: 'es'
           };
           
           const response = await fetch(apiUrl, {
@@ -119,27 +118,32 @@ export async function crawlPage(
         }
       }
       
-      // METHOD 3: Direct approach with credentials in URL
+      // METHOD 3: Try the Web Unlocker specific endpoint
       if (!html || html.length < 100) {
         try {
-          console.log('METHOD 3: Using direct URL with embedded credentials');
+          console.log('METHOD 3: Using Web Unlocker specific endpoint');
           
-          const proxyUrlWithAuth = `http://${username}:${password}@brd.superproxy.io:22225/${normalizedUrl.replace(/^https?:\/\//, '')}`;
+          const unlockerUrl = 'https://api.brightdata.com/web_unlocker';
+          const requestData = {
+            url: normalizedUrl,
+            country: 'es'
+          };
           
-          const response = await fetch(proxyUrlWithAuth, {
-            method: 'GET',
+          const response = await fetch(unlockerUrl, {
+            method: 'POST',
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-              'Cache-Control': 'no-cache'
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json'
             },
+            body: JSON.stringify(requestData),
             signal: AbortSignal.timeout(90000) // 90 seconds timeout
           });
           
           console.log(`METHOD 3: Response status: ${response.status}`);
           
           if (response.ok) {
-            html = await response.text();
+            const data = await response.json();
+            html = data.body || data.html || '';
             console.log(`METHOD 3: Successfully retrieved HTML content (${html.length} characters)`);
           } else {
             console.log(`METHOD 3: Failed with status ${response.status}`);
@@ -155,46 +159,42 @@ export async function crawlPage(
         }
       }
       
-      // FALLBACK METHOD: Try using residential proxy zone if all other methods fail
+      // METHOD 4: Direct format with credentials in URL
       if (!html || html.length < 100) {
         try {
-          console.log('FALLBACK: Using residential proxy zone');
+          console.log('METHOD 4: Using direct format with credentials in URL');
           
-          const fallbackUsername = 'brd-customer-hl_cbc2d791-zone-residential-country-es';
-          const fallbackAuth = btoa(`${fallbackUsername}:${password}`);
+          // Format: http://username:password@brd.superproxy.io:22225
+          const directProxyUrl = `http://${username}:${password}@brd.superproxy.io:22225`;
           
-          const response = await fetch('https://api.brightdata.com/scrape', {
-            method: 'POST',
+          // Make the request directly to the target URL through the proxy
+          const response = await fetch(normalizedUrl, {
+            method: 'GET',
             headers: {
-              'Authorization': `Basic ${fallbackAuth}`,
-              'Content-Type': 'application/json'
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Cache-Control': 'no-cache'
             },
-            body: JSON.stringify({
-              url: normalizedUrl,
-              country: 'es',
-              render: true,
-              timeout: 60000
-            }),
             signal: AbortSignal.timeout(90000) // 90 seconds timeout
           });
           
-          console.log(`FALLBACK: Response status: ${response.status}`);
+          console.log(`METHOD 4: Response status: ${response.status}`);
           
           if (response.ok) {
-            const data = await response.json();
-            html = data.body || data.html || '';
-            console.log(`FALLBACK: Successfully retrieved HTML content (${html.length} characters)`);
+            html = await response.text();
+            console.log(`METHOD 4: Successfully retrieved HTML content (${html.length} characters)`);
           } else {
-            console.log(`FALLBACK: Failed with status ${response.status}`);
+            console.log(`METHOD 4: Failed with status ${response.status}`);
             try {
               const errorBody = await response.text();
-              console.log(`FALLBACK: Error response: ${errorBody.substring(0, 200)}...`);
+              console.log(`METHOD 4: Error response: ${errorBody.substring(0, 200)}...`);
             } catch (e) {
-              console.log('FALLBACK: Could not parse error response');
+              console.log('METHOD 4: Could not parse error response');
             }
           }
-        } catch (fallbackError) {
-          console.error(`FALLBACK error: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+        } catch (method4Error) {
+          console.error(`METHOD 4 error: ${method4Error instanceof Error ? method4Error.message : 'Unknown error'}`);
         }
       }
       

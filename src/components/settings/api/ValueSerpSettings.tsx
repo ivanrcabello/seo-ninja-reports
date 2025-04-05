@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -85,7 +84,8 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
       const response = await fetch(testUrl, {
         method: 'GET',
         headers: {
-          'Authorization': authHeader
+          'Authorization': authHeader,
+          'Proxy-Authorization': authHeader // Add Proxy-Authorization header
         }
       });
       

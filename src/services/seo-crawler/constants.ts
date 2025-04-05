@@ -1,13 +1,13 @@
 
 // Constants for SEO crawler functionality
 export const BRIGHT_DATA_CONFIG = {
-  // Default configuration based on provided credentials
+  // Configuration based on provided credentials
   PROXY_HOST: 'brd.superproxy.io',
-  PROXY_PORT: 33335,
+  PROXY_PORT: 22225, // Updated port based on your credentials
   
   // Default credentials from the user's account
-  DEFAULT_USER: 'brd-customer-hl_cbc2d791-zone-web_unlocker1',
-  DEFAULT_PASSWORD: '5d024usr515b',
+  DEFAULT_USER: 'brd-customer-hl_2a8d2c33-zone-web_unlocker',
+  DEFAULT_PASSWORD: 'obz0lal9qh4g',
   
   // Timeout config
   TIMEOUT: 120000, // 120 seconds

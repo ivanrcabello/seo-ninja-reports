@@ -69,9 +69,11 @@ export async function startCrawl(
     // Debug crawl record data
     debugCrawlData(crawlRecord);
 
-    // Get the credentials from localStorage or use default values
-    const brightDataUsername = localStorage.getItem('bright_data_username') || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
-    const brightDataPassword = localStorage.getItem('bright_data_password') || '5d024usr515b';
+    // Get the credentials from localStorage or use default values from constants
+    const brightDataUsername = localStorage.getItem('bright_data_username') || 
+      'brd-customer-hl_2a8d2c33-zone-web_unlocker';
+    const brightDataPassword = localStorage.getItem('bright_data_password') || 
+      'obz0lal9qh4g';
     
     console.log(`Using Bright Data credentials - Username: ${brightDataUsername}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
     
