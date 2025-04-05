@@ -6,20 +6,22 @@ import CrawlerDetailPage from './detail/CrawlerDetailPage';
 
 interface CrawlerDetailProps {
   clientId: string;
+  crawlId?: string;
   crawl?: CrawlResult;
   onBack?: () => void;
 }
 
 const CrawlerDetail: React.FC<CrawlerDetailProps> = ({ 
   clientId, 
+  crawlId: propsCrawlId,
   crawl, 
   onBack 
 }) => {
   const navigate = useNavigate();
   const { crawlId: paramCrawlId } = useParams<{ crawlId: string }>();
   
-  // Usar el ID del crawl de los props si está disponible, de lo contrario usar el de la URL
-  const crawlId = crawl?.id || paramCrawlId;
+  // Use the crawlId from props if available, otherwise use the one from URL params
+  const crawlId = propsCrawlId || paramCrawlId || crawl?.id;
 
   if (!crawlId) {
     return (
