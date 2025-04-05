@@ -1,7 +1,9 @@
 
-// TypeScript types for SEO crawler functionality
+/**
+ * Types for the SEO crawler service
+ */
 
-// Crawl settings interface
+// Define crawl settings for the SEO crawler
 export interface CrawlSettings {
   max_pages: number;
   exclude_urls: string[];
@@ -11,126 +13,89 @@ export interface CrawlSettings {
   crawl_sitemap: boolean;
   follow_links: boolean;
   max_depth: number;
-  custom_headers?: Record<string, string>;
 }
 
-// Crawl result interface
+// Result of a crawl operation
 export interface CrawlResult {
   id: string;
   client_id: string;
   url: string;
   domain: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
-  started_at: string;
+  start_time: string;
   completed_at?: string;
-  total_pages: number;
-  pages_crawled: number;
-  total_issues: number;
-  total_links: number;
-  total_internal_links: number;
-  total_external_links: number;
-  total_broken_links: number;
+  created_at: string;
+  updated_at: string;
+  total_pages?: number;
+  pages_crawled?: number;
+  total_issues?: number;
   error_message?: string;
   settings: CrawlSettings;
-  success?: boolean;
-  message?: string;
-  
-  // Adding missing properties used in components
-  inserted_at?: string;
-  total_time_seconds?: number; // Added this property explicitly
-  issues_count?: number; // Alias for total_issues used in frontend
-  summary?: any; // Summary data that might include charts or metrics
+  success: boolean;
+  message: string;
 }
 
-// Crawled page interface
+// Crawl page data
 export interface CrawlPage {
   id: string;
   crawl_id: string;
   url: string;
-  status_code: number;
   title?: string;
   meta_description?: string;
   h1?: string;
-  canonical_url?: string;
-  is_indexable: boolean;
-  meta_robots?: string;
-  robots_directives?: string;
-  word_count?: number;
-  internal_links_count?: number;
-  external_links_count?: number;
-  image_count?: number;
-  images_without_alt?: number;
-  has_schema_markup?: boolean;
-  mobile_friendly?: boolean;
-  page_size_kb?: number;
-  load_time_ms?: number;
-  
-  // Adding missing property used in PagesList
-  issues_count?: number;
-  level?: number;
-  content_type?: string;
-  h2_count?: number;
-  h3_count?: number;
-  text_ratio?: number;
-  hreflang_count?: number;
-  redirect_url?: string;
-  crawled_at?: string;
-}
-
-// Crawl issue interface
-export interface CrawlIssue {
-  id: string;
-  crawl_id?: string;
-  page_id?: string;
-  page_url?: string;
-  issue_type: string;
-  description: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  recommended_fix?: string;
-  element?: string;
-  fix_suggestion?: string;
-  category?: string;
-  created_at?: string;
-  // This is the missing property that causes the error
-  seo_crawler_pages?: { url: string };
-}
-
-// Link interface
-export interface CrawlLink {
-  id: string;
-  crawl_id?: string;
-  page_id?: string;
-  url: string;
-  anchor_text?: string;
+  status_code: number;
   is_internal: boolean;
-  is_broken: boolean;
-  status_code?: number;
-  follow?: boolean;
-  rel_attributes?: string[];
-}
-
-// Heading interface
-export interface CrawlHeading {
-  id: string;
-  crawl_id?: string;
-  page_id?: string;
-  heading_type: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
-  content: string;
-  position: number;
-  created_at?: string;
-  seo_crawler_pages?: { url: string };
-  page_url?: string; // Added this property to fix the errors
-}
-
-// Saved crawl settings type
-export interface SavedCrawlSettings {
-  id: string;
-  client_id: string;
-  domain: string;
-  max_pages: number;
-  exclude_patterns: string[];
-  include_patterns: string[];
-  follow_external_links: boolean;
+  is_crawled: boolean;
+  issues_count: number;
+  internal_links_count: number;
+  external_links_count: number;
   created_at: string;
   updated_at: string;
+}
+
+// Crawl issue data
+export interface CrawlIssue {
+  id: string;
+  crawl_id: string;
+  page_id: string;
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  details?: any;
+  created_at: string;
+}
+
+// Crawl link data
+export interface CrawlLink {
+  id: string;
+  crawl_id: string;
+  page_id: string;
+  url: string;
+  text?: string;
+  is_internal: boolean;
+  is_followed: boolean;
+  is_broken?: boolean;
+  status_code?: number;
+  created_at: string;
+}
+
+// Crawl meta data
+export interface CrawlMeta {
+  id: string;
+  crawl_id: string;
+  page_id: string;
+  name: string;
+  content: string;
+  created_at: string;
+}
+
+// Crawl summary data
+export interface CrawlSummary {
+  pages_count: number;
+  issues_count: number;
+  internal_links_count: number;
+  external_links_count: number;
+  broken_links_count: number;
+  crawl_duration: number;
+  top_issues: { type: string; count: number }[];
 }

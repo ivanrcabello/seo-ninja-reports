@@ -60,7 +60,7 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
       console.log(`Starting crawl for normalized URL: ${normalizedUrl}`);
       const result = await startCrawl(clientId, normalizedUrl);
       
-      console.log('Edge function response:', result);
+      console.log('Response:', result);
       
       if (result.success) {
         toast.success('Análisis SEO iniciado correctamente');
