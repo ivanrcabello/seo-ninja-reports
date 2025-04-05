@@ -140,12 +140,12 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
         </CardContent>
       </Card>
       
-      {/* Contact Information Footer */}
+      {/* Contact Information Footer - Using fiscal settings instead of hardcoded values */}
       <div className="text-center text-sm text-muted-foreground py-4 border-t">
         <p className="font-medium mb-2">¿Necesitas ayuda?</p>
-        <p className="mb-1">info@seo-ninja.es</p>
-        <p className="mb-1">+34 654 633 796</p>
-        <p>C/ Mestre Racional 1, 46005 Valencia</p>
+        <p className="mb-1">{invoice.billing_email || "info@seo-ninja.es"}</p>
+        <p className="mb-1">{invoice.billing_phone || "+34 654 633 796"}</p>
+        <p>{invoice.billing_address || "C/ Mestre Racional 1, 46005 Valencia"}</p>
       </div>
     </div>
   );

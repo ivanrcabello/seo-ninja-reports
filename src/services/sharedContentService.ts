@@ -56,6 +56,7 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
           billing_tax_id: contentObj.billing_tax_id as string | undefined,
           billing_address: contentObj.billing_address as string | undefined,
           billing_email: contentObj.billing_email as string | undefined,
+          billing_phone: contentObj.billing_phone as string | undefined,
           includes_vat: contentObj.includes_vat !== false
         }
       };
@@ -81,9 +82,57 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     const invoice = data[0];
     console.log('Invoice data from RPC:', invoice);
     
+    // Fetch fiscal settings for billing information if not present in invoice data
+    const { data: fiscalSettings, error: fiscalError } = await supabase
+      .from('fiscal_settings')
+      .select('*')
+      .limit(1)
+      .single();
+      
+    if (fiscalError && fiscalError.code !== 'PGRST116') {
+      console.error('Error fetching fiscal settings:', fiscalError);
+    }
+    
+    // Merge fiscal settings with invoice data when billing info is not present
+    if (fiscalSettings) {
+      console.log('Fiscal settings found:', fiscalSettings);
+      if (!invoice.billing_name) invoice.billing_name = fiscalSettings.company_name || '';
+      if (!invoice.billing_tax_id) invoice.billing_tax_id = fiscalSettings.tax_id || '';
+      if (!invoice.billing_address) invoice.billing_address = fiscalSettings.address ? `${fiscalSettings.address}, ${fiscalSettings.postal_code || ''} ${fiscalSettings.city || ''}, ${fiscalSettings.province || ''}, ${fiscalSettings.country || ''}` : '';
+      if (!invoice.billing_email) invoice.billing_email = fiscalSettings.email || '';
+      if (!invoice.billing_phone) invoice.billing_phone = fiscalSettings.phone || '';
+    }
+    
+    // Log the access for analytics purposes
+    try {
+      await supabase.rpc('log_shared_content_access', {
+        content_type: 'invoice',
+        content_id: sharedUrl,
+        access_type: 'view',
+        successful: true
+      });
+    } catch (logError) {
+      console.error('Error logging access:', logError);
+      // Don't fail if logging fails
+    }
+    
     return { data: invoice };
   } catch (error: any) {
     console.error('Error fetching shared invoice:', error);
+    
+    // Log the error
+    try {
+      await supabase.rpc('log_shared_content_access', {
+        content_type: 'invoice',
+        content_id: sharedUrl || 'unknown',
+        access_type: 'view',
+        successful: false,
+        error_message: error.message || 'Unknown error'
+      });
+    } catch (logError) {
+      console.error('Error logging access error:', logError);
+    }
+    
     return { data: null, error: error.message || 'Error al obtener la factura' };
   }
 }
