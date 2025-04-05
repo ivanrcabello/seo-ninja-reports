@@ -110,6 +110,7 @@ export interface SharedInvoiceResponse {
     billing_tax_id?: string;
     billing_address?: string;
     billing_email?: string;
+    billing_phone?: string;
     includes_vat?: boolean;
     invoice_number?: string;
   } | null;

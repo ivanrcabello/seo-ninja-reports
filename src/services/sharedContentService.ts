@@ -79,7 +79,7 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
       return { data: null, error: 'Factura no encontrada' };
     }
     
-    const invoice = data[0];
+    const invoice = data[0] as SharedInvoiceResponse['data'];
     console.log('Invoice data from RPC:', invoice);
     
     // Fetch fiscal settings for billing information if not present in invoice data
@@ -93,8 +93,8 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
       console.error('Error fetching fiscal settings:', fiscalError);
     }
     
-    // Merge fiscal settings with invoice data when billing info is not present
-    if (fiscalSettings) {
+    // Ensure the invoice object has all needed properties
+    if (invoice && fiscalSettings) {
       console.log('Fiscal settings found:', fiscalSettings);
       if (!invoice.billing_name) invoice.billing_name = fiscalSettings.company_name || '';
       if (!invoice.billing_tax_id) invoice.billing_tax_id = fiscalSettings.tax_id || '';
