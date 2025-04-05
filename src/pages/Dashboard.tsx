@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -244,12 +245,7 @@ const Dashboard = () => {
                 </TabsList>
 
                 <TabsContent value="overview">
-                  <OverviewTab 
-                    clients={clients} 
-                    reports={reports} 
-                    trackSectionVisibility={trackSectionVisibility}
-                    setActiveTab={setActiveTab}
-                  />
+                  <OverviewTab />
                 </TabsContent>
 
                 <TabsContent value="clients">

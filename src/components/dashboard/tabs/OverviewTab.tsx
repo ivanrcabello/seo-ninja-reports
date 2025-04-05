@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -7,29 +7,15 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { Overview } from '@/components/dashboard/Overview';
-import { RecentSales } from '@/components/dashboard/recent-sales';
-import StatsCards from '@/components/dashboard/StatsCards';
-import useReports from '@/hooks/useReports';
-import useClients from '@/hooks/useClients';
-import { CalendarDateRangePicker } from '../DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, BarChart } from 'lucide-react';
-import ReportsSummaryCard from '../ReportsSummaryCard';
-import ClientsSummaryCard from '../ClientsSummaryCard';
-import OverviewCardSkeleton from '@/components/ui/skeletons/OverviewCardSkeleton';
-import DashboardMetricsChart from '@/components/dashboard/charts/DashboardMetricsChart';
-import useEvents from '@/hooks/useEvents';
-import { startOfMonth, endOfMonth } from 'date-fns';
-import { formatShortDate } from '@/lib/utils';
 import QuickLinksCard from '../QuickLinksCard';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { formatShortDate } from '@/lib/utils';
 
 const OverviewTab = () => {
-  const { reports, isLoading: reportsLoading } = useReports();
-  const { clients, isLoading: clientsLoading } = useClients();
-  const { events, isLoading: eventsLoading } = useEvents();
-  
   const [dateRange, setDateRange] = useState<{
     from: Date;
     to: Date;
@@ -39,34 +25,57 @@ const OverviewTab = () => {
   });
   
   const [chartView, setChartView] = useState<'line' | 'bar'>('line');
-  
-  const isLoading = reportsLoading || clientsLoading || eventsLoading;
-
-  // Count stats
-  const totalReports = reports.length;
-  const completedReports = reports.filter(report => report.status === 'completed').length;
-  const completionRate = totalReports > 0 ? Math.round((completedReports / totalReports) * 100) : 0;
-  
-  const activeClients = clients.filter(client => client.active).length;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <div className="flex items-center gap-2">
-          <CalendarDateRangePicker 
-            date={dateRange}
-            onDateChange={setDateRange}
-          />
+          {/* Date range selector placeholder */}
+          <Button variant="outline" size="sm">
+            {format(dateRange.from, 'dd MMM', { locale: es })} - {format(dateRange.to, 'dd MMM', { locale: es })}
+          </Button>
         </div>
       </div>
       
-      <StatsCards
-        reports={reports}
-        clients={clients}
-        dateRange={dateRange}
-        isLoading={isLoading}
-      />
+      {/* Stats cards placeholder */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Informes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Clientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Ratio Completados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0%</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+          </CardContent>
+        </Card>
+      </div>
       
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">
         <Card className="lg:col-span-3">
@@ -91,20 +100,8 @@ const OverviewTab = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-                </div>
-              ) : (
-                <DashboardMetricsChart 
-                  dateRange={dateRange}
-                  reports={reports}
-                  clients={clients}
-                  events={events}
-                  chartType={chartView}
-                />
-              )}
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              Gráfico de actividad
             </div>
           </CardContent>
         </Card>
@@ -112,11 +109,16 @@ const OverviewTab = () => {
         <div className="flex flex-col gap-4 lg:col-span-2">
           <QuickLinksCard />
           
-          {isLoading ? (
-            <OverviewCardSkeleton />
-          ) : (
-            <ReportsSummaryCard reports={reports} />
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informes Recientes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-4 text-muted-foreground">
+                <p>No hay informes recientes</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
       
@@ -129,32 +131,25 @@ const OverviewTab = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <div className="skeleton h-12 w-12 rounded-full"></div>
-                    <div className="space-y-2">
-                      <div className="skeleton h-4 w-[200px]"></div>
-                      <div className="skeleton h-4 w-[150px]"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <RecentSales clients={clients.slice(0, 5)} />
-            )}
+            <div className="text-center py-4 text-muted-foreground">
+              <p>No hay clientes recientes</p>
+            </div>
           </CardContent>
         </Card>
         
-        {isLoading ? (
-          <OverviewCardSkeleton className="md:col-span-1 lg:col-span-4" />
-        ) : (
-          <ClientsSummaryCard 
-            clients={clients} 
-            className="md:col-span-1 lg:col-span-4" 
-          />
-        )}
+        <Card className="md:col-span-1 lg:col-span-4">
+          <CardHeader>
+            <CardTitle>Clientes</CardTitle>
+            <CardDescription>
+              Resumen de clientes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-4 text-muted-foreground">
+              <p>No hay datos de clientes</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

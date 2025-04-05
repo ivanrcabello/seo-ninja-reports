@@ -24,12 +24,11 @@ import {
   Calendar,
   Mail,
   Video,
-  Chart
+  BarChart3 // Changed from Chart to BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QuickLink } from '@/types/quick-links';
 import { supabase } from '@/integrations/supabase/client';
-import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface QuickLinksCardProps {}
@@ -56,7 +55,8 @@ const QuickLinksCard: React.FC<QuickLinksCardProps> = () => {
       
       if (error) throw error;
       
-      setLinks(data || []);
+      // Explicitly cast the data to QuickLink[]
+      setLinks(data as QuickLink[]);
     } catch (err: any) {
       console.error('Error fetching quick links:', err);
       toast.error('Error al cargar los enlaces rápidos');
@@ -88,7 +88,9 @@ const QuickLinksCard: React.FC<QuickLinksCardProps> = () => {
       
       if (error) throw error;
       
-      setLinks(prev => [...prev, data![0]]);
+      // Explicitly cast the result
+      const newLinks = [...links, data![0] as QuickLink];
+      setLinks(newLinks);
       setNewLink({ title: '', url: '' });
       setIsAddingLink(false);
       toast.success('Enlace añadido correctamente');
@@ -123,6 +125,7 @@ const QuickLinksCard: React.FC<QuickLinksCardProps> = () => {
       
       if (error) throw error;
       
+      // Update the links array with the edited link
       setLinks(prev => prev.map(link => 
         link.id === editingLink.id 
           ? { ...editingLink, url } 
@@ -161,7 +164,7 @@ const QuickLinksCard: React.FC<QuickLinksCardProps> = () => {
       case 'Calendar': return <Calendar className="h-4 w-4" />;
       case 'Mail': return <Mail className="h-4 w-4" />;
       case 'Video': return <Video className="h-4 w-4" />;
-      case 'Chart': return <Chart className="h-4 w-4" />;
+      case 'BarChart3': return <BarChart3 className="h-4 w-4" />; // Changed from Chart to BarChart3
       default: return <Library className="h-4 w-4" />;
     }
   };
