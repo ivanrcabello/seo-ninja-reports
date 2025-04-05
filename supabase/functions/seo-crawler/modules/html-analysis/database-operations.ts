@@ -1,6 +1,7 @@
 
 // Database operations for HTML analysis
 import { SupabaseInstance } from '../../types.ts';
+import { isInternalUrl } from '../../utils.ts';
 
 /**
  * Creates a page record in the database
@@ -11,12 +12,7 @@ export async function createPageRecord(
   url: string
 ): Promise<string | null> {
   try {
-    console.log(`Inserting page with data: ${JSON.stringify({
-      crawl_id: crawlId,
-      url: url,
-      status_code: 200,
-      content_type: 'text/html'
-    })}`);
+    console.log(`Creating page record for URL: ${url}, crawl_id: ${crawlId}`);
     
     const { data, error } = await supabase
       .from('seo_crawler_pages')
@@ -24,7 +20,9 @@ export async function createPageRecord(
         crawl_id: crawlId,
         url: url,
         status_code: 200,
-        content_type: 'text/html'
+        content_type: 'text/html',
+        is_indexable: true,
+        crawled_at: new Date().toISOString()
       })
       .select('id')
       .single();
@@ -32,9 +30,33 @@ export async function createPageRecord(
     if (error) {
       console.error(`Error inserting page record: ${error.message}`, error);
       console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
+      
+      // Try to get the page if it already exists
+      try {
+        const { data: existingPage, error: selectError } = await supabase
+          .from('seo_crawler_pages')
+          .select('id')
+          .eq('crawl_id', crawlId)
+          .eq('url', url)
+          .maybeSingle();
+          
+        if (selectError) {
+          console.error(`Error checking for existing page: ${selectError.message}`);
+          return null;
+        }
+        
+        if (existingPage) {
+          console.log(`Found existing page record with ID: ${existingPage.id}`);
+          return existingPage.id;
+        }
+      } catch (selectErr) {
+        console.error(`Error checking for existing page: ${selectErr}`);
+      }
+      
       return null;
     }
     
+    console.log(`Created page record with ID: ${data.id}`);
     return data.id;
   } catch (error) {
     console.error('Error in createPageRecord:', error);
@@ -52,13 +74,22 @@ export async function saveIssues(
   if (issues.length === 0) return true;
   
   try {
-    const { error } = await supabase
-      .from('seo_crawler_issues')
-      .insert(issues);
+    console.log(`Saving ${issues.length} issues to database`);
     
-    if (error) {
-      console.error(`Error saving issues: ${error.message}`);
-      return false;
+    // Insert in batches to avoid payload size limitations
+    const batchSize = 50;
+    for (let i = 0; i < issues.length; i += batchSize) {
+      const batch = issues.slice(i, i + batchSize);
+      const { error } = await supabase
+        .from('seo_crawler_issues')
+        .insert(batch);
+      
+      if (error) {
+        console.error(`Error saving issues batch: ${error.message}`, error);
+        console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
+      } else {
+        console.log(`Successfully saved batch of ${batch.length} issues`);
+      }
     }
     
     return true;
@@ -81,6 +112,8 @@ export async function saveLinks(
   if (links.length === 0) return true;
   
   try {
+    console.log(`Saving ${links.length} links to database for page ${pageId}`);
+    
     // Convert links to proper format for insertion
     const linkRecords = links.map(link => ({
       crawl_id: crawlId,
@@ -91,7 +124,7 @@ export async function saveLinks(
     }));
     
     // Insert in batches to avoid payload size limitations
-    const batchSize = 100;
+    const batchSize = 50;
     for (let i = 0; i < linkRecords.length; i += batchSize) {
       const batch = linkRecords.slice(i, i + batchSize);
       const { error } = await supabase
@@ -99,9 +132,25 @@ export async function saveLinks(
         .insert(batch);
       
       if (error) {
-        console.error(`Error saving links batch: ${error.message}`);
+        console.error(`Error saving links batch: ${error.message}`, error);
+        console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
+      } else {
+        console.log(`Successfully saved batch of ${batch.length} links`);
       }
     }
+    
+    // Update crawl record with link counts
+    const internalLinks = linkRecords.filter(link => link.is_internal).length;
+    const externalLinks = linkRecords.length - internalLinks;
+    
+    await supabase
+      .from('seo_crawler_crawls')
+      .update({
+        total_links: linkRecords.length,
+        total_internal_links: internalLinks,
+        total_external_links: externalLinks
+      })
+      .eq('id', crawlId);
     
     return true;
   } catch (error) {
@@ -126,51 +175,31 @@ export async function updatePageWithAnalysisResults(
   }
 ): Promise<boolean> {
   try {
+    console.log(`Updating page ${pageId} with analysis results`);
+    
     const { error } = await supabase
       .from('seo_crawler_pages')
       .update({
-        title: results.title,
-        meta_description: results.metaDescription,
-        h1: results.h1,
-        issues_count: results.issuesCount,
-        internal_links_count: results.internalLinksCount,
-        external_links_count: results.externalLinksCount
+        title: results.title || null,
+        meta_description: results.metaDescription || null,
+        h1: results.h1 || null,
+        issues_count: results.issuesCount || 0,
+        internal_links_count: results.internalLinksCount || 0,
+        external_links_count: results.externalLinksCount || 0,
+        crawled_at: new Date().toISOString()
       })
       .eq('id', pageId);
     
     if (error) {
-      console.error(`Error updating page with analysis results: ${error.message}`);
+      console.error(`Error updating page with analysis results: ${error.message}`, error);
+      console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
       return false;
     }
     
+    console.log(`Successfully updated page ${pageId} with analysis results`);
     return true;
   } catch (error) {
     console.error('Error in updatePageWithAnalysisResults:', error);
-    return false;
-  }
-}
-
-// Helper function to check if a URL is internal
-function isInternalUrl(url: string, baseUrl: string): boolean {
-  try {
-    // Extract domain from the base URL
-    const baseDomain = new URL(baseUrl).hostname;
-    
-    // If the URL starts with a slash, it's internal
-    if (url.startsWith('/')) {
-      return true;
-    }
-    
-    // If it's an absolute URL, check if the domain matches
-    if (url.startsWith('http')) {
-      const linkDomain = new URL(url).hostname;
-      return linkDomain === baseDomain || linkDomain.endsWith(`.${baseDomain}`);
-    }
-    
-    // If it doesn't start with http or /, it's likely a relative URL
-    return true;
-  } catch (e) {
-    // If there's an error parsing the URL, assume it's external
     return false;
   }
 }

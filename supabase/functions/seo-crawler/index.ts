@@ -2,7 +2,6 @@
 // Main Supabase Edge Function for SEO Crawler
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { crawlPage } from "./crawler.ts";
 import { handleRequest } from "./handler.ts";
 
 // Define CORS headers
@@ -27,7 +26,7 @@ serve(async (req) => {
 
   try {
     console.log("SEO Crawler function invoked");
-    console.log("Function version: 1.0.1"); // Version tracking for debugging
+    console.log("Function version: 1.0.2"); // Updated version for tracking
     
     // Use the dedicated handler function
     return await handleRequest(req, supabase);

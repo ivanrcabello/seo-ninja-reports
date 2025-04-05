@@ -26,6 +26,17 @@ export async function processHtml(
     if (!html || html.length === 0) {
       console.error('[HTML Processor] HTML content is empty');
       await registerCrawlerError(supabase, crawlId, url, 'HTML content is empty from Bright Data');
+      
+      // Update crawl status to failed
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          status: 'failed',
+          error_message: 'HTML content is empty',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', crawlId);
+        
       return null;
     }
     
@@ -34,6 +45,17 @@ export async function processHtml(
       console.error('[HTML Processor] HTML content is too short');
       console.log(`[HTML Processor] Full short content: ${html}`);
       await registerCrawlerError(supabase, crawlId, url, 'HTML content is too short from Bright Data');
+      
+      // Update crawl status to failed
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          status: 'failed',
+          error_message: 'HTML content is too short (less than 50 characters)',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', crawlId);
+        
       return null;
     }
     
@@ -41,10 +63,23 @@ export async function processHtml(
     if (html.includes('Access Denied') || 
         html.includes('Request Rejected') || 
         html.includes('Proxy Authentication Required') ||
-        html.includes('407 Proxy Authentication Required')) {
+        html.includes('407 Proxy Authentication Required') ||
+        html.includes('Unauthorized') ||
+        html.includes('401 Authorization Required')) {
       console.error('[HTML Processor] Access denied or authentication error content detected');
       console.log(`[HTML Processor] Error page preview: ${html.substring(0, 300)}...`);
       await registerCrawlerError(supabase, crawlId, url, 'Access denied, authentication required, or request rejected by target server');
+      
+      // Update crawl status to failed
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          status: 'failed',
+          error_message: 'Access denied or authentication errors detected',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', crawlId);
+        
       return null;
     }
     
@@ -62,18 +97,46 @@ export async function processHtml(
           
           // Check if JSON contains an error message
           if (jsonData.error || jsonData.message) {
-            await registerCrawlerError(
-              supabase, 
-              crawlId, 
-              url, 
-              `Bright Data returned JSON error: ${jsonData.error || jsonData.message}`
-            );
+            const errorMessage = `Bright Data returned JSON error: ${jsonData.error || jsonData.message}`;
+            await registerCrawlerError(supabase, crawlId, url, errorMessage);
+            
+            // Update crawl status to failed
+            await supabase
+              .from('seo_crawler_crawls')
+              .update({
+                status: 'failed',
+                error_message: errorMessage,
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', crawlId);
           } else {
-            await registerCrawlerError(supabase, crawlId, url, 'Bright Data returned JSON instead of HTML');
+            const errorMessage = 'Bright Data returned JSON instead of HTML';
+            await registerCrawlerError(supabase, crawlId, url, errorMessage);
+            
+            // Update crawl status to failed
+            await supabase
+              .from('seo_crawler_crawls')
+              .update({
+                status: 'failed',
+                error_message: errorMessage,
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', crawlId);
           }
         } catch (e) {
           console.error('[HTML Processor] Error parsing JSON:', e);
-          await registerCrawlerError(supabase, crawlId, url, 'Received invalid content from Bright Data (not HTML)');
+          const errorMessage = 'Received invalid content from Bright Data (not HTML)';
+          await registerCrawlerError(supabase, crawlId, url, errorMessage);
+          
+          // Update crawl status to failed
+          await supabase
+            .from('seo_crawler_crawls')
+            .update({
+              status: 'failed',
+              error_message: errorMessage,
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', crawlId);
         }
         return null;
       }
@@ -83,7 +146,19 @@ export async function processHtml(
         console.log(`[HTML Processor] Full content: ${html}`);
       }
       
-      await registerCrawlerError(supabase, crawlId, url, 'Content does not appear to be valid HTML');
+      const errorMessage = 'Content does not appear to be valid HTML';
+      await registerCrawlerError(supabase, crawlId, url, errorMessage);
+      
+      // Update crawl status to failed
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          status: 'failed',
+          error_message: errorMessage,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', crawlId);
+        
       return null;
     }
     
@@ -95,15 +170,49 @@ export async function processHtml(
     if (result) {
       console.log(`[HTML Processor] Analysis completed successfully for ${url}`);
       console.log(`[HTML Processor] Found ${result.issues || 0} issues`);
+      
+      // Update crawl status to completed
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          pages_crawled: 1,
+          total_issues: result.issues || 0
+        })
+        .eq('id', crawlId);
     } else {
       console.error('[HTML Processor] HTML analysis returned null result');
+      
+      // Update crawl status to failed
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          status: 'failed',
+          error_message: 'HTML analysis returned no results',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', crawlId);
     }
     
     return result;
   } catch (error) {
     console.error(`[HTML Processor] Error processing HTML: ${error instanceof Error ? error.message : 'Unknown error'}`);
     console.error(`[HTML Processor] Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`);
-    await registerCrawlerError(supabase, crawlId, url, error instanceof Error ? error.message : String(error));
+    
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    await registerCrawlerError(supabase, crawlId, url, errorMessage);
+    
+    // Update crawl status to failed
+    await supabase
+      .from('seo_crawler_crawls')
+      .update({
+        status: 'failed',
+        error_message: errorMessage,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', crawlId);
+      
     return null;
   }
 }
