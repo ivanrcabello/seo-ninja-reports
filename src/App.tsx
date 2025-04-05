@@ -6,7 +6,6 @@ import { ReportsProvider } from './hooks/useReports.tsx';
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Create a client
 const queryClient = new QueryClient();
 
 const LoadingSpinner = () => {
@@ -18,7 +17,6 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Index = lazy(() => import('./pages/Index'));
 
-// Main Routes
 const Servicios = lazy(() => import('./pages/Servicios'));
 const Paquetes = lazy(() => import('./pages/Paquetes'));
 const Contacto = lazy(() => import('./pages/Contacto'));
@@ -33,7 +31,6 @@ const Cookies = lazy(() => import('./pages/Cookies'));
 const Terminos = lazy(() => import('./pages/Terminos'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
-// Service Pages
 const SeoLocal = lazy(() => import('./pages/servicios/SeoLocal'));
 const SeoTecnico = lazy(() => import('./pages/servicios/SeoTecnico'));
 const SeoIA = lazy(() => import('./pages/servicios/SeoIA'));
@@ -42,16 +39,13 @@ const SeoCompetencia = lazy(() => import('./pages/servicios/SeoCompetencia'));
 const GoogleBusiness = lazy(() => import('./pages/servicios/GoogleBusiness'));
 const Resenas = lazy(() => import('./pages/servicios/Resenas'));
 
-// Package Pages
 const PackStarter = lazy(() => import('./pages/packs/PackStarter'));
 const PackAscenso = lazy(() => import('./pages/packs/PackAscenso'));
 const PackMaster = lazy(() => import('./pages/packs/PackMaster'));
 
-// Blog Pages
 const BlogDetail = lazy(() => import('./pages/BlogDetail'));
 const BlogAdmin = lazy(() => import('./pages/BlogAdmin'));
 
-// Client and Report Pages
 const ClientDetail = lazy(() => 
   import('./pages/ClientDetail')
     .catch(error => {
@@ -161,10 +155,6 @@ const CrawlerDetailPage = lazy(() =>
     })
 );
 
-const AuthGuard = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
-
 const SharedInvoice = lazy(() => 
   import('./pages/SharedInvoice')
     .catch(error => {
@@ -252,6 +242,8 @@ const PublicReport = lazy(() =>
 const ClientPortal = lazy(() => import('./pages/ClientPortal'));
 const ClientPortalDashboard = lazy(() => import('./pages/ClientPortalDashboard'));
 
+const NewClientPage = lazy(() => import('./pages/NewClientPage'));
+
 function App() {
   return (
     <>
@@ -262,11 +254,9 @@ function App() {
               <Router>
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
-                    {/* Rutas públicas */}
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
 
-                    {/* Servicios */}
                     <Route path="/servicios" element={<Servicios />} />
                     <Route path="/servicios/seo-local" element={<SeoLocal />} />
                     <Route path="/servicios/seo-tecnico" element={<SeoTecnico />} />
@@ -276,18 +266,15 @@ function App() {
                     <Route path="/servicios/google-business" element={<GoogleBusiness />} />
                     <Route path="/servicios/resenas" element={<Resenas />} />
 
-                    {/* Paquetes */}
                     <Route path="/paquetes" element={<Paquetes />} />
                     <Route path="/paquetes/starter" element={<PackStarter />} />
                     <Route path="/paquetes/ascenso" element={<PackAscenso />} />
                     <Route path="/paquetes/master" element={<PackMaster />} />
 
-                    {/* Blog */}
                     <Route path="/blog" element={<Blog />} />
                     <Route path="/blog/:slug" element={<BlogDetail />} />
                     <Route path="/admin/blog" element={<BlogAdmin />} />
 
-                    {/* Otras páginas */}
                     <Route path="/caracteristicas" element={<Caracteristicas />} />
                     <Route path="/precios" element={<Precios />} />
                     <Route path="/guias" element={<Guias />} />
@@ -298,19 +285,17 @@ function App() {
                     <Route path="/cookies" element={<Cookies />} />
                     <Route path="/terminos" element={<Terminos />} />
                     
-                    {/* Shared links */}
                     <Route path="/shared/invoices/:sharedUrl" element={<SharedInvoice />} />
                     <Route path="/shared/proposals/:sharedUrl" element={<SharedProposal />} />
                     <Route path="/shared/contracts/:sharedUrl" element={<SharedContract />} />
                     <Route path="/shared/reports/:id" element={<PublicReport />} />
                     
-                    {/* Portal de clientes */}
                     <Route path="/portal" element={<ClientPortal />} />
                     <Route path="/portal/dashboard" element={<ClientPortalDashboard />} />
                     
-                    {/* Rutas de administración (protegidas) */}
                     <Route path="/admin" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
                     <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+                    <Route path="/clients/new" element={<AuthGuard><NewClientPage /></AuthGuard>} />
                     <Route path="/clients/:id" element={<AuthGuard><ClientDetailWithErrorBoundary /></AuthGuard>} />
                     <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
                     <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />

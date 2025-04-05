@@ -5,6 +5,7 @@ import Dashboard from '@/pages/Dashboard';
 import Settings from '@/pages/Settings';
 import BlogAdmin from '@/pages/BlogAdmin';
 import ClientDetail from '@/pages/ClientDetail';
+import NewClientPage from '@/pages/NewClientPage';
 import CrawlerDetailPage from '@/pages/CrawlerDetailPage';
 import ReportDetail from '@/pages/ReportDetail';
 import AllReports from '@/pages/AllReports';
@@ -22,6 +23,10 @@ export const adminRoutes: RouteObject[] = [
   {
     path: '/dashboard',
     element: <AuthGuard><Dashboard /></AuthGuard>
+  },
+  {
+    path: '/clients/new',
+    element: <AuthGuard><NewClientPage /></AuthGuard>
   },
   {
     path: '/clients/:id',
