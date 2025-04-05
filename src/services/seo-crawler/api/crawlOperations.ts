@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlSettings } from '../types';
+import { debugCrawlData } from './debugUtils';
 
 // Helper function to ensure URL has proper protocol
 function normalizeUrl(url: string): string {
@@ -65,6 +66,9 @@ export async function startCrawl(
     if (!crawlRecord) throw new Error('Failed to create crawl record: No data returned');
 
     console.log('Crawl record created:', crawlRecord.id);
+    
+    // Debug crawl record data
+    debugCrawlData(crawlRecord);
 
     // Get the credentials from localStorage or use default values
     const brightDataUsername = localStorage.getItem('bright_data_username') || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';

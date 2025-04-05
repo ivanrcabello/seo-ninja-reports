@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlLink } from '../types';
+import { debugLinksData } from './debugUtils';
 
 /**
  * Get links for a specific page
@@ -18,6 +19,9 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
       console.error('Error from Supabase:', error);
       throw error;
     }
+    
+    // Debug links data to identify structure issues
+    debugLinksData(data);
     
     // Map to our CrawlLink type with the required fields
     return (data || []).map(link => ({
@@ -61,6 +65,9 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
       console.error('Error from Supabase:', error);
       throw error;
     }
+    
+    // Debug links data to identify structure issues
+    debugLinksData(data);
     
     // Map to our CrawlLink type with the required fields
     return (data || []).map(link => ({

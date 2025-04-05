@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlPage, CrawlSettings } from '../types';
+import { debugCrawlData } from './debugUtils';
 
 /**
  * Get a specific crawl result by ID
@@ -22,6 +22,9 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
     if (!data) {
       throw new Error(`Crawl with ID ${crawlId} not found`);
     }
+    
+    // Debug crawl data to see what fields are available
+    debugCrawlData(data);
     
     // Parse the settings to ensure it's a CrawlSettings object
     // Safe type assertion with fallback values
@@ -99,6 +102,9 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
     }
     
     return (data || []).map(item => {
+      // Debug crawl data to see what fields are available
+      debugCrawlData(item);
+      
       // Parse the settings to ensure it's a CrawlSettings object
       const settings = item.settings as any;
       const parsedSettings: CrawlSettings = {

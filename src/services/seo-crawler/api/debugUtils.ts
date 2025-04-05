@@ -39,3 +39,20 @@ export function debugLinksData(data: any) {
     hasCreatedAt: data[0].hasOwnProperty('created_at')
   });
 }
+
+/**
+ * Logs crawl data to console to help debug structure
+ */
+export function debugCrawlData(data: any) {
+  if (!data) {
+    console.log('No crawl data to debug');
+    return;
+  }
+  
+  console.log('Crawl data structure:', {
+    keys: Object.keys(data),
+    hasTotalTimeSeconds: data.hasOwnProperty('total_time_seconds'),
+    hasInsertedAt: data.hasOwnProperty('inserted_at'),
+    hasCreatedAt: data.hasOwnProperty('created_at')
+  });
+}
