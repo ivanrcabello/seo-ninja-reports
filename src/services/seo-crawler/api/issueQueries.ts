@@ -25,15 +25,16 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
+      type: issue.issue_type, // Map database field to our type field
+      issue_type: issue.issue_type, // Keep the original field name as an alias
       page_url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : '',
-      issue_type: issue.issue_type,
       description: issue.description,
       element: issue.element || '',
-      severity: issue.severity || 'medium',
+      severity: (issue.severity || 'medium') as 'low' | 'medium' | 'high' | 'critical' | 'info',
       fix_suggestion: issue.fix_suggestion || '',
       recommended_fix: issue.recommended_fix || '',
       category: issue.category || 'General',
-      // Add the seo_crawler_pages object to match the interface
+      created_at: issue.created_at || new Date().toISOString(),
       seo_crawler_pages: {
         url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''
       }
@@ -69,15 +70,16 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
           id: issue.id,
           crawl_id: issue.crawl_id,
           page_id: issue.page_id,
+          type: issue.issue_type, // Map database field to our type field
+          issue_type: issue.issue_type, // Keep the original field name as an alias
           page_url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : '',
-          issue_type: issue.issue_type,
           description: issue.description,
           element: issue.element || '',
-          severity: issue.severity || 'medium',
+          severity: (issue.severity || 'medium') as 'low' | 'medium' | 'high' | 'critical' | 'info',
           fix_suggestion: issue.fix_suggestion || '',
           recommended_fix: issue.recommended_fix || '',
           category: issue.category || 'General',
-          // Add the seo_crawler_pages object to match the interface
+          created_at: issue.created_at || new Date().toISOString(),
           seo_crawler_pages: {
             url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''
           }
@@ -104,15 +106,16 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
+      type: issue.issue_type, // Map database field to our type field
+      issue_type: issue.issue_type, // Keep the original field name as an alias
       page_url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : '',
-      issue_type: issue.issue_type,
       description: issue.description,
       element: issue.element || '',
-      severity: issue.severity || 'medium',
+      severity: (issue.severity || 'medium') as 'low' | 'medium' | 'high' | 'critical' | 'info',
       fix_suggestion: issue.fix_suggestion || '',
       recommended_fix: issue.recommended_fix || '',
       category: issue.category || 'General',
-      // Add the seo_crawler_pages object to match the interface
+      created_at: issue.created_at || new Date().toISOString(),
       seo_crawler_pages: {
         url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''
       }

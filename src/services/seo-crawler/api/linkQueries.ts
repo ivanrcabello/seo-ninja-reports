@@ -25,12 +25,15 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
       crawl_id: link.crawl_id,
       page_id: link.page_id,
       url: link.url,
-      anchor_text: link.anchor_text || 'Sin texto ancla', // Provide a default value
+      text: link.anchor_text || 'Sin texto ancla', // Map to the standard property
+      anchor_text: link.anchor_text || 'Sin texto ancla', // Keep the alias
       is_internal: link.is_internal,
+      is_followed: !!link.follow, // Map from follow to is_followed
+      follow: link.follow, // Keep the original property
       is_broken: link.is_broken,
       status_code: link.status_code,
-      follow: link.follow,
-      rel_attributes: link.rel_attributes
+      rel_attributes: link.rel_attributes,
+      created_at: link.created_at || new Date().toISOString()
     }));
   } catch (error) {
     console.error('Error fetching page links:', error);
@@ -61,12 +64,15 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
       crawl_id: link.crawl_id,
       page_id: link.page_id,
       url: link.url,
-      anchor_text: link.anchor_text || 'Sin texto ancla', // Provide a default value
+      text: link.anchor_text || 'Sin texto ancla', // Map to the standard property
+      anchor_text: link.anchor_text || 'Sin texto ancla', // Keep the alias
       is_internal: link.is_internal,
+      is_followed: !!link.follow, // Map from follow to is_followed
+      follow: link.follow, // Keep the original property
       is_broken: link.is_broken,
       status_code: link.status_code,
-      follow: link.follow,
-      rel_attributes: link.rel_attributes
+      rel_attributes: link.rel_attributes,
+      created_at: link.created_at || new Date().toISOString()
     }));
   } catch (error) {
     console.error('Error fetching crawl links:', error);

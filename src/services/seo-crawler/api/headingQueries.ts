@@ -28,7 +28,7 @@ export async function getPageHeadings(pageId: string): Promise<CrawlHeading[]> {
       heading_type: heading.heading_type,
       content: heading.content,
       // Map heading_position to position as expected by interface
-      position: heading.position || 0,
+      position: heading.position || heading.heading_position || 0,
       // Add required fields for TypeScript compatibility
       created_at: heading.created_at || new Date().toISOString(),
       seo_crawler_pages: {

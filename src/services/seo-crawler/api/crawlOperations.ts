@@ -122,12 +122,16 @@ export async function startCrawl(
       console.error('Edge function invocation failed, but continuing anyway');
     }
     
-    // Add success and message properties for the component to use
-    return {
-      ...crawlRecord as unknown as CrawlResult,
+    // Map database record to our CrawlResult type with normalized field names
+    const result: CrawlResult = {
+      ...crawlRecord,
+      started_at: crawlRecord.started_at || crawlRecord.inserted_at || crawlRecord.created_at,
+      start_time: crawlRecord.started_at || crawlRecord.inserted_at || crawlRecord.created_at,
       success: true,
       message: 'Crawl started. It will continue in the background.'
     };
+    
+    return result;
   } catch (error) {
     console.error('Error starting crawl:', error);
     throw error;
