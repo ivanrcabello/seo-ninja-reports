@@ -150,12 +150,17 @@ export const ClientsProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteClient = async (id: string) => {
     try {
+      console.log('Starting client deletion in useClients for ID:', id);
+      
+      // First delete the client from database
       await deleteClientFromDb(id);
       
+      // Then remove from state
       setClients(prevClients => prevClients.filter(client => client.id !== id));
-      toast.success('Cliente eliminado exitosamente');
+      console.log('Client removed from state successfully');
     } catch (error: any) {
-      throw error;
+      console.error('Error in deleteClient hook:', error);
+      throw error; // Re-throw to be handled by the calling component
     }
   };
 

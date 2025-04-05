@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Client } from '@/types/client.types';
 import { toast } from 'sonner';
+import { handleServiceError } from './api/baseService';
 
 export async function fetchClients(userId: string | undefined) {
   if (!userId) {
@@ -147,17 +148,88 @@ export async function updateClientInDb(
 
 export async function deleteClientFromDb(id: string) {
   try {
+    console.log('Deleting client with ID:', id);
+    
+    // First delete related data in client_tasks table
+    const { error: tasksError } = await supabase
+      .from('client_tasks')
+      .delete()
+      .eq('client_id', id);
+    
+    if (tasksError) {
+      console.error('Error deleting client tasks:', tasksError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Delete related data in client_notes table
+    const { error: notesError } = await supabase
+      .from('client_notes')
+      .delete()
+      .eq('client_id', id);
+    
+    if (notesError) {
+      console.error('Error deleting client notes:', notesError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Delete related data in client_invoices table
+    const { error: invoicesError } = await supabase
+      .from('client_invoices')
+      .delete()
+      .eq('client_id', id);
+    
+    if (invoicesError) {
+      console.error('Error deleting client invoices:', invoicesError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Delete related data in client_proposals table
+    const { error: proposalsError } = await supabase
+      .from('client_proposals')
+      .delete()
+      .eq('client_id', id);
+    
+    if (proposalsError) {
+      console.error('Error deleting client proposals:', proposalsError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Delete related data in client_contracts table
+    const { error: contractsError } = await supabase
+      .from('client_contracts')
+      .delete()
+      .eq('client_id', id);
+    
+    if (contractsError) {
+      console.error('Error deleting client contracts:', contractsError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Delete related data in reports table
+    const { error: reportsError } = await supabase
+      .from('reports')
+      .delete()
+      .eq('client_id', id);
+    
+    if (reportsError) {
+      console.error('Error deleting reports:', reportsError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Finally delete the client record
     const { error } = await supabase
       .from('clients')
       .delete()
       .eq('id', id);
     
     if (error) {
+      console.error('Error deleting client:', error);
       throw error;
     }
+    
+    console.log('Client deleted successfully');
   } catch (error: any) {
-    console.error('Error deleting client:', error);
-    toast.error(error.message || 'Error al eliminar cliente');
-    throw error;
+    console.error('Error in deleteClientFromDb:', error);
+    throw error; // Rethrow to be handled by the calling function
   }
 }

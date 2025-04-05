@@ -48,6 +48,17 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await onDeleteClient();
+      // No need to set state here as we're navigating away
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      toast.error('Error al eliminar el cliente');
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-6 mb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -117,16 +128,15 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta acción eliminará permanentemente el cliente "{client.name}" y todos sus informes asociados. Esta acción no se puede deshacer.
+                  Esta acción eliminará permanentemente el cliente "{client.name}" y todos sus datos asociados (informes, facturas, propuestas, etc.). Esta acción no se puede deshacer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={async (e) => {
+                  onClick={(e) => {
                     e.preventDefault();
-                    await onDeleteClient();
-                    setIsDeleteDialogOpen(false);
+                    handleDelete();
                   }}
                   disabled={isDeleting}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

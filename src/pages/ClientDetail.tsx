@@ -87,12 +87,16 @@ const ClientDetail = () => {
     
     setIsDeleting(true);
     try {
+      console.log('Starting client deletion process for ID:', client.id);
       await deleteClient(client.id);
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Error deleting client:', error);
-      toast.error('Error al eliminar el cliente');
-    } finally {
+      console.log('Client deletion completed successfully');
+      
+      toast.success('Cliente eliminado exitosamente');
+      navigate('/dashboard', { replace: true });
+    } catch (error: any) {
+      console.error('Error in handleDeleteClient:', error);
+      toast.error(error.message || 'Error al eliminar el cliente');
+      
       if (isMounted.current) {
         setIsDeleting(false);
       }
