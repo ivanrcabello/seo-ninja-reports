@@ -1,39 +1,41 @@
 
 /**
- * Debug utility functions for the SEO crawler
+ * Debug utility functions for SEO crawler data
  */
 
 /**
- * Debug issues data - logs helpful information about the issues data structure
+ * Logs issue data to console to help debug structure
  */
-export function debugIssuesData(issues: any[] = []): void {
-  if (issues.length === 0) {
+export function debugIssuesData(data: any) {
+  if (!data || data.length === 0) {
     console.log('No issues data to debug');
     return;
   }
+  
+  // Log the structure of the first item
+  console.log('Issues data sample structure:', {
+    sample: data[0],
+    keys: Object.keys(data[0]),
+    hasDetails: data[0].hasOwnProperty('details'),
+    hasCreatedAt: data[0].hasOwnProperty('created_at'),
+    relations: data[0].seo_crawler_pages ? 'Present' : 'Not present'
+  });
+}
 
-  try {
-    // Log the first issue for debugging
-    console.log('Sample issue data structure:', JSON.stringify(issues[0], null, 2));
-    
-    // Count issues by type
-    const typeCount: Record<string, number> = {};
-    issues.forEach(issue => {
-      const type = issue.issue_type || 'unknown';
-      typeCount[type] = (typeCount[type] || 0) + 1;
-    });
-    
-    console.log('Issues by type:', typeCount);
-    
-    // Count issues by severity
-    const severityCount: Record<string, number> = {};
-    issues.forEach(issue => {
-      const severity = issue.severity || 'unknown';
-      severityCount[severity] = (severityCount[severity] || 0) + 1;
-    });
-    
-    console.log('Issues by severity:', severityCount);
-  } catch (error) {
-    console.error('Error debugging issues data:', error);
+/**
+ * Logs link data to console to help debug structure
+ */
+export function debugLinksData(data: any) {
+  if (!data || data.length === 0) {
+    console.log('No links data to debug');
+    return;
   }
+  
+  // Log the structure of the first item
+  console.log('Links data sample structure:', {
+    sample: data[0],
+    keys: Object.keys(data[0]),
+    hasRelAttributes: data[0].hasOwnProperty('rel_attributes'),
+    hasCreatedAt: data[0].hasOwnProperty('created_at')
+  });
 }
