@@ -18,11 +18,11 @@ import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
   const [brightDataUsername, setBrightDataUsername] = usePersistentState(
-    'brightDataUsername', 
+    'bright_data_username', 
     BRIGHT_DATA_CONFIG.DEFAULT_USER
   );
   const [brightDataPassword, setBrightDataPassword] = usePersistentState(
-    'brightDataPassword',
+    'bright_data_password',
     BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD
   );
 

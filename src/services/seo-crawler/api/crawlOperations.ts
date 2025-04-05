@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlSettings } from '../types';
 import { debugCrawlData } from './debugUtils';
@@ -69,7 +70,7 @@ export async function startCrawl(
     // Debug crawl record data
     debugCrawlData(crawlRecord);
 
-    // Get the credentials from localStorage or use default values from constants
+    // Get the credentials from localStorage
     const brightDataUsername = localStorage.getItem('bright_data_username') || 
       'brd-customer-hl_2a8d2c33-zone-web_unlocker';
     const brightDataPassword = localStorage.getItem('bright_data_password') || 

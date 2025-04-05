@@ -7,6 +7,7 @@ import GoogleSettings from './api/GoogleSettings';
 import ValueSerpSettings from './api/ValueSerpSettings';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { toast } from 'sonner';
+import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
 
 interface ApiSettingsProps {
   brightDataUsername: string;
@@ -22,7 +23,7 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
   setBrightDataPassword
 }) => {
   const [openAiApiKey, setOpenAiApiKey] = usePersistentState('openai_api_key', '');
-  const [googleApiKey, setGoogleApiKey] = usePersistentState('google_pagespeed_api_key', ''); // Changed key name here
+  const [googleApiKey, setGoogleApiKey] = usePersistentState('google_pagespeed_api_key', '');
   const [valueSerpApiKey, setValueSerpApiKey] = usePersistentState('valueserp_api_key', '');
   const [defaultPrompt, setDefaultPrompt] = usePersistentState('default_seo_prompt', '');
 
@@ -77,8 +78,8 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
       <TabsContent value="valueserp">
         <Card className="bg-background/50 border border-border/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-medium">Value SERP</CardTitle>
-            <CardDescription>Configura tu clave API de Value SERP para obtener información mejorada sobre perfiles de negocios.</CardDescription>
+            <CardTitle className="text-lg font-medium">Value SERP y Bright Data</CardTitle>
+            <CardDescription>Configura tus credenciales para los servicios de rastreo SEO.</CardDescription>
           </CardHeader>
           <CardContent>
             <ValueSerpSettings

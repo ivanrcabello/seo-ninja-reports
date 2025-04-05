@@ -39,7 +39,7 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
     }
 
     // Validate required input parameters
-    const { url, crawlId, username, password, brightDataUsername, brightDataPassword } = requestBody;
+    const { url, crawlId, brightDataUsername, brightDataPassword } = requestBody;
     if (!url || !crawlId) {
       console.error('Missing required parameters:', { url, crawlId });
       return new Response(
@@ -53,13 +53,9 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
         }
       );
     }
-
-    // Use either explicit username/password or brightDataUsername/brightDataPassword
-    const bdUsername = username || brightDataUsername;
-    const bdPassword = password || brightDataPassword;
     
     console.log(`Starting SEO crawler for URL: ${url}, crawl ID: ${crawlId}`);
-    console.log(`Using custom credentials: ${bdUsername ? 'Yes' : 'No'}, ${bdPassword ? 'Password provided' : 'No password'}`);
+    console.log(`Using custom credentials: ${brightDataUsername ? 'Yes' : 'No'}, ${brightDataPassword ? 'Password provided' : 'No password'}`);
 
     // Update crawl status to processing
     const { error: updateError } = await supabase
@@ -77,7 +73,7 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
 
     // Start the crawl process directly
     console.log(`Starting page crawl for ${url}...`);
-    const result = await crawlPage(supabase, url, crawlId, bdUsername, bdPassword);
+    const result = await crawlPage(supabase, url, crawlId, brightDataUsername, brightDataPassword);
     console.log(`Crawl completed, result: ${result ? 'success' : 'failed'}`);
 
     return new Response(

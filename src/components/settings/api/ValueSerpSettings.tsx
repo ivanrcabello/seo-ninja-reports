@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -60,14 +61,14 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
       setHasSavedBrightData(true);
       toast.success('Credenciales de Bright Data guardadas');
     } else {
-      toast.error('La API key de Bright Data es obligatoria');
+      toast.error('La contraseña de Bright Data es obligatoria');
     }
   };
 
   // For testing the credentials
   const handleTestBrightData = async () => {
     if (!brightDataPassword) {
-      toast.error('La API key de Bright Data es obligatoria para realizar la prueba');
+      toast.error('La contraseña de Bright Data es obligatoria para realizar la prueba');
       return;
     }
 
