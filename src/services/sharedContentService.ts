@@ -23,7 +23,8 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     
     if (sharedData) {
       // If found in shared_content, format and return
-      const content = sharedData.content as Record<string, any> || {};
+      const content = (typeof sharedData.content === 'object') ? sharedData.content : {};
+      
       return {
         data: {
           id: sharedData.id,
@@ -31,22 +32,22 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
           description: sharedData.description || undefined,
           amount: content.amount || 0,
           status: content.status || 'pending',
-          due_date: sharedData.due_date,
+          due_date: content.due_date,
           payment_method: content.payment_method,
           payment_date: content.payment_date,
-          payment_instructions: sharedData.payment_instructions,
+          payment_instructions: content.payment_instructions,
           shared_url: sharedData.shared_url,
           created_at: sharedData.created_at,
           updated_at: sharedData.updated_at,
           client_name: sharedData.client_name,
           client_website: sharedData.client_website,
-          client_address: sharedData.client_address,
-          client_tax_id: sharedData.client_tax_id,
-          billing_name: sharedData.billing_name,
-          billing_tax_id: sharedData.billing_tax_id,
-          billing_address: sharedData.billing_address,
-          billing_email: sharedData.billing_email,
-          includes_vat: sharedData.includes_vat
+          client_address: content.client_address,
+          client_tax_id: content.client_tax_id,
+          billing_name: content.billing_name,
+          billing_tax_id: content.billing_tax_id,
+          billing_address: content.billing_address,
+          billing_email: content.billing_email,
+          includes_vat: content.includes_vat
         }
       };
     }

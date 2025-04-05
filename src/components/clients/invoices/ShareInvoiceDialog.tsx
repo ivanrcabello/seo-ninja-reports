@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -80,7 +79,16 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
             amount: invoiceData.amount,
             status: invoiceData.status,
             payment_method: invoiceData.payment_method,
-            payment_date: invoiceData.payment_date
+            payment_date: invoiceData.payment_date,
+            payment_instructions: invoiceData.payment_instructions,
+            client_address: invoiceData.client_address,
+            client_tax_id: invoiceData.client_tax_id,
+            billing_name: invoiceData.billing_name,
+            billing_tax_id: invoiceData.billing_tax_id,
+            billing_address: invoiceData.billing_address,
+            billing_email: invoiceData.billing_email,
+            includes_vat: invoiceData.includes_vat,
+            due_date: invoiceData.due_date
           };
           
           // Insert into shared_content
@@ -95,13 +103,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
               shared_url: sharedUrl,
               client_name: clientName,
               client_website: clientWebsite,
-              client_address: invoiceData.client_address,
-              client_tax_id: invoiceData.client_tax_id,
-              billing_name: invoiceData.billing_name,
-              billing_tax_id: invoiceData.billing_tax_id,
-              billing_address: invoiceData.billing_address,
-              billing_email: invoiceData.billing_email,
-              includes_vat: invoiceData.includes_vat,
               status: invoiceData.status
             });
           

@@ -76,6 +76,7 @@ export interface ClientInvoice {
   billing_address?: string;
   billing_email?: string;
   includes_vat?: boolean;
+  client_website?: string;
 }
 
 export interface ClientNote {
