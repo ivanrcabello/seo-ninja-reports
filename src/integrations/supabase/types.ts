@@ -1056,6 +1056,33 @@ export type Database = {
         }
         Relationships: []
       }
+      quick_links: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           client_id: string
