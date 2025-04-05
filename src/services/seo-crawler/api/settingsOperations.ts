@@ -109,7 +109,7 @@ export async function getCrawlSettings(clientId: string, domain: string): Promis
       crawl_sitemap: data.crawl_sitemap !== undefined ? data.crawl_sitemap : true,
       follow_links: data.follow_links !== undefined ? data.follow_links : true,
       max_depth: data.max_depth || 5,
-      custom_headers: data.custom_headers || {}
+      custom_headers: (data.custom_headers as Record<string, string>) || {}
     };
   } catch (error) {
     console.error('Error fetching crawl settings:', error);

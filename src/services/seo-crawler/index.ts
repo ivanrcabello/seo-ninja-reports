@@ -11,8 +11,8 @@ export {
   getPageIssues,
   getPageLinks,
   deleteCrawlRecord,
-  saveSettings,
-  getSettings
+  saveCrawlSettings as saveSettings,
+  getCrawlSettings as getSettings
 } from './api';
 
 // For backward compatibility with existing code

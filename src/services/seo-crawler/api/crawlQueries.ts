@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlPage, CrawlSettings } from '../types';
 
@@ -37,6 +38,9 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       custom_headers: settings?.custom_headers || {}
     };
     
+    const createdAt = data.inserted_at || new Date().toISOString();
+    const updatedAt = data.updated_at || data.inserted_at || new Date().toISOString();
+    
     return {
       id: data.id,
       client_id: data.client_id,
@@ -44,10 +48,10 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       domain: data.domain,
       status: data.status as 'queued' | 'processing' | 'completed' | 'failed',
       started_at: data.started_at,
-      start_time: data.started_at || data.inserted_at || data.created_at, // Map for compatibility
+      start_time: data.started_at || data.inserted_at || createdAt, // Map for compatibility
       completed_at: data.completed_at,
-      created_at: data.inserted_at || new Date().toISOString(),
-      updated_at: data.updated_at || data.inserted_at || new Date().toISOString(),
+      created_at: createdAt,
+      updated_at: updatedAt,
       total_pages: data.total_pages || 0,
       pages_crawled: data.pages_crawled || 0,
       total_issues: data.total_issues || 0,
@@ -56,7 +60,7 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       success: true,
       message: '',
       // Additional fields
-      inserted_at: data.inserted_at || new Date().toISOString(),
+      inserted_at: data.inserted_at || createdAt,
       total_time_seconds: data.total_time_seconds || 0,
       total_links: data.total_links || 0,
       total_internal_links: data.total_internal_links || 0,
@@ -108,6 +112,9 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         custom_headers: settings?.custom_headers || {}
       };
       
+      const createdAt = item.inserted_at || new Date().toISOString();
+      const updatedAt = item.updated_at || item.inserted_at || new Date().toISOString();
+      
       return {
         id: item.id,
         client_id: item.client_id,
@@ -115,10 +122,10 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         domain: item.domain,
         status: item.status as 'queued' | 'processing' | 'completed' | 'failed',
         started_at: item.started_at,
-        start_time: item.started_at || item.inserted_at || item.created_at, // Map for compatibility
+        start_time: item.started_at || item.inserted_at || createdAt, // Map for compatibility
         completed_at: item.completed_at,
-        created_at: item.inserted_at || new Date().toISOString(),
-        updated_at: item.updated_at || item.inserted_at || new Date().toISOString(),
+        created_at: createdAt,
+        updated_at: updatedAt,
         total_pages: item.total_pages || 0,
         pages_crawled: item.pages_crawled || 0,
         total_issues: item.total_issues || 0,
@@ -127,7 +134,7 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         success: true,
         message: '',
         // Additional fields
-        inserted_at: item.inserted_at || new Date().toISOString(),
+        inserted_at: item.inserted_at || createdAt,
         total_time_seconds: item.total_time_seconds || 0,
         total_links: item.total_links || 0,
         total_internal_links: item.total_internal_links || 0,

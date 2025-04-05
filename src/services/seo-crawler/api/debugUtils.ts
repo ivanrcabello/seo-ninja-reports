@@ -1,45 +1,39 @@
 
 /**
- * Debug utilities for SEO crawler API
+ * Debug utility functions for the SEO crawler
  */
 
 /**
- * Logs debug information about issues data
+ * Debug issues data - logs helpful information about the issues data structure
  */
-export function debugIssuesData(data: any[]): void {
+export function debugIssuesData(issues: any[] = []): void {
+  if (issues.length === 0) {
+    console.log('No issues data to debug');
+    return;
+  }
+
   try {
-    console.log(`Debug issues data: Found ${data.length} issues`);
+    // Log the first issue for debugging
+    console.log('Sample issue data structure:', JSON.stringify(issues[0], null, 2));
     
-    // Sample the first 2 issues to avoid excessive logging
-    const sampleSize = Math.min(2, data.length);
-    for (let i = 0; i < sampleSize; i++) {
-      const issue = data[i];
-      console.log(`Issue sample ${i + 1}:`);
-      console.log(`- ID: ${issue.id}`);
-      console.log(`- Type: ${issue.issue_type}`);
-      console.log(`- Severity: ${issue.severity}`);
-      console.log(`- Page ID: ${issue.page_id}`);
-      console.log(`- Has page reference: ${!!issue.seo_crawler_pages}`);
-    }
-    
-    // Issue type stats
-    const typeStats: Record<string, number> = {};
-    data.forEach(issue => {
+    // Count issues by type
+    const typeCount: Record<string, number> = {};
+    issues.forEach(issue => {
       const type = issue.issue_type || 'unknown';
-      typeStats[type] = (typeStats[type] || 0) + 1;
+      typeCount[type] = (typeCount[type] || 0) + 1;
     });
     
-    console.log('Issue type statistics:', typeStats);
+    console.log('Issues by type:', typeCount);
     
-    // Severity stats
-    const severityStats: Record<string, number> = {};
-    data.forEach(issue => {
+    // Count issues by severity
+    const severityCount: Record<string, number> = {};
+    issues.forEach(issue => {
       const severity = issue.severity || 'unknown';
-      severityStats[severity] = (severityStats[severity] || 0) + 1;
+      severityCount[severity] = (severityCount[severity] || 0) + 1;
     });
     
-    console.log('Issue severity statistics:', severityStats);
+    console.log('Issues by severity:', severityCount);
   } catch (error) {
-    console.error('Error in debugIssuesData:', error);
+    console.error('Error debugging issues data:', error);
   }
 }
