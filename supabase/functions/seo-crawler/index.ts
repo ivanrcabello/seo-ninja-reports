@@ -3,6 +3,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { crawlPage } from "./crawler.ts";
+import { handleRequest } from "./handler.ts";
 
 // Define CORS headers
 const corsHeaders = {
@@ -26,109 +27,13 @@ serve(async (req) => {
 
   try {
     console.log("SEO Crawler function invoked");
+    console.log("Function version: 1.0.1"); // Version tracking for debugging
     
-    // Get request body
-    const requestData = await req.json();
-    console.log("Request data:", JSON.stringify(requestData));
-    
-    const { crawlId, url, settings, brightDataUsername, brightDataPassword } = requestData;
-    
-    if (!crawlId || !url) {
-      console.error("Missing required parameters: crawlId and url are required");
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Missing required parameters: crawlId and url are required" 
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
-      );
-    }
-    
-    console.log(`Starting SEO crawl for: ${url} (crawlId: ${crawlId})`);
-    
-    // Mark crawl as processing
-    const { error: updateError } = await supabase
-      .from('seo_crawler_crawls')
-      .update({ 
-        status: 'processing',
-        started_at: new Date().toISOString()
-      })
-      .eq('id', crawlId);
-      
-    if (updateError) {
-      console.error("Error updating crawl status:", updateError);
-    }
-    
-    // Start async crawl process
-    crawlPage(supabase, url, crawlId, brightDataUsername, brightDataPassword)
-      .then(async (result) => {
-        console.log(`Crawl finished for URL: ${url}`);
-        console.log(`Result: ${result ? 'Success' : 'Failed'}`);
-        
-        // Update crawl status to completed
-        if (result) {
-          const { error } = await supabase
-            .from('seo_crawler_crawls')
-            .update({
-              status: 'completed',
-              completed_at: new Date().toISOString(),
-              pages_crawled: 1,
-              total_pages: 1
-            })
-            .eq('id', crawlId);
-            
-          if (error) {
-            console.error("Error updating crawl status to completed:", error);
-          }
-        } else {
-          const { error } = await supabase
-            .from('seo_crawler_crawls')
-            .update({
-              status: 'failed',
-              completed_at: new Date().toISOString(),
-              error_message: 'Failed to crawl page'
-            })
-            .eq('id', crawlId);
-            
-          if (error) {
-            console.error("Error updating crawl status to failed:", error);
-          }
-        }
-      })
-      .catch(async (error) => {
-        console.error("Error during crawl:", error);
-        
-        // Update crawl status to failed
-        const { error: updateError } = await supabase
-          .from('seo_crawler_crawls')
-          .update({
-            status: 'failed',
-            completed_at: new Date().toISOString(),
-            error_message: `Crawl failed: ${error.message || 'Unknown error'}`
-          })
-          .eq('id', crawlId);
-          
-        if (updateError) {
-          console.error("Error updating crawl status to failed:", updateError);
-        }
-      });
-    
-    // Return immediate response to avoid timeout
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "SEO crawler started successfully. Processing in background." 
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    // Use the dedicated handler function
+    return await handleRequest(req, supabase);
   } catch (error) {
     console.error(`Error in SEO crawler function: ${error.message}`);
+    console.error(`Stack trace: ${error.stack || 'No stack trace'}`);
     
     return new Response(
       JSON.stringify({ 

@@ -49,12 +49,12 @@ export async function crawlPage(
           'Accept-Language': 'en-US,en;q=0.9',
           'Connection': 'keep-alive',
           'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Pragma': 'no-cache',
         },
-        signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 30000)
+        signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 60000) // Increased timeout to 60 seconds
       };
       
-      console.log(`Making request to analyze: ${normalizedUrl} with timeout: ${BRIGHT_DATA_CONFIG.TIMEOUT || 30000}ms`);
+      console.log(`Making request to analyze: ${normalizedUrl} with timeout: ${BRIGHT_DATA_CONFIG.TIMEOUT || 60000}ms`);
       console.log('Request headers:', JSON.stringify(requestOptions.headers, null, 2));
       
       // Prepare the target URL for different fetching methods
@@ -79,8 +79,10 @@ export async function crawlPage(
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
           },
-          signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 30000)
+          signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 60000)
         };
         
         response = await fetch(proxyUrlWithAuth, simpleOptions);
@@ -92,6 +94,12 @@ export async function crawlPage(
           successMethod = 'proxy-url';
         } else {
           console.log(`METHOD 1: Failed with status ${response.status}`);
+          if (response.status === 407) {
+            console.log(`METHOD 1: Received 407 Proxy Authentication Required - auth issue with Bright Data`);
+            // Try to read the response body for more details
+            const errorText = await response.text();
+            console.log(`METHOD 1: Error response body: ${errorText}`);
+          }
         }
       } catch (method1Error) {
         console.error(`METHOD 1: Error with proxy URL: ${method1Error instanceof Error ? method1Error.message : 'Unknown error'}`);
@@ -102,31 +110,54 @@ export async function crawlPage(
         try {
           console.log(`METHOD 2: Starting direct fetch request at ${new Date().toISOString()}`);
           
-          response = await fetch(normalizedUrl, requestOptions);
+          // Method 2 - Modified to use the Bright Data format directly
+          const urlWithCredentials = `http://${username}:${password}@brd.superproxy.io:22225`;
+          
+          const method2Options = {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+              'Referer': 'https://www.google.com/', // Adding referer sometimes helps
+              'X-Forwarded-For': normalizedUrl // Add target as forwarded for
+            },
+            signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 60000)
+          };
+          
+          response = await fetch(`${urlWithCredentials}/${targetUrlWithoutProtocol}`, method2Options);
           console.log(`METHOD 2: Response status: ${response.status}`);
           
           if (response.ok) {
             html = await response.text();
             console.log(`METHOD 2: Received HTML content (${html.length} characters)`);
-            successMethod = 'direct-fetch';
+            successMethod = 'direct-fetch-with-credentials';
           } else {
             console.log(`METHOD 2: Failed with status ${response.status}`);
+            // Try to read the response body for more details
+            try {
+              const errorText = await response.text();
+              console.log(`METHOD 2: Error response body: ${errorText.substring(0, 500)}...`);
+            } catch (e) {
+              console.log(`METHOD 2: Could not read error response body`);
+            }
           }
         } catch (method2Error) {
           console.error(`METHOD 2: Error with direct fetch: ${method2Error instanceof Error ? method2Error.message : 'Unknown error'}`);
         }
       }
       
-      // Method 3: Try alternate proxy approach
+      // Method 3: Try with API key auth directly in URL
       if (!html) {
         try {
-          console.log(`METHOD 3: Trying alternative proxy approach at ${new Date().toISOString()}`);
+          console.log(`METHOD 3: Trying direct proxy approach at ${new Date().toISOString()}`);
           
-          // Use the Bright Data Proxy Selector URL format
-          const brightDataProxyUrl = `http://brd.superproxy.io:22225`;
+          // Use the Bright Data direct URL format
+          const apiUrl = `https://brd.superproxy.io:22225/crawl?url=${encodeURIComponent(normalizedUrl)}`;
           
-          // Create a new request with the proxy URL and explicit Authorization header
-          const proxyRequestOptions = {
+          // Create a new request with explicit authentication
+          const directRequestOptions = {
             method: 'GET',
             headers: {
               'Authorization': `Basic ${auth}`,
@@ -135,31 +166,107 @@ export async function crawlPage(
               'Accept-Language': 'en-US,en;q=0.9',
               'Cache-Control': 'no-cache',
               'Pragma': 'no-cache',
-              'X-Target-URL': normalizedUrl // Add the target URL as a header
             },
-            signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 30000)
+            signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 60000)
           };
           
-          response = await fetch(brightDataProxyUrl, proxyRequestOptions);
+          response = await fetch(apiUrl, directRequestOptions);
           console.log(`METHOD 3: Response status: ${response.status}`);
           
           if (response.ok) {
             html = await response.text();
             console.log(`METHOD 3: Received HTML content (${html.length} characters)`);
-            successMethod = 'proxy-selector';
+            successMethod = 'direct-api';
           } else {
             console.log(`METHOD 3: Failed with status ${response.status}`);
+            // Try to read the response body for more details
+            try {
+              const errorText = await response.text();
+              console.log(`METHOD 3: Error response body: ${errorText.substring(0, 200)}`);
+            } catch (e) {
+              console.log(`METHOD 3: Could not read error response body`);
+            }
           }
         } catch (method3Error) {
-          console.error(`METHOD 3: Error with alternative proxy: ${method3Error instanceof Error ? method3Error.message : 'Unknown error'}`);
+          console.error(`METHOD 3: Error with direct api: ${method3Error instanceof Error ? method3Error.message : 'Unknown error'}`);
+        }
+      }
+      
+      // Method 4: Try a pure fetch to the URL (without proxy) as last resort
+      if (!html) {
+        try {
+          console.log(`METHOD 4: Trying plain direct fetch to URL at ${new Date().toISOString()}`);
+          
+          const plainOptions = {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9',
+            },
+            signal: AbortSignal.timeout(30000)
+          };
+          
+          response = await fetch(normalizedUrl, plainOptions);
+          console.log(`METHOD 4: Response status: ${response.status}`);
+          
+          if (response.ok) {
+            html = await response.text();
+            console.log(`METHOD 4: Received HTML content directly (${html.length} characters)`);
+            successMethod = 'direct-url-fetch';
+          } else {
+            console.log(`METHOD 4: Failed with status ${response.status}`);
+          }
+        } catch (method4Error) {
+          console.error(`METHOD 4: Error with direct URL fetch: ${method4Error instanceof Error ? method4Error.message : 'Unknown error'}`);
+        }
+      }
+      
+      // If we still have no HTML, try a different zone
+      if (!html && username === 'brd-customer-hl_cbc2d791-zone-web_unlocker1') {
+        try {
+          console.log(`FALLBACK: Trying with residential zone`);
+          
+          // Use residential zone as fallback
+          const fallbackUsername = 'brd-customer-hl_cbc2d791-zone-residential-country-es';
+          const fallbackAuth = btoa(`${fallbackUsername}:${password}`);
+          
+          const fallbackUrl = `http://${fallbackUsername}:${password}@brd.superproxy.io:22225/${targetUrlWithoutProtocol}`;
+          
+          const fallbackOptions = {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            },
+            signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 60000)
+          };
+          
+          response = await fetch(fallbackUrl, fallbackOptions);
+          console.log(`FALLBACK: Response status: ${response.status}`);
+          
+          if (response.ok) {
+            html = await response.text();
+            console.log(`FALLBACK: Received HTML content (${html.length} characters)`);
+            successMethod = 'fallback-residential-zone';
+          } else {
+            console.log(`FALLBACK: Failed with status ${response.status}`);
+          }
+        } catch (fallbackError) {
+          console.error(`FALLBACK: Error with residential zone: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
         }
       }
       
       // Verificar que hemos recibido un HTML válido
-      if (!html || html.length < 100) {
-        console.error('Empty or too short HTML content received from Bright Data');
+      if (!html || html.length === 0) {
+        console.error('Empty HTML content received');
+        throw new Error('No HTML content received from any Bright Data connection method');
+      }
+      
+      if (html.length < 50) {
+        console.error('Too short HTML content received from Bright Data');
         console.log(`Full content preview: ${html}`);
-        throw new Error('Invalid HTML content received from Bright Data API - content too short');
+        throw new Error('Invalid HTML content received from Bright Data - content too short');
       }
       
       // Additional validation for common error pages
@@ -204,7 +311,7 @@ export async function crawlPage(
       
       // Check for specific error types
       if (fetchError.name === 'AbortError') {
-        errorMessage = `Request timeout after ${BRIGHT_DATA_CONFIG.TIMEOUT || 30000}ms - ${fetchError.message}`;
+        errorMessage = `Request timeout after ${BRIGHT_DATA_CONFIG.TIMEOUT || 60000}ms - ${fetchError.message}`;
       } else if (fetchError.name === 'TypeError' && fetchError.message.includes('network')) {
         errorMessage = `Network error - ${fetchError.message}`;
       }
