@@ -1,11 +1,11 @@
 
 // Constants for SEO crawler functionality
 export const BRIGHT_DATA_CONFIG = {
-  // Default configuration based on PHP example
+  // Default configuration based on provided credentials
   PROXY_HOST: 'brd.superproxy.io',
   PROXY_PORT: 33335,
   
-  // Default credentials extracted from PHP example
+  // Default credentials from the user's account
   DEFAULT_USER: 'brd-customer-hl_cbc2d791-zone-web_unlocker1',
   DEFAULT_PASSWORD: '5d024usr515b',
   

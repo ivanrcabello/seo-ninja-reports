@@ -55,6 +55,7 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
     }
 
     console.log(`Starting SEO crawler for URL: ${url}, crawl ID: ${crawlId}`);
+    console.log(`Using custom credentials: ${username ? 'Yes' : 'No'}, ${password ? 'Password provided' : 'No password'}`);
 
     // Update crawl status to processing
     const { error: updateError } = await supabase

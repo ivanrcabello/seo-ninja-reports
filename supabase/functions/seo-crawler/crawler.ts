@@ -41,7 +41,7 @@ export async function crawlPage(
       // METHOD 1: Standard Bright Data proxy approach with superproxy.io
       try {
         console.log('METHOD 1: Using superproxy.io direct connection');
-        const proxyUrl = `http://brd.superproxy.io:22225`;
+        const proxyUrl = `http://brd.superproxy.io:33335`;  // Updated port to 33335
         const requestOptions = {
           method: 'GET',
           headers: {
@@ -226,7 +226,7 @@ export async function crawlPage(
             status: 'completed',
             completed_at: new Date().toISOString(),
             pages_crawled: 1,
-            total_issues: pageResult.issues || 0  // Fix here - was misspelled as "a0"
+            total_issues: pageResult.issues || 0
           })
           .eq('id', crawlId);
       } else {

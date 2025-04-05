@@ -3,10 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
 
 interface ValueSerpSettingsProps {
   valueSerpApiKey: string;
@@ -38,7 +39,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
       setBrightDataUsername(savedUsername);
     } else {
       // Set default value if not saved
-      setBrightDataUsername('brd-customer-hl_cbc2d791-zone-web_unlocker1');
+      setBrightDataUsername(BRIGHT_DATA_CONFIG.DEFAULT_USER);
     }
     
     if (savedPassword) {
@@ -46,7 +47,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
       setHasSavedBrightData(true);
     } else {
       // Set default API key if not saved
-      setBrightDataPassword('5d024usr515b');
+      setBrightDataPassword(BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD);
     }
   }, [setBrightDataUsername, setBrightDataPassword]);
 
@@ -54,7 +55,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   const handleSaveBrightData = () => {
     if (brightDataPassword) {
       // Always ensure we have a username, defaulting to the full credential if not provided
-      const usernameToSave = brightDataUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1';
+      const usernameToSave = brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER;
       localStorage.setItem('bright_data_username', usernameToSave);
       localStorage.setItem('bright_data_password', brightDataPassword);
       setHasSavedBrightData(true);
@@ -97,7 +98,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         
         // Save credentials if test is successful
         if (!hasSavedBrightData) {
-          localStorage.setItem('bright_data_username', brightDataUsername || 'brd-customer-hl_cbc2d791-zone-web_unlocker1');
+          localStorage.setItem('bright_data_username', brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER);
           localStorage.setItem('bright_data_password', brightDataPassword);
           setHasSavedBrightData(true);
         }
@@ -114,6 +115,15 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         description: error instanceof Error ? error.message : 'Error desconocido'
       });
     }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success(`${label} copiado al portapapeles`);
+    }).catch(err => {
+      console.error('Error al copiar:', err);
+      toast.error('No se pudo copiar al portapapeles');
+    });
   };
 
   return (
@@ -155,33 +165,72 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="brightDataUsername">Usuario de Bright Data</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="brightDataUsername">Usuario de Bright Data</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(brightDataUsername, 'Usuario')}
+                className="h-6 w-6 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
             <Input
               id="brightDataUsername"
               type="text"
               value={brightDataUsername}
               onChange={(e) => setBrightDataUsername(e.target.value)}
               className="glass-input"
-              placeholder="brd-customer-hl_cbc2d791-zone-web_unlocker1"
+              placeholder={BRIGHT_DATA_CONFIG.DEFAULT_USER}
             />
             <p className="text-xs text-muted-foreground">
-              Tu usuario de Bright Data. Por defecto: brd-customer-hl_cbc2d791-zone-web_unlocker1
+              Tu usuario de Bright Data. <br/>Valor por defecto: {BRIGHT_DATA_CONFIG.DEFAULT_USER}
             </p>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="brightDataPassword">Contraseña de Bright Data</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="brightDataPassword">Contraseña de Bright Data</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(brightDataPassword, 'Contraseña')}
+                className="h-6 w-6 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
             <Input
               id="brightDataPassword"
               type="password"
               value={brightDataPassword}
               onChange={(e) => setBrightDataPassword(e.target.value)}
               className="glass-input"
-              placeholder="5d024usr515b"
+              placeholder={BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
             />
             <p className="text-xs text-muted-foreground">
-              Tu contraseña de Bright Data. Por defecto: 5d024usr515b
+              Tu contraseña de Bright Data. <br/>Valor por defecto: {BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
             </p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Información de conexión:</Label>
+            <div className="bg-muted p-3 rounded-md text-sm font-mono overflow-x-auto">
+              <p>Host: {BRIGHT_DATA_CONFIG.PROXY_HOST}</p>
+              <p>Puerto: {BRIGHT_DATA_CONFIG.PROXY_PORT}</p>
+              <div className="flex items-center justify-between mt-2">
+                <span>Formato: host:port:username:password</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(`${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}:${brightDataUsername}:${brightDataPassword}`, 'Formato completo')}
+                  className="h-6 w-6 p-0"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
           
           <div className="flex gap-2 mt-2">
