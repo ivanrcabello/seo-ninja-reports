@@ -1,8 +1,7 @@
 
 // Main crawler implementation
 import { SupabaseInstance, PageCrawlResult } from './types.ts';
-import { BRIGHT_DATA_CONFIG, SEO_ISSUES } from './constants.ts';
-import { isInternalUrl, queueLinksForCrawling, registerCrawlerError, normalizeUrl } from './utils.ts';
+import { registerCrawlerError, normalizeUrl } from './utils.ts';
 import { processHtml } from './modules/html-processor.ts';
 
 // Main crawler function - crawl a single page using Bright Data's Web Scraper API
@@ -227,7 +226,7 @@ export async function crawlPage(
             status: 'completed',
             completed_at: new Date().toISOString(),
             pages_crawled: 1,
-            total_issues: pageResult.issues || a0
+            total_issues: pageResult.issues || 0  // Fix here - was misspelled as "a0"
           })
           .eq('id', crawlId);
       } else {

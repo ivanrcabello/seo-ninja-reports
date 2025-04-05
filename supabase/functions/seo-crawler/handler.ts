@@ -2,8 +2,7 @@
 // Main handler for the SEO Crawler Edge Function
 import { corsHeaders } from "./cors-headers.ts";
 import { SupabaseInstance } from "./types.ts";
-import { fetchPage } from './modules/crawler.ts';
-import { processHtml } from './modules/html-processor.ts';
+import { crawlPage } from './crawler.ts';
 
 export async function handleRequest(req: Request, supabase: SupabaseInstance) {
   // Only handle POST requests
@@ -40,7 +39,7 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
     }
 
     // Validate required input parameters
-    const { url, crawlId } = requestBody;
+    const { url, crawlId, username, password } = requestBody;
     if (!url || !crawlId) {
       console.error('Missing required parameters:', { url, crawlId });
       return new Response(
@@ -71,20 +70,10 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
       throw new Error(`Error updating crawl status: ${updateError.message}`);
     }
 
-    // Fetch the page HTML content using Bright Data
-    console.log(`Fetching HTML content for ${url}...`);
-    const html = await fetchPage(url);
-    console.log(`Received response for ${url}, HTML length: ${html ? html.length : 0}`);
-
-    if (!html || html.length === 0) {
-      throw new Error('No HTML content received from Bright Data');
-    }
-
-    // Process the HTML content
-    console.log('Processing HTML content...');
-    const result = await processHtml(supabase, url, crawlId, html);
-
-    console.log(`HTML processing complete, result: ${result ? 'success' : 'failed'}`);
+    // Start the crawl process directly
+    console.log(`Starting page crawl for ${url}...`);
+    const result = await crawlPage(supabase, url, crawlId, username, password);
+    console.log(`Crawl completed, result: ${result ? 'success' : 'failed'}`);
 
     return new Response(
       JSON.stringify({ 

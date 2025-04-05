@@ -10,13 +10,13 @@ import { toast } from 'sonner';
 
 interface CrawlerDetailPageProps {
   clientId: string;
-  crawlId: string;
+  crawlId?: string;
   onBack?: () => void;
 }
 
 const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({ 
   clientId, 
-  crawlId,
+  crawlId: propsCrawlId,
   onBack 
 }) => {
   const [crawl, setCrawl] = useState<CrawlResult | null>(null);
@@ -34,9 +34,17 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
   const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
+  
+  const crawlId = propsCrawlId || window.location.pathname.split('/').pop();
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!crawlId) {
+        setIsLoading(false);
+        toast.error('ID de análisis no válido');
+        return;
+      }
+      
       try {
         setIsLoading(true);
         
