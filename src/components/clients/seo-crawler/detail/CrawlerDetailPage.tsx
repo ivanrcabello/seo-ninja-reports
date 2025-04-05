@@ -1,6 +1,4 @@
-
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlHeading } from '@/services/seo-crawler/types';
 import { getCrawlResult, getCrawlPages } from '@/services/seo-crawler/api';
 import { getPageIssues, getCrawlIssues, getPageHeadings, getCrawlHeadings, getPageLinks, getCrawlLinks } from '@/services/seo-crawler/api/pageQueries';

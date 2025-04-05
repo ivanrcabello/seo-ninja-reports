@@ -1,8 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlPage, CrawlSettings } from '../types';
-import { debugCrawlData } from './debugUtils';
-import { normalizeSettings } from './debugUtils';
+import { debugCrawlData, normalizeSettings, addMissingProperties } from './debugUtils';
 
 /**
  * Get a specific crawl record
@@ -28,7 +27,7 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
     // Normalize the settings
     const normalizedSettings = normalizeSettings(data.settings);
     
-    // Map the data to our CrawlResult type
+    // Map the data to our CrawlResult type with safe property access
     return {
       id: data.id,
       client_id: data.client_id,
@@ -156,54 +155,69 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
     }
     
     console.log(`Found ${data?.length || 0} pages for crawl ${crawlId}`);
-    console.log('Pages data:', data);
     
-    // Map database records to our CrawlPage type with required fields
-    return (data || []).map(page => ({
-      id: page.id,
-      crawl_id: page.crawl_id,
-      url: page.url,
-      title: page.title || '',
-      meta_description: page.meta_description || '',
-      h1: page.h1 || '',
-      status_code: page.status_code || 200,
-      is_internal: page.is_internal !== undefined ? page.is_internal : true,
-      is_crawled: page.is_crawled !== undefined ? page.is_crawled : true,
-      issues_count: page.issues_count || 0,
-      internal_links_count: page.internal_links_count || 0,
-      external_links_count: page.external_links_count || 0,
-      created_at: page.crawled_at || new Date().toISOString(),
-      updated_at: page.crawled_at || new Date().toISOString(),
+    // Map database records to our CrawlPage type with required fields and default values
+    return (data || []).map(page => {
+      // Create default structure for a page
+      const defaultPageProps = {
+        is_internal: true,
+        is_crawled: true,
+        issues_count: 0,
+        internal_links_count: 0,
+        external_links_count: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
       
-      // Add missing properties from the type
-      is_indexable: page.is_indexable,
-      word_count: page.word_count,
-      image_count: page.image_count,
-      canonical_url: page.canonical_url,
-      meta_robots: page.meta_robots,
-      robots_directives: page.robots_directives,
-      mobile_friendly: page.mobile_friendly,
-      has_schema_markup: page.has_schema_markup,
-      page_size_kb: page.page_size_kb,
-      load_time_ms: page.load_time_ms,
-      images_without_alt: page.images_without_alt,
-      content_text: page.content_text,
-      content_hash: page.content_hash,
-      meta_keywords: page.meta_keywords,
-      level: page.level,
-      redirect_url: page.redirect_url,
-      dom_nodes_count: page.dom_nodes_count,
-      dom_load_time_ms: page.dom_load_time_ms,
-      content_type: page.content_type,
-      content_length: page.content_length,
-      text_ratio: page.text_ratio,
-      similar_page_id: page.similar_page_id,
-      response_time_ms: page.response_time_ms,
-      crawled_at: page.crawled_at,
-      hreflang_count: page.hreflang_count,
-      h2_count: page.h2_count,
-      h3_count: page.h3_count
-    }));
+      // Use the addMissingProperties helper to ensure all required properties exist
+      const pageWithDefaults = addMissingProperties(page, defaultPageProps);
+      
+      return {
+        id: page.id,
+        crawl_id: page.crawl_id,
+        url: page.url,
+        title: page.title || '',
+        meta_description: page.meta_description || '',
+        h1: page.h1 || '',
+        status_code: page.status_code || 200,
+        is_internal: pageWithDefaults.is_internal,
+        is_crawled: pageWithDefaults.is_crawled,
+        issues_count: page.issues_count || 0,
+        internal_links_count: page.internal_links_count || 0,
+        external_links_count: page.external_links_count || 0,
+        created_at: page.crawled_at || pageWithDefaults.created_at,
+        updated_at: page.crawled_at || pageWithDefaults.updated_at,
+        
+        // Add missing properties from the type
+        is_indexable: page.is_indexable,
+        word_count: page.word_count,
+        image_count: page.image_count,
+        canonical_url: page.canonical_url,
+        meta_robots: page.meta_robots,
+        robots_directives: page.robots_directives,
+        mobile_friendly: page.mobile_friendly,
+        has_schema_markup: page.has_schema_markup,
+        page_size_kb: page.page_size_kb,
+        load_time_ms: page.load_time_ms,
+        images_without_alt: page.images_without_alt,
+        content_text: page.content_text,
+        content_hash: page.content_hash,
+        meta_keywords: page.meta_keywords,
+        level: page.level,
+        redirect_url: page.redirect_url,
+        dom_nodes_count: page.dom_nodes_count,
+        dom_load_time_ms: page.dom_load_time_ms,
+        content_type: page.content_type,
+        content_length: page.content_length,
+        text_ratio: page.text_ratio,
+        similar_page_id: page.similar_page_id,
+        response_time_ms: page.response_time_ms,
+        crawled_at: page.crawled_at,
+        hreflang_count: page.hreflang_count,
+        h2_count: page.h2_count,
+        h3_count: page.h3_count
+      };
+    });
   } catch (error) {
     console.error('Error fetching crawl pages:', error);
     return [];

@@ -35,6 +35,9 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
         }
       }
       
+      // Set current timestamp for created_at if missing
+      const createdAt = new Date().toISOString();
+      
       return {
         id: issue.id,
         crawl_id: issue.crawl_id,
@@ -44,12 +47,12 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
         type: issue.issue_type, // Required by CrawlIssue type
         severity: normalizedSeverity,
         description: issue.description,
-        details: {}, // Provide default as this property is missing
+        details: {}, // Provide default empty object for details
         element: issue.element || '',
         fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
         recommended_fix: issue.recommended_fix || '',
         category: issue.category || 'other',
-        created_at: issue.created_at || new Date().toISOString()
+        created_at: createdAt
       };
     });
   } catch (error) {
@@ -90,6 +93,9 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
         }
       }
       
+      // Set current timestamp for created_at if missing
+      const createdAt = new Date().toISOString();
+      
       return {
         id: issue.id,
         crawl_id: issue.crawl_id,
@@ -99,12 +105,12 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
         type: issue.issue_type, // Required by CrawlIssue type
         severity: normalizedSeverity,
         description: issue.description,
-        details: {}, // Provide default as this property is missing
+        details: {}, // Provide default empty object for details
         element: issue.element || '',
         fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
         recommended_fix: issue.recommended_fix || '',
         category: issue.category || 'other',
-        created_at: issue.created_at || new Date().toISOString()
+        created_at: createdAt
       };
     });
   } catch (error) {

@@ -102,3 +102,20 @@ export function normalizeSettings(settingsData: any): {
       : {}
   };
 }
+
+/**
+ * Add missing properties to ensure consistent structure
+ */
+export function addMissingProperties(obj: any, defaultProps: Record<string, any>): any {
+  if (!obj) return defaultProps;
+  
+  const result = { ...obj };
+  
+  for (const [key, value] of Object.entries(defaultProps)) {
+    if (result[key] === undefined) {
+      result[key] = value;
+    }
+  }
+  
+  return result;
+}
