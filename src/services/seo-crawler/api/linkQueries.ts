@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlLink } from '../types';
-import { debugLinksData } from './debugUtils';
 
 /**
  * Get links for a specific page
@@ -20,28 +19,27 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
       throw error;
     }
     
-    // Debug links data to identify structure issues
-    debugLinksData(data);
-    
-    // Map to our CrawlLink type with the required fields
+    // Map the data to our CrawlLink type
     return (data || []).map(link => ({
       id: link.id,
       crawl_id: link.crawl_id,
       page_id: link.page_id,
       url: link.url,
-      text: link.anchor_text || link.link_text || '', // Original required property
-      anchor_text: link.anchor_text || link.link_text || '',
-      is_internal: link.is_internal || false,
-      is_followed: link.follow !== false, // Convert from follow to is_followed
-      is_broken: link.is_broken || false,
-      status_code: link.status_code || 0,
-      follow: link.follow !== false,
+      text: link.anchor_text || link.link_text, // Original property
+      anchor_text: link.anchor_text || link.link_text, // Used instead in some places
+      is_internal: link.is_internal === undefined ? false : link.is_internal,
+      is_followed: link.follow === undefined ? true : link.follow,
+      is_broken: link.is_broken === undefined ? false : link.is_broken,
+      status_code: link.status_code,
+      created_at: new Date().toISOString(),
+      
+      // Add missing properties
+      follow: link.follow === undefined ? true : link.follow,
       rel_attributes: link.rel_attributes || [],
-      nofollow: !link.follow,
+      nofollow: link.nofollow === undefined ? false : link.nofollow,
       link_location: link.link_location || '',
-      link_text: link.link_text || '',
+      link_text: link.link_text || link.anchor_text || '',
       link_type: link.link_type || '',
-      created_at: new Date().toISOString() // Default since it's not in the database
     }));
   } catch (error) {
     console.error('Error fetching page links:', error);
@@ -66,28 +64,27 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
       throw error;
     }
     
-    // Debug links data to identify structure issues
-    debugLinksData(data);
-    
-    // Map to our CrawlLink type with the required fields
+    // Map the data to our CrawlLink type
     return (data || []).map(link => ({
       id: link.id,
       crawl_id: link.crawl_id,
       page_id: link.page_id,
       url: link.url,
-      text: link.anchor_text || link.link_text || '', // Original required property
-      anchor_text: link.anchor_text || link.link_text || '',
-      is_internal: link.is_internal || false,
-      is_followed: link.follow !== false, // Convert from follow to is_followed
-      is_broken: link.is_broken || false,
-      status_code: link.status_code || 0,
-      follow: link.follow !== false,
+      text: link.anchor_text || link.link_text, // Original property
+      anchor_text: link.anchor_text || link.link_text, // Used instead in some places
+      is_internal: link.is_internal === undefined ? false : link.is_internal,
+      is_followed: link.follow === undefined ? true : link.follow,
+      is_broken: link.is_broken === undefined ? false : link.is_broken,
+      status_code: link.status_code,
+      created_at: new Date().toISOString(),
+      
+      // Add missing properties
+      follow: link.follow === undefined ? true : link.follow,
       rel_attributes: link.rel_attributes || [],
-      nofollow: !link.follow,
+      nofollow: link.nofollow === undefined ? false : link.nofollow,
       link_location: link.link_location || '',
-      link_text: link.link_text || '',
+      link_text: link.link_text || link.anchor_text || '',
       link_type: link.link_type || '',
-      created_at: new Date().toISOString() // Default since it's not in the database
     }));
   } catch (error) {
     console.error('Error fetching crawl links:', error);

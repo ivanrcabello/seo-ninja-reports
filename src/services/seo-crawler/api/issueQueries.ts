@@ -44,7 +44,7 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
         type: issue.issue_type, // Required by CrawlIssue type
         severity: normalizedSeverity,
         description: issue.description,
-        details: issue.details || {}, // Provide default as this property is missing
+        details: {}, // Provide default as this property is missing
         element: issue.element || '',
         fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
         recommended_fix: issue.recommended_fix || '',
@@ -99,7 +99,7 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
         type: issue.issue_type, // Required by CrawlIssue type
         severity: normalizedSeverity,
         description: issue.description,
-        details: issue.details || {}, // Provide default as this property is missing
+        details: {}, // Provide default as this property is missing
         element: issue.element || '',
         fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
         recommended_fix: issue.recommended_fix || '',

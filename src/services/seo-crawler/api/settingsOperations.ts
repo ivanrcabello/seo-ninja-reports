@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings } from '../types';
+import { normalizeSettings } from './debugUtils';
 
 /**
  * Get settings for a specific crawl
@@ -18,22 +19,8 @@ export async function getCrawlSettings(crawlId: string): Promise<CrawlSettings |
       return null;
     }
     
-    // Ensure settings has all required fields and convert any unknown fields
-    const settings = data.settings || {};
-    
-    return {
-      max_pages: settings.max_pages || 100,
-      exclude_urls: settings.exclude_urls || [],
-      include_urls: settings.include_urls || [],
-      respect_robots_txt: settings.respect_robots_txt === false ? false : true,
-      user_agent: settings.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-      crawl_sitemap: settings.crawl_sitemap === false ? false : true,
-      follow_links: settings.follow_links === false ? false : true,
-      max_depth: settings.max_depth || 5,
-      custom_headers: settings.custom_headers && typeof settings.custom_headers === 'object' 
-        ? settings.custom_headers as Record<string, string>
-        : {}
-    };
+    // Normalize settings to ensure all required fields exist
+    return normalizeSettings(data.settings);
   } catch (error) {
     console.error('Error in getCrawlSettings:', error);
     return null;
@@ -97,12 +84,21 @@ export async function saveCrawlSettings(
         throw new Error('No valid domain could be determined from settings');
       }
       
+      // Insert into the crawler settings table
       const { data, error } = await supabase
         .from('seo_crawler_settings')
         .insert({
           client_id: clientId,
           domain: domain,
-          settings: formattedSettings
+          max_pages: formattedSettings.max_pages,
+          follow_links: formattedSettings.follow_links,
+          respect_robots_txt: formattedSettings.respect_robots_txt,
+          crawl_sitemap: formattedSettings.crawl_sitemap,
+          user_agent: formattedSettings.user_agent,
+          max_depth: formattedSettings.max_depth,
+          include_patterns: formattedSettings.include_urls,
+          exclude_patterns: formattedSettings.exclude_urls,
+          custom_headers: formattedSettings.custom_headers
         })
         .select('id')
         .single();

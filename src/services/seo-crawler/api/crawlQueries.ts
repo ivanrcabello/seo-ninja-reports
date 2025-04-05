@@ -1,7 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlResult, CrawlPage } from '../types';
+import { CrawlResult, CrawlPage, CrawlSettings } from '../types';
 import { debugCrawlData } from './debugUtils';
+import { normalizeSettings } from './debugUtils';
 
 /**
  * Get a specific crawl record
@@ -24,6 +25,9 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
     // Debug crawl data to identify structure issues
     debugCrawlData(data);
     
+    // Normalize the settings
+    const normalizedSettings = normalizeSettings(data.settings);
+    
     // Map the data to our CrawlResult type
     return {
       id: data.id,
@@ -34,23 +38,13 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       started_at: data.started_at,
       start_time: data.started_at || data.inserted_at,
       completed_at: data.completed_at,
-      created_at: data.created_at || data.inserted_at || new Date().toISOString(),
+      created_at: data.inserted_at || new Date().toISOString(),
       updated_at: data.updated_at || data.inserted_at || new Date().toISOString(),
       total_pages: data.total_pages || 0,
       pages_crawled: data.pages_crawled || 0,
       total_issues: data.total_issues || 0,
       error_message: data.error_message,
-      settings: data.settings || {
-        max_pages: 100,
-        exclude_urls: [],
-        include_urls: [],
-        respect_robots_txt: true,
-        user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-        crawl_sitemap: true,
-        follow_links: true,
-        max_depth: 5,
-        custom_headers: {}
-      },
+      settings: normalizedSettings,
       success: true,
       message: "Crawl data retrieved successfully",
       
@@ -99,50 +93,45 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
     }
     
     // Map database records to our CrawlResult type
-    return (data || []).map(record => ({
-      id: record.id,
-      client_id: record.client_id,
-      url: record.url,
-      domain: record.domain,
-      status: record.status as 'queued' | 'processing' | 'completed' | 'failed',
-      started_at: record.started_at,
-      start_time: record.started_at || record.inserted_at,
-      completed_at: record.completed_at,
-      created_at: record.created_at || record.inserted_at || new Date().toISOString(),
-      updated_at: record.updated_at || record.inserted_at || new Date().toISOString(),
-      total_pages: record.total_pages || 0,
-      pages_crawled: record.pages_crawled || 0,
-      total_issues: record.total_issues || 0,
-      error_message: record.error_message,
-      settings: record.settings || {
-        max_pages: 100,
-        exclude_urls: [],
-        include_urls: [],
-        respect_robots_txt: true,
-        user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-        crawl_sitemap: true,
-        follow_links: true,
-        max_depth: 5,
-        custom_headers: {}
-      },
-      success: true,
-      message: "Crawl data retrieved successfully",
+    return (data || []).map(record => {
+      // Normalize the settings
+      const normalizedSettings = normalizeSettings(record.settings);
       
-      // Add defaults for properties that might be missing
-      total_time_seconds: record.total_time_seconds || 0,
-      total_links: record.total_links || 0,
-      total_internal_links: record.total_internal_links || 0,
-      total_external_links: record.total_external_links || 0,
-      total_broken_links: record.total_broken_links || 0,
-      inserted_at: record.inserted_at || new Date().toISOString(),
-      avg_page_load_time_ms: record.avg_page_load_time_ms || 0,
-      crawl_depth: record.crawl_depth || 0,
-      duplicate_content_count: record.duplicate_content_count || 0,
-      mobile_friendly_score: record.mobile_friendly_score || 0,
-      performance_score: record.performance_score || 0,
-      schema_markup_count: record.schema_markup_count || 0,
-      summary: record.summary || null
-    }));
+      return {
+        id: record.id,
+        client_id: record.client_id,
+        url: record.url,
+        domain: record.domain,
+        status: record.status as 'queued' | 'processing' | 'completed' | 'failed',
+        started_at: record.started_at,
+        start_time: record.started_at || record.inserted_at,
+        completed_at: record.completed_at,
+        created_at: record.inserted_at || new Date().toISOString(),
+        updated_at: record.updated_at || record.inserted_at || new Date().toISOString(),
+        total_pages: record.total_pages || 0,
+        pages_crawled: record.pages_crawled || 0,
+        total_issues: record.total_issues || 0,
+        error_message: record.error_message,
+        settings: normalizedSettings,
+        success: true,
+        message: "Crawl data retrieved successfully",
+        
+        // Add defaults for properties that might be missing
+        total_time_seconds: record.total_time_seconds || 0,
+        total_links: record.total_links || 0,
+        total_internal_links: record.total_internal_links || 0,
+        total_external_links: record.total_external_links || 0,
+        total_broken_links: record.total_broken_links || 0,
+        inserted_at: record.inserted_at || new Date().toISOString(),
+        avg_page_load_time_ms: record.avg_page_load_time_ms || 0,
+        crawl_depth: record.crawl_depth || 0,
+        duplicate_content_count: record.duplicate_content_count || 0,
+        mobile_friendly_score: record.mobile_friendly_score || 0,
+        performance_score: record.performance_score || 0,
+        schema_markup_count: record.schema_markup_count || 0,
+        summary: record.summary || null
+      };
+    });
   } catch (error) {
     console.error('Error fetching crawl records:', error);
     return [];
@@ -178,13 +167,13 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
       meta_description: page.meta_description || '',
       h1: page.h1 || '',
       status_code: page.status_code || 200,
-      is_internal: page.is_internal === undefined ? true : page.is_internal,
-      is_crawled: page.is_crawled === undefined ? true : page.is_crawled,
+      is_internal: page.is_internal !== undefined ? page.is_internal : true,
+      is_crawled: page.is_crawled !== undefined ? page.is_crawled : true,
       issues_count: page.issues_count || 0,
       internal_links_count: page.internal_links_count || 0,
       external_links_count: page.external_links_count || 0,
-      created_at: page.created_at || page.crawled_at || new Date().toISOString(),
-      updated_at: page.updated_at || page.crawled_at || new Date().toISOString(),
+      created_at: page.crawled_at || new Date().toISOString(),
+      updated_at: page.crawled_at || new Date().toISOString(),
       
       // Add missing properties from the type
       is_indexable: page.is_indexable,
@@ -262,6 +251,3 @@ export async function deleteCrawlRecord(crawlId: string): Promise<boolean> {
     return false;
   }
 }
-
-// Export deleteCrawlRecord function to make it available
-export { deleteCrawlRecord };
