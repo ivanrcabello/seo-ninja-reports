@@ -1,58 +1,76 @@
 
 /**
- * Debug utility functions for SEO crawler data
+ * Debug utilities for SEO crawler API
  */
 
-/**
- * Logs issue data to console to help debug structure
- */
-export function debugIssuesData(data: any) {
-  if (!data || data.length === 0) {
-    console.log('No issues data to debug');
-    return;
-  }
-  
-  // Log the structure of the first item
-  console.log('Issues data sample structure:', {
-    sample: data[0],
-    keys: Object.keys(data[0]),
-    hasDetails: data[0].hasOwnProperty('details'),
-    hasCreatedAt: data[0].hasOwnProperty('created_at'),
-    relations: data[0].seo_crawler_pages ? 'Present' : 'Not present'
-  });
-}
-
-/**
- * Logs link data to console to help debug structure
- */
-export function debugLinksData(data: any) {
-  if (!data || data.length === 0) {
-    console.log('No links data to debug');
-    return;
-  }
-  
-  // Log the structure of the first item
-  console.log('Links data sample structure:', {
-    sample: data[0],
-    keys: Object.keys(data[0]),
-    hasRelAttributes: data[0].hasOwnProperty('rel_attributes'),
-    hasCreatedAt: data[0].hasOwnProperty('created_at')
-  });
-}
-
-/**
- * Logs crawl data to console to help debug structure
- */
 export function debugCrawlData(data: any) {
   if (!data) {
-    console.log('No crawl data to debug');
+    console.log('Crawl data is null or undefined');
     return;
   }
   
-  console.log('Crawl data structure:', {
-    keys: Object.keys(data),
-    hasTotalTimeSeconds: data.hasOwnProperty('total_time_seconds'),
-    hasInsertedAt: data.hasOwnProperty('inserted_at'),
-    hasCreatedAt: data.hasOwnProperty('created_at')
+  console.log('Crawl data keys:', Object.keys(data));
+  // Log some specific fields for debugging
+  console.log('Data structure sample:', {
+    id: data.id,
+    status: data.status,
+    created_at: data.created_at,
+    inserted_at: data.inserted_at,
+    total_time_seconds: data.total_time_seconds
   });
+}
+
+export function debugIssuesData(data: any[]) {
+  if (!data || !data.length) {
+    console.log('Issues data is empty or null');
+    return;
+  }
+  
+  console.log(`Found ${data.length} issues`);
+  if (data.length > 0) {
+    console.log('First issue data keys:', Object.keys(data[0]));
+    console.log('First issue sample:', {
+      id: data[0].id,
+      issue_type: data[0].issue_type,
+      description: data[0].description,
+      details: data[0].details,
+      created_at: data[0].created_at
+    });
+  }
+}
+
+export function debugLinksData(data: any[]) {
+  if (!data || !data.length) {
+    console.log('Links data is empty or null');
+    return;
+  }
+  
+  console.log(`Found ${data.length} links`);
+  if (data.length > 0) {
+    console.log('First link data keys:', Object.keys(data[0]));
+    console.log('First link sample:', {
+      id: data[0].id,
+      url: data[0].url,
+      anchor_text: data[0].anchor_text,
+      created_at: data[0].created_at
+    });
+  }
+}
+
+export function debugHeadingsData(data: any[]) {
+  if (!data || !data.length) {
+    console.log('Headings data is empty or null');
+    return;
+  }
+  
+  console.log(`Found ${data.length} headings`);
+  if (data.length > 0) {
+    console.log('First heading data keys:', Object.keys(data[0]));
+    console.log('First heading sample:', {
+      id: data[0].id,
+      heading_type: data[0].heading_type,
+      content: data[0].content,
+      created_at: data[0].created_at
+    });
+  }
 }

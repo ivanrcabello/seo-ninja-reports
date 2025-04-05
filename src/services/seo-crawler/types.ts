@@ -109,13 +109,13 @@ export interface CrawlIssue {
   crawl_id: string;
   page_id: string;
   type: string; // Original property
+  issue_type?: string; // Alias for 'type'
   severity: 'low' | 'medium' | 'high' | 'critical' | 'info'; // Added 'info' as a valid severity
   description: string;
   details?: any;
   created_at: string;
   
   // Additional properties being used in components
-  issue_type?: string; // Alias for 'type'
   page_url?: string; // Used in issue listing
   recommended_fix?: string; // Used in issue details
   element?: string; // Used in issue details

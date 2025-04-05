@@ -7,3 +7,4 @@ export * from './settingsOperations';
 export * from './linkQueries';
 export * from './issueQueries';
 export * from './headingQueries';
+export * from './debugUtils';

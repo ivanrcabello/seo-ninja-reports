@@ -16,7 +16,7 @@ export async function saveCrawlSettings(
     // Check if settings already exist for this client
     const { data: existingSettings, error: checkError } = await supabase
       .from('seo_crawler_settings')
-      .select('id')
+      .select('id, domain')
       .eq('client_id', clientId)
       .single();
     
@@ -25,23 +25,58 @@ export async function saveCrawlSettings(
       throw checkError;
     }
     
+    // Make sure we have the domain for new settings
+    let domain = '';
+    
+    // Get domain from existing settings or extract from URL in settings
+    if (existingSettings && existingSettings.domain) {
+      domain = existingSettings.domain;
+    } else if (settings.include_urls && settings.include_urls.length > 0) {
+      // Try to extract domain from first include URL
+      try {
+        const url = new URL(settings.include_urls[0]);
+        domain = url.hostname;
+      } catch (e) {
+        console.error('Error extracting domain from URL:', e);
+        return false;
+      }
+    }
+    
+    // Extract the specific settings for our database schema
+    const dbSettings = {
+      client_id: clientId,
+      max_pages: settings.max_pages,
+      exclude_patterns: settings.exclude_urls, // Map to DB field
+      include_patterns: settings.include_urls, // Map to DB field
+      respect_robots_txt: settings.respect_robots_txt,
+      user_agent: settings.user_agent,
+      crawl_sitemap: settings.crawl_sitemap,
+      follow_links: settings.follow_links,
+      follow_external_links: false, // Default value
+      max_depth: settings.max_depth,
+      custom_headers: settings.custom_headers || {},
+      domain: domain // Required field
+    };
+    
     if (existingSettings) {
       // Update existing settings
       const { error: updateError } = await supabase
         .from('seo_crawler_settings')
-        .update(settings)
+        .update(dbSettings)
         .eq('id', existingSettings.id);
       
       if (updateError) throw updateError;
       
     } else {
-      // Create new settings
+      // Create new settings (making sure we have domain set)
+      if (!domain) {
+        console.error('Domain is required for new settings');
+        return false;
+      }
+      
       const { error: insertError } = await supabase
         .from('seo_crawler_settings')
-        .insert({
-          client_id: clientId,
-          ...settings
-        });
+        .insert(dbSettings);
       
       if (insertError) throw insertError;
     }
@@ -87,6 +122,7 @@ export async function getCrawlSettings(clientId: string): Promise<CrawlSettings 
       throw error;
     }
     
+    // Convert database fields to our API model
     return {
       max_pages: data.max_pages || 100,
       exclude_urls: data.exclude_patterns || [],

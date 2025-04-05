@@ -53,7 +53,7 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       started_at: data.started_at || data.inserted_at,
       start_time: data.started_at || data.inserted_at,
       completed_at: data.completed_at,
-      created_at: data.created_at || data.inserted_at || new Date().toISOString(),
+      created_at: data.inserted_at || new Date().toISOString(),
       updated_at: data.updated_at || data.inserted_at || new Date().toISOString(),
       total_pages: data.total_pages || 0,
       pages_crawled: data.pages_crawled || 0,
@@ -131,7 +131,7 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         started_at: item.started_at || item.inserted_at,
         start_time: item.started_at || item.inserted_at,
         completed_at: item.completed_at,
-        created_at: item.created_at || item.inserted_at || new Date().toISOString(),
+        created_at: item.inserted_at || new Date().toISOString(),
         updated_at: item.updated_at || item.inserted_at || new Date().toISOString(),
         total_pages: item.total_pages || 0,
         pages_crawled: item.pages_crawled || 0,
@@ -191,13 +191,13 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
       meta_description: page.meta_description,
       h1: page.h1,
       status_code: page.status_code || 0,
-      is_internal: page.is_internal !== false, // Provide default if missing
-      is_crawled: page.is_crawled !== false, // Provide default if missing
+      is_internal: true, // Default value since this field might be missing
+      is_crawled: true, // Default value since this field might be missing
       issues_count: page.issues_count || 0,
       internal_links_count: page.internal_links_count || 0,
       external_links_count: page.external_links_count || 0,
-      created_at: page.created_at || page.crawled_at || new Date().toISOString(),
-      updated_at: page.updated_at || page.crawled_at || new Date().toISOString(),
+      created_at: page.crawled_at || new Date().toISOString(),
+      updated_at: page.crawled_at || new Date().toISOString(),
       
       // Additional properties
       is_indexable: page.is_indexable,

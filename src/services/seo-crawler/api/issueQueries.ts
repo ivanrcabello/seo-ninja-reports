@@ -29,12 +29,13 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       page_id: issue.page_id,
       page_url: issue.page_url || (issue.seo_crawler_pages ? issue.seo_crawler_pages.url : null),
       issue_type: issue.issue_type,
+      type: issue.issue_type, // Required by CrawlIssue type
       severity: issue.severity || 'info',
       description: issue.description,
       details: issue.details || {}, // Provide default as this property is missing
-      element: issue.element,
-      fix_suggestion: issue.fix_suggestion || issue.recommended_fix,
-      recommended_fix: issue.recommended_fix,
+      element: issue.element || '',
+      fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
+      recommended_fix: issue.recommended_fix || '',
       category: issue.category || 'other',
       created_at: issue.created_at || new Date().toISOString()
     }));
@@ -70,12 +71,13 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
       page_id: issue.page_id,
       page_url: issue.page_url || (issue.seo_crawler_pages ? issue.seo_crawler_pages.url : null),
       issue_type: issue.issue_type,
+      type: issue.issue_type, // Required by CrawlIssue type
       severity: issue.severity || 'info',
       description: issue.description,
       details: issue.details || {}, // Provide default as this property is missing
-      element: issue.element,
-      fix_suggestion: issue.fix_suggestion || issue.recommended_fix,
-      recommended_fix: issue.recommended_fix,
+      element: issue.element || '',
+      fix_suggestion: issue.fix_suggestion || issue.recommended_fix || '',
+      recommended_fix: issue.recommended_fix || '',
       category: issue.category || 'other',
       created_at: issue.created_at || new Date().toISOString()
     }));
