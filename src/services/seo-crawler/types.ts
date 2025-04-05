@@ -38,7 +38,7 @@ export interface CrawlResult {
   // Additional properties being used in components
   started_at?: string; // Used in many components
   inserted_at?: string; // Fallback for started_at
-  total_time_seconds?: number; // Used for displaying duration
+  total_time_seconds: number; // Changed from optional to required with a default of 0
   total_links?: number; // Used in summary
   total_internal_links?: number; // Used in summary
   total_external_links?: number; // Used in summary

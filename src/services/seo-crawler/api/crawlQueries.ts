@@ -21,15 +21,16 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       throw error;
     }
     
-    // Debug crawl data to identify structure issues
+    // Debug the data structure to see what's actually coming from the database
+    console.log('Raw crawl data:', data);
     debugCrawlData(data);
     
     // Normalize the settings
     const normalizedSettings = normalizeSettings(data.settings);
     
-    // Calculate total_time_seconds if it doesn't exist but we have started_at and completed_at
+    // Calculate total_time_seconds if we have started_at and completed_at
     let calculatedTotalTimeSeconds = 0;
-    if (!data.total_time_seconds && data.started_at && data.completed_at) {
+    if (data.started_at && data.completed_at) {
       const startDate = new Date(data.started_at);
       const endDate = new Date(data.completed_at);
       calculatedTotalTimeSeconds = Math.round((endDate.getTime() - startDate.getTime()) / 1000);
@@ -57,7 +58,8 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       message: "Crawl data retrieved successfully",
       
       // Add defaults for properties that might be missing
-      total_time_seconds: data.total_time_seconds || calculatedTotalTimeSeconds || 0,
+      // Access potentially missing properties safely (using optional chaining or type assertion)
+      total_time_seconds: calculatedTotalTimeSeconds || 0,
       total_links: data.total_links || 0,
       total_internal_links: data.total_internal_links || 0,
       total_external_links: data.total_external_links || 0,
@@ -97,6 +99,7 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
     
     // Debug the first crawl data to identify structure issues
     if (data && data.length > 0) {
+      console.log('First crawl result raw data:', data[0]);
       debugCrawlData(data[0]);
     }
     
@@ -105,9 +108,9 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
       // Normalize the settings
       const normalizedSettings = normalizeSettings(record.settings);
       
-      // Calculate total_time_seconds if it doesn't exist but we have started_at and completed_at
+      // Calculate total_time_seconds if we have started_at and completed_at
       let calculatedTotalTimeSeconds = 0;
-      if (!record.total_time_seconds && record.started_at && record.completed_at) {
+      if (record.started_at && record.completed_at) {
         const startDate = new Date(record.started_at);
         const endDate = new Date(record.completed_at);
         calculatedTotalTimeSeconds = Math.round((endDate.getTime() - startDate.getTime()) / 1000);
@@ -133,7 +136,7 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         message: "Crawl data retrieved successfully",
         
         // Add defaults for properties that might be missing
-        total_time_seconds: record.total_time_seconds || calculatedTotalTimeSeconds || 0,
+        total_time_seconds: calculatedTotalTimeSeconds || 0,
         total_links: record.total_links || 0,
         total_internal_links: record.total_internal_links || 0,
         total_external_links: record.total_external_links || 0,
