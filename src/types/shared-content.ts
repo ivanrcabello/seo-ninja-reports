@@ -111,6 +111,7 @@ export interface SharedInvoiceResponse {
     billing_address?: string;
     billing_email?: string;
     includes_vat?: boolean;
+    invoice_number?: string;
   } | null;
   isPasswordProtected?: boolean;
   error?: string;

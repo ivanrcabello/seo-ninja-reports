@@ -23,31 +23,32 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     
     if (sharedData) {
       // If found in shared_content, format and return
-      const content = (typeof sharedData.content === 'object') ? sharedData.content : {};
+      const contentObj = typeof sharedData.content === 'object' ? sharedData.content : {};
       
       return {
         data: {
           id: sharedData.id,
           title: sharedData.title,
           description: sharedData.description || undefined,
-          amount: content.amount || 0,
-          status: content.status || 'pending',
-          due_date: content.due_date,
-          payment_method: content.payment_method,
-          payment_date: content.payment_date,
-          payment_instructions: content.payment_instructions,
+          amount: contentObj.amount ? Number(contentObj.amount) : 0,
+          status: contentObj.status || 'pending',
+          due_date: contentObj.due_date,
+          payment_method: contentObj.payment_method,
+          payment_date: contentObj.payment_date,
+          payment_instructions: contentObj.payment_instructions,
           shared_url: sharedData.shared_url,
           created_at: sharedData.created_at,
           updated_at: sharedData.updated_at,
           client_name: sharedData.client_name,
           client_website: sharedData.client_website,
-          client_address: content.client_address,
-          client_tax_id: content.client_tax_id,
-          billing_name: content.billing_name,
-          billing_tax_id: content.billing_tax_id,
-          billing_address: content.billing_address,
-          billing_email: content.billing_email,
-          includes_vat: content.includes_vat
+          invoice_number: contentObj.invoice_number,
+          client_address: contentObj.client_address,
+          client_tax_id: contentObj.client_tax_id,
+          billing_name: contentObj.billing_name,
+          billing_tax_id: contentObj.billing_tax_id,
+          billing_address: contentObj.billing_address,
+          billing_email: contentObj.billing_email,
+          includes_vat: contentObj.includes_vat !== false
         }
       };
     }

@@ -36,7 +36,8 @@ BEGIN
             'billing_tax_id', invoice_record.content->>'billing_tax_id',
             'billing_address', invoice_record.content->>'billing_address',
             'billing_email', invoice_record.content->>'billing_email',
-            'includes_vat', (invoice_record.content->>'includes_vat')::boolean
+            'includes_vat', (invoice_record.content->>'includes_vat')::boolean,
+            'invoice_number', invoice_record.content->>'invoice_number'
         );
         RETURN;
     END IF;
@@ -71,7 +72,8 @@ BEGIN
             'billing_tax_id', invoice_record.billing_tax_id,
             'billing_address', invoice_record.billing_address,
             'billing_email', invoice_record.billing_email,
-            'includes_vat', invoice_record.includes_vat
+            'includes_vat', invoice_record.includes_vat,
+            'invoice_number', invoice_record.invoice_number
         );
     ELSE
         -- No invoice found with that shared URL

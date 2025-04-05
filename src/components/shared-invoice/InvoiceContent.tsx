@@ -42,10 +42,10 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
               <h3 className="font-medium text-base">Datos de la factura</h3>
               <div>
                 {invoice.invoice_number && (
-                  <>
+                  <div className="mb-2">
                     <p className="text-sm font-medium text-muted-foreground">Número de factura</p>
                     <p className="font-semibold">{invoice.invoice_number}</p>
-                  </>
+                  </div>
                 )}
                 
                 <p className="text-sm font-medium text-muted-foreground mt-2">Fecha de emisión</p>

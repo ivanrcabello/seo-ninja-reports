@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -88,7 +89,8 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
             billing_address: invoiceData.billing_address,
             billing_email: invoiceData.billing_email,
             includes_vat: invoiceData.includes_vat,
-            due_date: invoiceData.due_date
+            due_date: invoiceData.due_date,
+            invoice_number: invoiceData.invoice_number
           };
           
           // Insert into shared_content
