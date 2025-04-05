@@ -24,7 +24,9 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     if (sharedData) {
       // If found in shared_content, format and return
       // Safely cast the content object and extract properties
-      const contentObj = typeof sharedData.content === 'object' ? sharedData.content : {};
+      const contentObj = typeof sharedData.content === 'object' && !Array.isArray(sharedData.content) 
+        ? (sharedData.content as Record<string, any>) 
+        : {};
       
       return {
         data: {
@@ -32,7 +34,7 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
           title: sharedData.title,
           description: sharedData.description || undefined,
           amount: contentObj.amount ? Number(contentObj.amount) : 0,
-          status: contentObj.status as string || 'pending',
+          status: (contentObj.status as string) || 'pending',
           due_date: contentObj.due_date as string | undefined,
           payment_method: contentObj.payment_method as string | undefined,
           payment_date: contentObj.payment_date as string | undefined,
