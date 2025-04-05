@@ -153,7 +153,7 @@ export async function startCrawl(
       total_external_links: crawlRecord.total_external_links || 0,
       total_broken_links: crawlRecord.total_broken_links || 0,
       inserted_at: crawlRecord.inserted_at || new Date().toISOString(),
-      total_time_seconds: crawlRecord.total_time_seconds || 0,
+      total_time_seconds: 0, // Provide default value for missing properties
       avg_page_load_time_ms: crawlRecord.avg_page_load_time_ms || 0,
       crawl_depth: crawlRecord.crawl_depth || 0,
       duplicate_content_count: crawlRecord.duplicate_content_count || 0,

@@ -191,13 +191,13 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
       meta_description: page.meta_description,
       h1: page.h1,
       status_code: page.status_code || 0,
-      is_internal: page.is_internal !== false,
-      is_crawled: page.is_crawled !== false,
+      is_internal: page.is_internal !== false, // Provide default if missing
+      is_crawled: page.is_crawled !== false, // Provide default if missing
       issues_count: page.issues_count || 0,
       internal_links_count: page.internal_links_count || 0,
       external_links_count: page.external_links_count || 0,
-      created_at: page.created_at || new Date().toISOString(),
-      updated_at: page.updated_at || page.created_at || new Date().toISOString(),
+      created_at: page.created_at || page.crawled_at || new Date().toISOString(),
+      updated_at: page.updated_at || page.crawled_at || new Date().toISOString(),
       
       // Additional properties
       is_indexable: page.is_indexable,

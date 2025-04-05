@@ -12,7 +12,7 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
     
     const { data, error } = await supabase
       .from('seo_crawler_issues')
-      .select('*, seo_crawler_pages(url)')
+      .select('*, seo_crawler_pages:page_id(url)')
       .eq('page_id', pageId);
     
     if (error) {
@@ -20,25 +20,22 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
       throw error;
     }
     
-    // Debug issues data to help identify structure issues
+    // Debug issue data to identify structure issues
     debugIssuesData(data);
     
-    // Map to our CrawlIssue type with the required fields
     return (data || []).map(issue => ({
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
-      type: issue.issue_type || '', // Required by CrawlIssue interface
-      page_url: issue.page_url || issue.seo_crawler_pages?.url,
+      page_url: issue.page_url || (issue.seo_crawler_pages ? issue.seo_crawler_pages.url : null),
       issue_type: issue.issue_type,
+      severity: issue.severity || 'info',
       description: issue.description,
-      severity: issue.severity as 'low' | 'medium' | 'high' | 'critical' | 'info',
-      details: issue.details || {},
-      recommended_fix: issue.recommended_fix,
+      details: issue.details || {}, // Provide default as this property is missing
       element: issue.element,
-      fix_suggestion: issue.fix_suggestion,
-      category: issue.category,
-      seo_crawler_pages: issue.seo_crawler_pages,
+      fix_suggestion: issue.fix_suggestion || issue.recommended_fix,
+      recommended_fix: issue.recommended_fix,
+      category: issue.category || 'other',
       created_at: issue.created_at || new Date().toISOString()
     }));
   } catch (error) {
@@ -56,7 +53,7 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
     
     const { data, error } = await supabase
       .from('seo_crawler_issues')
-      .select('*, seo_crawler_pages(url)')
+      .select('*, seo_crawler_pages:page_id(url)')
       .eq('crawl_id', crawlId);
     
     if (error) {
@@ -64,25 +61,22 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
       throw error;
     }
     
-    // Debug issues data to help identify structure issues
+    // Debug issue data to identify structure issues
     debugIssuesData(data);
     
-    // Map to our CrawlIssue type with the required fields
     return (data || []).map(issue => ({
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
-      type: issue.issue_type || '', // Required by CrawlIssue interface
-      page_url: issue.page_url || issue.seo_crawler_pages?.url,
+      page_url: issue.page_url || (issue.seo_crawler_pages ? issue.seo_crawler_pages.url : null),
       issue_type: issue.issue_type,
+      severity: issue.severity || 'info',
       description: issue.description,
-      severity: issue.severity as 'low' | 'medium' | 'high' | 'critical' | 'info',
-      details: issue.details || {},
-      recommended_fix: issue.recommended_fix,
+      details: issue.details || {}, // Provide default as this property is missing
       element: issue.element,
-      fix_suggestion: issue.fix_suggestion,
-      category: issue.category,
-      seo_crawler_pages: issue.seo_crawler_pages,
+      fix_suggestion: issue.fix_suggestion || issue.recommended_fix,
+      recommended_fix: issue.recommended_fix,
+      category: issue.category || 'other',
       created_at: issue.created_at || new Date().toISOString()
     }));
   } catch (error) {

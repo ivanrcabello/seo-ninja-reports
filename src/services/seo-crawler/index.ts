@@ -12,7 +12,11 @@ export {
   getPageLinks,
   deleteCrawlRecord,
   saveCrawlSettings,
-  getCrawlSettings
+  getCrawlSettings,
+  getCrawlIssues,
+  getCrawlLinks,
+  getPageHeadings,
+  getCrawlHeadings
 } from './api';
 
 // For backward compatibility with existing code
