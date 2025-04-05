@@ -13,7 +13,7 @@ export interface CrawlSettings {
   crawl_sitemap: boolean;
   follow_links: boolean;
   max_depth: number;
-  custom_headers?: Record<string, string>; // Added custom_headers
+  custom_headers?: Record<string, string>; // Added custom_headers as an optional property
 }
 
 // Result of a crawl operation
@@ -43,6 +43,15 @@ export interface CrawlResult {
   total_internal_links?: number; // Used in summary
   total_external_links?: number; // Used in summary
   total_broken_links?: number; // Used in summary
+  
+  // Add any other properties that might be used by components
+  avg_page_load_time_ms?: number;
+  crawl_depth?: number;
+  duplicate_content_count?: number; 
+  mobile_friendly_score?: number;
+  performance_score?: number;
+  schema_markup_count?: number;
+  summary?: any;
 }
 
 // Crawl page data
@@ -74,6 +83,24 @@ export interface CrawlPage {
   page_size_kb?: number;
   load_time_ms?: number;
   images_without_alt?: number;
+  
+  // Add any other properties that might be used
+  content_text?: string;
+  content_hash?: string;
+  meta_keywords?: string;
+  level?: number;
+  redirect_url?: string;
+  dom_nodes_count?: number;
+  dom_load_time_ms?: number;
+  content_type?: string;
+  content_length?: number;
+  text_ratio?: number;
+  similar_page_id?: string;
+  response_time_ms?: number;
+  crawled_at?: string;
+  hreflang_count?: number;
+  h2_count?: number;
+  h3_count?: number;
 }
 
 // Crawl issue data
@@ -114,6 +141,10 @@ export interface CrawlLink {
   anchor_text?: string; // Alias for 'text'
   follow?: boolean; // Used instead of is_followed in some places
   rel_attributes?: string[]; // Used in link details
+  nofollow?: boolean; // Used in some cases
+  link_location?: string;
+  link_text?: string;
+  link_type?: string;
 }
 
 // Crawl meta data
@@ -126,7 +157,7 @@ export interface CrawlMeta {
   created_at: string;
 }
 
-// Crawl heading data - Added missing type
+// Crawl heading data
 export interface CrawlHeading {
   id: string;
   crawl_id: string;

@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlResult, CrawlPage } from '../types';
+import { CrawlResult, CrawlPage, CrawlSettings } from '../types';
 
 /**
  * Get a specific crawl result by ID
@@ -23,6 +23,19 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       throw new Error(`Crawl with ID ${crawlId} not found`);
     }
     
+    // Parse the settings to ensure it's a CrawlSettings object
+    const parsedSettings: CrawlSettings = {
+      max_pages: data.settings?.max_pages || 100,
+      exclude_urls: data.settings?.exclude_urls || [],
+      include_urls: data.settings?.include_urls || [],
+      respect_robots_txt: data.settings?.respect_robots_txt !== undefined ? data.settings.respect_robots_txt : true,
+      user_agent: data.settings?.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+      crawl_sitemap: data.settings?.crawl_sitemap !== undefined ? data.settings.crawl_sitemap : true,
+      follow_links: data.settings?.follow_links !== undefined ? data.settings.follow_links : true,
+      max_depth: data.settings?.max_depth || 5,
+      custom_headers: data.settings?.custom_headers || {}
+    };
+    
     return {
       id: data.id,
       client_id: data.client_id,
@@ -30,24 +43,31 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       domain: data.domain,
       status: data.status as 'queued' | 'processing' | 'completed' | 'failed',
       started_at: data.started_at,
-      start_time: data.started_at, // Map for compatibility
+      start_time: data.started_at || data.inserted_at || data.created_at, // Map for compatibility
       completed_at: data.completed_at,
-      created_at: data.inserted_at,
-      updated_at: data.updated_at,
+      created_at: data.inserted_at || new Date().toISOString(),
+      updated_at: data.updated_at || data.inserted_at || new Date().toISOString(),
       total_pages: data.total_pages,
       pages_crawled: data.pages_crawled,
       total_issues: data.total_issues,
       error_message: data.error_message,
-      settings: data.settings,
+      settings: parsedSettings,
       success: true,
       message: '',
       // Additional fields
       inserted_at: data.inserted_at,
-      total_time_seconds: data.total_time_seconds,
+      total_time_seconds: data.total_time_seconds || 0,
       total_links: data.total_links,
       total_internal_links: data.total_internal_links,
       total_external_links: data.total_external_links,
-      total_broken_links: data.total_broken_links
+      total_broken_links: data.total_broken_links,
+      avg_page_load_time_ms: data.avg_page_load_time_ms,
+      crawl_depth: data.crawl_depth,
+      duplicate_content_count: data.duplicate_content_count,
+      mobile_friendly_score: data.mobile_friendly_score,
+      performance_score: data.performance_score,
+      schema_markup_count: data.schema_markup_count,
+      summary: data.summary
     };
   } catch (error) {
     console.error('Error fetching crawl result:', error);
@@ -72,32 +92,54 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
       throw error;
     }
     
-    return (data || []).map(item => ({
-      id: item.id,
-      client_id: item.client_id,
-      url: item.url,
-      domain: item.domain,
-      status: item.status as 'queued' | 'processing' | 'completed' | 'failed',
-      started_at: item.started_at,
-      start_time: item.started_at, // Map for compatibility
-      completed_at: item.completed_at,
-      created_at: item.inserted_at,
-      updated_at: item.updated_at,
-      total_pages: item.total_pages,
-      pages_crawled: item.pages_crawled,
-      total_issues: item.total_issues,
-      error_message: item.error_message,
-      settings: item.settings,
-      success: true,
-      message: '',
-      // Additional fields
-      inserted_at: item.inserted_at,
-      total_time_seconds: item.total_time_seconds,
-      total_links: item.total_links,
-      total_internal_links: item.total_internal_links,
-      total_external_links: item.total_external_links,
-      total_broken_links: item.total_broken_links
-    }));
+    return (data || []).map(item => {
+      // Parse the settings to ensure it's a CrawlSettings object
+      const parsedSettings: CrawlSettings = {
+        max_pages: item.settings?.max_pages || 100,
+        exclude_urls: item.settings?.exclude_urls || [],
+        include_urls: item.settings?.include_urls || [],
+        respect_robots_txt: item.settings?.respect_robots_txt !== undefined ? item.settings.respect_robots_txt : true,
+        user_agent: item.settings?.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+        crawl_sitemap: item.settings?.crawl_sitemap !== undefined ? item.settings.crawl_sitemap : true,
+        follow_links: item.settings?.follow_links !== undefined ? item.settings.follow_links : true,
+        max_depth: item.settings?.max_depth || 5,
+        custom_headers: item.settings?.custom_headers || {}
+      };
+      
+      return {
+        id: item.id,
+        client_id: item.client_id,
+        url: item.url,
+        domain: item.domain,
+        status: item.status as 'queued' | 'processing' | 'completed' | 'failed',
+        started_at: item.started_at,
+        start_time: item.started_at || item.inserted_at || item.created_at, // Map for compatibility
+        completed_at: item.completed_at,
+        created_at: item.inserted_at || new Date().toISOString(),
+        updated_at: item.updated_at || item.inserted_at || new Date().toISOString(),
+        total_pages: item.total_pages,
+        pages_crawled: item.pages_crawled,
+        total_issues: item.total_issues,
+        error_message: item.error_message,
+        settings: parsedSettings,
+        success: true,
+        message: '',
+        // Additional fields
+        inserted_at: item.inserted_at,
+        total_time_seconds: item.total_time_seconds || 0,
+        total_links: item.total_links,
+        total_internal_links: item.total_internal_links,
+        total_external_links: item.total_external_links,
+        total_broken_links: item.total_broken_links,
+        avg_page_load_time_ms: item.avg_page_load_time_ms,
+        crawl_depth: item.crawl_depth,
+        duplicate_content_count: item.duplicate_content_count,
+        mobile_friendly_score: item.mobile_friendly_score,
+        performance_score: item.performance_score,
+        schema_markup_count: item.schema_markup_count,
+        summary: item.summary
+      };
+    });
   } catch (error) {
     console.error('Error fetching crawl results:', error);
     return [];
@@ -148,7 +190,24 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
       image_count: page.image_count,
       images_without_alt: page.images_without_alt,
       page_size_kb: page.page_size_kb,
-      load_time_ms: page.load_time_ms || page.response_time_ms
+      load_time_ms: page.load_time_ms || page.response_time_ms,
+      // Additional fields that might be accessed
+      content_text: page.content_text,
+      content_hash: page.content_hash,
+      meta_keywords: page.meta_keywords,
+      level: page.level,
+      redirect_url: page.redirect_url,
+      dom_nodes_count: page.dom_nodes_count,
+      dom_load_time_ms: page.dom_load_time_ms,
+      content_type: page.content_type,
+      content_length: page.content_length,
+      text_ratio: page.text_ratio,
+      similar_page_id: page.similar_page_id,
+      response_time_ms: page.response_time_ms,
+      crawled_at: page.crawled_at,
+      hreflang_count: page.hreflang_count,
+      h2_count: page.h2_count,
+      h3_count: page.h3_count
     }));
   } catch (error) {
     console.error('Error fetching crawl pages:', error);

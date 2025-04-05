@@ -35,6 +35,11 @@ export async function getCrawlSettings(
       throw error;
     }
     
+    // Ensure custom_headers is an object even if it's null or another type in the database
+    const customHeaders: Record<string, string> = typeof data.custom_headers === 'object' && data.custom_headers !== null 
+      ? data.custom_headers as Record<string, string>
+      : {};
+    
     return {
       max_pages: data.max_pages,
       respect_robots_txt: data.respect_robots_txt,
@@ -44,7 +49,7 @@ export async function getCrawlSettings(
       follow_links: data.follow_links,
       crawl_sitemap: data.crawl_sitemap,
       max_depth: data.max_depth,
-      custom_headers: data.custom_headers || {} // Add custom headers
+      custom_headers: customHeaders
     };
   } catch (error) {
     console.error('Error fetching crawl settings:', error);
@@ -65,7 +70,8 @@ function getDefaultSettings(): CrawlSettings {
     user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
     crawl_sitemap: true,
     follow_links: true,
-    max_depth: 5
+    max_depth: 5,
+    custom_headers: {}
   };
 }
 
@@ -92,6 +98,16 @@ export async function saveCrawlSettings(
       throw queryError;
     }
     
+    // Ensure custom_headers is a valid object
+    const customHeaders: Record<string, string> = {};
+    if (settings.custom_headers && typeof settings.custom_headers === 'object') {
+      Object.entries(settings.custom_headers).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          customHeaders[key] = value;
+        }
+      });
+    }
+    
     // Settings to save
     const settingsToSave = {
       client_id: clientId,
@@ -104,7 +120,7 @@ export async function saveCrawlSettings(
       crawl_sitemap: settings.crawl_sitemap !== undefined ? settings.crawl_sitemap : true,
       follow_links: settings.follow_links !== undefined ? settings.follow_links : true,
       max_depth: settings.max_depth || 5,
-      custom_headers: settings.custom_headers || {}
+      custom_headers: customHeaders
     };
     
     let result;

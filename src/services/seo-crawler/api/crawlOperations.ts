@@ -124,11 +124,38 @@ export async function startCrawl(
     
     // Map database record to our CrawlResult type with normalized field names
     const result: CrawlResult = {
-      ...crawlRecord,
+      id: crawlRecord.id,
+      client_id: crawlRecord.client_id,
+      url: crawlRecord.url,
+      domain: crawlRecord.domain,
+      status: crawlRecord.status,
       started_at: crawlRecord.started_at || crawlRecord.inserted_at || crawlRecord.created_at,
       start_time: crawlRecord.started_at || crawlRecord.inserted_at || crawlRecord.created_at,
+      completed_at: crawlRecord.completed_at,
+      created_at: crawlRecord.inserted_at || new Date().toISOString(),
+      updated_at: crawlRecord.updated_at || crawlRecord.inserted_at || new Date().toISOString(),
+      total_pages: crawlRecord.total_pages,
+      pages_crawled: crawlRecord.pages_crawled,
+      total_issues: crawlRecord.total_issues,
+      error_message: crawlRecord.error_message,
+      settings: mergedSettings, // Use the merged settings instead of db record
       success: true,
-      message: 'Crawl started. It will continue in the background.'
+      message: 'Crawl started. It will continue in the background.',
+      
+      // Include additional properties if available
+      total_links: crawlRecord.total_links,
+      total_internal_links: crawlRecord.total_internal_links,
+      total_external_links: crawlRecord.total_external_links,
+      total_broken_links: crawlRecord.total_broken_links,
+      inserted_at: crawlRecord.inserted_at,
+      total_time_seconds: crawlRecord.total_time_seconds,
+      avg_page_load_time_ms: crawlRecord.avg_page_load_time_ms,
+      crawl_depth: crawlRecord.crawl_depth,
+      duplicate_content_count: crawlRecord.duplicate_content_count,
+      mobile_friendly_score: crawlRecord.mobile_friendly_score,
+      performance_score: crawlRecord.performance_score,
+      schema_markup_count: crawlRecord.schema_markup_count,
+      summary: crawlRecord.summary
     };
     
     return result;

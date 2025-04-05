@@ -33,7 +33,12 @@ export async function getPageLinks(pageId: string): Promise<CrawlLink[]> {
       is_broken: link.is_broken,
       status_code: link.status_code,
       rel_attributes: link.rel_attributes,
-      created_at: link.created_at || new Date().toISOString()
+      created_at: link.created_at || new Date().toISOString(),
+      // Additional properties that might be accessed
+      nofollow: !link.follow,
+      link_location: link.link_location,
+      link_text: link.link_text,
+      link_type: link.link_type
     }));
   } catch (error) {
     console.error('Error fetching page links:', error);
@@ -72,7 +77,12 @@ export async function getCrawlLinks(crawlId: string): Promise<CrawlLink[]> {
       is_broken: link.is_broken,
       status_code: link.status_code,
       rel_attributes: link.rel_attributes,
-      created_at: link.created_at || new Date().toISOString()
+      created_at: link.created_at || new Date().toISOString(),
+      // Additional properties that might be accessed
+      nofollow: !link.follow,
+      link_location: link.link_location,
+      link_text: link.link_text,
+      link_type: link.link_type
     }));
   } catch (error) {
     console.error('Error fetching crawl links:', error);

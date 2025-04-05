@@ -1,41 +1,45 @@
 
 /**
- * Utility function to debug issues data
+ * Debug utilities for SEO crawler API
  */
-export function debugIssuesData(data: any[]) {
-  if (!data || data.length === 0) {
-    console.log('No issues data to debug');
-    return;
-  }
-  
-  // Log the first issue to see its structure
-  console.log('First issue data structure:', JSON.stringify(data[0], null, 2));
-  
-  // Count issues by type
-  const typeCounts: Record<string, number> = {};
-  data.forEach(issue => {
-    const type = issue.issue_type || 'unknown';
-    typeCounts[type] = (typeCounts[type] || 0) + 1;
-  });
-  
-  console.log('Issue types count:', typeCounts);
-  
-  // Check for missing required fields
-  const missingFields: Record<string, number> = {};
-  const requiredFields = [
-    'id', 'crawl_id', 'page_id', 'issue_type', 
-    'description', 'severity'
-  ];
-  
-  data.forEach(issue => {
-    requiredFields.forEach(field => {
-      if (issue[field] === undefined || issue[field] === null) {
-        missingFields[field] = (missingFields[field] || 0) + 1;
-      }
+
+/**
+ * Logs debug information about issues data
+ */
+export function debugIssuesData(data: any[]): void {
+  try {
+    console.log(`Debug issues data: Found ${data.length} issues`);
+    
+    // Sample the first 2 issues to avoid excessive logging
+    const sampleSize = Math.min(2, data.length);
+    for (let i = 0; i < sampleSize; i++) {
+      const issue = data[i];
+      console.log(`Issue sample ${i + 1}:`);
+      console.log(`- ID: ${issue.id}`);
+      console.log(`- Type: ${issue.issue_type}`);
+      console.log(`- Severity: ${issue.severity}`);
+      console.log(`- Page ID: ${issue.page_id}`);
+      console.log(`- Has page reference: ${!!issue.seo_crawler_pages}`);
+    }
+    
+    // Issue type stats
+    const typeStats: Record<string, number> = {};
+    data.forEach(issue => {
+      const type = issue.issue_type || 'unknown';
+      typeStats[type] = (typeStats[type] || 0) + 1;
     });
-  });
-  
-  if (Object.keys(missingFields).length > 0) {
-    console.warn('Missing required fields in issues:', missingFields);
+    
+    console.log('Issue type statistics:', typeStats);
+    
+    // Severity stats
+    const severityStats: Record<string, number> = {};
+    data.forEach(issue => {
+      const severity = issue.severity || 'unknown';
+      severityStats[severity] = (severityStats[severity] || 0) + 1;
+    });
+    
+    console.log('Issue severity statistics:', severityStats);
+  } catch (error) {
+    console.error('Error in debugIssuesData:', error);
   }
 }

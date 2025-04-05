@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlIssue, CrawlLink, CrawlPage } from './types';
 
@@ -94,14 +93,16 @@ export async function fetchIssuesWithDetails(crawlId: string): Promise<CrawlIssu
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
-      page_url: issue.page_url,
+      type: issue.issue_type,
       issue_type: issue.issue_type,
+      page_url: issue.page_url,
       description: issue.description,
-      severity: issue.severity,
-      recommended_fix: issue.recommended_fix,
+      severity: issue.severity || 'medium',
+      recommended_fix: issue.recommended_fix || null,
       element: issue.element || null,
       fix_suggestion: issue.fix_suggestion || null,
       category: issue.category || '',
+      created_at: issue.created_at || new Date().toISOString(),
       seo_crawler_pages: { url: issue.page_url || '' }
     }));
   } catch (error) {
@@ -127,12 +128,15 @@ export async function fetchLinksWithDetails(crawlId: string): Promise<CrawlLink[
       crawl_id: link.crawl_id,
       page_id: link.page_id,
       url: link.url,
+      text: link.anchor_text || '',
       anchor_text: link.anchor_text || '',
       is_internal: link.is_internal,
+      is_followed: !!link.follow,
       is_broken: link.is_broken,
       status_code: link.status_code,
       follow: link.follow,
-      rel_attributes: link.rel_attributes
+      rel_attributes: link.rel_attributes,
+      created_at: link.created_at || new Date().toISOString()
     }));
   } catch (error) {
     console.error('Error fetching links with details:', error);
