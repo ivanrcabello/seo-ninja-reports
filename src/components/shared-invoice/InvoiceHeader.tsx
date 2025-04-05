@@ -60,6 +60,7 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({ invoice, onPrint }) => {
           {invoice.client_name} • <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(invoice.status)}`}>
             {getStatusLabel(invoice.status)}
           </span>
+          {invoice.invoice_number && <span className="ml-2">• Nº: {invoice.invoice_number}</span>}
         </p>
       </div>
       <div className="w-full sm:w-auto">

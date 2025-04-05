@@ -1,6 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { InvoiceContent, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
 import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice/types';
 import { toast } from 'sonner';

@@ -28,6 +28,8 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
         ? (sharedData.content as Record<string, any>) 
         : {};
       
+      console.log('Content object from shared_content:', contentObj);
+      
       return {
         data: {
           id: sharedData.id,
@@ -71,6 +73,7 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     }
     
     const invoice = data[0];
+    console.log('Invoice data from RPC:', invoice);
     
     return { data: invoice };
   } catch (error: any) {

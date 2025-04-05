@@ -5,6 +5,8 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { SharedInvoice } from './types';
+import { Button } from '@/components/ui/button';
+import { Mail } from 'lucide-react';
 
 interface InvoiceContentProps {
   invoice: SharedInvoice;
@@ -112,11 +114,37 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice }) => {
         </CardContent>
       </Card>
       
+      {/* Opciones de Pago */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Opciones de Pago</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p>Para realizar el pago de esta factura, por favor contacta con nosotros a través del formulario de contacto.</p>
+          
+          <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+            <Mail className="mr-2 h-4 w-4" /> Contactar para pagar
+          </Button>
+          
+          <div className="mt-6 space-y-2">
+            <h4 className="font-medium">Información importante:</h4>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+              <li>Para facturación, contacta con nuestro departamento financiero.</li>
+              {invoice.due_date ? (
+                <li>Fecha de vencimiento: {format(new Date(invoice.due_date), 'PPP', { locale: es })}</li>
+              ) : (
+                <li>Fecha de vencimiento: No especificada</li>
+              )}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Contact Information Footer */}
-      <div className="text-center text-sm text-muted-foreground">
-        <p className="font-medium">¿Necesitas ayuda?</p>
-        <p>info@seo-ninja.es</p>
-        <p>+34 654 633 796</p>
+      <div className="text-center text-sm text-muted-foreground py-4 border-t">
+        <p className="font-medium mb-2">¿Necesitas ayuda?</p>
+        <p className="mb-1">info@seo-ninja.es</p>
+        <p className="mb-1">+34 654 633 796</p>
         <p>C/ Mestre Racional 1, 46005 Valencia</p>
       </div>
     </div>
