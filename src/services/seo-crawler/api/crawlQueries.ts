@@ -1,10 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CrawlResult, CrawlPage, CrawlSettings } from '../types';
+import { CrawlResult, CrawlPage } from '../types';
 import { debugCrawlData } from './debugUtils';
 
 /**
- * Get a specific crawl result by ID
+ * Get a specific crawl record
  */
 export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
   try {
@@ -21,49 +21,40 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       throw error;
     }
     
-    if (!data) {
-      throw new Error(`Crawl with ID ${crawlId} not found`);
-    }
-    
-    // Debug crawl data to see what fields are available
+    // Debug crawl data to identify structure issues
     debugCrawlData(data);
     
-    // Parse the settings to ensure it's a CrawlSettings object
-    // Safe type assertion with fallback values
-    const settings = data.settings as any;
-    const parsedSettings: CrawlSettings = {
-      max_pages: settings?.max_pages || 100,
-      exclude_urls: settings?.exclude_urls || [],
-      include_urls: settings?.include_urls || [],
-      respect_robots_txt: settings?.respect_robots_txt !== false,
-      user_agent: settings?.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-      crawl_sitemap: settings?.crawl_sitemap !== false,
-      follow_links: settings?.follow_links !== false,
-      max_depth: settings?.max_depth || 5,
-      custom_headers: settings?.custom_headers || {}
-    };
-    
-    // Map database record to our CrawlResult type
+    // Map the data to our CrawlResult type
     return {
       id: data.id,
       client_id: data.client_id,
       url: data.url,
       domain: data.domain,
       status: data.status as 'queued' | 'processing' | 'completed' | 'failed',
-      started_at: data.started_at || data.inserted_at,
+      started_at: data.started_at,
       start_time: data.started_at || data.inserted_at,
       completed_at: data.completed_at,
-      created_at: data.inserted_at || new Date().toISOString(),
+      created_at: data.created_at || data.inserted_at || new Date().toISOString(),
       updated_at: data.updated_at || data.inserted_at || new Date().toISOString(),
       total_pages: data.total_pages || 0,
       pages_crawled: data.pages_crawled || 0,
       total_issues: data.total_issues || 0,
       error_message: data.error_message,
-      settings: parsedSettings,
+      settings: data.settings || {
+        max_pages: 100,
+        exclude_urls: [],
+        include_urls: [],
+        respect_robots_txt: true,
+        user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+        crawl_sitemap: true,
+        follow_links: true,
+        max_depth: 5,
+        custom_headers: {}
+      },
       success: true,
-      message: 'Crawl data retrieved successfully',
+      message: "Crawl data retrieved successfully",
       
-      // Additional properties
+      // Add defaults for properties that might be missing
       total_time_seconds: data.total_time_seconds || 0,
       total_links: data.total_links || 0,
       total_internal_links: data.total_internal_links || 0,
@@ -78,15 +69,14 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       schema_markup_count: data.schema_markup_count || 0,
       summary: data.summary || null
     };
-    
   } catch (error) {
-    console.error('Error fetching crawl result:', error);
+    console.error('Error fetching crawl record:', error);
     throw error;
   }
 }
 
 /**
- * Get all crawl results for a client
+ * Get all crawl records for a client
  */
 export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> {
   try {
@@ -103,69 +93,64 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
       throw error;
     }
     
-    return (data || []).map(item => {
-      // Debug crawl data to see what fields are available
-      debugCrawlData(item);
-      
-      // Parse the settings to ensure it's a CrawlSettings object
-      const settings = item.settings as any;
-      const parsedSettings: CrawlSettings = {
-        max_pages: settings?.max_pages || 100,
-        exclude_urls: settings?.exclude_urls || [],
-        include_urls: settings?.include_urls || [],
-        respect_robots_txt: settings?.respect_robots_txt !== false,
-        user_agent: settings?.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-        crawl_sitemap: settings?.crawl_sitemap !== false,
-        follow_links: settings?.follow_links !== false,
-        max_depth: settings?.max_depth || 5,
-        custom_headers: settings?.custom_headers || {}
-      };
-      
-      // Map database record to our CrawlResult type
-      return {
-        id: item.id,
-        client_id: item.client_id,
-        url: item.url,
-        domain: item.domain,
-        status: item.status as 'queued' | 'processing' | 'completed' | 'failed',
-        started_at: item.started_at || item.inserted_at,
-        start_time: item.started_at || item.inserted_at,
-        completed_at: item.completed_at,
-        created_at: item.inserted_at || new Date().toISOString(),
-        updated_at: item.updated_at || item.inserted_at || new Date().toISOString(),
-        total_pages: item.total_pages || 0,
-        pages_crawled: item.pages_crawled || 0,
-        total_issues: item.total_issues || 0,
-        error_message: item.error_message,
-        settings: parsedSettings,
-        success: true,
-        message: 'Crawl data retrieved successfully',
-        
-        // Additional properties
-        total_time_seconds: item.total_time_seconds || 0,
-        total_links: item.total_links || 0,
-        total_internal_links: item.total_internal_links || 0,
-        total_external_links: item.total_external_links || 0,
-        total_broken_links: item.total_broken_links || 0, 
-        inserted_at: item.inserted_at || new Date().toISOString(),
-        avg_page_load_time_ms: item.avg_page_load_time_ms || 0,
-        crawl_depth: item.crawl_depth || 0,
-        duplicate_content_count: item.duplicate_content_count || 0,
-        mobile_friendly_score: item.mobile_friendly_score || 0,
-        performance_score: item.performance_score || 0,
-        schema_markup_count: item.schema_markup_count || 0,
-        summary: item.summary || null
-      };
-    });
+    // Debug the first crawl data to identify structure issues
+    if (data && data.length > 0) {
+      debugCrawlData(data[0]);
+    }
     
+    // Map database records to our CrawlResult type
+    return (data || []).map(record => ({
+      id: record.id,
+      client_id: record.client_id,
+      url: record.url,
+      domain: record.domain,
+      status: record.status as 'queued' | 'processing' | 'completed' | 'failed',
+      started_at: record.started_at,
+      start_time: record.started_at || record.inserted_at,
+      completed_at: record.completed_at,
+      created_at: record.created_at || record.inserted_at || new Date().toISOString(),
+      updated_at: record.updated_at || record.inserted_at || new Date().toISOString(),
+      total_pages: record.total_pages || 0,
+      pages_crawled: record.pages_crawled || 0,
+      total_issues: record.total_issues || 0,
+      error_message: record.error_message,
+      settings: record.settings || {
+        max_pages: 100,
+        exclude_urls: [],
+        include_urls: [],
+        respect_robots_txt: true,
+        user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+        crawl_sitemap: true,
+        follow_links: true,
+        max_depth: 5,
+        custom_headers: {}
+      },
+      success: true,
+      message: "Crawl data retrieved successfully",
+      
+      // Add defaults for properties that might be missing
+      total_time_seconds: record.total_time_seconds || 0,
+      total_links: record.total_links || 0,
+      total_internal_links: record.total_internal_links || 0,
+      total_external_links: record.total_external_links || 0,
+      total_broken_links: record.total_broken_links || 0,
+      inserted_at: record.inserted_at || new Date().toISOString(),
+      avg_page_load_time_ms: record.avg_page_load_time_ms || 0,
+      crawl_depth: record.crawl_depth || 0,
+      duplicate_content_count: record.duplicate_content_count || 0,
+      mobile_friendly_score: record.mobile_friendly_score || 0,
+      performance_score: record.performance_score || 0,
+      schema_markup_count: record.schema_markup_count || 0,
+      summary: record.summary || null
+    }));
   } catch (error) {
-    console.error('Error fetching crawl results:', error);
-    throw error;
+    console.error('Error fetching crawl records:', error);
+    return [];
   }
 }
 
 /**
- * Get pages for a specific crawl
+ * Get all pages for a specific crawl
  */
 export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
   try {
@@ -182,24 +167,26 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
     }
     
     console.log(`Found ${data?.length || 0} pages for crawl ${crawlId}`);
+    console.log('Pages data:', data);
     
+    // Map database records to our CrawlPage type with required fields
     return (data || []).map(page => ({
       id: page.id,
       crawl_id: page.crawl_id,
       url: page.url,
-      title: page.title,
-      meta_description: page.meta_description,
-      h1: page.h1,
-      status_code: page.status_code || 0,
-      is_internal: true, // Default value since this field might be missing
-      is_crawled: true, // Default value since this field might be missing
+      title: page.title || '',
+      meta_description: page.meta_description || '',
+      h1: page.h1 || '',
+      status_code: page.status_code || 200,
+      is_internal: page.is_internal === undefined ? true : page.is_internal,
+      is_crawled: page.is_crawled === undefined ? true : page.is_crawled,
       issues_count: page.issues_count || 0,
       internal_links_count: page.internal_links_count || 0,
       external_links_count: page.external_links_count || 0,
-      created_at: page.crawled_at || new Date().toISOString(),
-      updated_at: page.crawled_at || new Date().toISOString(),
+      created_at: page.created_at || page.crawled_at || new Date().toISOString(),
+      updated_at: page.updated_at || page.crawled_at || new Date().toISOString(),
       
-      // Additional properties
+      // Add missing properties from the type
       is_indexable: page.is_indexable,
       word_count: page.word_count,
       image_count: page.image_count,
@@ -211,12 +198,70 @@ export async function getCrawlPages(crawlId: string): Promise<CrawlPage[]> {
       page_size_kb: page.page_size_kb,
       load_time_ms: page.load_time_ms,
       images_without_alt: page.images_without_alt,
+      content_text: page.content_text,
+      content_hash: page.content_hash,
+      meta_keywords: page.meta_keywords,
+      level: page.level,
+      redirect_url: page.redirect_url,
+      dom_nodes_count: page.dom_nodes_count,
+      dom_load_time_ms: page.dom_load_time_ms,
+      content_type: page.content_type,
+      content_length: page.content_length,
       text_ratio: page.text_ratio,
-      content_type: page.content_type
+      similar_page_id: page.similar_page_id,
+      response_time_ms: page.response_time_ms,
+      crawled_at: page.crawled_at,
+      hreflang_count: page.hreflang_count,
+      h2_count: page.h2_count,
+      h3_count: page.h3_count
     }));
-    
   } catch (error) {
     console.error('Error fetching crawl pages:', error);
-    throw error;
+    return [];
   }
 }
+
+/**
+ * Delete a crawl record and all related data
+ */
+export async function deleteCrawlRecord(crawlId: string): Promise<boolean> {
+  try {
+    // Delete all related records first (assuming cascade deletion is not set up)
+    // Issues
+    await supabase
+      .from('seo_crawler_issues')
+      .delete()
+      .eq('crawl_id', crawlId);
+      
+    // Links
+    await supabase
+      .from('seo_crawler_links')
+      .delete()
+      .eq('crawl_id', crawlId);
+      
+    // Pages
+    await supabase
+      .from('seo_crawler_pages')
+      .delete()
+      .eq('crawl_id', crawlId);
+      
+    // Finally delete the crawl record
+    const { error } = await supabase
+      .from('seo_crawler_crawls')
+      .delete()
+      .eq('id', crawlId);
+      
+    if (error) {
+      console.error('Error deleting crawl record:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in deleteCrawlRecord:', error);
+    return false;
+  }
+}
+
+// Export deleteCrawlRecord function to make it available
+export { deleteCrawlRecord };
