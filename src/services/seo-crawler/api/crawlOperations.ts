@@ -42,7 +42,8 @@ export async function startCrawl(
       user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
       crawl_sitemap: true,
       follow_links: true,
-      max_depth: 5
+      max_depth: 5,
+      custom_headers: {}
     };
 
     const mergedSettings = { ...defaultSettings, ...settings };
@@ -99,7 +100,7 @@ export async function startCrawl(
         await supabase
           .from('seo_crawler_crawls')
           .update({ 
-            status: 'processing',
+            status: 'processing' as 'queued' | 'processing' | 'completed' | 'failed',
             error_message: 'Edge function error occurred, but crawl will continue in background'
           })
           .eq('id', crawlRecord.id);
@@ -114,7 +115,7 @@ export async function startCrawl(
       await supabase
         .from('seo_crawler_crawls')
         .update({ 
-          status: 'processing',
+          status: 'processing' as 'queued' | 'processing' | 'completed' | 'failed',
           error_message: 'Edge function invocation failed, but crawl will continue in background'
         })
         .eq('id', crawlRecord.id);
@@ -128,34 +129,34 @@ export async function startCrawl(
       client_id: crawlRecord.client_id,
       url: crawlRecord.url,
       domain: crawlRecord.domain,
-      status: crawlRecord.status,
+      status: crawlRecord.status as 'queued' | 'processing' | 'completed' | 'failed',
       started_at: crawlRecord.started_at || crawlRecord.inserted_at || crawlRecord.created_at,
       start_time: crawlRecord.started_at || crawlRecord.inserted_at || crawlRecord.created_at,
       completed_at: crawlRecord.completed_at,
       created_at: crawlRecord.inserted_at || new Date().toISOString(),
       updated_at: crawlRecord.updated_at || crawlRecord.inserted_at || new Date().toISOString(),
-      total_pages: crawlRecord.total_pages,
-      pages_crawled: crawlRecord.pages_crawled,
-      total_issues: crawlRecord.total_issues,
+      total_pages: crawlRecord.total_pages || 0,
+      pages_crawled: crawlRecord.pages_crawled || 0,
+      total_issues: crawlRecord.total_issues || 0,
       error_message: crawlRecord.error_message,
       settings: mergedSettings, // Use the merged settings instead of db record
       success: true,
       message: 'Crawl started. It will continue in the background.',
       
-      // Include additional properties if available
-      total_links: crawlRecord.total_links,
-      total_internal_links: crawlRecord.total_internal_links,
-      total_external_links: crawlRecord.total_external_links,
-      total_broken_links: crawlRecord.total_broken_links,
-      inserted_at: crawlRecord.inserted_at,
-      total_time_seconds: crawlRecord.total_time_seconds,
-      avg_page_load_time_ms: crawlRecord.avg_page_load_time_ms,
-      crawl_depth: crawlRecord.crawl_depth,
-      duplicate_content_count: crawlRecord.duplicate_content_count,
-      mobile_friendly_score: crawlRecord.mobile_friendly_score,
-      performance_score: crawlRecord.performance_score,
-      schema_markup_count: crawlRecord.schema_markup_count,
-      summary: crawlRecord.summary
+      // Include additional properties
+      total_links: crawlRecord.total_links || 0,
+      total_internal_links: crawlRecord.total_internal_links || 0,
+      total_external_links: crawlRecord.total_external_links || 0,
+      total_broken_links: crawlRecord.total_broken_links || 0,
+      inserted_at: crawlRecord.inserted_at || new Date().toISOString(),
+      total_time_seconds: crawlRecord.total_time_seconds || 0,
+      avg_page_load_time_ms: crawlRecord.avg_page_load_time_ms || 0,
+      crawl_depth: crawlRecord.crawl_depth || 0,
+      duplicate_content_count: crawlRecord.duplicate_content_count || 0,
+      mobile_friendly_score: crawlRecord.mobile_friendly_score || 0,
+      performance_score: crawlRecord.performance_score || 0,
+      schema_markup_count: crawlRecord.schema_markup_count || 0,
+      summary: crawlRecord.summary || null
     };
     
     return result;

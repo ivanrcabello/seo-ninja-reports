@@ -21,26 +21,60 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
     
     console.log(`Found ${data?.length || 0} issues for page ${pageId}`);
     
+    // Debug the issues data
+    debugIssuesData(data || []);
+    
     return (data || []).map((issue: any) => ({
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
-      type: issue.issue_type, // Map database field to our type field
-      issue_type: issue.issue_type, // Keep the original field name as an alias
-      page_url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : '',
+      type: issue.issue_type, // Map issue_type to type
+      issue_type: issue.issue_type, // Keep original for backward compatibility
+      page_url: issue.page_url || (issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''),
+      severity: issue.severity || 'info',
       description: issue.description,
-      element: issue.element || '',
-      severity: (issue.severity || 'medium') as 'low' | 'medium' | 'high' | 'critical' | 'info',
-      fix_suggestion: issue.fix_suggestion || '',
-      recommended_fix: issue.recommended_fix || '',
-      category: issue.category || 'General',
       created_at: issue.created_at || new Date().toISOString(),
-      seo_crawler_pages: {
-        url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''
-      }
+      element: issue.element,
+      fix_suggestion: issue.fix_suggestion,
+      recommended_fix: issue.recommended_fix,
+      category: issue.category,
+      seo_crawler_pages: issue.seo_crawler_pages
     }));
   } catch (error) {
     console.error('Error fetching page issues:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all issues for a specific page by URL
+ */
+export async function getPageIssuesByUrl(crawlId: string, pageUrl: string): Promise<CrawlIssue[]> {
+  try {
+    console.log(`Fetching issues for page URL: ${pageUrl} in crawl: ${crawlId}`);
+    
+    // First, find the page ID
+    const { data: pageData, error: pageError } = await supabase
+      .from('seo_crawler_pages')
+      .select('id')
+      .eq('crawl_id', crawlId)
+      .eq('url', pageUrl)
+      .single();
+    
+    if (pageError) {
+      console.error('Error finding page:', pageError);
+      return [];
+    }
+    
+    if (!pageData) {
+      console.log(`No page found with URL: ${pageUrl}`);
+      return [];
+    }
+    
+    // Get issues for this page
+    return await getPageIssues(pageData.id);
+  } catch (error) {
+    console.error('Error fetching page issues by URL:', error);
     return [];
   }
 }
@@ -50,46 +84,7 @@ export async function getPageIssues(pageId: string): Promise<CrawlIssue[]> {
  */
 export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
   try {
-    console.log(`Fetching all issues for crawl ID: ${crawlId}`);
-    
-    // Try to use the specialized DB function if available
-    try {
-      // First, validate if the RPC function exists using a direct query approach instead
-      const { data: issuesData, error: issuesError } = await supabase
-        .from('seo_crawler_issues')
-        .select('*, seo_crawler_pages(url)')
-        .eq('crawl_id', crawlId);
-        
-      if (!issuesError && issuesData) {
-        console.log(`Found ${issuesData.length} issues using standard query for crawl ${crawlId}`);
-        
-        // Debug received data
-        debugIssuesData(issuesData);
-        
-        return issuesData.map((issue: any) => ({
-          id: issue.id,
-          crawl_id: issue.crawl_id,
-          page_id: issue.page_id,
-          type: issue.issue_type, // Map database field to our type field
-          issue_type: issue.issue_type, // Keep the original field name as an alias
-          page_url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : '',
-          description: issue.description,
-          element: issue.element || '',
-          severity: (issue.severity || 'medium') as 'low' | 'medium' | 'high' | 'critical' | 'info',
-          fix_suggestion: issue.fix_suggestion || '',
-          recommended_fix: issue.recommended_fix || '',
-          category: issue.category || 'General',
-          created_at: issue.created_at || new Date().toISOString(),
-          seo_crawler_pages: {
-            url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''
-          }
-        }));
-      }
-    } catch (rpcError) {
-      console.log('Standard query had an error, falling back to direct query:', rpcError);
-    }
-    
-    // Fallback to standard query if RPC function fails
+    console.log(`Fetching issues for crawl ID: ${crawlId}`);
     const { data, error } = await supabase
       .from('seo_crawler_issues')
       .select('*, seo_crawler_pages(url)')
@@ -102,23 +97,24 @@ export async function getCrawlIssues(crawlId: string): Promise<CrawlIssue[]> {
     
     console.log(`Found ${data?.length || 0} issues for crawl ${crawlId}`);
     
+    // Debug the issues data 
+    debugIssuesData(data || []);
+    
     return (data || []).map((issue: any) => ({
       id: issue.id,
       crawl_id: issue.crawl_id,
       page_id: issue.page_id,
-      type: issue.issue_type, // Map database field to our type field
-      issue_type: issue.issue_type, // Keep the original field name as an alias
-      page_url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : '',
+      type: issue.issue_type, // Map issue_type to type
+      issue_type: issue.issue_type, // Keep original for backward compatibility
+      page_url: issue.page_url || (issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''),
+      severity: issue.severity || 'info',
       description: issue.description,
-      element: issue.element || '',
-      severity: (issue.severity || 'medium') as 'low' | 'medium' | 'high' | 'critical' | 'info',
-      fix_suggestion: issue.fix_suggestion || '',
-      recommended_fix: issue.recommended_fix || '',
-      category: issue.category || 'General',
       created_at: issue.created_at || new Date().toISOString(),
-      seo_crawler_pages: {
-        url: issue.seo_crawler_pages ? issue.seo_crawler_pages.url : ''
-      }
+      element: issue.element,
+      fix_suggestion: issue.fix_suggestion,
+      recommended_fix: issue.recommended_fix,
+      category: issue.category,
+      seo_crawler_pages: issue.seo_crawler_pages
     }));
   } catch (error) {
     console.error('Error fetching crawl issues:', error);

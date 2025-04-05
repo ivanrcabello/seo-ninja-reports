@@ -1,12 +1,11 @@
 
 // Public API - main exports
 import { startCrawl } from './crawlOperations';
-import { getCrawlResults, getCrawlResult, getCrawlPages } from './crawlQueries';
+import { getCrawlResults, getCrawlResult, getCrawlPages, deleteCrawlRecord } from './crawlQueries';
 import { getPageIssues, getCrawlIssues } from './issueQueries';
 import { getPageLinks, getCrawlLinks } from './linkQueries';
 import { getPageHeadings, getCrawlHeadings } from './headingQueries';
-import { deleteCrawlRecord } from './crawlQueries';
-import { getCrawlSettings as getSettings, saveCrawlSettings as saveSettings } from './settingsOperations';
+import { getCrawlSettings, saveCrawlSettings } from './settingsOperations';
 
 // Export all API functions
 export {
@@ -22,6 +21,6 @@ export {
   getPageHeadings,
   getCrawlHeadings,
   deleteCrawlRecord,
-  saveSettings,
-  getSettings
+  saveCrawlSettings,
+  getCrawlSettings
 };

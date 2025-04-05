@@ -13,7 +13,7 @@ export interface CrawlSettings {
   crawl_sitemap: boolean;
   follow_links: boolean;
   max_depth: number;
-  custom_headers?: Record<string, string>; // Added custom_headers as an optional property
+  custom_headers: Record<string, string>; // Added custom_headers property
 }
 
 // Result of a crawl operation

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlPage, CrawlSettings } from '../types';
 
@@ -24,16 +23,18 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
     }
     
     // Parse the settings to ensure it's a CrawlSettings object
+    // Safe type assertion with fallback values
+    const settings = data.settings as any;
     const parsedSettings: CrawlSettings = {
-      max_pages: data.settings?.max_pages || 100,
-      exclude_urls: data.settings?.exclude_urls || [],
-      include_urls: data.settings?.include_urls || [],
-      respect_robots_txt: data.settings?.respect_robots_txt !== undefined ? data.settings.respect_robots_txt : true,
-      user_agent: data.settings?.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-      crawl_sitemap: data.settings?.crawl_sitemap !== undefined ? data.settings.crawl_sitemap : true,
-      follow_links: data.settings?.follow_links !== undefined ? data.settings.follow_links : true,
-      max_depth: data.settings?.max_depth || 5,
-      custom_headers: data.settings?.custom_headers || {}
+      max_pages: settings?.max_pages || 100,
+      exclude_urls: settings?.exclude_urls || [],
+      include_urls: settings?.include_urls || [],
+      respect_robots_txt: settings?.respect_robots_txt !== undefined ? settings.respect_robots_txt : true,
+      user_agent: settings?.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+      crawl_sitemap: settings?.crawl_sitemap !== undefined ? settings.crawl_sitemap : true,
+      follow_links: settings?.follow_links !== undefined ? settings.follow_links : true,
+      max_depth: settings?.max_depth || 5,
+      custom_headers: settings?.custom_headers || {}
     };
     
     return {
@@ -47,26 +48,26 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       completed_at: data.completed_at,
       created_at: data.inserted_at || new Date().toISOString(),
       updated_at: data.updated_at || data.inserted_at || new Date().toISOString(),
-      total_pages: data.total_pages,
-      pages_crawled: data.pages_crawled,
-      total_issues: data.total_issues,
+      total_pages: data.total_pages || 0,
+      pages_crawled: data.pages_crawled || 0,
+      total_issues: data.total_issues || 0,
       error_message: data.error_message,
       settings: parsedSettings,
       success: true,
       message: '',
       // Additional fields
-      inserted_at: data.inserted_at,
+      inserted_at: data.inserted_at || new Date().toISOString(),
       total_time_seconds: data.total_time_seconds || 0,
-      total_links: data.total_links,
-      total_internal_links: data.total_internal_links,
-      total_external_links: data.total_external_links,
-      total_broken_links: data.total_broken_links,
-      avg_page_load_time_ms: data.avg_page_load_time_ms,
-      crawl_depth: data.crawl_depth,
-      duplicate_content_count: data.duplicate_content_count,
-      mobile_friendly_score: data.mobile_friendly_score,
-      performance_score: data.performance_score,
-      schema_markup_count: data.schema_markup_count,
+      total_links: data.total_links || 0,
+      total_internal_links: data.total_internal_links || 0,
+      total_external_links: data.total_external_links || 0,
+      total_broken_links: data.total_broken_links || 0,
+      avg_page_load_time_ms: data.avg_page_load_time_ms || 0,
+      crawl_depth: data.crawl_depth || 0,
+      duplicate_content_count: data.duplicate_content_count || 0,
+      mobile_friendly_score: data.mobile_friendly_score || 0,
+      performance_score: data.performance_score || 0,
+      schema_markup_count: data.schema_markup_count || 0,
       summary: data.summary
     };
   } catch (error) {
@@ -94,16 +95,17 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
     
     return (data || []).map(item => {
       // Parse the settings to ensure it's a CrawlSettings object
+      const settings = item.settings as any;
       const parsedSettings: CrawlSettings = {
-        max_pages: item.settings?.max_pages || 100,
-        exclude_urls: item.settings?.exclude_urls || [],
-        include_urls: item.settings?.include_urls || [],
-        respect_robots_txt: item.settings?.respect_robots_txt !== undefined ? item.settings.respect_robots_txt : true,
-        user_agent: item.settings?.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-        crawl_sitemap: item.settings?.crawl_sitemap !== undefined ? item.settings.crawl_sitemap : true,
-        follow_links: item.settings?.follow_links !== undefined ? item.settings.follow_links : true,
-        max_depth: item.settings?.max_depth || 5,
-        custom_headers: item.settings?.custom_headers || {}
+        max_pages: settings?.max_pages || 100,
+        exclude_urls: settings?.exclude_urls || [],
+        include_urls: settings?.include_urls || [],
+        respect_robots_txt: settings?.respect_robots_txt !== undefined ? settings.respect_robots_txt : true,
+        user_agent: settings?.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+        crawl_sitemap: settings?.crawl_sitemap !== undefined ? settings.crawl_sitemap : true,
+        follow_links: settings?.follow_links !== undefined ? settings.follow_links : true,
+        max_depth: settings?.max_depth || 5,
+        custom_headers: settings?.custom_headers || {}
       };
       
       return {
@@ -117,26 +119,26 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         completed_at: item.completed_at,
         created_at: item.inserted_at || new Date().toISOString(),
         updated_at: item.updated_at || item.inserted_at || new Date().toISOString(),
-        total_pages: item.total_pages,
-        pages_crawled: item.pages_crawled,
-        total_issues: item.total_issues,
+        total_pages: item.total_pages || 0,
+        pages_crawled: item.pages_crawled || 0,
+        total_issues: item.total_issues || 0,
         error_message: item.error_message,
         settings: parsedSettings,
         success: true,
         message: '',
         // Additional fields
-        inserted_at: item.inserted_at,
+        inserted_at: item.inserted_at || new Date().toISOString(),
         total_time_seconds: item.total_time_seconds || 0,
-        total_links: item.total_links,
-        total_internal_links: item.total_internal_links,
-        total_external_links: item.total_external_links,
-        total_broken_links: item.total_broken_links,
-        avg_page_load_time_ms: item.avg_page_load_time_ms,
-        crawl_depth: item.crawl_depth,
-        duplicate_content_count: item.duplicate_content_count,
-        mobile_friendly_score: item.mobile_friendly_score,
-        performance_score: item.performance_score,
-        schema_markup_count: item.schema_markup_count,
+        total_links: item.total_links || 0,
+        total_internal_links: item.total_internal_links || 0,
+        total_external_links: item.total_external_links || 0,
+        total_broken_links: item.total_broken_links || 0,
+        avg_page_load_time_ms: item.avg_page_load_time_ms || 0,
+        crawl_depth: item.crawl_depth || 0,
+        duplicate_content_count: item.duplicate_content_count || 0,
+        mobile_friendly_score: item.mobile_friendly_score || 0,
+        performance_score: item.performance_score || 0,
+        schema_markup_count: item.schema_markup_count || 0,
         summary: item.summary
       };
     });

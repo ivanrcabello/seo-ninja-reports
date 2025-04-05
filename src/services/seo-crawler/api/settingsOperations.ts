@@ -3,156 +3,116 @@ import { supabase } from '@/integrations/supabase/client';
 import { CrawlSettings } from '../types';
 
 /**
- * Get crawl settings for a given client
+ * Save crawl settings for a client domain
  */
-export async function getCrawlSettings(
-  clientId: string,
-  domain?: string
-): Promise<CrawlSettings> {
+export async function saveCrawlSettings(clientId: string, domain: string, settings: Partial<CrawlSettings>): Promise<boolean> {
   try {
-    console.log(`Fetching crawl settings for client: ${clientId}`);
+    console.log(`Saving crawl settings for domain: ${domain}`);
     
-    // Query parameters
-    const queryParams: any = { client_id: clientId };
-    if (domain) {
-      queryParams.domain = domain;
-    }
-    
-    const { data, error } = await supabase
-      .from('seo_crawler_settings')
-      .select('*')
-      .match(queryParams)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    
-    if (error) {
-      if (error.code === 'PGRST116') {
-        console.log(`No settings found for client ${clientId}, returning defaults`);
-        // Settings not found, return default settings
-        return getDefaultSettings();
-      }
-      throw error;
-    }
-    
-    // Ensure custom_headers is an object even if it's null or another type in the database
-    const customHeaders: Record<string, string> = typeof data.custom_headers === 'object' && data.custom_headers !== null 
-      ? data.custom_headers as Record<string, string>
-      : {};
-    
-    return {
-      max_pages: data.max_pages,
-      respect_robots_txt: data.respect_robots_txt,
-      user_agent: data.user_agent,
-      exclude_urls: data.exclude_patterns || [],
-      include_urls: data.include_patterns || [],
-      follow_links: data.follow_links,
-      crawl_sitemap: data.crawl_sitemap,
-      max_depth: data.max_depth,
-      custom_headers: customHeaders
+    // Prepare settings object with defaults
+    const settingsWithDefaults: CrawlSettings = {
+      max_pages: settings.max_pages || 100,
+      exclude_urls: settings.exclude_urls || [],
+      include_urls: settings.include_urls || [],
+      respect_robots_txt: settings.respect_robots_txt !== undefined ? settings.respect_robots_txt : true,
+      user_agent: settings.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+      crawl_sitemap: settings.crawl_sitemap !== undefined ? settings.crawl_sitemap : true,
+      follow_links: settings.follow_links !== undefined ? settings.follow_links : true,
+      max_depth: settings.max_depth || 5,
+      custom_headers: settings.custom_headers || {}
     };
-  } catch (error) {
-    console.error('Error fetching crawl settings:', error);
-    // In case of error, return default settings
-    return getDefaultSettings();
-  }
-}
-
-/**
- * Get default crawl settings
- */
-function getDefaultSettings(): CrawlSettings {
-  return {
-    max_pages: 100,
-    exclude_urls: [],
-    include_urls: [],
-    respect_robots_txt: true,
-    user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-    crawl_sitemap: true,
-    follow_links: true,
-    max_depth: 5,
-    custom_headers: {}
-  };
-}
-
-/**
- * Save crawl settings for a given client
- */
-export async function saveCrawlSettings(
-  clientId: string,
-  domain: string,
-  settings: Partial<CrawlSettings>
-): Promise<{ success: boolean; message: string }> {
-  try {
-    console.log(`Saving crawl settings for client: ${clientId}, domain: ${domain}`);
     
-    // First check if settings already exist
-    const { data: existingSettings, error: queryError } = await supabase
+    // Check if settings already exist for this domain and client
+    const { data: existingSettings } = await supabase
       .from('seo_crawler_settings')
       .select('id')
       .eq('client_id', clientId)
       .eq('domain', domain)
       .maybeSingle();
     
-    if (queryError && queryError.code !== 'PGRST116') {
-      throw queryError;
-    }
-    
-    // Ensure custom_headers is a valid object
-    const customHeaders: Record<string, string> = {};
-    if (settings.custom_headers && typeof settings.custom_headers === 'object') {
-      Object.entries(settings.custom_headers).forEach(([key, value]) => {
-        if (typeof value === 'string') {
-          customHeaders[key] = value;
-        }
-      });
-    }
-    
-    // Settings to save
-    const settingsToSave = {
-      client_id: clientId,
-      domain,
-      max_pages: settings.max_pages || 100,
-      exclude_patterns: settings.exclude_urls || [],
-      include_patterns: settings.include_urls || [],
-      respect_robots_txt: settings.respect_robots_txt !== undefined ? settings.respect_robots_txt : true,
-      user_agent: settings.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
-      crawl_sitemap: settings.crawl_sitemap !== undefined ? settings.crawl_sitemap : true,
-      follow_links: settings.follow_links !== undefined ? settings.follow_links : true,
-      max_depth: settings.max_depth || 5,
-      custom_headers: customHeaders
-    };
-    
-    let result;
-    
-    // Update or insert settings
-    if (existingSettings?.id) {
+    if (existingSettings) {
       // Update existing settings
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('seo_crawler_settings')
-        .update(settingsToSave)
+        .update({
+          ...settingsWithDefaults,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', existingSettings.id);
-      
-      if (updateError) throw updateError;
-      
-      result = { success: true, message: 'Configuración de análisis actualizada correctamente' };
+        
+      if (error) throw error;
     } else {
-      // Insert new settings
-      const { error: insertError } = await supabase
+      // Create new settings
+      const { error } = await supabase
         .from('seo_crawler_settings')
-        .insert(settingsToSave);
-      
-      if (insertError) throw insertError;
-      
-      result = { success: true, message: 'Configuración de análisis guardada correctamente' };
+        .insert({
+          client_id: clientId,
+          domain: domain,
+          ...settingsWithDefaults,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        
+      if (error) throw error;
     }
     
-    return result;
+    return true;
   } catch (error) {
     console.error('Error saving crawl settings:', error);
+    return false;
+  }
+}
+
+/**
+ * Get crawl settings for a client domain
+ */
+export async function getCrawlSettings(clientId: string, domain: string): Promise<CrawlSettings | null> {
+  try {
+    console.log(`Fetching crawl settings for domain: ${domain}`);
+    
+    const { data, error } = await supabase
+      .from('seo_crawler_settings')
+      .select('*')
+      .eq('client_id', clientId)
+      .eq('domain', domain)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error from Supabase:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.log('No crawl settings found, returning defaults');
+      
+      // Return default settings
+      return {
+        max_pages: 100,
+        exclude_urls: [],
+        include_urls: [],
+        respect_robots_txt: true,
+        user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+        crawl_sitemap: true,
+        follow_links: true,
+        max_depth: 5,
+        custom_headers: {}
+      };
+    }
+    
+    // Map database record to our CrawlSettings type
     return {
-      success: false,
-      message: `Error al guardar la configuración: ${error.message}`
+      max_pages: data.max_pages || 100,
+      exclude_urls: data.exclude_patterns || [],
+      include_urls: data.include_patterns || [],
+      respect_robots_txt: data.respect_robots_txt !== undefined ? data.respect_robots_txt : true,
+      user_agent: data.user_agent || 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+      crawl_sitemap: data.crawl_sitemap !== undefined ? data.crawl_sitemap : true,
+      follow_links: data.follow_links !== undefined ? data.follow_links : true,
+      max_depth: data.max_depth || 5,
+      custom_headers: data.custom_headers || {}
     };
+  } catch (error) {
+    console.error('Error fetching crawl settings:', error);
+    return null;
   }
 }
