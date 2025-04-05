@@ -35,14 +35,11 @@ export async function crawlPage(
     console.log(`Normalized URL: ${normalizedUrl}`);
     
     try {
-      // Set up the Bright Data proxy with credentials
-      const proxyUrl = 'http://brd.superproxy.io:22225';
-      
       // Create proxy auth
       const auth = btoa(`${username}:${password}`);
       console.log('Auth token created successfully');
       
-      // Set up the request options with better timeout handling
+      // Set up the request options with better timeout handling and headers
       const requestOptions = {
         method: 'GET',
         headers: {
@@ -54,129 +51,126 @@ export async function crawlPage(
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         },
-        signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
+        signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 30000)
       };
       
-      console.log(`Making request to analyze: ${normalizedUrl} with timeout: ${BRIGHT_DATA_CONFIG.TIMEOUT}ms`);
+      console.log(`Making request to analyze: ${normalizedUrl} with timeout: ${BRIGHT_DATA_CONFIG.TIMEOUT || 30000}ms`);
       console.log('Request headers:', JSON.stringify(requestOptions.headers, null, 2));
       
-      // ALTERNATIVE METHOD ATTEMPT: Using fetch with proxy URL in the target
-      // Format: http://{username}:{password}@brd.superproxy.io:22225/{target_url}
-      // Remove http:// or https:// from normalizedUrl
+      // Prepare the target URL for different fetching methods
       const targetUrlWithoutProtocol = normalizedUrl.replace(/^https?:\/\//, '');
+      
+      // Method 1: Try Bright Data super proxy format
       const proxyUrlWithAuth = `http://${username}:${password}@brd.superproxy.io:22225/${targetUrlWithoutProtocol}`;
-      
-      console.log(`ALTERNATIVE: Will also try proxy URL with auth: ${proxyUrlWithAuth.replace(password, '[REDACTED]')}`);
-      
-      // Log proxy details
-      console.log(`Using direct proxy: ${proxyUrl}`);
+      console.log(`Using proxy URL with auth: ${proxyUrlWithAuth.replace(password, '[REDACTED]')}`);
       
       // Try multiple methods to make this work
       let response;
       let html = '';
       let successMethod = '';
       
-      // First attempt: Direct fetch to target URL (with Bright Data auth in headers)
+      // Method 1: Using the proxy URL directly
       try {
-        console.log(`METHOD 1: Starting direct fetch request at ${new Date().toISOString()}`);
-        response = await fetch(normalizedUrl, requestOptions);
+        console.log(`METHOD 1: Starting proxy request at ${new Date().toISOString()}`);
+        
+        // Simplified options without Authorization header (since it's in the URL)
+        const simpleOptions = {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          },
+          signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 30000)
+        };
+        
+        response = await fetch(proxyUrlWithAuth, simpleOptions);
         console.log(`METHOD 1: Response status: ${response.status}`);
         
         if (response.ok) {
           html = await response.text();
           console.log(`METHOD 1: Received HTML content (${html.length} characters)`);
-          successMethod = 'direct-fetch';
+          successMethod = 'proxy-url';
         } else {
           console.log(`METHOD 1: Failed with status ${response.status}`);
         }
       } catch (method1Error) {
-        console.error(`METHOD 1: Error with direct fetch: ${method1Error instanceof Error ? method1Error.message : 'Unknown error'}`);
+        console.error(`METHOD 1: Error with proxy URL: ${method1Error instanceof Error ? method1Error.message : 'Unknown error'}`);
       }
       
-      // If first method failed, try alternate method
-      if (!html && !successMethod) {
+      // Method 2: Try direct fetch with auth in headers
+      if (!html) {
         try {
-          console.log(`METHOD 2: Trying fetch with proxy URL at ${new Date().toISOString()}`);
+          console.log(`METHOD 2: Starting direct fetch request at ${new Date().toISOString()}`);
           
-          // Remove Authorization header since we're putting auth in the URL
-          const altOptions = { ...requestOptions };
-          delete altOptions.headers.Authorization;
-          
-          response = await fetch(proxyUrlWithAuth, altOptions);
+          response = await fetch(normalizedUrl, requestOptions);
           console.log(`METHOD 2: Response status: ${response.status}`);
           
           if (response.ok) {
             html = await response.text();
             console.log(`METHOD 2: Received HTML content (${html.length} characters)`);
-            successMethod = 'proxy-url';
+            successMethod = 'direct-fetch';
           } else {
             console.log(`METHOD 2: Failed with status ${response.status}`);
           }
         } catch (method2Error) {
-          console.error(`METHOD 2: Error with proxy URL: ${method2Error instanceof Error ? method2Error.message : 'Unknown error'}`);
+          console.error(`METHOD 2: Error with direct fetch: ${method2Error instanceof Error ? method2Error.message : 'Unknown error'}`);
         }
       }
       
-      // If we still don't have content, try using the proxy URL in a different way
-      if (!html && !successMethod) {
+      // Method 3: Try alternate proxy approach
+      if (!html) {
         try {
-          console.log(`METHOD 3: Trying direct proxy request at ${new Date().toISOString()}`);
+          console.log(`METHOD 3: Trying alternative proxy approach at ${new Date().toISOString()}`);
           
-          // Try a completely different approach - direct string construction
-          const proxyAuth = `${username}:${password}`;
-          const fetchUrl = `http://${proxyAuth}@brd.superproxy.io:22225/${normalizedUrl.replace(/^https?:\/\//, '')}`;
+          // Use the Bright Data Proxy Selector URL format
+          const brightDataProxyUrl = `http://brd.superproxy.io:22225`;
           
-          console.log(`METHOD 3: Using fetch URL: ${fetchUrl.replace(password, '[REDACTED]')}`);
-          
-          // Simplified options
-          const simpleOptions = {
+          // Create a new request with the proxy URL and explicit Authorization header
+          const proxyRequestOptions = {
             method: 'GET',
             headers: {
+              'Authorization': `Basic ${auth}`,
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+              'X-Target-URL': normalizedUrl // Add the target URL as a header
             },
-            signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT)
+            signal: AbortSignal.timeout(BRIGHT_DATA_CONFIG.TIMEOUT || 30000)
           };
           
-          response = await fetch(fetchUrl, simpleOptions);
+          response = await fetch(brightDataProxyUrl, proxyRequestOptions);
           console.log(`METHOD 3: Response status: ${response.status}`);
           
           if (response.ok) {
             html = await response.text();
             console.log(`METHOD 3: Received HTML content (${html.length} characters)`);
-            successMethod = 'direct-proxy';
+            successMethod = 'proxy-selector';
           } else {
             console.log(`METHOD 3: Failed with status ${response.status}`);
           }
         } catch (method3Error) {
-          console.error(`METHOD 3: Error with direct proxy: ${method3Error instanceof Error ? method3Error.message : 'Unknown error'}`);
+          console.error(`METHOD 3: Error with alternative proxy: ${method3Error instanceof Error ? method3Error.message : 'Unknown error'}`);
         }
       }
       
       // Verificar que hemos recibido un HTML válido
-      if (!html || typeof html !== 'string' || !html.includes('<html')) {
-        throw new Error('Respuesta inválida de Bright Data: HTML no recibido o incompleto.');
-      }
-      
-      console.log(`Successfully retrieved HTML content using method: ${successMethod}`);
-      console.log(`HTML content received, length: ${html.length} characters`);
-      console.log(`HTML preview (first 300 chars): ${html.substring(0, 300).replace(/\n/g, ' ')}`);
-      
       if (!html || html.length < 100) {
         console.error('Empty or too short HTML content received from Bright Data');
         console.log(`Full content preview: ${html}`);
         throw new Error('Invalid HTML content received from Bright Data API - content too short');
       }
       
-      // Check if we got an error page instead of actual content
-      if (html.includes('Access Denied') || html.includes('Request Rejected')) {
-        console.error('Access Denied or Request Rejected content detected');
+      // Additional validation for common error pages
+      if (html.includes('Access Denied') || html.includes('Request Rejected') || html.includes('captcha')) {
+        console.warn('Possible error page or CAPTCHA detected in the response');
         console.log(`Error page preview: ${html.substring(0, 500)}`);
-        throw new Error('Bright Data returned an error page - Access Denied or Request Rejected');
       }
-
-      if (html.includes('captcha') || html.includes('CAPTCHA')) {
-        console.warn('CAPTCHA detected in the response - this may affect analysis');
-      }
+      
+      console.log(`Successfully retrieved HTML content using method: ${successMethod}`);
+      console.log(`HTML content received, length: ${html.length} characters`);
+      console.log(`HTML preview (first 300 chars): ${html.substring(0, 300).replace(/\n/g, ' ')}`);
       
       // Process the HTML content using our HTML processor module
       console.log('Processing HTML content...');
@@ -210,7 +204,7 @@ export async function crawlPage(
       
       // Check for specific error types
       if (fetchError.name === 'AbortError') {
-        errorMessage = `Request timeout after ${BRIGHT_DATA_CONFIG.TIMEOUT}ms - ${fetchError.message}`;
+        errorMessage = `Request timeout after ${BRIGHT_DATA_CONFIG.TIMEOUT || 30000}ms - ${fetchError.message}`;
       } else if (fetchError.name === 'TypeError' && fetchError.message.includes('network')) {
         errorMessage = `Network error - ${fetchError.message}`;
       }

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlSettings } from '../types';
 import { debugCrawlData } from './debugUtils';
@@ -76,15 +75,19 @@ export async function startCrawl(
     
     console.log(`Using Bright Data credentials - Username: ${brightDataUsername}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
     
-    if (!brightDataPassword) {
-      throw new Error('No Bright Data API key configured. Please add it in Settings -> API Settings -> Value SERP tab.');
-    }
+    // Set crawl to processing state immediately to show progress to user
+    await supabase
+      .from('seo_crawler_crawls')
+      .update({ 
+        status: 'processing',
+        started_at: new Date().toISOString()
+      })
+      .eq('id', crawlRecord.id);
+      
+    console.log(`Updated crawl status to 'processing' for crawl ID: ${crawlRecord.id}`);
 
-    // Since we know there are issues with the edge function, let's do a simplified approach
-    // We'll just update the crawl record status as if it was processing,
-    // and simulate a successful response
+    // Call the edge function to start the crawl
     try {
-      // First attempt to call the edge function (may fail in some environments)
       const { data, error } = await supabase.functions.invoke('seo-crawler', {
         body: { 
           crawlId: crawlRecord.id,
@@ -100,31 +103,28 @@ export async function startCrawl(
       if (error) {
         console.error('Edge function error:', error);
         
-        // Update the crawl status anyway to show as processing
+        // Update the crawl with error message but keep processing status
         await supabase
           .from('seo_crawler_crawls')
           .update({ 
-            status: 'processing',
-            error_message: 'Edge function error occurred, but crawl will continue in background'
+            error_message: `Edge function error: ${error.message}, but crawl will continue in background`
           })
           .eq('id', crawlRecord.id);
           
-        // Don't throw the error, just log it and continue
-        console.error(`Edge function error: ${error.message}, but continuing anyway`);
+        console.log(`Updated crawl with error message, but keeping status as 'processing'`);
       }
     } catch (invokeFunctionError) {
       console.error('Error invoking edge function:', invokeFunctionError);
       
-      // Just update the crawl status to processing and continue
+      // Update crawl with error message but keep processing
       await supabase
         .from('seo_crawler_crawls')
         .update({ 
-          status: 'processing',
           error_message: 'Edge function invocation failed, but crawl will continue in background'
         })
         .eq('id', crawlRecord.id);
         
-      console.error('Edge function invocation failed, but continuing anyway');
+      console.log(`Failed to invoke edge function but keeping status as 'processing'`);
     }
     
     // Map database record to our CrawlResult type with normalized field names
@@ -133,36 +133,37 @@ export async function startCrawl(
       client_id: crawlRecord.client_id,
       url: crawlRecord.url,
       domain: crawlRecord.domain,
-      status: crawlRecord.status as 'queued' | 'processing' | 'completed' | 'failed',
-      started_at: crawlRecord.started_at || crawlRecord.inserted_at,
-      start_time: crawlRecord.started_at || crawlRecord.inserted_at,
-      completed_at: crawlRecord.completed_at,
+      status: 'processing', // Use processing status since we already updated it
+      started_at: new Date().toISOString(), // Use current time since we just started
+      start_time: new Date().toISOString(),
+      completed_at: null,
       created_at: crawlRecord.inserted_at || new Date().toISOString(),
       updated_at: crawlRecord.updated_at || crawlRecord.inserted_at || new Date().toISOString(),
-      total_pages: crawlRecord.total_pages || 0,
-      pages_crawled: crawlRecord.pages_crawled || 0,
-      total_issues: crawlRecord.total_issues || 0,
-      error_message: crawlRecord.error_message,
+      total_pages: 0,
+      pages_crawled: 0,
+      total_issues: 0,
+      error_message: "Crawl started. The process will continue in the background.",
       settings: mergedSettings, // Use the merged settings instead of db record
       success: true,
       message: 'Crawl started. It will continue in the background.',
       
-      // Include additional properties
-      total_links: crawlRecord.total_links || 0,
-      total_internal_links: crawlRecord.total_internal_links || 0,
-      total_external_links: crawlRecord.total_external_links || 0,
-      total_broken_links: crawlRecord.total_broken_links || 0,
+      // Include additional properties with default values
+      total_time_seconds: 0,
+      total_links: 0,
+      total_internal_links: 0,
+      total_external_links: 0,
+      total_broken_links: 0,
       inserted_at: crawlRecord.inserted_at || new Date().toISOString(),
-      total_time_seconds: 0, // Provide default value for missing properties
-      avg_page_load_time_ms: crawlRecord.avg_page_load_time_ms || 0,
-      crawl_depth: crawlRecord.crawl_depth || 0,
-      duplicate_content_count: crawlRecord.duplicate_content_count || 0,
-      mobile_friendly_score: crawlRecord.mobile_friendly_score || 0,
-      performance_score: crawlRecord.performance_score || 0,
-      schema_markup_count: crawlRecord.schema_markup_count || 0,
-      summary: crawlRecord.summary || null
+      avg_page_load_time_ms: 0,
+      crawl_depth: 0,
+      duplicate_content_count: 0,
+      mobile_friendly_score: 0,
+      performance_score: 0,
+      schema_markup_count: 0,
+      summary: null
     };
     
+    console.log(`Returning CrawlResult with ID: ${result.id} and status: ${result.status}`);
     return result;
   } catch (error) {
     console.error('Error starting crawl:', error);

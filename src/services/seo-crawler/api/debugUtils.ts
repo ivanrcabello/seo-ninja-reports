@@ -27,6 +27,28 @@ export function debugCrawlData(data: any): void {
       console.log('Settings object keys:', Object.keys(data.settings));
     }
   }
+  
+  // Check other critical properties
+  if (data.started_at && data.completed_at) {
+    console.log('Crawl duration information:');
+    console.log(`Started at: ${data.started_at}`);
+    console.log(`Completed at: ${data.completed_at}`);
+    
+    try {
+      const startDate = new Date(data.started_at);
+      const endDate = new Date(data.completed_at);
+      const durationSeconds = Math.round((endDate.getTime() - startDate.getTime()) / 1000);
+      console.log(`Calculated duration: ${durationSeconds} seconds`);
+    } catch (e) {
+      console.log('Error calculating duration:', e);
+    }
+  }
+  
+  // Check for status and error information
+  console.log(`Crawl status: ${data.status || 'unknown'}`);
+  if (data.error_message) {
+    console.log(`Error message: ${data.error_message}`);
+  }
 }
 
 /**
