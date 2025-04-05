@@ -6,6 +6,7 @@ import {
   SharedContractResponse, 
   SharedReportResponse 
 } from '@/types/shared-content';
+import { Json } from '@/integrations/supabase/types';
 
 export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoiceResponse> {
   try {
@@ -23,9 +24,11 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     
     if (sharedData) {
       // If found in shared_content, format and return
-      // Safely cast the content object and extract properties
-      const contentObj = typeof sharedData.content === 'object' && !Array.isArray(sharedData.content) 
-        ? (sharedData.content as Record<string, any>) 
+      console.log('Shared content data found:', sharedData);
+      
+      // Ensure content is an object before accessing properties
+      const contentObj = typeof sharedData.content === 'object' && sharedData.content !== null && !Array.isArray(sharedData.content)
+        ? (sharedData.content as Record<string, any>)
         : {};
       
       console.log('Content object from shared_content:', contentObj);
@@ -35,7 +38,7 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
           id: sharedData.id,
           title: sharedData.title,
           description: sharedData.description || undefined,
-          amount: contentObj.amount ? Number(contentObj.amount) : 0,
+          amount: typeof contentObj.amount === 'number' ? contentObj.amount : 0,
           status: (contentObj.status as string) || 'pending',
           due_date: contentObj.due_date as string | undefined,
           payment_method: contentObj.payment_method as string | undefined,
@@ -44,8 +47,8 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
           shared_url: sharedData.shared_url,
           created_at: sharedData.created_at,
           updated_at: sharedData.updated_at,
-          client_name: sharedData.client_name,
-          client_website: sharedData.client_website,
+          client_name: sharedData.client_name || 'Cliente',
+          client_website: sharedData.client_website || undefined,
           invoice_number: contentObj.invoice_number as string | undefined,
           client_address: contentObj.client_address as string | undefined,
           client_tax_id: contentObj.client_tax_id as string | undefined,
@@ -59,16 +62,19 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     }
     
     // If not found in shared_content, try to get directly from client_invoices
+    console.log('Fetching invoice from RPC function with shared URL:', sharedUrl);
     const { data, error } = await supabase
       .rpc('get_public_invoice_by_shared_url', {
         shared_url_param: sharedUrl
       });
     
     if (error) {
+      console.error('RPC error:', error);
       throw error;
     }
     
     if (!data || data.length === 0) {
+      console.error('No invoice data returned from RPC');
       return { data: null, error: 'Factura no encontrada' };
     }
     

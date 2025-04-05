@@ -10,18 +10,29 @@ interface InvoiceActionsProps {
 }
 
 const InvoiceActions: React.FC<InvoiceActionsProps> = ({ invoice, onPrint }) => {
-  // Base64 PDF generation would typically be here for download functionality
-  // This is a simplified version that just uses print functionality
+  // Function to get status display text
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'Esta factura ha sido pagada';
+      case 'pending':
+        return 'Pendiente de pago';
+      case 'overdue':
+        return 'Pago vencido';
+      case 'cancelled':
+        return 'Cancelada';
+      default:
+        return `Estado: ${status}`;
+    }
+  };
 
   return (
     <div className="flex justify-between items-center p-4 border-t print:hidden">
       <div className="text-sm text-muted-foreground">
         {invoice.status === 'paid' ? (
-          <span className="text-green-600 font-medium">✓ Esta factura ha sido pagada</span>
+          <span className="text-green-600 font-medium">✓ {getStatusText(invoice.status)}</span>
         ) : (
-          <span>Estado: {invoice.status === 'pending' ? 'Pendiente de pago' : 
-                         invoice.status === 'overdue' ? 'Pago vencido' : 
-                         invoice.status === 'cancelled' ? 'Cancelada' : invoice.status}</span>
+          <span>{getStatusText(invoice.status)}</span>
         )}
       </div>
       <div className="space-x-2">
