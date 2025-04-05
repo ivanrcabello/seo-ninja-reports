@@ -23,6 +23,7 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
     
     if (sharedData) {
       // If found in shared_content, format and return
+      // Safely cast the content object and extract properties
       const contentObj = typeof sharedData.content === 'object' ? sharedData.content : {};
       
       return {
@@ -31,23 +32,23 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
           title: sharedData.title,
           description: sharedData.description || undefined,
           amount: contentObj.amount ? Number(contentObj.amount) : 0,
-          status: contentObj.status || 'pending',
-          due_date: contentObj.due_date,
-          payment_method: contentObj.payment_method,
-          payment_date: contentObj.payment_date,
-          payment_instructions: contentObj.payment_instructions,
+          status: contentObj.status as string || 'pending',
+          due_date: contentObj.due_date as string | undefined,
+          payment_method: contentObj.payment_method as string | undefined,
+          payment_date: contentObj.payment_date as string | undefined,
+          payment_instructions: contentObj.payment_instructions as string | undefined,
           shared_url: sharedData.shared_url,
           created_at: sharedData.created_at,
           updated_at: sharedData.updated_at,
           client_name: sharedData.client_name,
           client_website: sharedData.client_website,
-          invoice_number: contentObj.invoice_number,
-          client_address: contentObj.client_address,
-          client_tax_id: contentObj.client_tax_id,
-          billing_name: contentObj.billing_name,
-          billing_tax_id: contentObj.billing_tax_id,
-          billing_address: contentObj.billing_address,
-          billing_email: contentObj.billing_email,
+          invoice_number: contentObj.invoice_number as string | undefined,
+          client_address: contentObj.client_address as string | undefined,
+          client_tax_id: contentObj.client_tax_id as string | undefined,
+          billing_name: contentObj.billing_name as string | undefined,
+          billing_tax_id: contentObj.billing_tax_id as string | undefined,
+          billing_address: contentObj.billing_address as string | undefined,
+          billing_email: contentObj.billing_email as string | undefined,
           includes_vat: contentObj.includes_vat !== false
         }
       };
