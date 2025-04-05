@@ -9,11 +9,7 @@ import NewClientPage from '@/pages/NewClientPage';
 import CrawlerDetailPage from '@/pages/CrawlerDetailPage';
 import ReportDetail from '@/pages/ReportDetail';
 import AllReports from '@/pages/AllReports';
-
-// Auth guard component to protect admin routes
-const AuthGuard = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
+import AuthGuard from '@/components/auth/AuthGuard';
 
 export const adminRoutes: RouteObject[] = [
   {
