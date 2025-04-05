@@ -100,7 +100,7 @@ export async function startCrawl(
         await supabase
           .from('seo_crawler_crawls')
           .update({ 
-            status: 'processing' as 'queued' | 'processing' | 'completed' | 'failed',
+            status: 'processing',
             error_message: 'Edge function error occurred, but crawl will continue in background'
           })
           .eq('id', crawlRecord.id);
@@ -115,7 +115,7 @@ export async function startCrawl(
       await supabase
         .from('seo_crawler_crawls')
         .update({ 
-          status: 'processing' as 'queued' | 'processing' | 'completed' | 'failed',
+          status: 'processing',
           error_message: 'Edge function invocation failed, but crawl will continue in background'
         })
         .eq('id', crawlRecord.id);
@@ -130,8 +130,8 @@ export async function startCrawl(
       url: crawlRecord.url,
       domain: crawlRecord.domain,
       status: crawlRecord.status as 'queued' | 'processing' | 'completed' | 'failed',
-      started_at: crawlRecord.started_at || crawlRecord.inserted_at || crawlRecord.created_at,
-      start_time: crawlRecord.started_at || crawlRecord.inserted_at || crawlRecord.created_at,
+      started_at: crawlRecord.started_at || crawlRecord.inserted_at,
+      start_time: crawlRecord.started_at || crawlRecord.inserted_at,
       completed_at: crawlRecord.completed_at,
       created_at: crawlRecord.inserted_at || new Date().toISOString(),
       updated_at: crawlRecord.updated_at || crawlRecord.inserted_at || new Date().toISOString(),

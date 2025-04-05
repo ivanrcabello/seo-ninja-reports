@@ -38,6 +38,7 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       custom_headers: settings?.custom_headers || {}
     };
     
+    // Make sure we have valid timestamps
     const createdAt = data.inserted_at || new Date().toISOString();
     const updatedAt = data.updated_at || data.inserted_at || new Date().toISOString();
     
@@ -112,6 +113,7 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         custom_headers: settings?.custom_headers || {}
       };
       
+      // Make sure we have valid timestamps
       const createdAt = item.inserted_at || new Date().toISOString();
       const updatedAt = item.updated_at || item.inserted_at || new Date().toISOString();
       

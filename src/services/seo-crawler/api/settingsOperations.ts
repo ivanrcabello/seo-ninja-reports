@@ -100,6 +100,22 @@ export async function getCrawlSettings(clientId: string, domain: string): Promis
     }
     
     // Map database record to our CrawlSettings type
+    // Safely convert custom_headers to a Record<string, string>
+    const customHeaders = data.custom_headers || {};
+    const typedCustomHeaders: Record<string, string> = {};
+    
+    // Ensure the custom_headers is a valid Record<string, string>
+    if (typeof customHeaders === 'object' && customHeaders !== null) {
+      Object.keys(customHeaders).forEach(key => {
+        const value = (customHeaders as any)[key];
+        if (typeof value === 'string') {
+          typedCustomHeaders[key] = value;
+        } else if (value !== null && value !== undefined) {
+          typedCustomHeaders[key] = String(value);
+        }
+      });
+    }
+
     return {
       max_pages: data.max_pages || 100,
       exclude_urls: data.exclude_patterns || [],
@@ -109,7 +125,7 @@ export async function getCrawlSettings(clientId: string, domain: string): Promis
       crawl_sitemap: data.crawl_sitemap !== undefined ? data.crawl_sitemap : true,
       follow_links: data.follow_links !== undefined ? data.follow_links : true,
       max_depth: data.max_depth || 5,
-      custom_headers: (data.custom_headers as Record<string, string>) || {}
+      custom_headers: typedCustomHeaders
     };
   } catch (error) {
     console.error('Error fetching crawl settings:', error);
