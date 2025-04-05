@@ -27,6 +27,15 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
     // Normalize the settings
     const normalizedSettings = normalizeSettings(data.settings);
     
+    // Calculate total_time_seconds if it doesn't exist but we have started_at and completed_at
+    let calculatedTotalTimeSeconds = 0;
+    if (!data.total_time_seconds && data.started_at && data.completed_at) {
+      const startDate = new Date(data.started_at);
+      const endDate = new Date(data.completed_at);
+      calculatedTotalTimeSeconds = Math.round((endDate.getTime() - startDate.getTime()) / 1000);
+      console.log(`Calculated total_time_seconds: ${calculatedTotalTimeSeconds}`);
+    }
+    
     // Map the data to our CrawlResult type with safe property access
     return {
       id: data.id,
@@ -48,7 +57,7 @@ export async function getCrawlResult(crawlId: string): Promise<CrawlResult> {
       message: "Crawl data retrieved successfully",
       
       // Add defaults for properties that might be missing
-      total_time_seconds: data.total_time_seconds || 0,
+      total_time_seconds: data.total_time_seconds || calculatedTotalTimeSeconds || 0,
       total_links: data.total_links || 0,
       total_internal_links: data.total_internal_links || 0,
       total_external_links: data.total_external_links || 0,
@@ -96,6 +105,14 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
       // Normalize the settings
       const normalizedSettings = normalizeSettings(record.settings);
       
+      // Calculate total_time_seconds if it doesn't exist but we have started_at and completed_at
+      let calculatedTotalTimeSeconds = 0;
+      if (!record.total_time_seconds && record.started_at && record.completed_at) {
+        const startDate = new Date(record.started_at);
+        const endDate = new Date(record.completed_at);
+        calculatedTotalTimeSeconds = Math.round((endDate.getTime() - startDate.getTime()) / 1000);
+      }
+      
       return {
         id: record.id,
         client_id: record.client_id,
@@ -116,7 +133,7 @@ export async function getCrawlResults(clientId: string): Promise<CrawlResult[]> 
         message: "Crawl data retrieved successfully",
         
         // Add defaults for properties that might be missing
-        total_time_seconds: record.total_time_seconds || 0,
+        total_time_seconds: record.total_time_seconds || calculatedTotalTimeSeconds || 0,
         total_links: record.total_links || 0,
         total_internal_links: record.total_internal_links || 0,
         total_external_links: record.total_external_links || 0,
