@@ -1,6 +1,6 @@
 
 // Bright Data HTTP client for SEO crawler
-import { BRIGHT_DATA_CONFIG, CRAWLER_CONFIG } from './config.ts';
+import { BRIGHT_DATA_CONFIG, CRAWLER_CONFIG } from '../config.ts';
 
 /**
  * Fetch a page using the Bright Data web unlocker
@@ -130,24 +130,30 @@ async function fetchWithDirectApi(url: string, apiKey: string): Promise<string> 
 async function fetchWithProxy(url: string, username: string, password: string): Promise<string> {
   console.log(`[Bright Data Proxy] Fetching URL: ${url}`);
   
-  // Prepare proxy URL
-  const proxyUrl = `http://${username}:${password}@brd.superproxy.io:22225`;
-  console.log(`[Bright Data Proxy] Using proxy URL with username ${username}`);
-  
   try {
-    // With Deno, we need to use a different approach since we don't have http-proxy-agent
-    // We'll use fetch with a custom user agent instead
-    console.log('[Bright Data Proxy] Using Deno fetch with proxy headers');
+    // With Deno, we use a direct fetch approach
+    const headers = {
+      'User-Agent': CRAWLER_CONFIG.USER_AGENT,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5'
+    };
     
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': CRAWLER_CONFIG.USER_AGENT,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Proxy-Authorization': `Basic ${btoa(`${username}:${password}`)}`,
-        'Cache-Control': 'no-cache'
-      }
-    });
+    // Create proxy auth
+    const proxyAuth = btoa(`${username}:${password}`);
+    
+    // Prepare request options
+    const requestInit: RequestInit = {
+      headers,
+      // Deno doesn't support proxy directly, so we use headers
+      signal: AbortSignal.timeout(30000) // 30 second timeout
+    };
+    
+    // Add proxy authorization header
+    headers['Proxy-Authorization'] = `Basic ${proxyAuth}`;
+    
+    // Make the request
+    console.log('[Bright Data Proxy] Sending fetch request with headers');
+    const response = await fetch(url, requestInit);
     
     if (!response.ok) {
       const errorMessage = `HTTP error: ${response.status} ${response.statusText}`;

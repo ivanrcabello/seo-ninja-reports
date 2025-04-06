@@ -21,7 +21,7 @@ serve(async (req) => {
 
   try {
     console.log("SEO Crawler function invoked");
-    console.log("Function version: 1.1.0"); // Updated version for tracking
+    console.log("Function version: 1.2.0"); // Updated version for tracking
     
     // Use the dedicated handler function
     return await handleRequest(req, supabase);

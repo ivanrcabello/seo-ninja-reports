@@ -70,17 +70,25 @@ export async function startCrawl(
     // Debug crawl record data
     debugCrawlData(crawlRecord);
 
-    // Get the credentials from localStorage
-    const brightDataUsername = localStorage.getItem('bright_data_username') || 
-      'brd-customer-hl_2a8d2c33-zone-web_unlocker';
-    const brightDataPassword = localStorage.getItem('bright_data_password') || 
-      'obz0lal9qh4g';
-    const brightDataApiKey = localStorage.getItem('bright_data_api_key') || '';
+    // Get the credentials from localStorage - use a try/catch in case they're not set
+    let brightDataUsername = '';
+    let brightDataPassword = ''; 
+    let brightDataApiKey = '';
     
-    console.log(`Using Bright Data credentials for crawl`);
-    console.log(`Username: ${brightDataUsername ? brightDataUsername.substring(0, 5) + '...' : '(not set)'}`);
-    console.log(`Password: ${brightDataPassword ? '*** (set)' : '(not set)'}`);
-    console.log(`API Key: ${brightDataApiKey ? '*** (set)' : '(not set)'}`);
+    try {
+      brightDataUsername = localStorage.getItem('bright_data_username') || 
+        'brd-customer-hl_2a8d2c33-zone-web_unlocker';
+      brightDataPassword = localStorage.getItem('bright_data_password') || 
+        'obz0lal9qh4g';
+      brightDataApiKey = localStorage.getItem('bright_data_api_key') || '';
+      
+      console.log(`Using Bright Data credentials for crawl`);
+      console.log(`Username: ${brightDataUsername ? brightDataUsername.substring(0, 5) + '...' : '(not set)'}`);
+      console.log(`Password: ${brightDataPassword ? '*** (set)' : '(not set)'}`);
+      console.log(`API Key: ${brightDataApiKey ? '*** (set)' : '(not set)'}`);
+    } catch (err) {
+      console.error('Could not access localStorage for Bright Data credentials:', err);
+    }
     
     // Set crawl to processing state immediately to show progress to user
     await supabase

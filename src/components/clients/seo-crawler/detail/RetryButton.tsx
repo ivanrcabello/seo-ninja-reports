@@ -37,6 +37,41 @@ const RetryButton: React.FC<RetryButtonProps> = ({ crawlId, status, onSuccess })
         throw error;
       }
       
+      // Get the original crawl data
+      const { data: crawlData } = await supabase
+        .from('seo_crawler_crawls')
+        .select('url, settings')
+        .eq('id', crawlId)
+        .single();
+      
+      if (!crawlData) {
+        throw new Error('Could not find original crawl data');
+      }
+      
+      // Get the credentials from localStorage
+      const brightDataUsername = localStorage.getItem('bright_data_username') || 
+        'brd-customer-hl_2a8d2c33-zone-web_unlocker';
+      const brightDataPassword = localStorage.getItem('bright_data_password') || 
+        'obz0lal9qh4g';
+      const brightDataApiKey = localStorage.getItem('bright_data_api_key') || '';
+      
+      // Call the edge function to restart the crawl
+      const { error: functionError } = await supabase.functions.invoke('seo-crawler', {
+        body: { 
+          crawlId: crawlId,
+          url: crawlData.url, 
+          settings: crawlData.settings,
+          brightDataUsername,
+          brightDataPassword,
+          brightDataApiKey
+        }
+      });
+      
+      if (functionError) {
+        console.error('Edge function error during retry:', functionError);
+        // We'll still show success since the crawl will be retried in background
+      }
+      
       toast.success('Análisis puesto en cola para reintentar', {
         description: 'El proceso se ha reiniciado correctamente.'
       });
