@@ -1,71 +1,91 @@
 
-import { cheerio } from "https://esm.sh/cheerio@1.0.0-rc.12";
+/**
+ * HTML extraction functions for SEO analysis
+ */
 
 /**
- * Extract title from HTML content
+ * Extract the title from HTML
  */
 export function extractTitle(html: string): string | null {
   try {
-    const $ = cheerio.load(html);
-    const title = $('title').text().trim();
-    console.log(`Extracted title: ${title || 'Not found'}`);
-    return title || null;
+    const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/is);
+    if (titleMatch && titleMatch[1]) {
+      return cleanText(titleMatch[1]);
+    }
+    return null;
   } catch (error) {
-    console.error(`Error extracting title: ${error}`);
+    console.error(`Error extracting title: ${error.message}`);
     return null;
   }
 }
 
 /**
- * Extract meta description from HTML content
+ * Extract meta description from HTML
  */
 export function extractMetaDescription(html: string): string | null {
   try {
-    const $ = cheerio.load(html);
-    const metaDescription = $('meta[name="description"]').attr('content') || 
-                           $('meta[property="og:description"]').attr('content');
-    console.log(`Extracted meta description: ${metaDescription ? (metaDescription.substring(0, 50) + '...') : 'Not found'}`);
-    return metaDescription || null;
+    const metaMatch = html.match(/<meta\s+(?:name="description"|property="og:description")\s+content="([^"]*)".*?>/i) || 
+                      html.match(/<meta\s+content="([^"]*)"\s+(?:name="description"|property="og:description").*?>/i);
+    
+    if (metaMatch && metaMatch[1]) {
+      return cleanText(metaMatch[1]);
+    }
+    return null;
   } catch (error) {
-    console.error(`Error extracting meta description: ${error}`);
+    console.error(`Error extracting meta description: ${error.message}`);
     return null;
   }
 }
 
 /**
- * Extract H1 tag from HTML content
+ * Extract H1 heading from HTML
  */
 export function extractH1(html: string): string | null {
   try {
-    const $ = cheerio.load(html);
-    const h1 = $('h1').first().text().trim();
-    console.log(`Extracted H1: ${h1 || 'Not found'}`);
-    return h1 || null;
+    const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/is);
+    if (h1Match && h1Match[1]) {
+      return cleanText(h1Match[1]);
+    }
+    return null;
   } catch (error) {
-    console.error(`Error extracting H1: ${error}`);
+    console.error(`Error extracting H1: ${error.message}`);
     return null;
   }
 }
 
 /**
- * Extract all links from HTML content
+ * Extract links from HTML
  */
 export function extractLinks(html: string, baseUrl: string): string[] {
   try {
-    const $ = cheerio.load(html);
     const links: string[] = [];
+    const regex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)".*?>/gi;
+    let match;
     
-    $('a[href]').each((_, element) => {
-      const href = $(element).attr('href')?.trim();
-      if (href && href !== '#' && !href.startsWith('javascript:')) {
-        links.push(href);
+    while ((match = regex.exec(html)) !== null) {
+      let href = match[1];
+      if (href) {
+        try {
+          // Make URL absolute
+          href = new URL(href, baseUrl).href;
+          
+          // Skip anchors, javascript and mailto links
+          if (!href.startsWith('#') && 
+              !href.startsWith('javascript:') && 
+              !href.startsWith('mailto:') &&
+              !href.startsWith('tel:')) {
+            links.push(href);
+          }
+        } catch (e) {
+          // Skip invalid URLs
+          console.warn(`Invalid URL found: ${href}`);
+        }
       }
-    });
+    }
     
-    console.log(`Extracted ${links.length} links`);
     return links;
   } catch (error) {
-    console.error(`Error extracting links: ${error}`);
+    console.error(`Error extracting links: ${error.message}`);
     return [];
   }
 }
@@ -74,108 +94,113 @@ export function extractLinks(html: string, baseUrl: string): string[] {
  * Categorize links as internal or external
  */
 export function categorizeLinks(links: string[], baseUrl: string): { internalLinks: string[], externalLinks: string[] } {
-  const baseHost = new URL(baseUrl).hostname;
-  const internalLinks: string[] = [];
-  const externalLinks: string[] = [];
-  
-  for (const link of links) {
-    try {
-      // Handle relative URLs
-      const absoluteUrl = link.startsWith('http') ? link : new URL(link, baseUrl).href;
-      const linkHost = new URL(absoluteUrl).hostname;
-      
-      if (linkHost === baseHost) {
-        internalLinks.push(absoluteUrl);
-      } else {
-        externalLinks.push(absoluteUrl);
+  try {
+    const baseDomain = new URL(baseUrl).hostname;
+    const internalLinks: string[] = [];
+    const externalLinks: string[] = [];
+    
+    for (const link of links) {
+      try {
+        const url = new URL(link);
+        if (url.hostname === baseDomain) {
+          internalLinks.push(link);
+        } else {
+          externalLinks.push(link);
+        }
+      } catch (e) {
+        console.warn(`Error categorizing link: ${link}, error: ${e.message}`);
       }
-    } catch (error) {
-      console.error(`Error categorizing link ${link}: ${error}`);
-      // Assume it's internal if we can't parse it
-      internalLinks.push(link);
     }
+    
+    return { internalLinks, externalLinks };
+  } catch (error) {
+    console.error(`Error categorizing links: ${error.message}`);
+    return { internalLinks: [], externalLinks: [] };
   }
-  
-  return { internalLinks, externalLinks };
 }
 
 /**
- * Extract all headings (h1-h6) from HTML content
+ * Extract all headings from HTML
  */
-export function extractHeadings(html: string): { heading_type: string, content: string, position: number }[] {
+export function extractHeadings(html: string): Array<{ tag: string; text: string; position: number }> {
   try {
-    const $ = cheerio.load(html);
-    const headings: { heading_type: string, content: string, position: number }[] = [];
+    const headings: Array<{ tag: string; text: string; position: number }> = [];
+    const regex = /<(h[1-6])[^>]*>(.*?)<\/\1>/gis;
+    let match;
     let position = 0;
     
-    $('h1, h2, h3, h4, h5, h6').each((_, element) => {
-      const headingType = element.name.toLowerCase();
-      const content = $(element).text().trim();
-      
-      if (content) {
-        headings.push({
-          heading_type: headingType,
-          content: content,
-          position: position++
-        });
-      }
-    });
+    while ((match = regex.exec(html)) !== null) {
+      position++;
+      headings.push({
+        tag: match[1].toLowerCase(),
+        text: cleanText(match[2]),
+        position
+      });
+    }
     
-    console.log(`Extracted ${headings.length} headings`);
     return headings;
   } catch (error) {
-    console.error(`Error extracting headings: ${error}`);
+    console.error(`Error extracting headings: ${error.message}`);
     return [];
   }
 }
 
 /**
- * Extract all images from HTML content
+ * Extract images from HTML
  */
-export function extractImages(html: string, baseUrl: string): { src: string, alt: string | null }[] {
+export function extractImages(html: string, baseUrl: string): Array<{ src: string; alt: string | null }> {
   try {
-    const $ = cheerio.load(html);
-    const images: { src: string, alt: string | null }[] = [];
+    const images: Array<{ src: string; alt: string | null }> = [];
+    const regex = /<img\s+[^>]*?src="([^"]*)"[^>]*?(?:alt="([^"]*)")?[^>]*?>/gi;
+    let match;
     
-    $('img').each((_, element) => {
-      const src = $(element).attr('src');
-      if (src) {
-        const absoluteSrc = src.startsWith('http') ? src : new URL(src, baseUrl).href;
-        images.push({
-          src: absoluteSrc,
-          alt: $(element).attr('alt') || null
-        });
+    while ((match = regex.exec(html)) !== null) {
+      try {
+        let src = match[1];
+        const alt = match[2] ? cleanText(match[2]) : null;
+        
+        // Make image URL absolute
+        src = new URL(src, baseUrl).href;
+        
+        images.push({ src, alt });
+      } catch (e) {
+        console.warn(`Invalid image URL: ${match[1]}`);
       }
-    });
+    }
     
-    console.log(`Extracted ${images.length} images`);
     return images;
   } catch (error) {
-    console.error(`Error extracting images: ${error}`);
+    console.error(`Error extracting images: ${error.message}`);
     return [];
   }
 }
 
 /**
- * Extract word count from HTML content
+ * Extract word count from HTML
  */
 export function extractWordCount(html: string): number {
   try {
-    const $ = cheerio.load(html);
+    // Remove HTML tags
+    const textOnly = html.replace(/<[^>]*>/g, ' ');
     
-    // Remove script and style tags
-    $('script, style').remove();
-    
-    // Get text content
-    const text = $('body').text();
+    // Remove special characters and extra spaces
+    const cleanedText = textOnly.replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
     
     // Count words
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-    console.log(`Extracted word count: ${words.length}`);
-    
-    return words.length;
+    return cleanedText.split(' ').filter(Boolean).length;
   } catch (error) {
-    console.error(`Error extracting word count: ${error}`);
+    console.error(`Error extracting word count: ${error.message}`);
     return 0;
   }
+}
+
+/**
+ * Clean HTML text by removing tags and normalizing whitespace
+ */
+function cleanText(text: string): string {
+  return text
+    .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
+    .replace(/&nbsp;/g, ' ')   // Replace non-breaking spaces
+    .replace(/\s+/g, ' ')      // Normalize whitespace
+    .trim();
 }

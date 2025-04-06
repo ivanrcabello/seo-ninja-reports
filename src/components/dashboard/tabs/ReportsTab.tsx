@@ -33,13 +33,15 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
         for (const client of clients) {
           try {
             const clientCrawls = await getCrawlResults(client.id);
-            allCrawlResults.push(...clientCrawls);
+            if (clientCrawls && Array.isArray(clientCrawls)) {
+              allCrawlResults.push(...clientCrawls);
+            }
           } catch (error) {
             console.error(`Error loading SEO crawler results for client ${client.id}:`, error);
           }
         }
         
-        console.log('All SEO Crawler results for dashboard:', allCrawlResults);
+        console.log(`Loaded ${allCrawlResults.length} SEO Crawler results for dashboard`);
         setCrawlResults(allCrawlResults);
       } catch (error) {
         console.error('Error loading SEO crawler results:', error);
@@ -49,7 +51,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
     };
 
     // Only load crawl results if we have clients
-    if (clients.length > 0) {
+    if (clients && clients.length > 0) {
       loadCrawlResults();
     } else {
       setIsCrawlsLoading(false);
@@ -61,7 +63,8 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
   );
 
   const filteredCrawls = crawlResults?.filter(crawl =>
-    crawl.domain?.toLowerCase().includes(searchQuery.toLowerCase())
+    crawl.domain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    crawl.url?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Get client name helper function
@@ -104,7 +107,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
             <div className="py-8 text-center">
               <p className="text-muted-foreground">Cargando informes...</p>
             </div>
-          ) : (filteredReports?.length === 0 && filteredCrawls?.length === 0) ? (
+          ) : ((filteredReports?.length === 0 || !filteredReports) && (!filteredCrawls || filteredCrawls?.length === 0)) ? (
             <div className="py-8 text-center">
               <p className="text-muted-foreground mb-4">No se encontraron informes</p>
               <Button asChild variant="outline" className="gap-2">
@@ -117,7 +120,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
           ) : (
             <div className="space-y-6">
               {/* Automated SEO Reports Section */}
-              {filteredReports?.length > 0 && (
+              {filteredReports && filteredReports?.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium mb-4">Informes SEO Automáticos</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -140,7 +143,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
               )}
 
               {/* Technical SEO Reports Section */}
-              {filteredCrawls?.length > 0 && (
+              {filteredCrawls && filteredCrawls?.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium mb-4">Análisis SEO Técnico</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

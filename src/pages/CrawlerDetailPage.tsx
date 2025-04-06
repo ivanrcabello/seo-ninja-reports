@@ -19,8 +19,6 @@ const CrawlerDetailPage: React.FC = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  console.log("CrawlerDetailPage: Loading crawler detail with clientId:", clientId, "and crawlId:", crawlId);
-
   return (
     <Layout>
       <main className="flex-1 pt-24 pb-16">
