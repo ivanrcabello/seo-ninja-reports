@@ -152,3 +152,6 @@ enabled = false
 port = 54327
 vector_port = 54328
 backend = "postgres"
+
+[functions.seo-crawler]
+verify_jwt = false

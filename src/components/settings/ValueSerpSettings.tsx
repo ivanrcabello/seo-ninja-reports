@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Check, Clipboard, Info, Key, KeyRound, LinkIcon, RotateCw } from 'lucide-react';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const ValueSerpSettings: React.FC = () => {
   const [valueSerpKey, setValueSerpKey] = usePersistentState('valueserp_api_key', '');
@@ -32,10 +33,24 @@ const ValueSerpSettings: React.FC = () => {
     try {
       setTestingConnection(true);
       
-      // Todo: implement actual ValueSERP API test
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Test connection using Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('valueserp-business', {
+        body: { 
+          apiKey: valueSerpKey, 
+          query: 'test',
+          test: true
+        }
+      });
       
-      toast.success('Conexión exitosa con la API de ValueSERP');
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (data && data.success) {
+        toast.success('Conexión exitosa con la API de ValueSERP');
+      } else {
+        toast.error(data?.error || 'Error al conectar con la API de ValueSERP');
+      }
     } catch (error) {
       console.error('Error testing ValueSERP API:', error);
       toast.error('Error al conectar con la API de ValueSERP');

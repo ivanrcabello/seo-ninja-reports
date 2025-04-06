@@ -9,5 +9,9 @@ export const BRIGHT_DATA_CONFIG = {
 };
 
 export const CRAWLER_CONFIG = {
-  USER_AGENT: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)'
+  USER_AGENT: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+  MAX_CONNECTIONS: 5,
+  TIMEOUT_MS: 60000,
+  RETRY_COUNT: 3,
+  RETRY_DELAY_MS: 2000
 };
