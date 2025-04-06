@@ -1,4 +1,3 @@
-
 /**
  * Types for the SEO crawler service
  */
@@ -22,6 +21,7 @@ export interface CrawlResult {
   client_id: string;
   url: string;
   domain: string;
+  start_url?: string; // Added this property
   status: 'queued' | 'processing' | 'completed' | 'failed' | 'pending';
   error_message?: string;
   started_at?: string;
@@ -49,6 +49,14 @@ export interface CrawlResult {
   performance_score?: number;
   schema_markup_count?: number;
   summary?: any;
+  
+  // Add missing properties for compatibility with component
+  pages_count?: number;
+  issues_count?: number;
+  crawled_pages?: number;
+  errors_count?: number;
+  max_pages?: number;
+  options?: any;
 }
 
 // Crawl page data

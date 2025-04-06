@@ -44,7 +44,7 @@ const CrawlerItem = ({ crawl, clientId, onDelete }: CrawlerItemProps) => {
           <div className="flex items-center mt-1 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4 mr-1" />
             {formattedDate}
-            {crawl.pages_count && (
+            {(crawl.pages_count !== undefined && crawl.pages_count > 0) && (
               <span className="ml-3">
                 {crawl.pages_count} páginas analizadas
               </span>
