@@ -31,7 +31,30 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
   const hasConfiguredGoogle = !!googleApiKey;
   const hasConfiguredValueSerpKey = !!valueSerpApiKey;
 
+  // Load Bright Data credentials from localStorage if we received empty values
+  useEffect(() => {
+    if (!brightDataUsername) {
+      const savedUsername = localStorage.getItem('bright_data_username');
+      if (savedUsername) {
+        setBrightDataUsername(savedUsername);
+      }
+    }
+    
+    if (!brightDataPassword) {
+      const savedPassword = localStorage.getItem('bright_data_password');
+      if (savedPassword) {
+        setBrightDataPassword(savedPassword);
+      }
+    }
+  }, [brightDataUsername, brightDataPassword, setBrightDataUsername, setBrightDataPassword]);
+
   const handleSave = () => {
+    // Ensure Bright Data credentials are saved to localStorage
+    if (brightDataUsername || brightDataPassword) {
+      localStorage.setItem('bright_data_username', brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER);
+      localStorage.setItem('bright_data_password', brightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD);
+    }
+    
     toast.success('Configuración guardada correctamente');
   };
 
