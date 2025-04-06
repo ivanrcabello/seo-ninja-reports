@@ -60,7 +60,7 @@ export const getCrawlIssues = async (crawlId: string) => {
 /**
  * Get all links for a specific page
  */
-export const getPageLinks = async (pageId: string) => {
+export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
   console.log(`[PageQueries] Fetching links for page ID: ${pageId}`);
   
   const { data, error } = await supabase
@@ -80,18 +80,27 @@ export const getPageLinks = async (pageId: string) => {
   const now = new Date().toISOString();
   
   // Format the data to ensure all fields match the CrawlLink type
-  const formattedLinks = (data || []).map(link => {
-    // First create a base object with all the properties from the link
-    const baseLink = { ...link };
-    
-    // Then explicitly add the required properties for CrawlLink
+  const formattedLinks: CrawlLink[] = (data || []).map(link => {
     return {
-      ...baseLink,
-      text: baseLink.anchor_text || baseLink.link_text || '',
-      is_followed: typeof baseLink.follow === 'boolean' ? baseLink.follow : true,
-      created_at: now, // Add a default created_at since it doesn't exist in the database
-      page_url: ''  // Empty string as default
-    } as CrawlLink; // Use type assertion to ensure compatibility
+      id: link.id,
+      crawl_id: link.crawl_id,
+      page_id: link.page_id,
+      url: link.url,
+      text: link.anchor_text || link.link_text || '',
+      anchor_text: link.anchor_text || link.link_text || '',
+      is_internal: link.is_internal,
+      is_followed: typeof link.follow === 'boolean' ? link.follow : true,
+      follow: typeof link.follow === 'boolean' ? link.follow : true,
+      is_broken: link.is_broken || false,
+      status_code: link.status_code || 200,
+      created_at: now,
+      page_url: '',
+      rel_attributes: link.rel_attributes || [],
+      link_location: link.link_location || '',
+      link_type: link.link_type || '',
+      nofollow: link.nofollow || false,
+      link_text: link.link_text || ''
+    };
   });
   
   return formattedLinks;
@@ -100,7 +109,7 @@ export const getPageLinks = async (pageId: string) => {
 /**
  * Get all links for an entire crawl
  */
-export const getCrawlLinks = async (crawlId: string) => {
+export const getCrawlLinks = async (crawlId: string): Promise<CrawlLink[]> => {
   console.log(`[PageQueries] Fetching links for crawl ID: ${crawlId}`);
   
   const { data, error } = await supabase
@@ -123,19 +132,27 @@ export const getCrawlLinks = async (crawlId: string) => {
   const now = new Date().toISOString();
   
   // Format returned data to ensure all required properties are present
-  const formattedLinks = (data || []).map(link => {
-    // Create a base object with all properties from link
-    const baseLink = { ...link };
-    
-    // Add required properties for CrawlLink
+  const formattedLinks: CrawlLink[] = (data || []).map(link => {
     return {
-      ...baseLink,
-      page_url: baseLink.page?.url || '',
-      anchor_text: baseLink.anchor_text || baseLink.link_text || '',
-      text: baseLink.anchor_text || baseLink.link_text || '',
-      is_followed: baseLink.follow !== undefined ? baseLink.follow : true,
-      created_at: now // Add default created_at
-    } as CrawlLink; // Use type assertion
+      id: link.id,
+      crawl_id: link.crawl_id,
+      page_id: link.page_id,
+      url: link.url,
+      text: link.anchor_text || link.link_text || '',
+      anchor_text: link.anchor_text || link.link_text || '',
+      is_internal: link.is_internal,
+      is_followed: link.follow !== undefined ? link.follow : true,
+      follow: link.follow !== undefined ? link.follow : true,
+      is_broken: link.is_broken || false,
+      status_code: link.status_code || 200,
+      created_at: now,
+      page_url: link.page?.url || '',
+      rel_attributes: link.rel_attributes || [],
+      link_location: link.link_location || '',
+      link_type: link.link_type || '',
+      nofollow: link.nofollow || false,
+      link_text: link.link_text || ''
+    };
   });
   
   return formattedLinks;

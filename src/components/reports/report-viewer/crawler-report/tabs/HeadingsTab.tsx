@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { CrawlHeading, CrawlPage } from '@/services/seo-crawler/types';
-import { AlertTriangle, FileText, ExternalLink } from 'lucide-react';
+import { AlertTriangle, FileText, ExternalLink, ChevronDown } from 'lucide-react';
 import HeadingIcon from '../components/HeadingIcon';
 import { groupHeadingsByPage, hasMultipleH1s, isMissingH1, createPageMap } from '../utils/crawlerReportUtils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface HeadingsTabProps {
   headings?: CrawlHeading[];
@@ -14,8 +16,14 @@ interface HeadingsTabProps {
 }
 
 const HeadingsTab: React.FC<HeadingsTabProps> = ({ headings = [], pages = [] }) => {
+  const [selectedPageId, setSelectedPageId] = React.useState<string | null>(null);
   const headingsByPage = groupHeadingsByPage(headings);
   const pageMap = createPageMap(pages);
+
+  // If we have a selected page, filter headings to just that page
+  const filteredHeadingsByPage = selectedPageId ? 
+    { [selectedPageId]: headingsByPage[selectedPageId] || [] } : 
+    headingsByPage;
   
   const pagesWithMultipleH1 = Object.keys(headingsByPage).filter(pageId => 
     hasMultipleH1s(pageId, headingsByPage)
@@ -129,8 +137,32 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({ headings = [], pages = [] }) 
           <div>
             <h3 className="font-medium text-lg mb-4">Encabezados por página</h3>
             
-            <div className="space-y-6">
-              {Object.entries(headingsByPage).slice(0, 5).map(([pageId, pageHeadings]) => {
+            <div className="mb-4">
+              <Select 
+                value={selectedPageId || ""} 
+                onValueChange={(value) => setSelectedPageId(value || null)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar página para filtrar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Mostrar todas las páginas</SelectItem>
+                  {Object.keys(headingsByPage).map(pageId => {
+                    const pageUrl = headingsByPage[pageId][0]?.page_url || 
+                      pages.find(p => p.id === pageId)?.url || 
+                      'Página desconocida';
+                    return (
+                      <SelectItem key={pageId} value={pageId}>
+                        {pageUrl.length > 50 ? `${pageUrl.substring(0, 50)}...` : pageUrl}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Accordion type="single" collapsible className="space-y-4">
+              {Object.entries(filteredHeadingsByPage).map(([pageId, pageHeadings]) => {
                 const pageUrl = pageHeadings[0]?.page_url || 
                   pages.find(p => p.id === pageId)?.url || 
                   'Página desconocida';
@@ -139,73 +171,77 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({ headings = [], pages = [] }) 
                 const missingH1 = isMissingH1(pageId, headingsByPage);
                 
                 return (
-                  <div key={pageId} className="border rounded-lg overflow-hidden">
+                  <AccordionItem key={pageId} value={pageId} className="border rounded-lg">
                     <div className="bg-muted p-3 border-b">
-                      <h4 className="font-medium text-primary truncate flex items-center">
-                        <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center truncate">
-                          {pageUrl}
-                          <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
-                        </a>
-                      </h4>
+                      <AccordionTrigger className="flex items-center py-0">
+                        <h4 className="font-medium text-primary truncate flex items-center">
+                          <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center truncate">
+                            {pageUrl}
+                            <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
+                          </a>
+                        </h4>
+                      </AccordionTrigger>
                     </div>
                     
-                    {(multipleH1 || missingH1) && (
-                      <div className="p-3 border-b bg-amber-50">
-                        {multipleH1 && (
-                          <div className="flex items-center text-amber-800 mb-1">
-                            <AlertTriangle className="h-4 w-4 mr-1" />
-                            <span className="text-sm">
-                              Esta página tiene {pageHeadings.filter(h => h.heading_type === 'h1').length} encabezados H1
-                            </span>
-                          </div>
-                        )}
-                        
-                        {missingH1 && (
-                          <div className="flex items-center text-amber-800">
-                            <AlertTriangle className="h-4 w-4 mr-1" />
-                            <span className="text-sm">
-                              Esta página no tiene ningún encabezado H1
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    <div className="p-3">
-                      <div className="space-y-2">
-                        {pageHeadings.map((heading, index) => (
-                          <div 
-                            key={heading.id || `${pageId}-${index}`}
-                            className={`flex items-start rounded-md p-2 ${
-                              heading.heading_type === 'h1' ? 'bg-blue-50' : 
-                              heading.heading_type === 'h2' ? 'bg-green-50' :
-                              heading.heading_type === 'h3' ? 'bg-amber-50' : 'bg-gray-50'
-                            } ${getIndentationClass(heading.heading_type)}`}
-                          >
-                            <div className="mr-3 flex-shrink-0 mt-0.5">
-                              <HeadingIcon type={heading.heading_type} />
+                    <AccordionContent>
+                      {(multipleH1 || missingH1) && (
+                        <div className="p-3 border-b bg-amber-50">
+                          {multipleH1 && (
+                            <div className="flex items-center text-amber-800 mb-1">
+                              <AlertTriangle className="h-4 w-4 mr-1" />
+                              <span className="text-sm">
+                                Esta página tiene {pageHeadings.filter(h => h.heading_type === 'h1').length} encabezados H1
+                              </span>
                             </div>
-                            <div>
-                              <div className="text-sm font-medium">
-                                {heading.heading_type.toUpperCase()}
+                          )}
+                          
+                          {missingH1 && (
+                            <div className="flex items-center text-amber-800">
+                              <AlertTriangle className="h-4 w-4 mr-1" />
+                              <span className="text-sm">
+                                Esta página no tiene ningún encabezado H1
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="p-3">
+                        <div className="space-y-2">
+                          {pageHeadings.map((heading, index) => (
+                            <div 
+                              key={heading.id || `${pageId}-${index}`}
+                              className={`flex items-start rounded-md p-2 ${
+                                heading.heading_type === 'h1' ? 'bg-blue-50' : 
+                                heading.heading_type === 'h2' ? 'bg-green-50' :
+                                heading.heading_type === 'h3' ? 'bg-amber-50' : 'bg-gray-50'
+                              } ${getIndentationClass(heading.heading_type)}`}
+                            >
+                              <div className="mr-3 flex-shrink-0 mt-0.5">
+                                <HeadingIcon type={heading.heading_type} />
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                {heading.content}
+                              <div>
+                                <div className="text-sm font-medium">
+                                  {heading.heading_type.toUpperCase()}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {heading.content}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 );
               })}
-            </div>
+            </Accordion>
             
-            {Object.keys(headingsByPage).length > 5 && (
+            {Object.keys(headingsByPage).length > 0 && Object.keys(filteredHeadingsByPage).length === 0 && (
               <div className="text-center text-muted-foreground mt-4">
-                Mostrando 5 de {Object.keys(headingsByPage).length} páginas
+                No hay páginas que coincidan con el filtro seleccionado
               </div>
             )}
           </div>
