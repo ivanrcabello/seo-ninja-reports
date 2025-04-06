@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './context/AuthContext';
@@ -299,6 +298,7 @@ function App() {
                     <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
                     <Route path="/clients/new" element={<AuthGuard><NewClientPage /></AuthGuard>} />
                     <Route path="/clients/:id" element={<AuthGuard><ClientDetailWithErrorBoundary /></AuthGuard>} />
+                    <Route path="/clients/:clientId/crawler/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
                     <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
                     <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
                     <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
