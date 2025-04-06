@@ -82,32 +82,34 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
     
     // Format the data to ensure all fields match the CrawlLink type
     const formattedLinks: CrawlLink[] = (data || []).map(link => {
-      // Make a copy of the link object with default created_at
-      const linkWithDefaults = {
-        ...link,
-        created_at: link.created_at || now
+      // Create a base link object with default values
+      const formattedLink: CrawlLink = {
+        id: link.id || '',
+        crawl_id: link.crawl_id || '',
+        page_id: link.page_id || '',
+        url: link.url || '',
+        text: link.anchor_text || link.link_text || '',
+        anchor_text: link.anchor_text || link.link_text || '',
+        is_internal: typeof link.is_internal === 'boolean' ? link.is_internal : false,
+        is_followed: typeof link.follow === 'boolean' ? link.follow : true,
+        follow: typeof link.follow === 'boolean' ? link.follow : true,
+        is_broken: typeof link.is_broken === 'boolean' ? link.is_broken : false,
+        status_code: link.status_code || 200,
+        created_at: now, // Default value
+        page_url: '',
+        rel_attributes: link.rel_attributes || [],
+        link_location: link.link_location || '',
+        link_type: link.link_type || '',
+        nofollow: link.nofollow || false,
+        link_text: link.link_text || link.anchor_text || ''
       };
       
-      return {
-        id: linkWithDefaults.id || '',
-        crawl_id: linkWithDefaults.crawl_id || '',
-        page_id: linkWithDefaults.page_id || '',
-        url: linkWithDefaults.url || '',
-        text: linkWithDefaults.anchor_text || linkWithDefaults.link_text || '',
-        anchor_text: linkWithDefaults.anchor_text || linkWithDefaults.link_text || '',
-        is_internal: typeof linkWithDefaults.is_internal === 'boolean' ? linkWithDefaults.is_internal : false,
-        is_followed: typeof linkWithDefaults.follow === 'boolean' ? linkWithDefaults.follow : true,
-        follow: typeof linkWithDefaults.follow === 'boolean' ? linkWithDefaults.follow : true,
-        is_broken: typeof linkWithDefaults.is_broken === 'boolean' ? linkWithDefaults.is_broken : false,
-        status_code: linkWithDefaults.status_code || 200,
-        created_at: linkWithDefaults.created_at,
-        page_url: '',
-        rel_attributes: linkWithDefaults.rel_attributes || [],
-        link_location: linkWithDefaults.link_location || '',
-        link_type: linkWithDefaults.link_type || '',
-        nofollow: linkWithDefaults.nofollow || false,
-        link_text: linkWithDefaults.link_text || linkWithDefaults.anchor_text || ''
-      };
+      // If created_at exists in the data, use it
+      if ('created_at' in link && link.created_at) {
+        formattedLink.created_at = link.created_at;
+      }
+      
+      return formattedLink;
     });
     
     console.log(`[PageQueries] Formatted ${formattedLinks.length} links for page ID: ${pageId}`);
@@ -146,32 +148,34 @@ export const getCrawlLinks = async (crawlId: string): Promise<CrawlLink[]> => {
     
     // Format returned data to ensure all required properties are present
     const formattedLinks: CrawlLink[] = (data || []).map(link => {
-      // Make a copy of the link object with default created_at
-      const linkWithDefaults = {
-        ...link,
-        created_at: link.created_at || now
+      // Create a base link object with default values
+      const formattedLink: CrawlLink = {
+        id: link.id || '',
+        crawl_id: link.crawl_id || '',
+        page_id: link.page_id || '',
+        url: link.url || '',
+        text: link.anchor_text || link.link_text || '',
+        anchor_text: link.anchor_text || link.link_text || '',
+        is_internal: typeof link.is_internal === 'boolean' ? link.is_internal : false,
+        is_followed: typeof link.follow === 'boolean' ? link.follow : true,
+        follow: typeof link.follow === 'boolean' ? link.follow : true,
+        is_broken: typeof link.is_broken === 'boolean' ? link.is_broken : false,
+        status_code: link.status_code || 200,
+        created_at: now, // Default value
+        page_url: link.page?.url || '',
+        rel_attributes: link.rel_attributes || [],
+        link_location: link.link_location || '',
+        link_type: link.link_type || '',
+        nofollow: link.nofollow || false,
+        link_text: link.link_text || link.anchor_text || ''
       };
       
-      return {
-        id: linkWithDefaults.id || '',
-        crawl_id: linkWithDefaults.crawl_id || '',
-        page_id: linkWithDefaults.page_id || '',
-        url: linkWithDefaults.url || '',
-        text: linkWithDefaults.anchor_text || linkWithDefaults.link_text || '',
-        anchor_text: linkWithDefaults.anchor_text || linkWithDefaults.link_text || '',
-        is_internal: typeof linkWithDefaults.is_internal === 'boolean' ? linkWithDefaults.is_internal : false,
-        is_followed: typeof linkWithDefaults.follow === 'boolean' ? linkWithDefaults.follow : true,
-        follow: typeof linkWithDefaults.follow === 'boolean' ? linkWithDefaults.follow : true,
-        is_broken: typeof linkWithDefaults.is_broken === 'boolean' ? linkWithDefaults.is_broken : false,
-        status_code: linkWithDefaults.status_code || 200,
-        created_at: linkWithDefaults.created_at,
-        page_url: linkWithDefaults.page?.url || '',
-        rel_attributes: linkWithDefaults.rel_attributes || [],
-        link_location: linkWithDefaults.link_location || '',
-        link_type: linkWithDefaults.link_type || '',
-        nofollow: linkWithDefaults.nofollow || false,
-        link_text: linkWithDefaults.link_text || linkWithDefaults.anchor_text || ''
-      };
+      // If created_at exists in the data, use it
+      if ('created_at' in link && link.created_at) {
+        formattedLink.created_at = link.created_at;
+      }
+      
+      return formattedLink;
     });
     
     console.log(`[PageQueries] Formatted ${formattedLinks.length} links for crawl ID: ${crawlId}`);

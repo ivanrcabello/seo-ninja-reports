@@ -1,5 +1,5 @@
 
-import { CrawlHeading, CrawlPage } from '@/services/seo-crawler/types';
+import { CrawlHeading, CrawlIssue, CrawlPage } from '@/services/seo-crawler/types';
 
 /**
  * Groups headings by page ID
@@ -18,6 +18,44 @@ export const groupHeadingsByPage = (headings: CrawlHeading[] = []): Record<strin
   });
   
   return headingsByPage;
+};
+
+/**
+ * Groups issues by severity
+ */
+export const groupIssuesBySeverity = (issues: CrawlIssue[] = []): Record<string, CrawlIssue[]> => {
+  const issuesBySeverity: Record<string, CrawlIssue[]> = {};
+  
+  issues.forEach((issue) => {
+    const severity = issue.severity || 'medium';
+    
+    if (!issuesBySeverity[severity]) {
+      issuesBySeverity[severity] = [];
+    }
+    
+    issuesBySeverity[severity].push(issue);
+  });
+  
+  return issuesBySeverity;
+};
+
+/**
+ * Groups issues by type
+ */
+export const groupIssuesByType = (issues: CrawlIssue[] = []): Record<string, CrawlIssue[]> => {
+  const issuesByType: Record<string, CrawlIssue[]> = {};
+  
+  issues.forEach((issue) => {
+    const type = issue.issue_type || issue.type || 'unknown';
+    
+    if (!issuesByType[type]) {
+      issuesByType[type] = [];
+    }
+    
+    issuesByType[type].push(issue);
+  });
+  
+  return issuesByType;
 };
 
 /**
@@ -50,4 +88,22 @@ export const createPageMap = (pages: CrawlPage[]): Record<string, CrawlPage> => 
   });
   
   return pageMap;
+};
+
+/**
+ * Chart colors for data visualization
+ */
+export const CHART_COLORS = [
+  '#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'
+];
+
+/**
+ * Severity color mapping
+ */
+export const SEVERITY_COLORS = {
+  'critical': '#ef4444',
+  'high': '#f97316',
+  'medium': '#f59e0b',
+  'low': '#84cc16',
+  'info': '#3b82f6'
 };
