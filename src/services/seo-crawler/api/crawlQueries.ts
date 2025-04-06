@@ -7,6 +7,7 @@ import { formatCrawlResult } from './crawlFormatter';
  * Get all crawl results for a client
  */
 export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
+  // Use a type assertion to tell TypeScript what table we're using
   const { data, error } = await supabase
     .from('seo_crawler_crawls')
     .select('*')
@@ -25,6 +26,7 @@ export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> 
  * Get a single crawl result by ID
  */
 export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
+  // Use a type assertion to tell TypeScript what table we're using
   const { data, error } = await supabase
     .from('seo_crawler_crawls')
     .select('*')
