@@ -26,6 +26,7 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
   const [googleApiKey, setGoogleApiKey] = usePersistentState('google_pagespeed_api_key', '');
   const [valueSerpApiKey, setValueSerpApiKey] = usePersistentState('valueserp_api_key', '');
   const [defaultPrompt, setDefaultPrompt] = usePersistentState('default_seo_prompt', '');
+  const [brightDataApiKey, setBrightDataApiKey] = usePersistentState('bright_data_api_key', '');
 
   const hasConfiguredOpenAiKey = !!openAiApiKey;
   const hasConfiguredGoogle = !!googleApiKey;
@@ -35,10 +36,12 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
   useEffect(() => {
     const savedUsername = localStorage.getItem('bright_data_username');
     const savedPassword = localStorage.getItem('bright_data_password');
+    const savedApiKey = localStorage.getItem('bright_data_api_key');
     
     console.log('Loading saved Bright Data credentials from localStorage');
     console.log('Saved username exists:', !!savedUsername);
     console.log('Saved password exists:', !!savedPassword);
+    console.log('Saved API key exists:', !!savedApiKey);
     
     if (savedUsername && (!brightDataUsername || brightDataUsername === BRIGHT_DATA_CONFIG.DEFAULT_USER)) {
       console.log('Setting saved username from localStorage');
@@ -55,6 +58,11 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
       console.log('Setting default password from config');
       setBrightDataPassword(BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD);
     }
+    
+    if (savedApiKey) {
+      console.log('Setting saved API key from localStorage');
+      setBrightDataApiKey(savedApiKey);
+    }
   }, []);
 
   const handleSave = () => {
@@ -65,9 +73,15 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     localStorage.setItem('bright_data_username', usernameToSave);
     localStorage.setItem('bright_data_password', passwordToSave);
     
+    if (brightDataApiKey) {
+      localStorage.setItem('bright_data_api_key', brightDataApiKey);
+      console.log('Saved Bright Data API key to localStorage');
+    }
+    
     console.log('Saved Bright Data credentials to localStorage');
     console.log('Username saved:', usernameToSave.substring(0, 10) + '...');
     console.log('Password saved:', passwordToSave ? '*** (set)' : '(not set)');
+    console.log('API key saved:', brightDataApiKey ? '*** (set)' : '(not set)');
     
     toast.success('Configuración guardada correctamente');
   };
@@ -169,6 +183,22 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
                 <p className="text-xs text-muted-foreground">
                   Tu contraseña de Bright Data para rastreo SEO. <br />
                   Valor por defecto: {BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="brightDataApiKey">API Key de Bright Data</Label>
+                <Input
+                  id="brightDataApiKey"
+                  type="password"
+                  value={brightDataApiKey}
+                  onChange={(e) => setBrightDataApiKey(e.target.value)}
+                  className="glass-input"
+                  placeholder="Introduce tu API Key de Bright Data"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tu API Key de Bright Data para rastreo SEO. <br />
+                  Ejemplo: 16dc9468b0aafcdaf27d0e878e71e079b2db99792012e1a1d9cf79ed2265230b
                 </p>
               </div>
               

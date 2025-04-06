@@ -39,7 +39,7 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
     }
 
     // Validate required input parameters
-    const { url, crawlId, brightDataUsername, brightDataPassword } = requestBody;
+    const { url, crawlId, brightDataUsername, brightDataPassword, brightDataApiKey } = requestBody;
     if (!url || !crawlId) {
       console.error('Missing required parameters:', { url, crawlId });
       return new Response(
@@ -61,6 +61,11 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
       console.log('Using custom Bright Data credentials');
       Deno.env.set("BRIGHT_DATA_USERNAME", brightDataUsername);
       Deno.env.set("BRIGHT_DATA_PASSWORD", brightDataPassword);
+      
+      if (brightDataApiKey) {
+        console.log('Using custom Bright Data API key');
+        Deno.env.set("BRIGHT_DATA_API_KEY", brightDataApiKey);
+      }
     } else {
       console.log('Using default Bright Data credentials');
     }
@@ -81,7 +86,7 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
 
     // Start the crawl process directly
     console.log(`Starting page crawl for ${url}...`);
-    const result = await crawlPage(supabase, url, crawlId, brightDataUsername, brightDataPassword);
+    const result = await crawlPage(supabase, url, crawlId, brightDataUsername, brightDataPassword, brightDataApiKey);
     console.log(`Crawl completed, result: ${result ? 'success' : 'failed'}`);
 
     return new Response(

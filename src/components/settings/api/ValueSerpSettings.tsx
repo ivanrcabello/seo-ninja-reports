@@ -29,11 +29,13 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   setBrightDataPassword,
 }) => {
   const [hasSavedBrightData, setHasSavedBrightData] = useState(false);
+  const [brightDataApiKey, setBrightDataApiKey] = useState('');
   
   // Check if Bright Data credentials are already in localStorage
   useEffect(() => {
     const savedUsername = localStorage.getItem('bright_data_username');
     const savedPassword = localStorage.getItem('bright_data_password');
+    const savedApiKey = localStorage.getItem('bright_data_api_key');
     
     if (savedUsername && savedUsername !== brightDataUsername) {
       setBrightDataUsername(savedUsername);
@@ -41,8 +43,13 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     
     if (savedPassword && savedPassword !== brightDataPassword) {
       setBrightDataPassword(savedPassword);
-      setHasSavedBrightData(true);
     }
+    
+    if (savedApiKey) {
+      setBrightDataApiKey(savedApiKey);
+    }
+    
+    setHasSavedBrightData(!!savedUsername && !!savedPassword);
   }, [brightDataUsername, brightDataPassword, setBrightDataUsername, setBrightDataPassword]);
 
   // Save Bright Data credentials to localStorage when they change
@@ -54,12 +61,19 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
       
       localStorage.setItem('bright_data_username', usernameToSave);
       localStorage.setItem('bright_data_password', passwordToSave);
+      
+      if (brightDataApiKey) {
+        localStorage.setItem('bright_data_api_key', brightDataApiKey);
+        console.log('Saved Bright Data API key to localStorage');
+      }
+      
       setHasSavedBrightData(true);
       toast.success('Credenciales de Bright Data guardadas');
       
       console.log('Bright Data credentials saved:', { 
         username: usernameToSave.substring(0, 10) + '...', 
-        password: '***' 
+        password: '***',
+        apiKey: brightDataApiKey ? '*** (set)' : '(not set)'
       });
     } catch (error) {
       console.error('Error saving Bright Data credentials:', error);
@@ -91,6 +105,11 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
       // Just save the credentials and assume success since we can't directly test in browser
       localStorage.setItem('bright_data_username', usernameToTest);
       localStorage.setItem('bright_data_password', passwordToTest);
+      
+      if (brightDataApiKey) {
+        localStorage.setItem('bright_data_api_key', brightDataApiKey);
+      }
+      
       setHasSavedBrightData(true);
       
       toast.success('Credenciales validadas y guardadas correctamente', {
@@ -198,6 +217,32 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
             />
             <p className="text-xs text-muted-foreground">
               Tu contraseña de Bright Data. <br/>Valor por defecto: {BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="brightDataApiKey">API Key de Bright Data</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(brightDataApiKey, 'API Key')}
+                className="h-6 w-6 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <Input
+              id="brightDataApiKey"
+              type="password"
+              value={brightDataApiKey}
+              onChange={(e) => setBrightDataApiKey(e.target.value)}
+              className="glass-input"
+              placeholder="Introduce tu API Key"
+            />
+            <p className="text-xs text-muted-foreground">
+              Tu API Key de Bright Data. <br/>
+              Ejemplo: 16dc9468b0aafcdaf27d0e878e71e079b2db99792012e1a1d9cf79ed2265230b
             </p>
           </div>
           

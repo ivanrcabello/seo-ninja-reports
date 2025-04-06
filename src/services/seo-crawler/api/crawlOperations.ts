@@ -75,10 +75,12 @@ export async function startCrawl(
       'brd-customer-hl_2a8d2c33-zone-web_unlocker';
     const brightDataPassword = localStorage.getItem('bright_data_password') || 
       'obz0lal9qh4g';
+    const brightDataApiKey = localStorage.getItem('bright_data_api_key') || '';
     
     console.log(`Using Bright Data credentials for crawl`);
     console.log(`Username: ${brightDataUsername.substring(0, 10)}... (${brightDataUsername.length} chars)`);
     console.log(`Password: ${brightDataPassword ? '*** (set)' : '(not set)'}`);
+    console.log(`API Key: ${brightDataApiKey ? '*** (set)' : '(not set)'}`);
     
     // Set crawl to processing state immediately to show progress to user
     await supabase
@@ -99,7 +101,8 @@ export async function startCrawl(
           url: normalizedUrl, 
           settings: mergedSettings,
           brightDataUsername,
-          brightDataPassword
+          brightDataPassword,
+          brightDataApiKey
         }
       });
 

@@ -25,6 +25,10 @@ const Settings = () => {
     'bright_data_password',
     BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD
   );
+  const [brightDataApiKey, setBrightDataApiKey] = usePersistentState(
+    'bright_data_api_key',
+    BRIGHT_DATA_CONFIG.DEFAULT_API_KEY
+  );
 
   // Handle visibility changes to ensure page state is preserved
   useEffect(() => {
