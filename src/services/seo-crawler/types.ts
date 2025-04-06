@@ -1,3 +1,4 @@
+
 /**
  * Types for the SEO crawler service
  */
@@ -21,11 +22,11 @@ export interface CrawlResult {
   client_id: string;
   url: string;
   domain: string;
-  start_url?: string; // Added this property
+  start_url: string; // Adding this property as it's used in crawlFormatter.ts
   status: 'queued' | 'processing' | 'completed' | 'failed' | 'pending';
-  error_message?: string;
+  error_message?: string | null;
   started_at?: string;
-  completed_at?: string;
+  completed_at?: string | null;
   created_at?: string;
   updated_at?: string;
   inserted_at?: string; // Database field

@@ -7,7 +7,7 @@ export const formatCrawlResult = (data: any): CrawlResult => {
     client_id: data.client_id,
     domain: data.domain || '',
     url: data.url || data.start_url || '', // Use url or start_url
-    start_url: data.start_url || '',  // Keep for backward compatibility
+    start_url: data.start_url || '',  // Now this is defined in our type
     status: data.status || 'processing',
     max_pages: data.max_pages || 100, // Increased default max pages from 3 to 100
     pages_count: data.pages_count || 0,
