@@ -1,4 +1,3 @@
-
 // HTML processor main module
 import { SupabaseInstance, PageCrawlResult } from '../types.ts';
 import { registerCrawlerError } from '../utils.ts';

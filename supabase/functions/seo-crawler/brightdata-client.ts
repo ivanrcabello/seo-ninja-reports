@@ -40,14 +40,14 @@ export async function fetchPage(
  * Fetch a page using Bright Data Direct API (preferred method)
  */
 async function fetchWithDirectApi(url: string, apiKey: string): Promise<string> {
-  console.log(`[Bright Data API] Fetching URL: ${url} with API key`);
+  console.log(`[Bright Data API] Fetching URL: ${url} with API key starting with ${apiKey.substring(0, 5)}...`);
   
   const apiEndpoint = 'https://api.brightdata.com/request';
   
   const payload = {
     zone: "web_unlocker",
     url: url,
-    format: "json"  // We want structured JSON response
+    format: "json"  // We want structured JSON response with body field
   };
   
   console.log(`[Bright Data API] Request payload: ${JSON.stringify(payload)}`);
@@ -62,7 +62,11 @@ async function fetchWithDirectApi(url: string, apiKey: string): Promise<string> 
   };
   
   try {
+    console.log(`[Bright Data API] Sending request to ${apiEndpoint}`);
     const response = await fetch(apiEndpoint, options);
+    
+    // Log the response status
+    console.log(`[Bright Data API] Response status: ${response.status} ${response.statusText}`);
     
     if (!response.ok) {
       let errorText = '';
@@ -85,10 +89,11 @@ async function fetchWithDirectApi(url: string, apiKey: string): Promise<string> 
       console.log('[Bright Data API] Response is JSON, parsing...');
       const jsonResponse = await response.json();
       
-      // Log the first 500 characters of the response for debugging
-      console.log('[Bright Data API] JSON response sample:', JSON.stringify(jsonResponse).substring(0, 500));
+      // Log the response structure
+      console.log('[Bright Data API] JSON response keys:', Object.keys(jsonResponse));
+      console.log('[Bright Data API] JSON response sample:', JSON.stringify(jsonResponse).substring(0, 200) + '...');
       
-      // Check if the response contains HTML content
+      // Extract HTML from the response
       if (jsonResponse.body) {
         console.log('[Bright Data API] Found HTML in body property');
         return jsonResponse.body;
@@ -103,7 +108,7 @@ async function fetchWithDirectApi(url: string, apiKey: string): Promise<string> 
         return jsonResponse;
       } else {
         // Return the entire JSON as a string if we can't find HTML
-        console.log('[Bright Data API] Returning stringified JSON');
+        console.log('[Bright Data API] Could not find HTML in response, returning JSON string');
         return JSON.stringify(jsonResponse);
       }
     } else {
@@ -125,24 +130,29 @@ async function fetchWithDirectApi(url: string, apiKey: string): Promise<string> 
 async function fetchWithProxy(url: string, username: string, password: string): Promise<string> {
   console.log(`[Bright Data Proxy] Fetching URL: ${url}`);
   
-  // Prepare proxy URL in the format from the example
+  // Prepare proxy URL
   const proxyUrl = `http://${username}:${password}@brd.superproxy.io:22225`;
-  console.log(`[Bright Data Proxy] Using proxy URL format: http://username:password@brd.superproxy.io:22225`);
+  console.log(`[Bright Data Proxy] Using proxy URL with username ${username}`);
   
   try {
-    // This is a simplified approach since Deno's fetch API doesn't support proxies directly
-    // In a real implementation, we would use something like axios with https-proxy-agent
+    // With Deno, we need to use a different approach since we don't have http-proxy-agent
+    // We'll use fetch with a custom user agent instead
+    console.log('[Bright Data Proxy] Using Deno fetch with proxy headers');
+    
     const response = await fetch(url, {
       headers: {
         'User-Agent': CRAWLER_CONFIG.USER_AGENT,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
+        'Proxy-Authorization': `Basic ${btoa(`${username}:${password}`)}`,
         'Cache-Control': 'no-cache'
       }
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+      const errorMessage = `HTTP error: ${response.status} ${response.statusText}`;
+      console.error(`[Bright Data Proxy] ${errorMessage}`);
+      throw new Error(errorMessage);
     }
     
     console.log(`[Bright Data Proxy] Response status: ${response.status}`);
@@ -154,19 +164,20 @@ async function fetchWithProxy(url: string, username: string, password: string): 
   } catch (error) {
     console.error(`[Bright Data Proxy] Error: ${error.message}`);
     
-    // For testing purposes, return a fallback HTML to continue processing
-    console.log('[Bright Data Proxy] Returning fallback HTML for testing');
+    // For easier debugging, return a fallback HTML with the error
+    console.log('[Bright Data Proxy] Returning fallback HTML for debugging');
     return `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Test page for ${url}</title>
-          <meta name="description" content="This is a fallback test page">
+          <title>Error fetching ${url}</title>
+          <meta name="description" content="Bright Data proxy fetch error">
         </head>
         <body>
-          <h1>Test Page</h1>
-          <p>This is a test page for ${url}</p>
-          <a href="https://example.com">Example link</a>
+          <h1>Error Fetching Page</h1>
+          <p>URL: ${url}</p>
+          <p>Error: ${error.message}</p>
+          <p>This is a fallback page returned due to an error in the proxy fetch.</p>
         </body>
       </html>
     `;

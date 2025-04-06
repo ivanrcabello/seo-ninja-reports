@@ -19,23 +19,17 @@ export async function crawlPage(
   console.log(`Crawling page: ${url} for crawl ID: ${crawlId}`);
   
   try {
-    // Fetch the page content using the Bright Data client
-    console.log(`Fetching content for URL: ${url}`);
+    // Log credentials information for debugging (safely)
     console.log(`Using Bright Data credentials - Username: ${brightDataUsername ? 'provided' : 'not provided'}, Password: ${brightDataPassword ? 'provided' : 'not provided'}, API Key: ${brightDataApiKey ? 'provided' : 'not provided'}`);
     
     // Log first few chars of API key for debugging
     if (brightDataApiKey) {
-      console.log(`API Key first 10 chars: ${brightDataApiKey.substring(0, 10)}...`);
+      console.log(`API Key first 5 chars: ${brightDataApiKey.substring(0, 5)}...`);
     }
     
-    // Setting environment variables for the current request
-    if (brightDataUsername) Deno.env.set("BRIGHT_DATA_USERNAME", brightDataUsername);
-    if (brightDataPassword) Deno.env.set("BRIGHT_DATA_PASSWORD", brightDataPassword);
-    if (brightDataApiKey) Deno.env.set("BRIGHT_DATA_API_KEY", brightDataApiKey);
-    
-    console.log("About to call fetchPage with Bright Data credentials");
+    // Fetch the page content using the Bright Data client
+    console.log(`Fetching content for URL: ${url}`);
     const html = await fetchPage(url, brightDataUsername, brightDataPassword, brightDataApiKey);
-    console.log("Returned from fetchPage call");
     
     if (!html) {
       console.error("Failed to fetch page content - HTML is null or empty");

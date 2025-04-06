@@ -78,7 +78,7 @@ export async function startCrawl(
     const brightDataApiKey = localStorage.getItem('bright_data_api_key') || '';
     
     console.log(`Using Bright Data credentials for crawl`);
-    console.log(`Username: ${brightDataUsername.substring(0, 10)}... (${brightDataUsername.length} chars)`);
+    console.log(`Username: ${brightDataUsername ? brightDataUsername.substring(0, 5) + '...' : '(not set)'}`);
     console.log(`Password: ${brightDataPassword ? '*** (set)' : '(not set)'}`);
     console.log(`API Key: ${brightDataApiKey ? '*** (set)' : '(not set)'}`);
     
@@ -95,6 +95,14 @@ export async function startCrawl(
 
     // Call the edge function to start the crawl
     try {
+      console.log("Invoking seo-crawler edge function with params:", {
+        crawlId: crawlRecord.id,
+        url: normalizedUrl,
+        brightDataUsername: brightDataUsername ? 'provided' : 'not provided',
+        brightDataPassword: brightDataPassword ? 'provided' : 'not provided', 
+        brightDataApiKey: brightDataApiKey ? 'provided' : 'not provided'
+      });
+      
       const { data, error } = await supabase.functions.invoke('seo-crawler', {
         body: { 
           crawlId: crawlRecord.id,
