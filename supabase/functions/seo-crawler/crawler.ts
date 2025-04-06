@@ -23,12 +23,12 @@ export async function crawlPage(
     console.log(`Fetching content for URL: ${url}`);
     console.log(`Using Bright Data credentials - Username: ${brightDataUsername ? 'provided' : 'not provided'}, Password: ${brightDataPassword ? 'provided' : 'not provided'}, API Key: ${brightDataApiKey ? 'provided' : 'not provided'}`);
     
-    // Log actual API key for debugging (first few chars)
+    // Log first few chars of API key for debugging
     if (brightDataApiKey) {
       console.log(`API Key first 10 chars: ${brightDataApiKey.substring(0, 10)}...`);
     }
     
-    // Set environment variables for the current request
+    // Setting environment variables for the current request
     if (brightDataUsername) Deno.env.set("BRIGHT_DATA_USERNAME", brightDataUsername);
     if (brightDataPassword) Deno.env.set("BRIGHT_DATA_PASSWORD", brightDataPassword);
     if (brightDataApiKey) Deno.env.set("BRIGHT_DATA_API_KEY", brightDataApiKey);
