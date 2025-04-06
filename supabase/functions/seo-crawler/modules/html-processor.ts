@@ -22,6 +22,47 @@ export async function processHtml(
       console.log(`[HTML Processor] HTML preview: ${html.substring(0, 300)}...`);
     }
     
+    // Check if the response is JSON instead of HTML
+    if (html.trim().startsWith('{') || html.trim().startsWith('[')) {
+      console.log('[HTML Processor] Content appears to be JSON instead of HTML');
+      try {
+        const jsonData = JSON.parse(html);
+        console.log('[HTML Processor] Successfully parsed JSON:', JSON.stringify(jsonData).substring(0, 300));
+        
+        // Check if this is a Bright Data JSON response with HTML content
+        if (jsonData.body) {
+          console.log('[HTML Processor] Found HTML content in JSON body field');
+          html = jsonData.body;
+          console.log(`[HTML Processor] Extracted HTML from JSON, new length: ${html.length} characters`);
+        } else if (jsonData.html) {
+          console.log('[HTML Processor] Found HTML content in JSON html field');
+          html = jsonData.html;
+          console.log(`[HTML Processor] Extracted HTML from JSON, new length: ${html.length} characters`);
+        } else if (jsonData.content) {
+          console.log('[HTML Processor] Found HTML content in JSON content field');
+          html = jsonData.content;
+          console.log(`[HTML Processor] Extracted HTML from JSON, new length: ${html.length} characters`);
+        } else if (jsonData.error || jsonData.message) {
+          const errorMessage = `Bright Data returned JSON error: ${jsonData.error || jsonData.message}`;
+          await registerCrawlerError(supabase, crawlId, url, errorMessage);
+          
+          // Update crawl status to failed
+          await supabase
+            .from('seo_crawler_crawls')
+            .update({
+              status: 'failed',
+              error_message: errorMessage,
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', crawlId);
+            
+          return null;
+        }
+      } catch (e) {
+        console.error('[HTML Processor] Error parsing JSON:', e);
+      }
+    }
+    
     // Check for really empty content first
     if (!html || html.length === 0) {
       console.error('[HTML Processor] HTML content is empty');
@@ -87,59 +128,6 @@ export async function processHtml(
     if (!html.includes('<html') && !html.includes('<!DOCTYPE')) {
       console.error('[HTML Processor] Content does not appear to be valid HTML');
       console.log(`[HTML Processor] Invalid content preview: ${html.substring(0, 300)}...`);
-      
-      // Check if it's JSON
-      if (html.trim().startsWith('{') || html.trim().startsWith('[')) {
-        console.log('[HTML Processor] Content appears to be JSON instead of HTML');
-        try {
-          const jsonData = JSON.parse(html);
-          console.log('[HTML Processor] Successfully parsed JSON:', JSON.stringify(jsonData).substring(0, 300));
-          
-          // Check if JSON contains an error message
-          if (jsonData.error || jsonData.message) {
-            const errorMessage = `Bright Data returned JSON error: ${jsonData.error || jsonData.message}`;
-            await registerCrawlerError(supabase, crawlId, url, errorMessage);
-            
-            // Update crawl status to failed
-            await supabase
-              .from('seo_crawler_crawls')
-              .update({
-                status: 'failed',
-                error_message: errorMessage,
-                completed_at: new Date().toISOString()
-              })
-              .eq('id', crawlId);
-          } else {
-            const errorMessage = 'Bright Data returned JSON instead of HTML';
-            await registerCrawlerError(supabase, crawlId, url, errorMessage);
-            
-            // Update crawl status to failed
-            await supabase
-              .from('seo_crawler_crawls')
-              .update({
-                status: 'failed',
-                error_message: errorMessage,
-                completed_at: new Date().toISOString()
-              })
-              .eq('id', crawlId);
-          }
-        } catch (e) {
-          console.error('[HTML Processor] Error parsing JSON:', e);
-          const errorMessage = 'Received invalid content from Bright Data (not HTML)';
-          await registerCrawlerError(supabase, crawlId, url, errorMessage);
-          
-          // Update crawl status to failed
-          await supabase
-            .from('seo_crawler_crawls')
-            .update({
-              status: 'failed',
-              error_message: errorMessage,
-              completed_at: new Date().toISOString()
-            })
-            .eq('id', crawlId);
-        }
-        return null;
-      }
       
       // If content is really short, provide the full content for debugging
       if (html.length < 1000) {

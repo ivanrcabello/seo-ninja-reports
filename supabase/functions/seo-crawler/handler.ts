@@ -55,19 +55,29 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
     }
     
     console.log(`Starting SEO crawler for URL: ${url}, crawl ID: ${crawlId}`);
+    console.log('Bright Data credentials provided:', {
+      username: brightDataUsername ? 'yes' : 'no',
+      password: brightDataPassword ? 'yes' : 'no',
+      apiKey: brightDataApiKey ? 'yes' : 'no'
+    });
+    
+    // If API key is provided, log first few characters for debugging
+    if (brightDataApiKey) {
+      console.log('Bright Data API key starts with:', brightDataApiKey.substring(0, 10) + '...');
+    }
     
     // Set Bright Data credentials as environment variables if provided
     if (brightDataUsername && brightDataPassword) {
       console.log('Using custom Bright Data credentials');
       Deno.env.set("BRIGHT_DATA_USERNAME", brightDataUsername);
       Deno.env.set("BRIGHT_DATA_PASSWORD", brightDataPassword);
-      
-      if (brightDataApiKey) {
-        console.log('Using custom Bright Data API key:', brightDataApiKey.substring(0, 10) + '...');
-        Deno.env.set("BRIGHT_DATA_API_KEY", brightDataApiKey);
-      }
     } else {
       console.log('Using default Bright Data credentials');
+    }
+    
+    if (brightDataApiKey) {
+      console.log('Using custom Bright Data API key');
+      Deno.env.set("BRIGHT_DATA_API_KEY", brightDataApiKey);
     }
 
     // Update crawl status to processing

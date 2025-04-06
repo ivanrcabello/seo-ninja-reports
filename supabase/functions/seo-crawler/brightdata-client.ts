@@ -1,64 +1,145 @@
-// Client module for Bright Data API
-import { BRIGHT_DATA_CONFIG } from "./config.ts";
+// Bright Data HTTP client for SEO crawler
+import { BRIGHT_DATA_CONFIG, CRAWLER_CONFIG } from './config.ts';
 
 /**
- * Fetches a page using Bright Data proxy service
+ * Fetch a page using the Bright Data web unlocker
  */
 export async function fetchPage(
-  url: string, 
-  username?: string, 
-  password?: string,
-  apiKey?: string
+  url: string,
+  customUsername?: string,
+  customPassword?: string,
+  customApiKey?: string
 ): Promise<string> {
+  console.log(`[Bright Data] Fetching page: ${url}`);
+  
+  const username = customUsername || Deno.env.get("BRIGHT_DATA_USERNAME") || BRIGHT_DATA_CONFIG.DEFAULT_USER;
+  const password = customPassword || Deno.env.get("BRIGHT_DATA_PASSWORD") || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
+  const apiKey = customApiKey || Deno.env.get("BRIGHT_DATA_API_KEY") || BRIGHT_DATA_CONFIG.DEFAULT_API_KEY;
+  
+  console.log(`[Bright Data] Using credentials - Username: ${username ? 'provided' : 'not provided'}, API Key: ${apiKey ? 'provided' : 'not provided'}`);
+  
   try {
-    console.log(`[BrightData] Fetching URL: ${url}`);
-    
-    // Use provided credentials or fall back to defaults
-    const proxyUsername = username || Deno.env.get("BRIGHT_DATA_USERNAME") || BRIGHT_DATA_CONFIG.DEFAULT_USER;
-    const proxyPassword = password || Deno.env.get("BRIGHT_DATA_PASSWORD") || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
-    const brightDataApiKey = apiKey || Deno.env.get("BRIGHT_DATA_API_KEY") || BRIGHT_DATA_CONFIG.DEFAULT_API_KEY;
-    
-    console.log(`[BrightData] Using credentials - Username: ${proxyUsername.substring(0, 10)}..., Password: ${proxyPassword ? '***' : 'not set'}`);
-    
-    // Use Bright Data API if key is provided
-    if (brightDataApiKey && brightDataApiKey.length > 10) {
-      console.log(`[BrightData] Using Bright Data API with key: ${brightDataApiKey.substring(0, 10)}...`);
-      return await fetchWithBrightDataApi(url, brightDataApiKey);
+    // If we have an API key, use that to fetch the page via Bright Data API
+    if (apiKey && apiKey.trim() !== '') {
+      console.log(`[Bright Data] Using API Key to fetch page: ${url}`);
+      return await fetchWithBrightDataApi(url, apiKey);
     }
     
-    // Otherwise, use Bright Data Proxy
-    console.log(`[BrightData] Using Bright Data Proxy with host: ${BRIGHT_DATA_CONFIG.PROXY_HOST}`);
-    return await fetchWithBrightDataProxy(url, proxyUsername, proxyPassword);
+    // Otherwise use the proxy method
+    console.log(`[Bright Data] Using proxy method to fetch page: ${url}`);
+    return await fetchWithProxy(url, username, password);
   } catch (error) {
-    console.error(`[BrightData] Error fetching URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error(`[Bright Data] Error fetching page: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error(`[Bright Data] Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`);
     throw error;
   }
 }
 
 /**
- * Fetches a page using Bright Data HTTP proxy
+ * Fetch a page using Bright Data API
  */
-async function fetchWithBrightDataProxy(url: string, username: string, password: string): Promise<string> {
+async function fetchWithBrightDataApi(url: string, apiKey: string): Promise<string> {
+  console.log(`[Bright Data API] Fetching URL: ${url}`);
+  
+  const brightDataApiUrl = 'https://api.brightdata.com/web-unlocker/fetch';
+  const encodedUrl = encodeURIComponent(url);
+  
+  const options = {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }
+  };
+  
+  // URL with parameters
+  const requestUrl = `${brightDataApiUrl}?url=${encodedUrl}`;
+  console.log(`[Bright Data API] Request URL: ${requestUrl}`);
+  
+  const response = await fetch(requestUrl, options);
+  
+  if (!response.ok) {
+    let errorText = '';
+    try {
+      const errorJson = await response.json();
+      errorText = JSON.stringify(errorJson);
+    } catch (e) {
+      errorText = await response.text();
+    }
+    
+    const errorMessage = `Bright Data API error: ${response.status} ${response.statusText}. ${errorText}`;
+    console.error(`[Bright Data API] ${errorMessage}`);
+    throw new Error(errorMessage);
+  }
+  
+  const contentType = response.headers.get('content-type') || '';
+  console.log(`[Bright Data API] Response content type: ${contentType}`);
+  
+  if (contentType.includes('application/json')) {
+    console.log('[Bright Data API] Response is JSON, parsing and extracting HTML...');
+    const jsonResponse = await response.json();
+    console.log('[Bright Data API] JSON response keys:', Object.keys(jsonResponse));
+    
+    // Check if the JSON response has HTML content
+    if (jsonResponse.body) {
+      console.log('[Bright Data API] Found HTML in body property');
+      return jsonResponse.body;
+    } else if (jsonResponse.html) {
+      console.log('[Bright Data API] Found HTML in html property');
+      return jsonResponse.html;
+    } else if (jsonResponse.content) {
+      console.log('[Bright Data API] Found HTML in content property');
+      return jsonResponse.content;
+    } else {
+      // Return the whole JSON as string for debugging
+      console.log('[Bright Data API] No HTML found in JSON, returning full JSON');
+      return JSON.stringify(jsonResponse);
+    }
+  } else {
+    // Direct HTML response
+    console.log('[Bright Data API] Response is not JSON, returning as text');
+    return await response.text();
+  }
+}
+
+/**
+ * Fetch a page using Bright Data proxy
+ */
+async function fetchWithProxy(url: string, username: string, password: string): Promise<string> {
+  console.log(`[Bright Data Proxy] Fetching URL: ${url}`);
+  
+  // Encode the URL to ensure correct transmission
+  const encodedUrl = encodeURIComponent(url);
+  
+  const options = {
+    method: 'GET',
+    headers: {
+      'User-Agent': CRAWLER_CONFIG.USER_AGENT,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Cache-Control': 'max-age=0'
+    },
+    redirect: 'follow',
+    timeout: CRAWLER_CONFIG.TIMEOUT_MS
+  };
+  
+  const host = BRIGHT_DATA_CONFIG.PROXY_HOST;
+  const port = BRIGHT_DATA_CONFIG.PROXY_PORT;
+  const proxyUrl = `http://${username}:${password}@${host}:${port}`;
+  console.log(`[Bright Data Proxy] Using proxy URL: ${proxyUrl}`);
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), CRAWLER_CONFIG.TIMEOUT_MS);
+  
   try {
-    const proxyUrl = `http://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}`;
-    console.log(`[BrightData] Using proxy URL: ${proxyUrl.substring(0, 10)}...`);
-    
-    const controller = new AbortController();
-    // Timeout after 30 seconds
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
-    
-    // Fetch with Bright Data proxy using fetch options
+    // Use proxy directly in the URL for Deno fetch
+    // This requires username:password to be in the URL
     const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Cache-Control': 'max-age=0'
-      },
+      ...options,
       signal: controller.signal,
-      // @ts-ignore - Deno fetch has a different signature than standard fetch
       client: {
         proxy: proxyUrl
       }
@@ -67,87 +148,28 @@ async function fetchWithBrightDataProxy(url: string, username: string, password:
     clearTimeout(timeoutId);
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[BrightData] HTTP error! Status: ${response.status}, Response: ${errorText.substring(0, 200)}...`);
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      const responseText = await response.text();
+      console.error(`[Bright Data Proxy] HTTP error: ${response.status} ${response.statusText}`);
+      console.error(`[Bright Data Proxy] Response: ${responseText.substring(0, 500)}...`);
+      throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
     }
+    
+    console.log(`[Bright Data Proxy] Response status: ${response.status}`);
     
     const html = await response.text();
-    console.log(`[BrightData] Successfully fetched HTML (length: ${html.length})`);
+    console.log(`[Bright Data Proxy] Fetched HTML size: ${html.length} characters`);
+    
+    if (html.length < 50) {
+      console.warn(`[Bright Data Proxy] HTML content is suspiciously short: ${html}`);
+    }
     
     return html;
   } catch (error) {
-    console.error(`[BrightData] Error fetching with proxy: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    
     if (error.name === 'AbortError') {
-      throw new Error('Request to Bright Data proxy timed out after 30 seconds');
+      throw new Error(`Request timeout after ${CRAWLER_CONFIG.TIMEOUT_MS}ms`);
     }
-    
     throw error;
-  }
-}
-
-/**
- * Fetches a page using Bright Data API
- */
-async function fetchWithBrightDataApi(url: string, apiKey: string): Promise<string> {
-  try {
-    const apiUrl = 'https://api.brightdata.com/scrape';
-    console.log(`[BrightData] Using API URL: ${apiUrl}`);
-    
-    const controller = new AbortController();
-    // Timeout after 60 seconds
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-    
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        url: url,
-        render: 'html',
-        proxy_type: 'residential',
-        timeout: 30000, // 30 second timeout
-        keep_headers: true,
-        keep_cookies: true,
-        // Optional settings to improve success rate
-        stealth_mode: true,
-        browser_instructions: [
-          { wait_for: 'body' },
-          { wait: 2000 } // Wait 2 seconds after body is loaded
-        ],
-        user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }),
-      signal: controller.signal
-    });
-    
+  } finally {
     clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[BrightData] API error! Status: ${response.status}, Response: ${errorText.substring(0, 200)}...`);
-      throw new Error(`Bright Data API error! Status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    const html = data.body || data.html || '';
-    
-    if (!html || html.length < 50) {
-      console.error(`[BrightData] API returned empty or very short HTML: ${html}`);
-      throw new Error('Bright Data API returned empty or invalid HTML');
-    }
-    
-    console.log(`[BrightData] Successfully fetched HTML from API (length: ${html.length})`);
-    return html;
-  } catch (error) {
-    console.error(`[BrightData] Error fetching with API: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    
-    if (error.name === 'AbortError') {
-      throw new Error('Request to Bright Data API timed out after 60 seconds');
-    }
-    
-    throw error;
   }
 }
