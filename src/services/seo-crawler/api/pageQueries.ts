@@ -129,7 +129,7 @@ export const getPageHeadings = async (pageId: string): Promise<CrawlHeading[]> =
     heading_type: heading.heading_type,
     content: heading.content,
     position: heading.position,
-    // We need to ensure page_url is added elsewhere since it's not in the database result
+    // Add page_url property with empty string as default
     page_url: ''
   }));
   
