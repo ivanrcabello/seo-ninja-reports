@@ -30,6 +30,11 @@ const CrawlerItem = ({ crawl, clientId, onDelete }: CrawlerItemProps) => {
     crawl.status === 'failed' ? 'Error' :
     'En progreso';
 
+  // Determine the number of pages
+  const pagesAnalyzed = crawl.pages_count !== undefined 
+    ? crawl.pages_count 
+    : (crawl.total_pages !== undefined ? crawl.total_pages : 0);
+
   return (
     <div className="bg-card border rounded-lg p-4 hover:border-primary/20 transition-colors">
       <div className="flex flex-col sm:flex-row justify-between">
@@ -44,9 +49,9 @@ const CrawlerItem = ({ crawl, clientId, onDelete }: CrawlerItemProps) => {
           <div className="flex items-center mt-1 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4 mr-1" />
             {formattedDate}
-            {(typeof crawl.pages_count === 'number' && crawl.pages_count > 0) && (
+            {pagesAnalyzed > 0 && (
               <span className="ml-3">
-                {crawl.pages_count} páginas analizadas
+                {pagesAnalyzed} páginas analizadas
               </span>
             )}
           </div>

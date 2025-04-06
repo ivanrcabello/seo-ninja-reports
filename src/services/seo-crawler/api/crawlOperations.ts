@@ -161,7 +161,7 @@ export async function startCrawl(
       client_id: crawlRecord.client_id,
       url: crawlRecord.url,
       domain: crawlRecord.domain,
-      start_url: crawlRecord.url || '', // Add the start_url property here
+      start_url: crawlRecord.url, // Ensure start_url is set with the normalized URL
       status: 'processing', // Use processing status since we already updated it
       started_at: new Date().toISOString(), // Use current time since we just started
       completed_at: null,
@@ -188,7 +188,15 @@ export async function startCrawl(
       mobile_friendly_score: 0,
       performance_score: 0,
       schema_markup_count: 0,
-      summary: null
+      summary: null,
+      
+      // Add compatibility properties
+      pages_count: 0,
+      issues_count: 0,
+      crawled_pages: 0,
+      errors_count: 0,
+      max_pages: mergedSettings.max_pages,
+      options: {}
     };
     
     console.log(`Returning CrawlResult with ID: ${result.id} and status: ${result.status}`);

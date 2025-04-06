@@ -22,7 +22,7 @@ export interface CrawlResult {
   client_id: string;
   url: string;
   domain: string;
-  start_url: string; // Adding this property as it's used in crawlFormatter.ts
+  start_url: string; // Required property for crawlFormatter.ts
   status: 'queued' | 'processing' | 'completed' | 'failed' | 'pending';
   error_message?: string | null;
   started_at?: string;
@@ -51,7 +51,7 @@ export interface CrawlResult {
   schema_markup_count?: number;
   summary?: any;
   
-  // Add missing properties for compatibility with component
+  // Add compatibility properties required by components
   pages_count?: number;
   issues_count?: number;
   crawled_pages?: number;
