@@ -104,8 +104,8 @@ export const getCrawlLinks = async (crawlId: string) => {
   const formattedLinks = (data || []).map(link => ({
     ...link,
     page_url: link.page?.url || '',
-    anchor_text: link.anchor_text || link.text || '',
-    is_followed: link.is_followed !== undefined ? link.is_followed : link.follow
+    anchor_text: link.anchor_text || link.link_text || '',
+    is_followed: link.follow !== undefined ? link.follow : true
   }));
   
   return formattedLinks;
