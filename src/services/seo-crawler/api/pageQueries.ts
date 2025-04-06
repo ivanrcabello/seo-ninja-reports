@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlHeading, CrawlIssue, CrawlLink } from '../types';
 
@@ -75,7 +74,16 @@ export const getPageLinks = async (pageId: string) => {
   }
   
   console.log(`[PageQueries] Found ${data?.length || 0} links for page ID: ${pageId}`);
-  return data || [];
+  
+  // Format the data to ensure all fields match the CrawlLink type
+  const formattedLinks = (data || []).map(link => ({
+    ...link,
+    text: link.anchor_text || link.link_text || '',
+    is_followed: typeof link.follow === 'boolean' ? link.follow : true,
+    created_at: link.created_at || new Date().toISOString()
+  }));
+  
+  return formattedLinks;
 };
 
 /**
@@ -100,12 +108,14 @@ export const getCrawlLinks = async (crawlId: string) => {
   
   console.log(`[PageQueries] Found ${data?.length || 0} links for crawl ID: ${crawlId}`);
   
-  // Format returned data to ensure the page_url field is populated
+  // Format returned data to ensure all required properties are present
   const formattedLinks = (data || []).map(link => ({
     ...link,
     page_url: link.page?.url || '',
     anchor_text: link.anchor_text || link.link_text || '',
-    is_followed: link.follow !== undefined ? link.follow : true
+    text: link.anchor_text || link.link_text || '',
+    is_followed: link.follow !== undefined ? link.follow : true,
+    created_at: link.created_at || new Date().toISOString()
   }));
   
   return formattedLinks;

@@ -33,9 +33,32 @@ const LinksTab: React.FC<LinksTabProps> = ({
         setLocalLoading(true);
         try {
           console.log("[LinksTab] Fetching links directly for page:", selectedPage.id);
-          const links = await getPageLinks(selectedPage.id);
-          console.log("[LinksTab] Fetched links directly:", links.length);
-          setLocalLinks(links);
+          const fetchedLinks = await getPageLinks(selectedPage.id);
+          console.log("[LinksTab] Fetched links directly:", fetchedLinks.length);
+          
+          // Convert the fetched links to the CrawlLink format with all required properties
+          const formattedLinks: CrawlLink[] = fetchedLinks.map(link => ({
+            id: link.id,
+            crawl_id: link.crawl_id,
+            page_id: link.page_id,
+            url: link.url,
+            text: link.link_text || link.anchor_text || '',
+            anchor_text: link.anchor_text || link.link_text || '',
+            is_internal: link.is_internal,
+            is_followed: link.follow !== undefined ? link.follow : true,
+            follow: link.follow !== undefined ? link.follow : true,
+            is_broken: link.is_broken || false,
+            status_code: link.status_code || 200,
+            created_at: link.created_at || new Date().toISOString(),
+            rel_attributes: link.rel_attributes || [],
+            link_text: link.link_text || link.anchor_text || '',
+            link_location: link.link_location || '',
+            link_type: link.link_type || '',
+            nofollow: link.nofollow || false,
+            page_url: '' // Add any other required properties
+          }));
+          
+          setLocalLinks(formattedLinks);
         } catch (error) {
           console.error("[LinksTab] Error fetching links:", error);
         } finally {

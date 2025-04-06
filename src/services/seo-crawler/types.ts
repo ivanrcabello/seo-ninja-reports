@@ -151,6 +151,7 @@ export interface CrawlLink {
   link_location?: string;
   link_text?: string;
   link_type?: string;
+  page_url?: string; // Added to match what's returned from the API
 }
 
 // Crawl heading data
