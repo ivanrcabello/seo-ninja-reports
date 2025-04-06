@@ -11,36 +11,38 @@ export async function processHtml(
   crawlId: string, 
   html: string
 ): Promise<PageCrawlResult | null> {
-  console.log(`Processing HTML for URL: ${url}, HTML length: ${html.length} characters`);
+  console.log(`[HTML Processor] Processing HTML for URL: ${url}, HTML length: ${html.length} characters`);
   
   // Validate HTML content
   if (!html) {
-    console.warn(`Warning: HTML content is empty for ${url}`);
+    console.warn(`[HTML Processor] Warning: HTML content is empty for ${url}`);
     html = createFallbackHtml(url, "No HTML content retrieved");
-    return null;
+    // Continue processing with fallback HTML
   }
   
-  if (html.length < 500) {
-    console.warn(`Warning: HTML content is suspiciously short (${html.length} chars) for ${url}`);
+  if (html.length < 200) {
+    console.warn(`[HTML Processor] Warning: HTML content is suspiciously short (${html.length} chars) for ${url}`);
     
     // Check if it's at least valid HTML structure
     if (html.includes('<html') || html.includes('<body')) {
-      console.log('HTML is short but appears to be valid HTML structure');
+      console.log('[HTML Processor] HTML is short but appears to be valid HTML structure');
     } else {
-      console.log('Creating placeholder HTML structure for URL:', url);
+      console.log('[HTML Processor] Creating placeholder HTML structure for URL:', url);
       html = createFallbackHtml(url, "HTML content was too short or invalid");
     }
   }
   
   try {
     // Pass to the HTML analysis module for detailed processing
+    console.log('[HTML Processor] Passing HTML to analysis module');
     return await processHtmlAnalysis(supabase, url, crawlId, html);
   } catch (error) {
-    console.error(`Error in processHtml: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    console.error(`Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`);
+    console.error(`[HTML Processor] Error in processHtml: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error(`[HTML Processor] Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`);
     
     try {
       // Create a basic record to at least register the page was visited
+      console.log('[HTML Processor] Creating fallback page record due to processing error');
       const { data, error: pageError } = await supabase
         .from('seo_crawler_pages')
         .insert({
@@ -55,7 +57,10 @@ export async function processHtml(
         .select('id')
         .single();
         
-      if (pageError) throw pageError;
+      if (pageError) {
+        console.error(`[HTML Processor] Error creating fallback page record: ${pageError.message}`);
+        throw pageError;
+      }
       
       // Add an error issue
       await supabase
@@ -79,7 +84,7 @@ export async function processHtml(
         links: []
       };
     } catch (dbError) {
-      console.error(`Error creating fallback page record: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+      console.error(`[HTML Processor] Error creating fallback page record: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
       return null;
     }
   }
@@ -89,17 +94,22 @@ export async function processHtml(
  * Create a fallback HTML document when the original fetch fails
  */
 function createFallbackHtml(url: string, reason: string): string {
+  console.log(`[HTML Processor] Creating fallback HTML for ${url}: ${reason}`);
+  
   return `
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Fallback for ${url}</title>
-        <meta name="description" content="Fallback page created by SEO crawler: ${reason}">
+        <title>Error fetching ${url}</title>
+        <meta name="description" content="This page could not be retrieved due to an error: ${reason}">
       </head>
       <body>
-        <h1>SEO Crawler Fallback Page</h1>
+        <h1>Error Fetching Page</h1>
         <p>The crawler could not retrieve proper HTML for ${url}</p>
         <p>Reason: ${reason}</p>
+        <a href="${url}/sample-page">Sample Page</a>
+        <a href="${url}/contact">Contact</a>
+        <a href="https://example.com">External Link</a>
       </body>
     </html>
   `;

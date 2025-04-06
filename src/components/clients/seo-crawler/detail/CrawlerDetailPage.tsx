@@ -9,6 +9,8 @@ import CrawlerReportView from '@/components/reports/report-viewer/CrawlerReportV
 import CrawlerErrorDisplay from './CrawlerErrorDisplay';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 interface CrawlerDetailPageProps {
   clientId: string;
@@ -32,6 +34,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPageData, setIsLoadingPageData] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
   const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
@@ -53,6 +56,18 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       
       const pagesData = await getCrawlPages(crawlId);
       console.log('Pages data:', pagesData);
+      
+      // Only proceed if we have pages
+      if (!pagesData || pagesData.length === 0) {
+        console.log('No pages found, may still be processing');
+        if (result.status === 'processing') {
+          toast.info('El análisis está en proceso. Las páginas se mostrarán cuando estén disponibles.');
+        } else {
+          toast.warning('No se encontraron páginas para este análisis.');
+        }
+        setIsLoading(false);
+        return;
+      }
       
       const formattedPages = pagesData.map((page: any) => ({
         ...page,
@@ -124,12 +139,20 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       toast.error('Error al cargar los datos del análisis');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
   
+  // Initial load
   useEffect(() => {
     loadData();
   }, [crawlId]);
+  
+  // Function to reload data (refresh)
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadData();
+  };
   
   const loadPageData = async (page: CrawlPage, allIssues: CrawlIssue[] = [], allHeadings: CrawlHeading[] = []) => {
     if (!page.id) return;
@@ -232,6 +255,38 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       </div>
     );
   }
+  
+  // Show a specific message for processing crawls
+  if (crawl.status === 'processing') {
+    return (
+      <div className="space-y-6">
+        <CrawlerDetailHeader 
+          crawl={crawl} 
+          onBack={onBack}
+          showReport={() => setShowReport(!showReport)}
+          isReportShown={showReport}
+        />
+        
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mb-2 text-primary" />
+          <h2 className="text-xl font-semibold">Análisis en proceso</h2>
+          <p className="text-muted-foreground text-center max-w-md">
+            El análisis SEO está en curso. Los resultados se mostrarán automáticamente cuando esté completo.
+          </p>
+          <div className="mt-8">
+            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} className="flex items-center gap-2">
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {isRefreshing ? 'Actualizando...' : 'Actualizar estado'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -244,7 +299,27 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       
       {/* Show error display if there's an error and status is failed */}
       {crawl.error_message && crawl.status === 'failed' && (
-        <CrawlerErrorDisplay crawl={crawl} onRefresh={loadData} />
+        <CrawlerErrorDisplay crawl={crawl} onRefresh={handleRefresh} />
+      )}
+      
+      {/* Add refresh button if completed or failed */}
+      {(crawl.status === 'completed' || crawl.status === 'failed') && (
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleRefresh} 
+            variant="outline" 
+            size="sm"
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            {isRefreshing ? 'Actualizando...' : 'Actualizar datos'}
+          </Button>
+        </div>
       )}
       
       {showReport ? (

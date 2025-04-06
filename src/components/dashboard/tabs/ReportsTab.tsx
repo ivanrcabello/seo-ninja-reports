@@ -9,6 +9,8 @@ import { FileText, Plus, Search, BarChart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { getCrawlResults } from '@/services/seo-crawler/api';
 import { CrawlResult } from '@/services/seo-crawler/types';
+import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export interface ReportsTabProps {
   reports?: any[];
@@ -16,7 +18,7 @@ export interface ReportsTabProps {
 
 const ReportsTab: React.FC<ReportsTabProps> = (props) => {
   const { reports, isLoading } = useReports();
-  const { clients } = useClients();
+  const { clients, isLoading: isClientsLoading } = useClients();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [crawlResults, setCrawlResults] = useState<CrawlResult[]>([]);
   const [isCrawlsLoading, setIsCrawlsLoading] = useState(true);
@@ -29,11 +31,16 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
         // Get all crawl results for all clients
         const allCrawlResults: CrawlResult[] = [];
         
+        console.log("Loading crawler results for clients:", clients.length);
+        
         // Fetch crawl results for each client
         for (const client of clients) {
           try {
+            console.log(`Fetching crawler results for client: ${client.id}`);
             const clientCrawls = await getCrawlResults(client.id);
+            
             if (clientCrawls && Array.isArray(clientCrawls)) {
+              console.log(`Found ${clientCrawls.length} crawls for client ${client.id}`);
               allCrawlResults.push(...clientCrawls);
             }
           } catch (error) {
@@ -45,6 +52,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
         setCrawlResults(allCrawlResults);
       } catch (error) {
         console.error('Error loading SEO crawler results:', error);
+        toast.error("Error al cargar los análisis SEO");
       } finally {
         setIsCrawlsLoading(false);
       }
@@ -73,6 +81,9 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
     return client?.name || 'Cliente no encontrado';
   };
 
+  // Handle loading states
+  const isAllLoading = isLoading || isClientsLoading || isCrawlsLoading;
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -103,11 +114,16 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
             </div>
           </div>
 
-          {isLoading && isCrawlsLoading ? (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground">Cargando informes...</p>
+          {isAllLoading ? (
+            <div className="space-y-6">
+              <Skeleton className="h-8 w-64 mb-4" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Skeleton className="h-32" />
+                <Skeleton className="h-32" />
+                <Skeleton className="h-32" />
+              </div>
             </div>
-          ) : ((filteredReports?.length === 0 || !filteredReports) && (!filteredCrawls || filteredCrawls?.length === 0)) ? (
+          ) : ((!filteredReports || filteredReports.length === 0) && (!filteredCrawls || filteredCrawls.length === 0)) ? (
             <div className="py-8 text-center">
               <p className="text-muted-foreground mb-4">No se encontraron informes</p>
               <Button asChild variant="outline" className="gap-2">
@@ -120,11 +136,11 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
           ) : (
             <div className="space-y-6">
               {/* Automated SEO Reports Section */}
-              {filteredReports && filteredReports?.length > 0 && (
+              {filteredReports && filteredReports.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium mb-4">Informes SEO Automáticos</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredReports?.map(report => (
+                    {filteredReports.map(report => (
                       <Link to={`/reports/${report.id}`} key={report.id}>
                         <Card className="hover:shadow-md transition-shadow">
                           <CardHeader>
@@ -143,7 +159,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
               )}
 
               {/* Technical SEO Reports Section */}
-              {filteredCrawls && filteredCrawls?.length > 0 && (
+              {filteredCrawls && filteredCrawls.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium mb-4">Análisis SEO Técnico</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -156,7 +172,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
                           <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                               <CardTitle className="text-sm font-medium truncate">
-                                {crawl.domain}
+                                {crawl.domain || new URL(crawl.url).hostname}
                               </CardTitle>
                               <div className={`px-2 py-1 text-xs rounded-full ${
                                 crawl.status === 'completed' ? 'bg-green-100 text-green-800' :
