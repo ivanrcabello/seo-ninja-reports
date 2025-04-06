@@ -129,7 +129,8 @@ export const getPageHeadings = async (pageId: string): Promise<CrawlHeading[]> =
     heading_type: heading.heading_type,
     content: heading.content,
     position: heading.position,
-    page_url: heading.page_url || ''
+    // We need to ensure page_url is added elsewhere since it's not in the database result
+    page_url: ''
   }));
   
   return formattedHeadings;

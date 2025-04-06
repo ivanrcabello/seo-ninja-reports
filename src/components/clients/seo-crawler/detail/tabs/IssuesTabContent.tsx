@@ -118,7 +118,7 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
                 </AlertDescription>
               </Alert>
             ) : pageIssues.length === 0 ? (
-              <Alert variant="success">
+              <Alert variant="default" className="bg-green-50 border-green-200 text-green-800">
                 <Check className="h-4 w-4" />
                 <AlertTitle>No se encontraron problemas</AlertTitle>
                 <AlertDescription>
@@ -200,6 +200,18 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
 
 // Table component for displaying issues
 const IssuesTable: React.FC<{ issues: CrawlIssue[] }> = ({ issues }) => {
+  // Get icon for issue (moved inside the component where it's used)
+  const getIssueIcon = (severity: string) => {
+    switch (severity) {
+      case 'critical':
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      case 'high':
+        return <AlertTriangle className="h-5 w-5 text-orange-500" />;
+      default:
+        return <AlertTriangle className="h-5 w-5 text-amber-400" />;
+    }
+  };
+  
   return (
     <div className="border rounded-md">
       <Table>
