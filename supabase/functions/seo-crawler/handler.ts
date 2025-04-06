@@ -66,11 +66,6 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
       console.log('Bright Data API key starts with:', brightDataApiKey.substring(0, 5) + '...');
     }
     
-    // Set Bright Data credentials as environment variables if provided
-    if (brightDataUsername) Deno.env.set("BRIGHT_DATA_USERNAME", brightDataUsername);
-    if (brightDataPassword) Deno.env.set("BRIGHT_DATA_PASSWORD", brightDataPassword);
-    if (brightDataApiKey) Deno.env.set("BRIGHT_DATA_API_KEY", brightDataApiKey);
-
     // Update crawl status to processing
     const { error: updateError } = await supabase
       .from('seo_crawler_crawls')
@@ -85,7 +80,7 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
       throw new Error(`Error updating crawl status: ${updateError.message}`);
     }
 
-    // Start the crawl process directly
+    // Start the crawl process directly - passing the credentials directly
     console.log(`Starting page crawl for ${url}...`);
     const result = await crawlPage(supabase, url, crawlId, brightDataUsername, brightDataPassword, brightDataApiKey);
     console.log(`Crawl completed, result: ${result ? 'success' : 'failed'}`);

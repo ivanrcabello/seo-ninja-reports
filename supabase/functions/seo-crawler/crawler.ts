@@ -27,7 +27,7 @@ export async function crawlPage(
       console.log(`API Key first 5 chars: ${brightDataApiKey.substring(0, 5)}...`);
     }
     
-    // Fetch the page content using the Bright Data client
+    // Fetch the page content using the Bright Data client - passing credentials directly
     console.log(`Fetching content for URL: ${url}`);
     const html = await fetchPage(url, brightDataUsername, brightDataPassword, brightDataApiKey);
     
