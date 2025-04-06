@@ -14,6 +14,7 @@ import Precios from '@/pages/Precios';
 import SeoTecnico from '@/pages/servicios/SeoTecnico';
 import ContenidoSeo from '@/pages/servicios/ContenidoSeo';
 import SeoLocal from '@/pages/servicios/SeoLocal';
+import CrawlerDetailPage from '@/pages/CrawlerDetailPage';
 
 export const appRoutes = [
   {
@@ -62,7 +63,7 @@ export const appRoutes = [
   },
   {
     path: '/clients/:clientId/crawler/:crawlId',
-    element: <AuthGuard><ReportDetail /></AuthGuard>,
+    element: <AuthGuard><CrawlerDetailPage /></AuthGuard>,
   },
   {
     path: '*',
