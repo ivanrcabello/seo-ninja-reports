@@ -100,7 +100,8 @@ const Settings = () => {
               <AlertDescription>
                 Para aprovechar todas las funcionalidades, configura las APIs necesarias.
                 OpenAI es obligatoria para la generación de informes. Google PageSpeed
-                es opcional pero añade funcionalidades adicionales.
+                es opcional pero añade funcionalidades adicionales. Bright Data es necesaria
+                para el análisis SEO técnico.
               </AlertDescription>
             </Alert>
           </AnimatedContainer>
@@ -125,6 +126,8 @@ const Settings = () => {
                     setBrightDataUsername={setBrightDataUsername}
                     brightDataPassword={brightDataPassword}
                     setBrightDataPassword={setBrightDataPassword}
+                    brightDataApiKey={brightDataApiKey}
+                    setBrightDataApiKey={setBrightDataApiKey}
                   />
                 </TabsContent>
                 

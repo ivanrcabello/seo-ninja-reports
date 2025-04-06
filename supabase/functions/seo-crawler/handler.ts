@@ -63,7 +63,7 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
       Deno.env.set("BRIGHT_DATA_PASSWORD", brightDataPassword);
       
       if (brightDataApiKey) {
-        console.log('Using custom Bright Data API key');
+        console.log('Using custom Bright Data API key:', brightDataApiKey.substring(0, 10) + '...');
         Deno.env.set("BRIGHT_DATA_API_KEY", brightDataApiKey);
       }
     } else {

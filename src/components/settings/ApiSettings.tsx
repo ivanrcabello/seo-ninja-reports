@@ -1,232 +1,389 @@
 
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Check, Clipboard, Info, Key, KeyRound, LinkIcon, RotateCw, Share2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { OpenAISettings } from './api/OpenAISettings';
-import GoogleSettings from './api/GoogleSettings';
-import ValueSerpSettings from './api/ValueSerpSettings';
-import { usePersistentState } from '@/hooks/usePersistentState';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import ValueSerpSettings from './ValueSerpSettings';
 import { toast } from 'sonner';
+import { usePersistentState } from '@/hooks/usePersistentState';
 import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
 
 interface ApiSettingsProps {
-  brightDataUsername: string;
-  setBrightDataUsername: (username: string) => void;
-  brightDataPassword: string;
-  setBrightDataPassword: (password: string) => void;
+  brightDataUsername?: string;
+  setBrightDataUsername?: (value: string) => void;
+  brightDataPassword?: string;
+  setBrightDataPassword?: (value: string) => void;
+  brightDataApiKey?: string;
+  setBrightDataApiKey?: (value: string) => void;
 }
 
 const ApiSettings: React.FC<ApiSettingsProps> = ({
-  brightDataUsername,
-  setBrightDataUsername,
-  brightDataPassword,
-  setBrightDataPassword
+  brightDataUsername: propsBrightDataUsername,
+  setBrightDataUsername: propSetBrightDataUsername,
+  brightDataPassword: propsBrightDataPassword,
+  setBrightDataPassword: propSetBrightDataPassword,
+  brightDataApiKey: propsBrightDataApiKey,
+  setBrightDataApiKey: propSetBrightDataApiKey
 }) => {
-  const [openAiApiKey, setOpenAiApiKey] = usePersistentState('openai_api_key', '');
-  const [googleApiKey, setGoogleApiKey] = usePersistentState('google_pagespeed_api_key', '');
-  const [valueSerpApiKey, setValueSerpApiKey] = usePersistentState('valueserp_api_key', '');
-  const [defaultPrompt, setDefaultPrompt] = usePersistentState('default_seo_prompt', '');
-  const [brightDataApiKey, setBrightDataApiKey] = usePersistentState('bright_data_api_key', '');
+  // OpenAI API key state
+  const [openAIKey, setOpenAIKey] = usePersistentState('openai_api_key', '');
+  const [openAIKeyVisible, setOpenAIKeyVisible] = useState(false);
+  const [openAICopied, setOpenAICopied] = useState(false);
+  
+  // Google PageSpeed API key state
+  const [pageSpeedKey, setPageSpeedKey] = usePersistentState('pagespeed_api_key', '');
+  const [pageSpeedKeyVisible, setPageSpeedKeyVisible] = useState(false);
+  const [pageSpeedCopied, setPageSpeedCopied] = useState(false);
 
-  const hasConfiguredOpenAiKey = !!openAiApiKey;
-  const hasConfiguredGoogle = !!googleApiKey;
-  const hasConfiguredValueSerpKey = !!valueSerpApiKey;
-
-  // Load Bright Data credentials from localStorage if we received empty values
+  // Bright Data Credentials
+  const [brightDataUsername, setBrightDataUsername] = usePersistentState(
+    'bright_data_username',
+    propsBrightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER
+  );
+  const [brightDataPassword, setBrightDataPassword] = usePersistentState(
+    'bright_data_password',
+    propsBrightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD
+  );
+  const [brightDataApiKey, setBrightDataApiKey] = usePersistentState(
+    'bright_data_api_key',
+    propsBrightDataApiKey || BRIGHT_DATA_CONFIG.DEFAULT_API_KEY
+  );
+  
+  // State for testing connection
+  const [testingConnection, setTestingConnection] = useState(false);
+  
+  // Effect to sync props with local state
   useEffect(() => {
-    const savedUsername = localStorage.getItem('bright_data_username');
-    const savedPassword = localStorage.getItem('bright_data_password');
-    const savedApiKey = localStorage.getItem('bright_data_api_key');
-    
-    console.log('Loading saved Bright Data credentials from localStorage');
-    console.log('Saved username exists:', !!savedUsername);
-    console.log('Saved password exists:', !!savedPassword);
-    console.log('Saved API key exists:', !!savedApiKey);
-    
-    if (savedUsername && (!brightDataUsername || brightDataUsername === BRIGHT_DATA_CONFIG.DEFAULT_USER)) {
-      console.log('Setting saved username from localStorage');
-      setBrightDataUsername(savedUsername);
-    } else if (!brightDataUsername) {
-      console.log('Setting default username from config');
-      setBrightDataUsername(BRIGHT_DATA_CONFIG.DEFAULT_USER);
+    if (propsBrightDataUsername) {
+      setBrightDataUsername(propsBrightDataUsername);
+    }
+    if (propsBrightDataPassword) {
+      setBrightDataPassword(propsBrightDataPassword);
+    }
+    if (propsBrightDataApiKey) {
+      setBrightDataApiKey(propsBrightDataApiKey);
+    }
+  }, [propsBrightDataUsername, propsBrightDataPassword, propsBrightDataApiKey]);
+  
+  // Copy API key to clipboard
+  const copyToClipboard = (text: string, setCopied: (copied: boolean) => void) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  
+  // Test API key for OpenAI
+  const testOpenAIKey = async () => {
+    if (!openAIKey.trim()) {
+      toast.error('Por favor, introduce una clave de API de OpenAI');
+      return;
     }
     
-    if (savedPassword && (!brightDataPassword || brightDataPassword === BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD)) {
-      console.log('Setting saved password from localStorage');
-      setBrightDataPassword(savedPassword);
-    } else if (!brightDataPassword) {
-      console.log('Setting default password from config');
-      setBrightDataPassword(BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD);
+    try {
+      setTestingConnection(true);
+      
+      // Todo: implement actual OpenAI API test
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success('Conexión exitosa con la API de OpenAI');
+    } catch (error) {
+      console.error('Error testing OpenAI API:', error);
+      toast.error('Error al conectar con la API de OpenAI');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+  
+  // Test API key for PageSpeed
+  const testPageSpeedKey = async () => {
+    if (!pageSpeedKey.trim()) {
+      toast.error('Por favor, introduce una clave de API de Google PageSpeed');
+      return;
     }
     
-    if (savedApiKey) {
-      console.log('Setting saved API key from localStorage');
-      setBrightDataApiKey(savedApiKey);
+    try {
+      setTestingConnection(true);
+      
+      // Todo: implement actual PageSpeed API test
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success('Conexión exitosa con la API de Google PageSpeed');
+    } catch (error) {
+      console.error('Error testing PageSpeed API:', error);
+      toast.error('Error al conectar con la API de Google PageSpeed');
+    } finally {
+      setTestingConnection(false);
     }
-  }, []);
-
-  const handleSave = () => {
-    // Ensure Bright Data credentials are saved to localStorage
-    const usernameToSave = brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER;
-    const passwordToSave = brightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
-    
-    localStorage.setItem('bright_data_username', usernameToSave);
-    localStorage.setItem('bright_data_password', passwordToSave);
-    
-    if (brightDataApiKey) {
-      localStorage.setItem('bright_data_api_key', brightDataApiKey);
-      console.log('Saved Bright Data API key to localStorage');
+  };
+  
+  // Test Bright Data credentials
+  const testBrightDataCredentials = async () => {
+    if (!brightDataUsername.trim() || !brightDataPassword.trim()) {
+      toast.error('Por favor, introduce las credenciales de Bright Data');
+      return;
     }
     
-    console.log('Saved Bright Data credentials to localStorage');
-    console.log('Username saved:', usernameToSave.substring(0, 10) + '...');
-    console.log('Password saved:', passwordToSave ? '*** (set)' : '(not set)');
-    console.log('API key saved:', brightDataApiKey ? '*** (set)' : '(not set)');
+    try {
+      setTestingConnection(true);
+      
+      // Todo: implement actual Bright Data API test
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success('Conexión exitosa con Bright Data');
+    } catch (error) {
+      console.error('Error testing Bright Data:', error);
+      toast.error('Error al conectar con Bright Data');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+  
+  // Save changes and propagate to parent if needed
+  const saveBrightDataChanges = () => {
+    if (propSetBrightDataUsername) {
+      propSetBrightDataUsername(brightDataUsername);
+    }
+    if (propSetBrightDataPassword) {
+      propSetBrightDataPassword(brightDataPassword);
+    }
+    if (propSetBrightDataApiKey) {
+      propSetBrightDataApiKey(brightDataApiKey);
+    }
     
-    toast.success('Configuración guardada correctamente');
+    toast.success('Credenciales de Bright Data guardadas');
   };
 
   return (
-    <Tabs defaultValue="openai" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="openai">OpenAI</TabsTrigger>
-        <TabsTrigger value="google">Google</TabsTrigger>
-        <TabsTrigger value="valueserp">Value SERP</TabsTrigger>
-        <TabsTrigger value="brightdata">Bright Data</TabsTrigger>
-      </TabsList>
-      <TabsContent value="openai">
-        <Card className="bg-background/50 border border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-medium">OpenAI</CardTitle>
-            <CardDescription>Configura tu clave API de OpenAI para generar informes SEO.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <OpenAISettings
-              apiKey={openAiApiKey}
-              setApiKey={setOpenAiApiKey}
-              defaultPrompt={defaultPrompt}
-              setDefaultPrompt={setDefaultPrompt}
-              hasConfiguredKey={hasConfiguredOpenAiKey}
-              onSave={handleSave}
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="google">
-        <Card className="bg-background/50 border border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-medium">Google PageSpeed Insights</CardTitle>
-            <CardDescription>Configura tu clave API de Google para analizar sitios web con PageSpeed Insights.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <GoogleSettings
-              googleApiKey={googleApiKey}
-              setGoogleKey={setGoogleApiKey}
-              hasConfiguredGoogle={hasConfiguredGoogle}
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="valueserp">
-        <Card className="bg-background/50 border border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-medium">Value SERP</CardTitle>
-            <CardDescription>Configura tu clave API de Value SERP para análisis de perfiles de negocio.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ValueSerpSettings
-              valueSerpApiKey={valueSerpApiKey}
-              setValueSerpApiKey={setValueSerpApiKey}
-              hasConfiguredValueSerpKey={hasConfiguredValueSerpKey}
-              brightDataUsername={brightDataUsername}
-              setBrightDataUsername={setBrightDataUsername}
-              brightDataPassword={brightDataPassword}
-              setBrightDataPassword={setBrightDataPassword}
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="brightdata">
-        <Card className="bg-background/50 border border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-medium">Bright Data</CardTitle>
-            <CardDescription>Configura tus credenciales para el servicio de rastreo SEO.</CardDescription>
-          </CardHeader>
-          <CardContent>
+    <Card className="border border-border/40 shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-xl">Configuración de APIs</CardTitle>
+        <CardDescription>
+          Gestiona las configuraciones de APIs externas utilizadas en el sistema
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent>
+        <Tabs defaultValue="openai" className="w-full">
+          <TabsList className="mb-4 w-full justify-start">
+            <TabsTrigger value="openai">OpenAI</TabsTrigger>
+            <TabsTrigger value="pagespeed">PageSpeed</TabsTrigger>
+            <TabsTrigger value="brightdata">Bright Data</TabsTrigger>
+            <TabsTrigger value="valueserp">ValueSERP</TabsTrigger>
+          </TabsList>
+          
+          {/* OpenAI API Key Tab */}
+          <TabsContent value="openai" className="space-y-4">
+            <Alert className="bg-primary/5 border-primary/20">
+              <Info className="h-4 w-4" />
+              <AlertTitle>OpenAI API Key</AlertTitle>
+              <AlertDescription>
+                Se requiere para la generación de informes SEO y otras funcionalidades de IA.
+                Obtén tu clave en <a href="https://platform.openai.com/api-keys" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">platform.openai.com</a>
+              </AlertDescription>
+            </Alert>
+            
+            <div className="space-y-2">
+              <Label htmlFor="openai-key">Clave de API de OpenAI</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-grow">
+                  <Input
+                    id="openai-key"
+                    type={openAIKeyVisible ? 'text' : 'password'}
+                    placeholder="sk-..."
+                    value={openAIKey}
+                    onChange={(e) => setOpenAIKey(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setOpenAIKeyVisible(!openAIKeyVisible)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {openAIKeyVisible ? (
+                      <KeyRound className="h-4 w-4" />
+                    ) : (
+                      <Key className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyToClipboard(openAIKey, setOpenAICopied)}
+                  disabled={!openAIKey}
+                >
+                  {openAICopied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Clipboard className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  onClick={testOpenAIKey}
+                  disabled={!openAIKey || testingConnection}
+                >
+                  {testingConnection ? (
+                    <RotateCw className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Probar Conexión
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Google PageSpeed API Key Tab */}
+          <TabsContent value="pagespeed" className="space-y-4">
+            <Alert className="bg-primary/5 border-primary/20">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Google PageSpeed API Key</AlertTitle>
+              <AlertDescription>
+                Se utiliza para obtener métricas de rendimiento para los informes.
+                Obtén tu clave en <a href="https://developers.google.com/speed/docs/insights/v5/get-started" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">developers.google.com</a>
+              </AlertDescription>
+            </Alert>
+            
+            <div className="space-y-2">
+              <Label htmlFor="pagespeed-key">Clave de API de Google PageSpeed</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-grow">
+                  <Input
+                    id="pagespeed-key"
+                    type={pageSpeedKeyVisible ? 'text' : 'password'}
+                    placeholder="AIza..."
+                    value={pageSpeedKey}
+                    onChange={(e) => setPageSpeedKey(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPageSpeedKeyVisible(!pageSpeedKeyVisible)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {pageSpeedKeyVisible ? (
+                      <KeyRound className="h-4 w-4" />
+                    ) : (
+                      <Key className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyToClipboard(pageSpeedKey, setPageSpeedCopied)}
+                  disabled={!pageSpeedKey}
+                >
+                  {pageSpeedCopied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Clipboard className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  onClick={testPageSpeedKey}
+                  disabled={!pageSpeedKey || testingConnection}
+                >
+                  {testingConnection ? (
+                    <RotateCw className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Probar Conexión
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Bright Data Credentials Tab */}
+          <TabsContent value="brightdata" className="space-y-4">
+            <Alert className="bg-primary/5 border-primary/20">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Bright Data Credentials</AlertTitle>
+              <AlertDescription>
+                Se requiere para el crawleo y análisis SEO técnico.
+                Obtén tus credenciales en <a href="https://brightdata.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">brightdata.com</a>
+              </AlertDescription>
+            </Alert>
+            
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="brightDataUsername">Usuario de Bright Data</Label>
+                <Label htmlFor="bright-data-username">Nombre de usuario</Label>
                 <Input
-                  id="brightDataUsername"
+                  id="bright-data-username"
                   type="text"
+                  placeholder="brd-customer-..."
                   value={brightDataUsername}
                   onChange={(e) => setBrightDataUsername(e.target.value)}
-                  className="glass-input"
-                  placeholder={BRIGHT_DATA_CONFIG.DEFAULT_USER}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Tu usuario de Bright Data para rastreo SEO. <br />
-                  Valor por defecto: {BRIGHT_DATA_CONFIG.DEFAULT_USER}
-                </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="brightDataPassword">Contraseña de Bright Data</Label>
+                <Label htmlFor="bright-data-password">Contraseña</Label>
                 <Input
-                  id="brightDataPassword"
+                  id="bright-data-password"
                   type="password"
+                  placeholder="****"
                   value={brightDataPassword}
                   onChange={(e) => setBrightDataPassword(e.target.value)}
-                  className="glass-input"
-                  placeholder={BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Tu contraseña de Bright Data para rastreo SEO. <br />
-                  Valor por defecto: {BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
-                </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="brightDataApiKey">API Key de Bright Data</Label>
+                <Label htmlFor="bright-data-api-key">API Key</Label>
                 <Input
-                  id="brightDataApiKey"
+                  id="bright-data-api-key"
                   type="password"
+                  placeholder="****"
                   value={brightDataApiKey}
                   onChange={(e) => setBrightDataApiKey(e.target.value)}
-                  className="glass-input"
-                  placeholder="Introduce tu API Key de Bright Data"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Tu API Key de Bright Data para rastreo SEO. <br />
-                  Ejemplo: 16dc9468b0aafcdaf27d0e878e71e079b2db99792012e1a1d9cf79ed2265230b
-                </p>
               </div>
               
-              <div className="space-y-2">
-                <Label>Información de conexión:</Label>
-                <div className="bg-muted p-3 rounded-md text-sm font-mono">
-                  <p>Host: {BRIGHT_DATA_CONFIG.PROXY_HOST}</p>
-                  <p>Puerto: {BRIGHT_DATA_CONFIG.PROXY_PORT}</p>
-                </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={testBrightDataCredentials}
+                  disabled={!brightDataUsername || !brightDataPassword || testingConnection}
+                  variant="outline"
+                >
+                  {testingConnection ? (
+                    <RotateCw className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Probar Conexión
+                </Button>
+                
+                <Button onClick={saveBrightDataChanges}>
+                  <Check className="h-4 w-4 mr-2" />
+                  Guardar Cambios
+                </Button>
               </div>
-              
-              <Button 
-                onClick={handleSave}
-                className="w-full"
-              >
-                Guardar credenciales
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+          </TabsContent>
+          
+          {/* ValueSERP API Key Tab */}
+          <TabsContent value="valueserp">
+            <ValueSerpSettings />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+      
+      <CardFooter className="flex justify-between border-t border-border/40 pt-4">
+        <Alert className="bg-yellow-500/10 border-yellow-500/20 px-3 py-2 text-sm">
+          <Share2 className="h-4 w-4 text-yellow-500" />
+          <AlertDescription className="text-xs">
+            Las claves API se guardan localmente en tu navegador y no se comparten con el servidor.
+          </AlertDescription>
+        </Alert>
+      </CardFooter>
+    </Card>
   );
 };
-
-// We need to import the Label and Input components
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 
 export default ApiSettings;

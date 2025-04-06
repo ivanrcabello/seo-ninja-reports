@@ -48,7 +48,7 @@ const TechnicalTab: React.FC<TechnicalTabProps> = ({
     return metrics;
   };
   
-  const metrics = extractMetrics(content);
+  const metrics = extractMetrics(content || '');
   const hasMetrics = Object.keys(metrics).length > 0;
   
   // Define default metrics if none are found but should be present
@@ -64,6 +64,20 @@ const TechnicalTab: React.FC<TechnicalTabProps> = ({
   
   // Combine extracted and default metrics
   const finalMetrics = { ...defaultMetrics, ...metrics };
+  
+  // If content is empty, display placeholder message
+  if (!content || content.trim() === '') {
+    return (
+      <div className="space-y-6">
+        <Alert className="bg-yellow-500/10 border-yellow-500/20">
+          <AlertCircle className="h-4 w-4 text-yellow-500" />
+          <AlertDescription>
+            No hay contenido en el análisis técnico SEO. Por favor, genera un informe completo para ver estos datos.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
