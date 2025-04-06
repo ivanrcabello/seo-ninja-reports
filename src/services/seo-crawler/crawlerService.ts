@@ -20,44 +20,42 @@ export const getCrawlData = async (crawlId: string): Promise<{
     }
     
     // Get pages
-    const pages = await getCrawlPages(crawlId);
+    const pagesRaw = await getCrawlPages(crawlId);
     
-    // Get issues and links for each page
-    const issues: Record<string, CrawlIssue[]> = {};
-    const links: Record<string, CrawlLink[]> = {};
+    // Convert to CrawlPage type with required properties
+    const pages: CrawlPage[] = pagesRaw.map((page: any) => ({
+      ...page,
+      issues_count: Number(page.issues_count || 0),
+      is_internal: page.is_internal !== undefined ? page.is_internal : true,
+      is_crawled: page.is_crawled !== undefined ? page.is_crawled : true,
+      created_at: page.created_at || page.crawled_at || new Date().toISOString(),
+      updated_at: page.updated_at || page.crawled_at || new Date().toISOString()
+    }));
     
     // Get all issues and links for the crawl
-    const allIssues = await getCrawlIssues(crawlId);
-    const allLinks = await getCrawlLinks(crawlId);
+    const allIssuesRaw = await getCrawlIssues(crawlId);
+    const allLinksRaw = await getCrawlLinks(crawlId);
     
-    // Organize issues by type
+    // Add required properties for CrawlIssue
+    const allIssues: CrawlIssue[] = allIssuesRaw.map((issue: any) => ({
+      ...issue,
+      type: issue.issue_type, // Ensure type is set as an alias to issue_type
+      created_at: issue.created_at || new Date().toISOString()
+    }));
+    
+    // Add required properties for CrawlLink
+    const allLinks: CrawlLink[] = allLinksRaw.map((link: any) => ({
+      ...link,
+      is_followed: link.follow !== undefined ? link.follow : true,
+      created_at: link.created_at || new Date().toISOString()
+    }));
+    
+    // Organize issues by page ID, type, and severity
+    const issues: Record<string, CrawlIssue[]> = {};
     const issuesByType: Record<string, CrawlIssue[]> = {};
     const issuesBySeverity: Record<string, CrawlIssue[]> = {};
     
-    // Set default severity levels if not present
-    const ensureSeverity = (issue: CrawlIssue): CrawlIssue => {
-      if (!issue.severity) {
-        // Assign severity based on issue type if not already set
-        const issueLowerCase = issue.issue_type.toLowerCase();
-        
-        if (issueLowerCase.includes('critical') || issueLowerCase.includes('broken') || issueLowerCase.includes('error')) {
-          return { ...issue, severity: 'critical' };
-        } else if (issueLowerCase.includes('missing') || issueLowerCase.includes('duplicate')) {
-          return { ...issue, severity: 'high' };
-        } else if (issueLowerCase.includes('warning') || issueLowerCase.includes('long')) {
-          return { ...issue, severity: 'medium' };
-        } else if (issueLowerCase.includes('improve') || issueLowerCase.includes('consider')) {
-          return { ...issue, severity: 'low' };
-        } else {
-          return { ...issue, severity: 'info' };
-        }
-      }
-      return issue;
-    };
-    
-    const processedIssues = allIssues.map(ensureSeverity);
-    
-    processedIssues.forEach(issue => {
+    allIssues.forEach(issue => {
       // Group by page ID
       if (issue.page_id) {
         if (!issues[issue.page_id]) {
@@ -81,6 +79,7 @@ export const getCrawlData = async (crawlId: string): Promise<{
     });
     
     // Organize links by page ID
+    const links: Record<string, CrawlLink[]> = {};
     allLinks.forEach(link => {
       if (link.page_id) {
         if (!links[link.page_id]) {
@@ -118,13 +117,37 @@ export const getCrawlSummary = async (crawlId: string): Promise<{
 }> => {
   try {
     // Get all pages
-    const pages = await getCrawlPages(crawlId);
+    const pagesRaw = await getCrawlPages(crawlId);
+    
+    // Convert to CrawlPage type with required properties
+    const pages: CrawlPage[] = pagesRaw.map((page: any) => ({
+      ...page,
+      issues_count: Number(page.issues_count || 0),
+      is_internal: page.is_internal !== undefined ? page.is_internal : true,
+      is_crawled: page.is_crawled !== undefined ? page.is_crawled : true,
+      created_at: page.created_at || page.crawled_at || new Date().toISOString(),
+      updated_at: page.updated_at || page.crawled_at || new Date().toISOString()
+    }));
     
     // Get all issues for the crawl
-    const issues = await getCrawlIssues(crawlId);
+    const issuesRaw = await getCrawlIssues(crawlId);
+    
+    // Add required properties for CrawlIssue
+    const issues: CrawlIssue[] = issuesRaw.map((issue: any) => ({
+      ...issue,
+      type: issue.issue_type,
+      created_at: issue.created_at || new Date().toISOString()
+    }));
     
     // Get all links for the crawl
-    const links = await getCrawlLinks(crawlId);
+    const linksRaw = await getCrawlLinks(crawlId);
+    
+    // Add required properties for CrawlLink
+    const links: CrawlLink[] = linksRaw.map((link: any) => ({
+      ...link,
+      is_followed: link.follow !== undefined ? link.follow : true,
+      created_at: link.created_at || new Date().toISOString()
+    }));
     
     // Initialize summary data
     const summary = {
@@ -149,10 +172,11 @@ export const getCrawlSummary = async (crawlId: string): Promise<{
       summary.issuesBySeverity[severity]++;
       
       // Count by type
-      if (!summary.issuesByType[issue.issue_type]) {
-        summary.issuesByType[issue.issue_type] = 0;
+      const issueType = issue.issue_type || issue.type || 'unknown';
+      if (!summary.issuesByType[issueType]) {
+        summary.issuesByType[issueType] = 0;
       }
-      summary.issuesByType[issue.issue_type]++;
+      summary.issuesByType[issueType]++;
     });
     
     return summary;
@@ -168,8 +192,22 @@ export const getPageData = async (pageId: string): Promise<{
   links: CrawlLink[];
 }> => {
   try {
-    const issues = await getPageIssues(pageId);
-    const links = await getPageLinks(pageId);
+    const issuesRaw = await getPageIssues(pageId);
+    const linksRaw = await getPageLinks(pageId);
+    
+    // Add required properties for CrawlIssue
+    const issues: CrawlIssue[] = issuesRaw.map((issue: any) => ({
+      ...issue,
+      type: issue.issue_type,
+      created_at: issue.created_at || new Date().toISOString()
+    }));
+    
+    // Add required properties for CrawlLink
+    const links: CrawlLink[] = linksRaw.map((link: any) => ({
+      ...link,
+      is_followed: link.follow !== undefined ? link.follow : true,
+      created_at: link.created_at || new Date().toISOString()
+    }));
     
     return {
       issues,

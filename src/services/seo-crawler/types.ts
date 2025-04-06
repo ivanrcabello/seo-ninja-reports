@@ -13,7 +13,7 @@ export interface CrawlSettings {
   crawl_sitemap: boolean;
   follow_links: boolean;
   max_depth: number;
-  custom_headers: Record<string, string>; // Added custom_headers property
+  custom_headers: Record<string, string>;
 }
 
 // Result of a crawl operation
@@ -23,28 +23,24 @@ export interface CrawlResult {
   url: string;
   domain: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
-  start_time: string;
+  error_message?: string;
+  started_at?: string;
   completed_at?: string;
   created_at: string;
   updated_at: string;
   total_pages?: number;
   pages_crawled?: number;
   total_issues?: number;
-  error_message?: string;
+  total_links?: number;
   settings: CrawlSettings;
-  success: boolean;
-  message: string;
   
-  // Additional properties being used in components
-  started_at?: string; // Used in many components
-  inserted_at?: string; // Fallback for started_at
-  total_time_seconds: number; // Changed from optional to required with a default of 0
-  total_links?: number; // Used in summary
-  total_internal_links?: number; // Used in summary
-  total_external_links?: number; // Used in summary
-  total_broken_links?: number; // Used in summary
-  
-  // Add any other properties that might be used by components
+  // These properties might come from various parts of the application
+  success?: boolean;
+  message?: string;
+  total_time_seconds?: number;
+  total_internal_links?: number;
+  total_external_links?: number;
+  total_broken_links?: number;
   avg_page_load_time_ms?: number;
   crawl_depth?: number;
   duplicate_content_count?: number; 
@@ -63,15 +59,15 @@ export interface CrawlPage {
   meta_description?: string;
   h1?: string;
   status_code: number;
-  is_internal: boolean;
-  is_crawled: boolean;
   issues_count: number;
   internal_links_count?: number;
   external_links_count?: number;
-  created_at: string;
-  updated_at: string;
   
-  // Additional properties being used in components
+  // Optional fields based on database schema
+  is_internal?: boolean;
+  is_crawled?: boolean;
+  created_at?: string;
+  updated_at?: string;
   is_indexable?: boolean;
   word_count?: number;
   image_count?: number;
@@ -83,8 +79,6 @@ export interface CrawlPage {
   page_size_kb?: number;
   load_time_ms?: number;
   images_without_alt?: number;
-  
-  // Add any other properties that might be used
   content_text?: string;
   content_hash?: string;
   meta_keywords?: string;
@@ -108,20 +102,20 @@ export interface CrawlIssue {
   id: string;
   crawl_id: string;
   page_id: string;
-  type: string; // Original property
-  issue_type?: string; // Alias for 'type'
-  severity: 'low' | 'medium' | 'high' | 'critical' | 'info'; // Added 'info' as a valid severity
+  issue_type: string;
+  type?: string; // Alias for 'issue_type' for backward compatibility
+  severity: 'low' | 'medium' | 'high' | 'critical' | 'info';
   description: string;
-  details?: any;
-  created_at: string;
+  created_at?: string;
   
-  // Additional properties being used in components
-  page_url?: string; // Used in issue listing
-  recommended_fix?: string; // Used in issue details
-  element?: string; // Used in issue details
-  fix_suggestion?: string; // Used in issue details
-  category?: string; // Used in issue categorization
-  seo_crawler_pages?: { url: string }; // Referenced in various components
+  // Additional fields from database schema
+  page_url?: string;
+  recommended_fix?: string;
+  element?: string;
+  fix_suggestion?: string;
+  category?: string;
+  details?: any;
+  seo_crawler_pages?: { url: string };
 }
 
 // Crawl link data
@@ -130,31 +124,21 @@ export interface CrawlLink {
   crawl_id: string;
   page_id: string;
   url: string;
-  text?: string; // Original property
+  text?: string;
+  anchor_text?: string; // Alias for 'text'
   is_internal: boolean;
-  is_followed: boolean;
+  is_followed?: boolean;
+  follow?: boolean; // Alias for is_followed
   is_broken?: boolean;
   status_code?: number;
-  created_at: string;
+  created_at?: string;
   
-  // Additional properties being used in components
-  anchor_text?: string; // Alias for 'text'
-  follow?: boolean; // Used instead of is_followed in some places
-  rel_attributes?: string[]; // Used in link details
-  nofollow?: boolean; // Used in some cases
+  // Additional fields from database schema
+  rel_attributes?: string[];
+  nofollow?: boolean;
   link_location?: string;
   link_text?: string;
   link_type?: string;
-}
-
-// Crawl meta data
-export interface CrawlMeta {
-  id: string;
-  crawl_id: string;
-  page_id: string;
-  name: string;
-  content: string;
-  created_at: string;
 }
 
 // Crawl heading data
@@ -162,10 +146,10 @@ export interface CrawlHeading {
   id: string;
   crawl_id: string;
   page_id: string;
-  heading_type: string; // h1, h2, h3, etc.
+  heading_type: string;
   content: string;
   position: number;
-  created_at: string;
+  created_at?: string;
   page_url?: string;
   seo_crawler_pages?: { url: string };
 }

@@ -7,8 +7,6 @@ import { CrawlResult } from '../types';
 export const formatCrawlResult = (data: any): CrawlResult => {
   if (!data) return {} as CrawlResult;
   
-  // Return the data as is, assuming it already matches the CrawlResult type
-  // If specific transformations are needed, they can be added here
   return {
     id: data.id,
     client_id: data.client_id,
@@ -24,6 +22,14 @@ export const formatCrawlResult = (data: any): CrawlResult => {
     total_links: data.total_links || 0,
     settings: data.settings || {},
     created_at: data.created_at,
-    updated_at: data.updated_at
+    updated_at: data.updated_at,
+    
+    // Additional properties with default values
+    success: data.success !== undefined ? data.success : true,
+    message: data.message || '',
+    total_time_seconds: data.total_time_seconds || 0,
+    total_internal_links: data.total_internal_links || 0,
+    total_external_links: data.total_external_links || 0,
+    total_broken_links: data.total_broken_links || 0
   };
 };

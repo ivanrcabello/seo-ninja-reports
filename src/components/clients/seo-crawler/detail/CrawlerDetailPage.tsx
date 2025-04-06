@@ -55,21 +55,32 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       const pagesData = await getCrawlPages(crawlId);
       console.log('Pages data:', pagesData);
       
-      const formattedPages = pagesData.map((page: CrawlPage) => ({
+      const formattedPages = pagesData.map((page: any) => ({
         ...page,
-        issues_count: Number(page.issues_count || 0)
-      }));
+        issues_count: Number(page.issues_count || 0),
+        is_internal: page.is_internal !== undefined ? page.is_internal : true,
+        is_crawled: page.is_crawled !== undefined ? page.is_crawled : true,
+        created_at: page.created_at || page.crawled_at || new Date().toISOString(),
+        updated_at: page.updated_at || page.crawled_at || new Date().toISOString()
+      })) as CrawlPage[];
       
       let issuesData: CrawlIssue[] = [];
       try {
-        issuesData = await getCrawlIssues(crawlId);
-        console.log('Issues data:', issuesData);
+        const rawIssuesData = await getCrawlIssues(crawlId);
+        console.log('Issues data:', rawIssuesData);
+        
+        // Add required fields for CrawlIssue type
+        issuesData = rawIssuesData.map((issue: any) => ({
+          ...issue,
+          type: issue.issue_type, // Ensure type is set as an alias to issue_type
+          created_at: issue.created_at || new Date().toISOString()
+        })) as CrawlIssue[];
         
         const tempIssuesByType: Record<string, CrawlIssue[]> = {};
         const tempIssuesBySeverity: Record<string, CrawlIssue[]> = {};
         
         issuesData.forEach((issue: CrawlIssue) => {
-          if (!issue.issue_type || !issue.severity) return;
+          if (!issue.issue_type) return;
           
           if (!tempIssuesByType[issue.issue_type]) {
             tempIssuesByType[issue.issue_type] = [];
@@ -136,7 +147,12 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         console.log(`No issues found in preloaded data for page ${page.id}, but issues_count is ${page.issues_count}. Fetching directly...`);
         try {
           const fetchedIssues = await getPageIssues(page.id);
-          pageIssuesData = fetchedIssues;
+          // Add required fields
+          pageIssuesData = fetchedIssues.map((issue: any) => ({
+            ...issue,
+            type: issue.issue_type,
+            created_at: issue.created_at || new Date().toISOString()
+          })) as CrawlIssue[];
           console.log(`Fetched ${fetchedIssues.length} issues for page ${page.id}`);
         } catch (err) {
           console.error('Error fetching page issues directly:', err);
@@ -147,7 +163,13 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       setPageIssues(pageIssuesData);
       
       try {
-        const linksData = await getPageLinks(page.id);
+        const rawLinksData = await getPageLinks(page.id);
+        // Add required fields for CrawlLink type
+        const linksData = rawLinksData.map((link: any) => ({
+          ...link,
+          is_followed: link.follow !== undefined ? link.follow : true,
+          created_at: link.created_at || new Date().toISOString()
+        })) as CrawlLink[];
         setPageLinks(linksData);
       } catch (err) {
         console.error('Error fetching page links:', err);
