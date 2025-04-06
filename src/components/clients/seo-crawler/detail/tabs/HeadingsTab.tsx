@@ -20,6 +20,7 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
 }) => {
   const [selectedHeadingType, setSelectedHeadingType] = useState<string | null>(null);
   
+  // Function to get heading icon/label
   const getHeadingIcon = (type: string) => {
     switch (type) {
       case 'h1':
@@ -33,6 +34,7 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
     }
   };
   
+  // Function to get indentation class based on heading type
   const getIndentClass = (type: string) => {
     switch (type) {
       case 'h1': return 'pl-0';
@@ -81,6 +83,7 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
     <Card>
       <CardContent className="pt-6">
         <div className="space-y-6">
+          {/* Heading counts */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="border rounded-lg p-4">
               <div className="text-lg font-medium mb-2 flex items-center">
@@ -113,6 +116,7 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
             </div>
           </div>
           
+          {/* Structure issues */}
           <div className="space-y-2">
             <h3 className="font-medium text-lg">Problemas de estructura</h3>
             
@@ -137,12 +141,13 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
             </div>
           </div>
           
+          {/* Headings list with accordion */}
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-lg">Listado de encabezados</h3>
               
               <Select 
-                value={selectedHeadingType || ""} 
+                value={selectedHeadingType || ""}
                 onValueChange={(value) => setSelectedHeadingType(value || null)}
               >
                 <SelectTrigger className="w-40">

@@ -1,13 +1,13 @@
 
 import React, { useState, useMemo } from 'react';
-import { CrawlPage, CrawlLink } from '@/services/seo-crawler';
+import { CrawlPage, CrawlLink } from '@/services/seo-crawler/types';
 import BlurredCard from '@/components/ui/BlurredCard';
 import { Input } from '@/components/ui/input';
 import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { ExternalLink, Search, Link, Link2, AlertTriangle, Filter, ChevronDown } from 'lucide-react';
+import { ExternalLink, Search, Link, Link2, AlertTriangle, Filter } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   DropdownMenu,
@@ -37,7 +37,6 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
   const [filterNofollow, setFilterNofollow] = useState<boolean | null>(null);
   
   console.log("[LinksTabContent] Rendering with links count:", pageLinks.length);
-  console.log("[LinksTabContent] Sample link data:", pageLinks.length > 0 ? pageLinks[0] : "No links");
   
   // Group all links by type
   const { internalLinks, externalLinks, brokenLinks } = useMemo(() => {
@@ -46,7 +45,7 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
     const broken: CrawlLink[] = [];
     
     pageLinks.forEach(link => {
-      // Ensure all links have required properties by setting defaults if needed
+      // Process each link to ensure it has all required properties
       const processedLink = {
         ...link,
         anchor_text: link.anchor_text || link.text || "",

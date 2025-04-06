@@ -36,18 +36,18 @@ const LinksTab: React.FC<LinksTabProps> = ({
           const fetchedLinks = await getPageLinks(selectedPage.id);
           console.log("[LinksTab] Fetched links directly:", fetchedLinks.length);
           
-          // Ensure all required properties are present
+          // Process the links to ensure they have all required properties
           const formattedLinks: CrawlLink[] = fetchedLinks.map(link => ({
-            id: link.id,
-            crawl_id: link.crawl_id,
-            page_id: link.page_id,
-            url: link.url,
+            id: link.id || '',
+            crawl_id: link.crawl_id || '',
+            page_id: link.page_id || '',
+            url: link.url || '',
             text: link.anchor_text || link.link_text || '',
             anchor_text: link.anchor_text || link.link_text || '',
-            is_internal: link.is_internal || false,
+            is_internal: link.is_internal !== undefined ? link.is_internal : false,
             is_followed: link.follow !== undefined ? link.follow : true,
             follow: link.follow !== undefined ? link.follow : true,
-            is_broken: link.is_broken || false,
+            is_broken: link.is_broken !== undefined ? link.is_broken : false,
             status_code: link.status_code || 200,
             created_at: link.created_at || new Date().toISOString(),
             rel_attributes: link.rel_attributes || [],
