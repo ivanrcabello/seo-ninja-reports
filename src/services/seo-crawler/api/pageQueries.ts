@@ -104,9 +104,12 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
         link_text: link.link_text || link.anchor_text || ''
       };
       
-      // If created_at exists in the data, use it
+      // If created_at exists in the data, use it but ensure it's a string
       if ('created_at' in link && link.created_at) {
-        formattedLink.created_at = link.created_at;
+        // Ensure created_at is a string before assigning
+        formattedLink.created_at = typeof link.created_at === 'string' 
+          ? link.created_at 
+          : now;
       }
       
       return formattedLink;
@@ -170,9 +173,12 @@ export const getCrawlLinks = async (crawlId: string): Promise<CrawlLink[]> => {
         link_text: link.link_text || link.anchor_text || ''
       };
       
-      // If created_at exists in the data, use it
+      // If created_at exists in the data, use it but ensure it's a string
       if ('created_at' in link && link.created_at) {
-        formattedLink.created_at = link.created_at;
+        // Ensure created_at is a string before assigning
+        formattedLink.created_at = typeof link.created_at === 'string' 
+          ? link.created_at 
+          : now;
       }
       
       return formattedLink;
