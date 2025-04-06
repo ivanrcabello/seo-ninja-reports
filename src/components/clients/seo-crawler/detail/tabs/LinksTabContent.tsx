@@ -1,336 +1,176 @@
 
-import React, { useState, useMemo } from 'react';
-import { CrawlPage, CrawlLink } from '@/services/seo-crawler/types';
-import BlurredCard from '@/components/ui/BlurredCard';
-import { Input } from '@/components/ui/input';
-import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { CrawlLink, CrawlPage } from '@/services/seo-crawler/types';
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { ExternalLink, Search, Link, Link2, AlertTriangle, Filter } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
+import { AlertTriangle, Check, ExternalLink, Link as LinkIcon } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface LinksTabContentProps {
   pageLinks: CrawlLink[];
   selectedPage: CrawlPage | null;
-  pages?: CrawlPage[];
-  onPageSelect?: (page: CrawlPage) => void;
-}
-
-const LinksTabContent: React.FC<LinksTabContentProps> = ({
-  pageLinks = [],
-  selectedPage,
-  pages = [],
-  onPageSelect = () => {}
-}) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-  const [filterNofollow, setFilterNofollow] = useState<boolean | null>(null);
-  
-  console.log("[LinksTabContent] Rendering with links count:", pageLinks.length);
-  
-  // Group all links by type
-  const { internalLinks, externalLinks, brokenLinks } = useMemo(() => {
-    const internal: CrawlLink[] = [];
-    const external: CrawlLink[] = [];
-    const broken: CrawlLink[] = [];
-    
-    pageLinks.forEach(link => {
-      // Process each link to ensure it has all required properties
-      const processedLink = {
-        ...link,
-        anchor_text: link.anchor_text || link.text || "",
-        is_internal: typeof link.is_internal === 'boolean' ? link.is_internal : false,
-        is_broken: typeof link.is_broken === 'boolean' ? link.is_broken : false,
-        is_followed: typeof link.is_followed === 'boolean' ? link.is_followed : 
-                     (typeof link.follow === 'boolean' ? link.follow : true)
-      };
-      
-      if (processedLink.is_broken) {
-        broken.push(processedLink);
-      }
-      
-      if (processedLink.is_internal) {
-        internal.push(processedLink);
-      } else {
-        external.push(processedLink);
-      }
-    });
-    
-    return {
-      internalLinks: internal,
-      externalLinks: external,
-      brokenLinks: broken
-    };
-  }, [pageLinks]);
-  
-  // Filter links based on search term and nofollow filter
-  const getFilteredLinks = (links: CrawlLink[]) => {
-    return links.filter(link => {
-      // Text search filter
-      const matchesSearch = !searchTerm || 
-        link.url.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (link.anchor_text || "").toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Nofollow filter
-      const matchesNofollow = filterNofollow === null || 
-        (filterNofollow === true && !(link.is_followed || link.follow)) ||
-        (filterNofollow === false && (link.is_followed || link.follow));
-      
-      return matchesSearch && matchesNofollow;
-    });
-  };
-  
-  const filteredInternalLinks = useMemo(() => getFilteredLinks(internalLinks), 
-    [internalLinks, searchTerm, filterNofollow]);
-  
-  const filteredExternalLinks = useMemo(() => getFilteredLinks(externalLinks), 
-    [externalLinks, searchTerm, filterNofollow]);
-  
-  const filteredBrokenLinks = useMemo(() => getFilteredLinks(brokenLinks), 
-    [brokenLinks, searchTerm, filterNofollow]);
-  
-  const allFilteredLinks = useMemo(() => {
-    if (activeTab === 'internal') return filteredInternalLinks;
-    if (activeTab === 'external') return filteredExternalLinks;
-    if (activeTab === 'broken') return filteredBrokenLinks;
-    return [...filteredInternalLinks, ...filteredExternalLinks]; // 'all' tab
-  }, [filteredInternalLinks, filteredExternalLinks, filteredBrokenLinks, activeTab]);
-  
-  // Find the page for a specific link
-  const findPageForLink = (pageId: string) => {
-    return pages.find(page => page.id === pageId);
-  };
-  
-  // Get the count label with proper filtering
-  const getCountLabel = (total: number, filtered: number) => {
-    if (total === filtered) return `(${total})`;
-    return `(${filtered}/${total})`;
-  };
-  
-  if (!pageLinks || pageLinks.length === 0) {
-    return (
-      <BlurredCard className="p-6">
-        <div className="flex flex-col items-center justify-center p-12 text-center">
-          <Link className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No se encontraron enlaces</h3>
-          <p className="text-muted-foreground max-w-md">
-            No se pudieron encontrar enlaces en las páginas analizadas. Compruebe que el sitio web permite el rastreo de enlaces.
-          </p>
-        </div>
-      </BlurredCard>
-    );
-  }
-  
-  return (
-    <BlurredCard>
-      <CardHeader>
-        <CardTitle>Análisis de Enlaces</CardTitle>
-        <CardDescription className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <span>Total: {pageLinks.length} enlaces encontrados</span>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar enlaces..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="ml-1" title="Filtros">
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filtrar por atributo</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => setFilterNofollow(null)}
-                  className={filterNofollow === null ? "bg-accent text-accent-foreground" : ""}
-                >
-                  Todos los enlaces
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setFilterNofollow(false)}
-                  className={filterNofollow === false ? "bg-accent text-accent-foreground" : ""}
-                >
-                  Solo enlaces follow
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setFilterNofollow(true)}
-                  className={filterNofollow === true ? "bg-accent text-accent-foreground" : ""}
-                >
-                  Solo enlaces nofollow
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </CardDescription>
-      </CardHeader>
-      <Separator />
-      <CardContent className="p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">
-              Todos {getCountLabel(pageLinks.length, allFilteredLinks.length)}
-            </TabsTrigger>
-            <TabsTrigger value="internal">
-              Internos {getCountLabel(internalLinks.length, filteredInternalLinks.length)}
-            </TabsTrigger>
-            <TabsTrigger value="external">
-              Externos {getCountLabel(externalLinks.length, filteredExternalLinks.length)}
-            </TabsTrigger>
-            <TabsTrigger value="broken">
-              Rotos {getCountLabel(brokenLinks.length, filteredBrokenLinks.length)}
-              {brokenLinks.length > 0 && <AlertTriangle className="ml-1 h-4 w-4 text-amber-500" />}
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="all" className="mt-4">
-            <LinksList 
-              links={allFilteredLinks} 
-              findPageForLink={findPageForLink}
-              onPageSelect={onPageSelect}
-            />
-          </TabsContent>
-          
-          <TabsContent value="internal" className="mt-4">
-            <LinksList 
-              links={filteredInternalLinks} 
-              findPageForLink={findPageForLink}
-              onPageSelect={onPageSelect}
-            />
-          </TabsContent>
-          
-          <TabsContent value="external" className="mt-4">
-            <LinksList 
-              links={filteredExternalLinks} 
-              findPageForLink={findPageForLink}
-              onPageSelect={onPageSelect}
-            />
-          </TabsContent>
-          
-          <TabsContent value="broken" className="mt-4">
-            <LinksList 
-              links={filteredBrokenLinks} 
-              findPageForLink={findPageForLink}
-              onPageSelect={onPageSelect}
-            />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </BlurredCard>
-  );
-};
-
-interface LinksListProps {
-  links: CrawlLink[];
-  findPageForLink: (pageId: string) => CrawlPage | undefined;
+  pages: CrawlPage[];
   onPageSelect: (page: CrawlPage) => void;
 }
 
-const LinksList: React.FC<LinksListProps> = ({ links, findPageForLink, onPageSelect }) => {
-  if (links.length === 0) {
+const LinksTabContent: React.FC<LinksTabContentProps> = ({ 
+  pageLinks, 
+  selectedPage,
+  pages,
+  onPageSelect
+}) => {
+  const [linkTypeFilter, setLinkTypeFilter] = useState<string>("all");
+  
+  // Count internal and external links
+  const internalLinks = pageLinks.filter(link => link.is_internal);
+  const externalLinks = pageLinks.filter(link => !link.is_internal);
+  const brokenLinks = pageLinks.filter(link => link.is_broken);
+  
+  // Filter links based on selected type
+  const filteredLinks = linkTypeFilter === "all" 
+    ? pageLinks 
+    : linkTypeFilter === "internal" 
+      ? internalLinks 
+      : linkTypeFilter === "external" 
+        ? externalLinks 
+        : linkTypeFilter === "broken" 
+          ? brokenLinks 
+          : pageLinks;
+  
+  if (pageLinks.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No se encontraron enlaces para esta categoría o con los filtros seleccionados</p>
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+        <h3 className="text-lg font-medium">No se encontraron enlaces</h3>
+        <p className="text-muted-foreground mt-2 max-w-md">
+          No se pudieron encontrar enlaces en esta página.
+        </p>
       </div>
     );
   }
   
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>URL</TableHead>
-            <TableHead>Texto ancla</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Página origen</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {links.map((link, index) => {
-            const sourcePage = findPageForLink(link.page_id);
+    <Card>
+      <CardContent className="pt-6">
+        <div className="space-y-6">
+          {/* Link counts */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="border rounded-lg p-4">
+              <div className="text-lg font-medium mb-2">Total enlaces</div>
+              <div className="text-3xl font-bold">{pageLinks.length}</div>
+            </div>
             
-            // Default followed state
-            const isFollowed = link.is_followed !== undefined ? link.is_followed : 
-                             (link.follow !== undefined ? link.follow : true);
+            <div className="border rounded-lg p-4">
+              <div className="text-lg font-medium mb-2">Internos</div>
+              <div className="text-3xl font-bold">{internalLinks.length}</div>
+            </div>
             
-            return (
-              <TableRow key={link.id || `link-${index}`}>
-                <TableCell className="max-w-xs truncate">
-                  <a 
-                    href={link.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline flex items-center"
-                  >
-                    {link.url.length > 40 ? `${link.url.substring(0, 40)}...` : link.url}
-                    <ExternalLink className="h-3 w-3 ml-1" />
-                  </a>
-                </TableCell>
-                <TableCell>{link.anchor_text || link.text || 'Sin texto'}</TableCell>
-                <TableCell>
-                  {link.is_internal ? (
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                      <Link className="h-3 w-3 mr-1" /> Interno
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                      <Link2 className="h-3 w-3 mr-1" /> Externo
-                    </Badge>
-                  )}
-                  {!isFollowed && (
-                    <Badge variant="outline" className="ml-1 bg-amber-100 text-amber-800">
-                      NoFollow
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {link.is_broken ? (
-                    <Badge variant="outline" className="bg-red-100 text-red-800">
-                      Error {link.status_code}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-green-100 text-green-800">
-                      {link.status_code || 200}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {sourcePage ? (
-                    <button 
-                      onClick={() => onPageSelect(sourcePage)}
-                      className="text-primary hover:underline truncate max-w-[200px] inline-block"
-                    >
-                      {sourcePage.url.replace(/^https?:\/\//, '').substring(0, 30)}
-                      {sourcePage.url.length > 30 ? '...' : ''}
-                    </button>
-                  ) : (
-                    'N/A'
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+            <div className="border rounded-lg p-4">
+              <div className="text-lg font-medium mb-2">Externos</div>
+              <div className="text-3xl font-bold">{externalLinks.length}</div>
+            </div>
+            
+            <div className="border rounded-lg p-4">
+              <div className="text-lg font-medium mb-2">Rotos</div>
+              <div className="text-3xl font-bold">{brokenLinks.length}</div>
+            </div>
+          </div>
+          
+          {/* Filter controls */}
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium text-lg">Enlaces</h3>
+            
+            <Select 
+              value={linkTypeFilter} 
+              onValueChange={setLinkTypeFilter}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filtrar por tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los enlaces</SelectItem>
+                <SelectItem value="internal">Enlaces internos</SelectItem>
+                <SelectItem value="external">Enlaces externos</SelectItem>
+                {brokenLinks.length > 0 && (
+                  <SelectItem value="broken">Enlaces rotos</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Links table */}
+          {filteredLinks.length > 0 ? (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px]">URL</TableHead>
+                    <TableHead>Texto</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Estado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLinks.map((link, index) => (
+                    <TableRow key={link.id || `link-${index}`}>
+                      <TableCell className="font-mono text-sm truncate max-w-[180px]">
+                        <a 
+                          href={link.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center hover:underline text-blue-600"
+                        >
+                          {link.url}
+                          <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
+                        </a>
+                      </TableCell>
+                      <TableCell>
+                        {link.anchor_text || link.text || link.link_text || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {link.is_internal ? (
+                          <Badge variant="outline" className="bg-blue-50">
+                            <LinkIcon className="h-3 w-3 mr-1" />
+                            Interno
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-50">
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Externo
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {link.is_broken ? (
+                          <Badge variant="destructive">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Roto
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                            <Check className="h-3 w-3 mr-1" />
+                            OK
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                No se encontraron enlaces que coincidan con el filtro seleccionado
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -147,14 +147,14 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
               <h3 className="font-medium text-lg">Listado de encabezados</h3>
               
               <Select 
-                value={selectedHeadingType || ""}
-                onValueChange={(value) => setSelectedHeadingType(value || null)}
+                value={selectedHeadingType || "all"} 
+                onValueChange={(value) => setSelectedHeadingType(value === "all" ? null : value)}
               >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Filtrar por tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los tipos</SelectItem>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
                   <SelectItem value="h1">H1</SelectItem>
                   <SelectItem value="h2">H2</SelectItem>
                   <SelectItem value="h3">H3</SelectItem>

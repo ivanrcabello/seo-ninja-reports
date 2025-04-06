@@ -139,14 +139,14 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({ headings = [], pages = [] }) 
             
             <div className="mb-4">
               <Select 
-                value={selectedPageId || ""} 
-                onValueChange={(value) => setSelectedPageId(value || null)}
+                value={selectedPageId || "all"} 
+                onValueChange={(value) => setSelectedPageId(value === "all" ? null : value)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar página para filtrar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Mostrar todas las páginas</SelectItem>
+                  <SelectItem value="all">Mostrar todas las páginas</SelectItem>
                   {Object.keys(headingsByPage).map(pageId => {
                     const pageUrl = headingsByPage[pageId][0]?.page_url || 
                       pages.find(p => p.id === pageId)?.url || 
