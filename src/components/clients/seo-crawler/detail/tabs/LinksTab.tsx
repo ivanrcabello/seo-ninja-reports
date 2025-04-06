@@ -19,6 +19,8 @@ const LinksTab: React.FC<LinksTabProps> = ({
   onPageSelect,
   isLoading = false 
 }) => {
+  console.log("[LinksTab] Rendering with links:", pageLinks.length);
+  
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">

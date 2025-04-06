@@ -1,189 +1,198 @@
 
-/**
- * HTML extraction utilities for SEO analysis
- */
+// Import cheerio for HTML parsing if not already imported
+// import * as cheerio from 'cheerio';
 
 /**
- * Extract title from HTML
+ * Extract HTML page title
  */
 export function extractTitle(html: string): string | null {
-  console.log('[Extractors] Extracting title');
-  if (!html) return null;
-  
-  // Match title tag
-  const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/is);
-  if (!titleMatch || !titleMatch[1]) {
-    console.log('[Extractors] No title found');
+  try {
+    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+    return titleMatch ? titleMatch[1].trim() : null;
+  } catch (error) {
+    console.error('Error extracting title:', error);
     return null;
   }
-  
-  const title = titleMatch[1].trim();
-  console.log(`[Extractors] Found title: ${title.substring(0, 50)}${title.length > 50 ? '...' : ''}`);
-  return title;
 }
 
 /**
- * Extract meta description from HTML
+ * Extract meta description
  */
 export function extractMetaDescription(html: string): string | null {
-  console.log('[Extractors] Extracting meta description');
-  if (!html) return null;
-  
-  // Match meta description tag
-  const metaMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["'](.*?)["'][^>]*>/is);
-  if (!metaMatch || !metaMatch[1]) {
-    // Try alternative format
-    const altMetaMatch = html.match(/<meta[^>]*content=["'](.*?)["'][^>]*name=["']description["'][^>]*>/is);
-    if (!altMetaMatch || !altMetaMatch[1]) {
-      console.log('[Extractors] No meta description found');
-      return null;
-    }
-    
-    const description = altMetaMatch[1].trim();
-    console.log(`[Extractors] Found meta description: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`);
-    return description;
-  }
-  
-  const description = metaMatch[1].trim();
-  console.log(`[Extractors] Found meta description: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`);
-  return description;
-}
-
-/**
- * Extract H1 heading from HTML
- */
-export function extractH1(html: string): string | null {
-  console.log('[Extractors] Extracting H1');
-  if (!html) return null;
-  
-  // Match h1 tag
-  const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/is);
-  if (!h1Match || !h1Match[1]) {
-    console.log('[Extractors] No H1 found');
+  try {
+    const metaDescriptionMatch = html.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/i) || 
+                                html.match(/<meta\s+content=["'](.*?)["']\s+name=["']description["']/i);
+    return metaDescriptionMatch ? metaDescriptionMatch[1].trim() : null;
+  } catch (error) {
+    console.error('Error extracting meta description:', error);
     return null;
   }
-  
-  // Clean the h1 content (remove HTML tags and trim)
-  const h1 = h1Match[1].replace(/<\/?[^>]+(>|$)/g, " ").replace(/\s+/g, " ").trim();
-  console.log(`[Extractors] Found H1: ${h1}`);
-  return h1;
 }
 
 /**
- * Extract all headings from HTML
+ * Extract H1 heading text
  */
-export function extractHeadings(html: string): Array<{type: string; content: string}> {
-  console.log('[Extractors] Extracting headings (H1-H6)');
-  if (!html) return [];
-  
-  const headings = [];
-  
-  // Match all headings (h1-h6)
-  const headingRegex = /<(h[1-6])[^>]*>(.*?)<\/\1>/gis;
-  let match;
-  
+export function extractH1(html: string): string | null {
   try {
-    while ((match = headingRegex.exec(html)) !== null) {
-      const type = match[1].toLowerCase(); // h1, h2, etc.
-      const content = match[2].replace(/<\/?[^>]+(>|$)/g, " ").replace(/\s+/g, " ").trim();
-      
-      if (content) {
-        headings.push({ type, content });
-      }
+    const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    return h1Match ? h1Match[1].replace(/<[^>]+>/g, '').trim() : null;
+  } catch (error) {
+    console.error('Error extracting H1:', error);
+    return null;
+  }
+}
+
+/**
+ * Extract canonical URL
+ */
+export function extractCanonicalUrl(html: string): string | null {
+  try {
+    const canonicalMatch = html.match(/<link\s+rel=["']canonical["']\s+href=["'](.*?)["']/i) ||
+                           html.match(/<link\s+href=["'](.*?)["']\s+rel=["']canonical["']/i);
+    return canonicalMatch ? canonicalMatch[1].trim() : null;
+  } catch (error) {
+    console.error('Error extracting canonical URL:', error);
+    return null;
+  }
+}
+
+/**
+ * Extract robots meta directives
+ */
+export function extractRobotsMeta(html: string): string | null {
+  try {
+    // First try standard robots meta tag
+    const robotsMatch = html.match(/<meta\s+name=["']robots["']\s+content=["'](.*?)["']/i) ||
+                       html.match(/<meta\s+content=["'](.*?)["']\s+name=["']robots["']/i);
+    
+    // If not found, try googlebot-specific tag
+    if (!robotsMatch) {
+      const googlebotMatch = html.match(/<meta\s+name=["']googlebot["']\s+content=["'](.*?)["']/i) ||
+                           html.match(/<meta\s+content=["'](.*?)["']\s+name=["']googlebot["']/i);
+      return googlebotMatch ? googlebotMatch[1].trim() : null;
     }
     
-    console.log(`[Extractors] Found ${headings.length} headings`, 
-      headings.length > 0 ? `First heading: ${headings[0].type} - ${headings[0].content.substring(0, 30)}...` : '');
-    
-    return headings;
+    return robotsMatch ? robotsMatch[1].trim() : null;
   } catch (error) {
-    console.error(`[Extractors] Error extracting headings:`, error);
+    console.error('Error extracting robots meta:', error);
+    return null;
+  }
+}
+
+/**
+ * Extract schema markup data
+ */
+export function extractSchemaMarkup(html: string): any[] {
+  try {
+    // Look for JSON-LD schema
+    const jsonLdMatches = html.match(/<script\s+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+    
+    // Look for microdata schemas
+    const hasItemScope = html.includes('itemscope') && html.includes('itemtype');
+    
+    // Look for RDFa schemas
+    const hasRdfa = html.includes('typeof=') && html.includes('property=');
+    
+    const schemas = [];
+    
+    // Process JSON-LD if found
+    if (jsonLdMatches && jsonLdMatches.length > 0) {
+      jsonLdMatches.forEach(match => {
+        try {
+          const jsonContent = match.replace(/<script\s+type=["']application\/ld\+json["'][^>]*>/, '')
+                                  .replace(/<\/script>/, '').trim();
+          const parsedJson = JSON.parse(jsonContent);
+          schemas.push(parsedJson);
+        } catch (e) {
+          console.error('Error parsing JSON-LD schema:', e);
+        }
+      });
+    }
+    
+    // Just note the presence of microdata or RDFa
+    if (hasItemScope) {
+      schemas.push({ type: 'microdata', detected: true });
+    }
+    
+    if (hasRdfa) {
+      schemas.push({ type: 'rdfa', detected: true });
+    }
+    
+    return schemas;
+  } catch (error) {
+    console.error('Error extracting schema markup:', error);
     return [];
   }
 }
 
 /**
- * Extract word count from HTML
+ * Detect if the page is mobile-friendly
  */
-export function extractWordCount(html: string): number {
-  if (!html) return 0;
-  
+export function detectMobileFriendly(html: string): boolean {
   try {
-    // Extract text from body
-    const bodyMatch = html.match(/<body[^>]*>(.*?)<\/body>/is);
-    if (!bodyMatch || !bodyMatch[1]) {
-      return 0;
-    }
+    // Check for viewport meta tag (strongest indicator)
+    const hasViewport = html.includes('name="viewport"') && html.includes('width=device-width');
     
-    // Remove all HTML tags and scripts
-    const textContent = bodyMatch[1]
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove styles
-      .replace(/<[^>]+>/g, ' ') // Remove HTML tags
-      .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
-      .trim();
+    // Check for responsive design indicators
+    const hasMediaQueries = html.includes('@media') && (html.includes('max-width') || html.includes('min-width'));
     
-    // Count words
-    const words = textContent.split(/\s+/).filter(word => word.length > 0);
-    return words.length;
+    // Check for mobile-specific frameworks or libraries
+    const usesMobileFramework = 
+      html.includes('bootstrap') || 
+      html.includes('foundation') || 
+      html.includes('tailwind') ||
+      html.includes('mobile-nav') || 
+      html.includes('hamburger-menu');
+    
+    // Consider responsive images
+    const hasResponsiveImages = html.includes('srcset') || html.includes('sizes=');
+    
+    // A page is considered mobile-friendly if it has viewport tag and at least one other indicator
+    return hasViewport && (hasMediaQueries || usesMobileFramework || hasResponsiveImages);
   } catch (error) {
-    console.error(`[Extractors] Error extracting word count:`, error);
-    return 0;
+    console.error('Error detecting mobile friendliness:', error);
+    return false;
   }
 }
 
 /**
- * Extract links from HTML
+ * Extract all links from the page
  */
-export function extractLinks(html: string, baseUrl: string): Array<{url: string; text: string; isExternal: boolean}> {
-  if (!html) return [];
-  
+export function extractLinks(html: string, baseUrl: string): any[] {
   try {
     const links = [];
-    const linkRegex = /<a[^>]*href=["'](.*?)["'][^>]*>(.*?)<\/a>/gis;
-    let match;
+    const regex = /<a\s[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
     
-    while ((match = linkRegex.exec(html)) !== null) {
-      let url = match[1].trim();
-      const text = match[2].replace(/<\/?[^>]+(>|$)/g, " ").replace(/\s+/g, " ").trim();
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const url = match[1];
+      const text = match[0].replace(/<[^>]+>/g, '').trim();
       
-      // Skip empty URLs, javascript:, mailto:, tel:, etc.
-      if (!url || 
-          url.startsWith('javascript:') || 
-          url.startsWith('mailto:') || 
-          url.startsWith('tel:') || 
-          url === '#') {
+      // Skip empty or javascript links
+      if (!url || url.startsWith('javascript:') || url === '#') {
         continue;
       }
       
-      // Convert relative URLs to absolute
-      if (url.startsWith('/')) {
-        const baseUrlObj = new URL(baseUrl);
-        url = `${baseUrlObj.protocol}//${baseUrlObj.host}${url}`;
-      } else if (!url.startsWith('http')) {
-        // Handle other relative URLs like "page.html"
-        try {
-          url = new URL(url, baseUrl).href;
-        } catch (error) {
-          console.error(`[Extractors] Error processing URL ${url}:`, error);
-          continue;
-        }
-      }
+      // Check if link is followed (doesn't have rel="nofollow")
+      const isFollowed = !match[0].includes('rel="nofollow"') && !match[0].includes("rel='nofollow'");
       
-      // Determine if the link is external
-      const isExternal = !url.includes(new URL(baseUrl).hostname);
+      // Extract the rel attributes if any
+      const relMatch = match[0].match(/rel=["']([^"']*)["']/i);
+      const relAttributes = relMatch ? relMatch[1].split(' ') : [];
       
       links.push({
-        url,
-        text,
-        isExternal
+        url: url,
+        text: text,
+        anchor_text: text,
+        is_followed: isFollowed,
+        follow: isFollowed,
+        rel_attributes: relAttributes
       });
     }
     
-    console.log(`[Extractors] Found ${links.length} links`);
     return links;
   } catch (error) {
-    console.error(`[Extractors] Error extracting links:`, error);
+    console.error('Error extracting links:', error);
     return [];
   }
 }
@@ -191,65 +200,165 @@ export function extractLinks(html: string, baseUrl: string): Array<{url: string;
 /**
  * Categorize links as internal or external
  */
-export function categorizeLinks(
-  links: Array<{url: string; text: string; isExternal: boolean}>,
-  baseUrl: string
-): {
-  internalLinks: Array<{url: string; text: string; isExternal: boolean}>;
-  externalLinks: Array<{url: string; text: string; isExternal: boolean}>;
-} {
-  const internalLinks = links.filter(link => !link.isExternal);
-  const externalLinks = links.filter(link => link.isExternal);
-  
-  return { internalLinks, externalLinks };
+export function categorizeLinks(links: any[], baseUrl: string): { internalLinks: any[], externalLinks: any[] } {
+  try {
+    const internalLinks = [];
+    const externalLinks = [];
+    
+    // Extract domain from base URL to compare
+    const baseUrlObj = new URL(baseUrl);
+    const baseDomain = baseUrlObj.hostname;
+    
+    // For each link, determine if it's internal or external
+    for (const link of links) {
+      try {
+        // Handle relative URLs
+        let fullUrl = link.url;
+        if (fullUrl.startsWith('/')) {
+          fullUrl = `${baseUrlObj.protocol}//${baseDomain}${fullUrl}`;
+        } else if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+          // Handle URLs without protocol
+          if (fullUrl.includes(baseDomain)) {
+            fullUrl = `${baseUrlObj.protocol}//${fullUrl}`;
+          } else {
+            // It might be relative to current path
+            const path = baseUrlObj.pathname.endsWith('/') 
+              ? baseUrlObj.pathname 
+              : baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/') + 1);
+            fullUrl = `${baseUrlObj.protocol}//${baseDomain}${path}${fullUrl}`;
+          }
+        }
+        
+        // Check if URL contains the same domain
+        const isInternal = fullUrl.includes(baseDomain);
+        
+        // Create the link object with is_internal flag
+        const linkObj = {
+          ...link,
+          url: fullUrl,
+          is_internal: isInternal
+        };
+        
+        if (isInternal) {
+          internalLinks.push(linkObj);
+        } else {
+          externalLinks.push(linkObj);
+        }
+      } catch (e) {
+        console.error(`Error processing link ${link.url}:`, e);
+        // If there's an error, default to external
+        externalLinks.push({
+          ...link,
+          is_internal: false
+        });
+      }
+    }
+    
+    return { internalLinks, externalLinks };
+  } catch (error) {
+    console.error('Error categorizing links:', error);
+    return { internalLinks: [], externalLinks: [] };
+  }
+}
+
+/**
+ * Extract heading elements
+ */
+export function extractHeadings(html: string): any[] {
+  try {
+    const headings = [];
+    const headingTypes = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+    
+    let position = 1;
+    for (const type of headingTypes) {
+      const regex = new RegExp(`<${type}[^>]*>(.*?)<\/${type}>`, 'gi');
+      let match;
+      
+      while ((match = regex.exec(html)) !== null) {
+        const content = match[1].replace(/<[^>]+>/g, '').trim();
+        
+        if (content) {
+          headings.push({
+            type: type,
+            heading_type: type,
+            content: content,
+            position: position++
+          });
+        }
+      }
+    }
+    
+    // Sort by position in document
+    headings.sort((a, b) => a.position - b.position);
+    
+    return headings;
+  } catch (error) {
+    console.error('Error extracting headings:', error);
+    return [];
+  }
 }
 
 /**
  * Extract images from HTML
  */
-export function extractImages(html: string, baseUrl: string): Array<{src: string; alt: string | null}> {
-  if (!html) return [];
-  
+export function extractImages(html: string, baseUrl: string): any[] {
   try {
     const images = [];
-    const imgRegex = /<img[^>]*src=["'](.*?)["'][^>]*>/gis;
-    let match;
+    const regex = /<img\s[^>]*src=["']([^"']+)["'][^>]*>/gi;
     
-    while ((match = imgRegex.exec(html)) !== null) {
-      let src = match[1].trim();
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const src = match[1];
       
-      // Skip data URLs or empty sources
+      // Skip data URLs, base64 images, etc.
       if (!src || src.startsWith('data:')) {
         continue;
       }
       
-      // Convert relative URLs to absolute
-      if (src.startsWith('/')) {
-        const baseUrlObj = new URL(baseUrl);
-        src = `${baseUrlObj.protocol}//${baseUrlObj.host}${src}`;
-      } else if (!src.startsWith('http')) {
-        try {
-          src = new URL(src, baseUrl).href;
-        } catch (error) {
-          console.error(`[Extractors] Error processing image URL ${src}:`, error);
-          continue;
-        }
-      }
+      // Check if image has alt text
+      const imgTag = match[0];
+      const altMatch = imgTag.match(/alt=["']([^"']*)["']/i);
+      const hasAlt = altMatch !== null && altMatch[1].trim() !== '';
       
-      // Extract alt text (if any)
-      const altMatch = match[0].match(/alt=["'](.*?)["']/i);
-      const alt = altMatch ? altMatch[1] : null;
+      // Extract width and height if available
+      const widthMatch = imgTag.match(/width=["'](\d+)["']/i);
+      const heightMatch = imgTag.match(/height=["'](\d+)["']/i);
+      const width = widthMatch ? parseInt(widthMatch[1]) : null;
+      const height = heightMatch ? parseInt(heightMatch[1]) : null;
       
       images.push({
-        src,
-        alt
+        src: src,
+        has_alt: hasAlt,
+        alt: altMatch ? altMatch[1] : '',
+        width: width,
+        height: height
       });
     }
     
-    console.log(`[Extractors] Found ${images.length} images`);
     return images;
   } catch (error) {
-    console.error(`[Extractors] Error extracting images:`, error);
+    console.error('Error extracting images:', error);
     return [];
+  }
+}
+
+/**
+ * Extract approximate word count
+ */
+export function extractWordCount(html: string): number {
+  try {
+    // First remove HTML tags
+    const text = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+                     .replace(/<[^>]+>/g, ' ')
+                     .replace(/\s+/g, ' ')
+                     .trim();
+    
+    // Count words (non-empty strings separated by whitespace)
+    const words = text.split(/\s+/).filter(word => word.length > 0);
+    return words.length;
+  } catch (error) {
+    console.error('Error calculating word count:', error);
+    return 0;
   }
 }

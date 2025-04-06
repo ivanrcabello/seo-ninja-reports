@@ -10,7 +10,11 @@ import {
   categorizeLinks,
   extractHeadings,
   extractImages,
-  extractWordCount
+  extractWordCount,
+  extractRobotsMeta,
+  extractSchemaMarkup,
+  detectMobileFriendly,
+  extractCanonicalUrl
 } from './extractors.ts';
 import { detectAllIssues } from './issue-detector.ts';
 import {
@@ -40,8 +44,14 @@ export async function processHtml(
     const h1 = extractH1(html);
     const wordCount = extractWordCount(html);
     const images = extractImages(html, url);
+    const robotsMeta = extractRobotsMeta(html);
+    const schemaMarkup = extractSchemaMarkup(html);
+    const hasSchemaMarkup = schemaMarkup.length > 0;
+    const mobileFriendly = detectMobileFriendly(html);
+    const canonicalUrl = extractCanonicalUrl(html);
 
     console.log(`[HTML Analysis] Extracted core data - Title: ${title ? 'Yes' : 'No'}, Meta: ${metaDescription ? 'Yes' : 'No'}, H1: ${h1 ? 'Yes' : 'No'}, Words: ${wordCount}`);
+    console.log(`[HTML Analysis] Advanced data - Schema Markup: ${hasSchemaMarkup ? 'Yes' : 'No'}, Mobile Friendly: ${mobileFriendly ? 'Yes' : 'No'}, Robots: ${robotsMeta || 'None'}, Canonical: ${canonicalUrl || 'None'}`);
 
     // Create the page record and get the page ID
     console.log(`[HTML Analysis] Creating page record for: ${url}`);
@@ -51,7 +61,11 @@ export async function processHtml(
       h1,
       wordCount,
       statusCode: 200,
-      isIndexable: true
+      isIndexable: !robotsMeta?.includes('noindex'),
+      robotsDirectives: robotsMeta,
+      hasSchemaMarkup,
+      mobileFriendly,
+      canonicalUrl
     });
     
     if (!pageId) {
@@ -95,7 +109,12 @@ export async function processHtml(
       metaDescription,
       h1,
       wordCount,
-      images
+      images,
+      robotsMeta,
+      hasSchemaMarkup,
+      mobileFriendly,
+      canonicalUrl,
+      headings
     };
     
     const { issues, count } = detectAllIssues(pageId, pageData);
@@ -106,9 +125,19 @@ export async function processHtml(
       await saveIssues(supabase, crawlId, issues);
     }
     
+    // Calculate counts for headings by type
+    const h1Count = headings.filter(h => h.type === 'h1').length;
+    const h2Count = headings.filter(h => h.type === 'h2').length;
+    const h3Count = headings.filter(h => h.type === 'h3').length;
+    
     // Update the page record with analysis results
     await updatePageWithAnalysisResults(supabase, pageId, {
-      issuesCount: count
+      issuesCount: count,
+      internalLinksCount: internalLinks.length,
+      externalLinksCount: externalLinks.length,
+      h1Count,
+      h2Count,
+      h3Count
     });
     
     console.log(`[HTML Analysis] Analysis completed for: ${url}`);

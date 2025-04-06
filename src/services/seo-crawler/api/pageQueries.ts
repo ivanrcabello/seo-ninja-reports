@@ -99,7 +99,16 @@ export const getCrawlLinks = async (crawlId: string) => {
   }
   
   console.log(`[PageQueries] Found ${data?.length || 0} links for crawl ID: ${crawlId}`);
-  return data || [];
+  
+  // Format returned data to ensure the page_url field is populated
+  const formattedLinks = (data || []).map(link => ({
+    ...link,
+    page_url: link.page?.url || '',
+    anchor_text: link.anchor_text || link.text || '',
+    is_followed: link.is_followed !== undefined ? link.is_followed : link.follow
+  }));
+  
+  return formattedLinks;
 };
 
 /**
@@ -129,8 +138,7 @@ export const getPageHeadings = async (pageId: string): Promise<CrawlHeading[]> =
     heading_type: heading.heading_type,
     content: heading.content,
     position: heading.position,
-    // Add page_url property with empty string as default
-    page_url: ''
+    page_url: '' // Add page_url property with empty string as default
   }));
   
   return formattedHeadings;

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { CrawlPage, CrawlLink } from '@/services/seo-crawler';
 import BlurredCard from '@/components/ui/BlurredCard';
@@ -6,8 +7,17 @@ import { CardHeader, CardTitle, CardDescription, CardContent } from '@/component
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { ExternalLink, Search, Link, Link2, AlertTriangle } from 'lucide-react';
+import { ExternalLink, Search, Link, Link2, AlertTriangle, Filter, ChevronDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 interface LinksTabContentProps {
   pageLinks: CrawlLink[];
@@ -23,6 +33,11 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
   onPageSelect = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [filterNofollow, setFilterNofollow] = useState<boolean | null>(null);
+  
+  console.log("[LinksTabContent] Rendering with links count:", pageLinks.length);
+  console.log("[LinksTabContent] Sample link data:", pageLinks.length > 0 ? pageLinks[0] : "No links");
   
   // Group all links by type
   const { internalLinks, externalLinks, brokenLinks } = useMemo(() => {
@@ -31,14 +46,24 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
     const broken: CrawlLink[] = [];
     
     pageLinks.forEach(link => {
-      if (link.is_broken) {
-        broken.push(link);
+      // Ensure all links have required properties by setting defaults if needed
+      const processedLink = {
+        ...link,
+        anchor_text: link.anchor_text || link.text || "",
+        is_internal: typeof link.is_internal === 'boolean' ? link.is_internal : false,
+        is_broken: typeof link.is_broken === 'boolean' ? link.is_broken : false,
+        is_followed: typeof link.is_followed === 'boolean' ? link.is_followed : 
+                     (typeof link.follow === 'boolean' ? link.follow : true)
+      };
+      
+      if (processedLink.is_broken) {
+        broken.push(processedLink);
       }
       
-      if (link.is_internal) {
-        internal.push(link);
+      if (processedLink.is_internal) {
+        internal.push(processedLink);
       } else {
-        external.push(link);
+        external.push(processedLink);
       }
     });
     
@@ -49,31 +74,48 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
     };
   }, [pageLinks]);
   
-  // Filter links based on search term
-  const filteredInternalLinks = useMemo(() => {
-    return internalLinks.filter(link => 
-      link.url.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      link.anchor_text?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [internalLinks, searchTerm]);
+  // Filter links based on search term and nofollow filter
+  const getFilteredLinks = (links: CrawlLink[]) => {
+    return links.filter(link => {
+      // Text search filter
+      const matchesSearch = !searchTerm || 
+        link.url.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (link.anchor_text || "").toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Nofollow filter
+      const matchesNofollow = filterNofollow === null || 
+        (filterNofollow === true && !(link.is_followed || link.follow)) ||
+        (filterNofollow === false && (link.is_followed || link.follow));
+      
+      return matchesSearch && matchesNofollow;
+    });
+  };
   
-  const filteredExternalLinks = useMemo(() => {
-    return externalLinks.filter(link => 
-      link.url.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      link.anchor_text?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [externalLinks, searchTerm]);
+  const filteredInternalLinks = useMemo(() => getFilteredLinks(internalLinks), 
+    [internalLinks, searchTerm, filterNofollow]);
   
-  const filteredBrokenLinks = useMemo(() => {
-    return brokenLinks.filter(link => 
-      link.url.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      link.anchor_text?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [brokenLinks, searchTerm]);
+  const filteredExternalLinks = useMemo(() => getFilteredLinks(externalLinks), 
+    [externalLinks, searchTerm, filterNofollow]);
+  
+  const filteredBrokenLinks = useMemo(() => getFilteredLinks(brokenLinks), 
+    [brokenLinks, searchTerm, filterNofollow]);
+  
+  const allFilteredLinks = useMemo(() => {
+    if (activeTab === 'internal') return filteredInternalLinks;
+    if (activeTab === 'external') return filteredExternalLinks;
+    if (activeTab === 'broken') return filteredBrokenLinks;
+    return [...filteredInternalLinks, ...filteredExternalLinks]; // 'all' tab
+  }, [filteredInternalLinks, filteredExternalLinks, filteredBrokenLinks, activeTab]);
   
   // Find the page for a specific link
   const findPageForLink = (pageId: string) => {
     return pages.find(page => page.id === pageId);
+  };
+  
+  // Get the count label with proper filtering
+  const getCountLabel = (total: number, filtered: number) => {
+    if (total === filtered) return `(${total})`;
+    return `(${filtered}/${total})`;
   };
   
   if (!pageLinks || pageLinks.length === 0) {
@@ -94,35 +136,73 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
     <BlurredCard>
       <CardHeader>
         <CardTitle>Análisis de Enlaces</CardTitle>
-        <CardDescription className="flex justify-between items-center">
+        <CardDescription className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <span>Total: {pageLinks.length} enlaces encontrados</span>
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar enlaces..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar enlaces..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="ml-1" title="Filtros">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filtrar por atributo</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setFilterNofollow(null)}
+                  className={filterNofollow === null ? "bg-accent text-accent-foreground" : ""}
+                >
+                  Todos los enlaces
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setFilterNofollow(false)}
+                  className={filterNofollow === false ? "bg-accent text-accent-foreground" : ""}
+                >
+                  Solo enlaces follow
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setFilterNofollow(true)}
+                  className={filterNofollow === true ? "bg-accent text-accent-foreground" : ""}
+                >
+                  Solo enlaces nofollow
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardDescription>
       </CardHeader>
       <Separator />
       <CardContent className="p-6">
-        <Tabs defaultValue="all">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="all">Todos ({pageLinks.length})</TabsTrigger>
-            <TabsTrigger value="internal">Internos ({internalLinks.length})</TabsTrigger>
-            <TabsTrigger value="external">Externos ({externalLinks.length})</TabsTrigger>
+            <TabsTrigger value="all">
+              Todos {getCountLabel(pageLinks.length, allFilteredLinks.length)}
+            </TabsTrigger>
+            <TabsTrigger value="internal">
+              Internos {getCountLabel(internalLinks.length, filteredInternalLinks.length)}
+            </TabsTrigger>
+            <TabsTrigger value="external">
+              Externos {getCountLabel(externalLinks.length, filteredExternalLinks.length)}
+            </TabsTrigger>
             <TabsTrigger value="broken">
-              Rotos ({brokenLinks.length})
+              Rotos {getCountLabel(brokenLinks.length, filteredBrokenLinks.length)}
               {brokenLinks.length > 0 && <AlertTriangle className="ml-1 h-4 w-4 text-amber-500" />}
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="all" className="mt-4">
             <LinksList 
-              links={searchTerm ? [...filteredInternalLinks, ...filteredExternalLinks] : pageLinks} 
+              links={allFilteredLinks} 
               findPageForLink={findPageForLink}
               onPageSelect={onPageSelect}
             />
@@ -167,7 +247,7 @@ const LinksList: React.FC<LinksListProps> = ({ links, findPageForLink, onPageSel
   if (links.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">No se encontraron enlaces para esta categoría</p>
+        <p className="text-muted-foreground">No se encontraron enlaces para esta categoría o con los filtros seleccionados</p>
       </div>
     );
   }
@@ -185,11 +265,15 @@ const LinksList: React.FC<LinksListProps> = ({ links, findPageForLink, onPageSel
           </TableRow>
         </TableHeader>
         <TableBody>
-          {links.map((link) => {
+          {links.map((link, index) => {
             const sourcePage = findPageForLink(link.page_id);
             
+            // Default followed state
+            const isFollowed = link.is_followed !== undefined ? link.is_followed : 
+                             (link.follow !== undefined ? link.follow : true);
+            
             return (
-              <TableRow key={link.id}>
+              <TableRow key={link.id || `link-${index}`}>
                 <TableCell className="max-w-xs truncate">
                   <a 
                     href={link.url} 
@@ -201,7 +285,7 @@ const LinksList: React.FC<LinksListProps> = ({ links, findPageForLink, onPageSel
                     <ExternalLink className="h-3 w-3 ml-1" />
                   </a>
                 </TableCell>
-                <TableCell>{link.anchor_text || 'Sin texto'}</TableCell>
+                <TableCell>{link.anchor_text || link.text || 'Sin texto'}</TableCell>
                 <TableCell>
                   {link.is_internal ? (
                     <Badge variant="outline" className="bg-blue-100 text-blue-800">
@@ -210,6 +294,11 @@ const LinksList: React.FC<LinksListProps> = ({ links, findPageForLink, onPageSel
                   ) : (
                     <Badge variant="outline" className="bg-purple-100 text-purple-800">
                       <Link2 className="h-3 w-3 mr-1" /> Externo
+                    </Badge>
+                  )}
+                  {!isFollowed && (
+                    <Badge variant="outline" className="ml-1 bg-amber-100 text-amber-800">
+                      NoFollow
                     </Badge>
                   )}
                 </TableCell>

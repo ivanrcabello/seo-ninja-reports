@@ -79,18 +79,6 @@ const IssuesTabContent: React.FC<IssuesTabContentProps> = ({
       .join(' ');
   };
   
-  // Get icon for issue
-  const getIssueIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'high':
-        return <AlertTriangle className="h-5 w-5 text-orange-500" />;
-      default:
-        return <AlertTriangle className="h-5 w-5 text-amber-400" />;
-    }
-  };
-  
   return (
     <div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
