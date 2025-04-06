@@ -3,41 +3,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlPage } from '../types';
 import { formatCrawlResult } from './crawlFormatter';
 
-/**
- * Get a single crawl result by ID
- */
-export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
-  const { data, error } = await supabase
-    .from('seo_crawler_crawls')
-    .select('*')
-    .eq('id', crawlId)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching crawl result:', error);
-    throw error;
-  }
-  
-  return formatCrawlResult(data);
-};
+// Export functions from other files
+export { 
+  getCrawlResult, 
+  getCrawlResults, 
+  getCrawlPages,
+  deleteCrawlRecord 
+} from './crawlQueries';
 
-/**
- * Get all pages for a crawl
- */
-export const getCrawlPages = async (crawlId: string): Promise<CrawlPage[]> => {
-  const { data, error } = await supabase
-    .from('seo_crawler_pages')
-    .select('*')
-    .eq('crawl_id', crawlId)
-    .order('crawled_at', { ascending: true });
-  
-  if (error) {
-    console.error('Error fetching crawl pages:', error);
-    throw error;
-  }
-  
-  return data || [];
-};
+export {
+  getPageIssues,
+  getCrawlIssues
+} from './issueQueries';
+
+export {
+  getPageLinks,
+  getCrawlLinks
+} from './linkQueries';
+
+export {
+  getPageHeadings,
+  getCrawlHeadings
+} from './headingQueries';
+
+export {
+  saveCrawlSettings,
+  getCrawlSettings
+} from './settingsOperations';
 
 /**
  * Start a new crawl

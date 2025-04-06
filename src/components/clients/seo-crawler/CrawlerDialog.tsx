@@ -69,9 +69,10 @@ const CrawlerDialog: React.FC<CrawlerDialogProps> = ({
           onSuccess();
         }
       } else {
-        setErrorMessage(result.message || 'Respuesta vacía o inválida');
-        toast.error(`Error: ${result.message || 'Respuesta vacía o inválida'}`);
-        console.error('Respuesta inválida:', result);
+        // Use error instead of message property
+        setErrorMessage(result.error || 'Error desconocido al iniciar el análisis');
+        toast.error(`Error: ${result.error || 'Error desconocido al iniciar el análisis'}`);
+        console.error('Error al iniciar análisis:', result);
       }
     } catch (error: any) {
       const errorMsg = `Error al iniciar análisis SEO: ${error.message}`;
