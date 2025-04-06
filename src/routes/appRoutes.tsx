@@ -1,144 +1,71 @@
 
 import React from 'react';
-import { RouteObject } from 'react-router-dom';
-import Index from '@/pages/Index';
-import Servicios from '@/pages/Servicios';
-import Paquetes from '@/pages/Paquetes';
-import Blog from '@/pages/Blog';
-import BlogDetail from '@/pages/BlogDetail';
-import Contacto from '@/pages/Contacto';
-import Precios from '@/pages/Precios';
-import Caracteristicas from '@/pages/Caracteristicas';
-import Guias from '@/pages/Guias';
-import Documentacion from '@/pages/Documentacion';
-import Recursos from '@/pages/Recursos';
-import Privacidad from '@/pages/Privacidad';
-import Cookies from '@/pages/Cookies';
-import Terminos from '@/pages/Terminos';
-import NotFoundPage from '@/pages/NotFoundPage';
-
-// Service Pages
-import SeoLocal from '@/pages/servicios/SeoLocal';
+import { Navigate } from 'react-router-dom';
+import Dashboard from '@/pages/Dashboard';
+import ClientDetail from '@/pages/ClientDetail';
+import ReportDetail from '@/pages/ReportDetail';
+import Home from '@/pages/Home';
+import Services from '@/pages/Services';
+import Contact from '@/pages/Contact';
+import About from '@/pages/About';
+import Pricing from '@/pages/Pricing';
 import SeoTecnico from '@/pages/servicios/SeoTecnico';
-import SeoIA from '@/pages/servicios/SeoIA';
-import ContenidoSeo from '@/pages/servicios/ContenidoSeo';
-import SeoCompetencia from '@/pages/servicios/SeoCompetencia';
-import GoogleBusiness from '@/pages/servicios/GoogleBusiness';
-import Resenas from '@/pages/servicios/Resenas';
+import ContentMarketing from '@/pages/servicios/ContentMarketing';
+import LocalSeo from '@/pages/servicios/LocalSeo';
+import Layout from '@/components/layout/Layout';
+import AuthGuard from '@/components/auth/AuthGuard';
 
-// Package Pages
-import PackStarter from '@/pages/packs/PackStarter';
-import PackAscenso from '@/pages/packs/PackAscenso';
-import PackMaster from '@/pages/packs/PackMaster';
-
-export const appRoutes: RouteObject[] = [
+export const appRoutes = [
   {
     path: '/',
-    element: <Index />
-  },
-  // Servicios
-  {
-    path: '/servicios',
-    element: <Servicios />
+    element: <Home />,
   },
   {
-    path: '/servicios/seo-local',
-    element: <SeoLocal />
+    path: '/services',
+    element: <Services />,
+  },
+  {
+    path: '/contact',
+    element: <Contact />,
+  },
+  {
+    path: '/about',
+    element: <About />,
+  },
+  {
+    path: '/pricing',
+    element: <Pricing />,
   },
   {
     path: '/servicios/seo-tecnico',
-    element: <SeoTecnico />
+    element: <SeoTecnico />,
   },
   {
-    path: '/servicios/seo-ia',
-    element: <SeoIA />
+    path: '/servicios/content-marketing',
+    element: <ContentMarketing />,
   },
   {
-    path: '/servicios/contenido-seo',
-    element: <ContenidoSeo />
+    path: '/servicios/local-seo',
+    element: <LocalSeo />,
   },
   {
-    path: '/servicios/seo-competencia',
-    element: <SeoCompetencia />
+    path: '/dashboard',
+    element: <AuthGuard><Dashboard /></AuthGuard>,
   },
   {
-    path: '/servicios/google-business',
-    element: <GoogleBusiness />
+    path: '/clients/:clientId',
+    element: <AuthGuard><ClientDetail /></AuthGuard>,
   },
   {
-    path: '/servicios/resenas',
-    element: <Resenas />
-  },
-  
-  // Paquetes
-  {
-    path: '/paquetes',
-    element: <Paquetes />
+    path: '/clients/:clientId/reports/:id',
+    element: <AuthGuard><ReportDetail /></AuthGuard>,
   },
   {
-    path: '/paquetes/starter',
-    element: <PackStarter />
+    path: '/clients/:clientId/crawler/:crawlId',
+    element: <AuthGuard><ReportDetail /></AuthGuard>,
   },
-  {
-    path: '/paquetes/ascenso',
-    element: <PackAscenso />
-  },
-  {
-    path: '/paquetes/master',
-    element: <PackMaster />
-  },
-  
-  // Blog
-  {
-    path: '/blog',
-    element: <Blog />
-  },
-  {
-    path: '/blog/:slug',
-    element: <BlogDetail />
-  },
-  
-  // Otras páginas
-  {
-    path: '/caracteristicas',
-    element: <Caracteristicas />
-  },
-  {
-    path: '/precios',
-    element: <Precios />
-  },
-  {
-    path: '/guias',
-    element: <Guias />
-  },
-  {
-    path: '/documentacion',
-    element: <Documentacion />
-  },
-  {
-    path: '/recursos',
-    element: <Recursos />
-  },
-  {
-    path: '/contacto',
-    element: <Contacto />
-  },
-  {
-    path: '/privacidad',
-    element: <Privacidad />
-  },
-  {
-    path: '/cookies',
-    element: <Cookies />
-  },
-  {
-    path: '/terminos',
-    element: <Terminos />
-  },
-  
-  // 404 page
   {
     path: '*',
-    element: <NotFoundPage />
-  }
+    element: <Navigate to="/" replace />,
+  },
 ];
