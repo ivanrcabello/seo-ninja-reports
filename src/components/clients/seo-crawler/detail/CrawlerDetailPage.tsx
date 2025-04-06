@@ -31,7 +31,6 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const [selectedPage, setSelectedPage] = useState<CrawlPage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPageData, setIsLoadingPageData] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
   const [showReport, setShowReport] = useState(false);
   
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
@@ -64,6 +63,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         updated_at: page.updated_at || page.crawled_at || new Date().toISOString()
       })) as CrawlPage[];
       
+      // Load issues for the entire crawl
       let issuesData: CrawlIssue[] = [];
       try {
         const rawIssuesData = await getCrawlIssues(crawlId);
@@ -100,6 +100,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         toast.error('Error al cargar los problemas de SEO');
       }
       
+      // Load all headings for the crawl
       let headingsData: CrawlHeading[] = [];
       try {
         headingsData = await getCrawlHeadings(crawlId) as CrawlHeading[];
@@ -136,6 +137,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
     try {
       setIsLoadingPageData(true);
       
+      // First try to get issues from our preloaded issues array
       const pageIssuesFromAll = allIssues.filter(issue => 
         issue.page_id === page.id || 
         (issue.page_url && issue.page_url === page.url)
@@ -143,6 +145,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       
       let pageIssuesData = pageIssuesFromAll;
       
+      // If no issues found in preloaded data but the page has issues, fetch directly
       if (pageIssuesFromAll.length === 0 && page.issues_count && page.issues_count > 0) {
         console.log(`No issues found in preloaded data for page ${page.id}, but issues_count is ${page.issues_count}. Fetching directly...`);
         try {
@@ -162,6 +165,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       console.log(`Setting ${pageIssuesData.length} issues for page ${page.id}`);
       setPageIssues(pageIssuesData);
       
+      // Get links for the page
       try {
         const rawLinksData = await getPageLinks(page.id);
         // Add required fields for CrawlLink type
@@ -176,6 +180,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         setPageLinks([]);
       }
       
+      // Try to get headings from preloaded data first
       const filteredPageHeadings = allHeadings.filter(heading => heading.page_id === page.id);
       console.log(`Found ${filteredPageHeadings.length} headings for page ${page.id} from preloaded data`);
       
