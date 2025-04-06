@@ -1,11 +1,14 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import useReports from '@/hooks/useReports'; // Fixed import
-import useClients from '@/hooks/useClients'; // Fixed import
+import useReports from '@/hooks/useReports'; 
+import useClients from '@/hooks/useClients';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, Search } from 'lucide-react';
+import { FileText, Plus, Search, BarChart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { getCrawlResults } from '@/services/seo-crawler/api';
+import { CrawlResult } from '@/services/seo-crawler/types';
 
 export interface ReportsTabProps {
   reports?: any[];
@@ -15,10 +18,40 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
   const { reports, isLoading } = useReports();
   const { clients } = useClients();
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [crawlResults, setCrawlResults] = useState<CrawlResult[]>([]);
+  const [isCrawlsLoading, setIsCrawlsLoading] = useState(true);
+
+  // Load SEO crawler results
+  useEffect(() => {
+    const loadCrawlResults = async () => {
+      try {
+        setIsCrawlsLoading(true);
+        const results = await getCrawlResults();
+        console.log('SEO Crawler results for dashboard:', results);
+        setCrawlResults(results);
+      } catch (error) {
+        console.error('Error loading SEO crawler results:', error);
+      } finally {
+        setIsCrawlsLoading(false);
+      }
+    };
+
+    loadCrawlResults();
+  }, []);
 
   const filteredReports = reports?.filter(report =>
     report.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const filteredCrawls = crawlResults?.filter(crawl =>
+    crawl.domain?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Get client name helper function
+  const getClientName = (clientId: string) => {
+    const client = clients.find(client => client.id === clientId);
+    return client?.name || 'Cliente no encontrado';
+  };
 
   return (
     <div className="space-y-6">
@@ -50,11 +83,11 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
             </div>
           </div>
 
-          {isLoading ? (
+          {isLoading && isCrawlsLoading ? (
             <div className="py-8 text-center">
               <p className="text-muted-foreground">Cargando informes...</p>
             </div>
-          ) : filteredReports?.length === 0 ? (
+          ) : (filteredReports?.length === 0 && filteredCrawls?.length === 0) ? (
             <div className="py-8 text-center">
               <p className="text-muted-foreground mb-4">No se encontraron informes</p>
               <Button asChild variant="outline" className="gap-2">
@@ -65,21 +98,73 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredReports?.map(report => (
-                <Link to={`/reports/${report.id}`} key={report.id}>
-                  <Card className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <CardTitle className="text-sm font-medium">{report.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground">
-                        Cliente: {clients.find(client => client.id === report.clientId)?.name || 'N/A'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+            <div className="space-y-6">
+              {/* Automated SEO Reports Section */}
+              {filteredReports?.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Informes SEO Automáticos</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredReports?.map(report => (
+                      <Link to={`/reports/${report.id}`} key={report.id}>
+                        <Card className="hover:shadow-md transition-shadow">
+                          <CardHeader>
+                            <CardTitle className="text-sm font-medium">{report.title}</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-xs text-muted-foreground">
+                              Cliente: {clients.find(client => client.id === report.clientId)?.name || 'N/A'}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Technical SEO Reports Section */}
+              {filteredCrawls?.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Análisis SEO Técnico</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredCrawls.map(crawl => (
+                      <Link 
+                        to={`/clients/${crawl.client_id}/crawler/${crawl.id}`} 
+                        key={crawl.id}
+                      >
+                        <Card className="hover:shadow-md transition-shadow">
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-start">
+                              <CardTitle className="text-sm font-medium truncate">
+                                {crawl.domain}
+                              </CardTitle>
+                              <div className={`px-2 py-1 text-xs rounded-full ${
+                                crawl.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                crawl.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                                crawl.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {crawl.status === 'completed' ? 'Completado' :
+                                crawl.status === 'processing' ? 'Procesando' :
+                                crawl.status === 'failed' ? 'Error' : 'Pendiente'}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <p>Cliente: {getClientName(crawl.client_id)}</p>
+                              <div className="flex items-center">
+                                <BarChart className="h-3 w-3 mr-1" />
+                                <span>{crawl.pages_crawled || 0} páginas</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

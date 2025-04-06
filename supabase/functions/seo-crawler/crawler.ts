@@ -152,8 +152,8 @@ export async function crawlPages(
           }
         }
         
-        // Simple delay to avoid overwhelming the server or API
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Add a small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
         
       } catch (pageError) {
         console.error(`Error processing page ${url}: ${pageError.message}`);
