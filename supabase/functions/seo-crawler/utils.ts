@@ -1,4 +1,3 @@
-
 // Utility functions for SEO crawler
 import { SupabaseInstance } from "./types.ts";
 
@@ -133,9 +132,20 @@ export function toAbsoluteUrl(relativeUrl: string, baseUrl: string): string {
       return relativeUrl;
     }
     
+    // If it's a protocol-relative URL, add the protocol
+    if (relativeUrl.startsWith('//')) {
+      const protocol = baseUrl.startsWith('https') ? 'https:' : 'http:';
+      return protocol + relativeUrl;
+    }
+    
     // Make sure base URL has protocol
     if (!baseUrl.startsWith('http')) {
       baseUrl = 'https://' + baseUrl;
+    }
+    
+    // Remove fragment identifiers from the relative URL
+    if (relativeUrl.startsWith('#')) {
+      return baseUrl;
     }
     
     // Use URL constructor for proper resolution
@@ -144,4 +154,72 @@ export function toAbsoluteUrl(relativeUrl: string, baseUrl: string): string {
     console.error(`Error converting to absolute URL: ${e}`);
     return relativeUrl;
   }
+}
+
+/**
+ * Get a normalized version of a URL (without trailing slashes, fragments, etc.)
+ */
+export function normalizeUrl(url: string): string {
+  try {
+    // Add protocol if missing
+    if (!url.startsWith('http')) {
+      url = 'https://' + url;
+    }
+    
+    const urlObj = new URL(url);
+    
+    // Remove fragments
+    urlObj.hash = '';
+    
+    // Get the base URL
+    let normalized = urlObj.origin + urlObj.pathname;
+    
+    // Remove trailing slashes
+    while (normalized.endsWith('/') && normalized.length > 1) {
+      normalized = normalized.slice(0, -1);
+    }
+    
+    // Keep the query parameters
+    if (urlObj.search) {
+      normalized += urlObj.search;
+    }
+    
+    return normalized;
+  } catch (e) {
+    console.error(`Error normalizing URL ${url}: ${e}`);
+    return url;
+  }
+}
+
+/**
+ * Check if URL should be excluded based on common patterns or file extensions
+ */
+export function shouldExcludeUrl(url: string): boolean {
+  // Common file extensions to exclude
+  const excludedExtensions = [
+    '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', 
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.zip', '.rar', '.tar', '.gz', '.mp3', '.mp4', '.avi', '.mov',
+    '.css', '.js', '.json'
+  ];
+  
+  // Check file extensions
+  if (excludedExtensions.some(ext => url.toLowerCase().endsWith(ext))) {
+    return true;
+  }
+  
+  // Exclude common patterns
+  const excludedPatterns = [
+    '/wp-admin', '/wp-login', '/wp-includes',
+    '/admin', '/login', '/logout',
+    '/cart', '/checkout', '/my-account',
+    'mailto:', 'tel:', 'javascript:',
+    '/cdn-cgi/', '/wp-json/', '/feed/'
+  ];
+  
+  if (excludedPatterns.some(pattern => url.includes(pattern))) {
+    return true;
+  }
+  
+  return false;
 }

@@ -47,3 +47,21 @@ export interface Image {
   alt: string | null;
   has_alt: boolean;
 }
+
+export interface CrawlSettings {
+  max_pages: number;
+  exclude_urls: string[];
+  include_urls: string[];
+  respect_robots_txt: boolean;
+  user_agent: string;
+  crawl_sitemap: boolean;
+  follow_links: boolean;
+  max_depth: number;
+  custom_headers: Record<string, string>;
+}
+
+export interface CrawlQueue {
+  url: string;
+  depth: number;
+  parentUrl?: string;
+}

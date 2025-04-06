@@ -1,15 +1,13 @@
 
-// Main Supabase Edge Function for SEO Crawler
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { handleRequest } from "./handler.ts";
 import { corsHeaders } from "./cors-headers.ts";
+import { crawlPages } from "./crawler.ts";
 
-// Create Supabase client
-export const supabase = createClient(
-  Deno.env.get("SUPABASE_URL") ?? "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-);
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -20,22 +18,96 @@ serve(async (req) => {
   }
 
   try {
-    console.log("SEO Crawler function invoked");
-    console.log("Function version: 1.3.0"); // Updated version for tracking
+    // Get request body
+    const body = await req.json();
     
-    // Use the dedicated handler function
-    return await handleRequest(req, supabase);
-  } catch (error) {
-    console.error(`Error in SEO crawler function: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    console.error(`Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`);
+    console.log("SEO Crawler Edge Function Invoked with body:", JSON.stringify(body));
     
+    // Extract parameters
+    const { crawlId, url, settings, brightDataUsername, brightDataPassword, brightDataApiKey } = body;
+    
+    if (!crawlId || !url) {
+      throw new Error("Missing required parameters: crawlId and url");
+    }
+    
+    // Log the settings
+    console.log(`Starting crawl with settings: max_pages=${settings?.max_pages || 'default'}`);
+
+    // Update crawl record to processing state
+    await supabase
+      .from('seo_crawler_crawls')
+      .update({
+        status: 'processing',
+        started_at: new Date().toISOString(),
+      })
+      .eq('id', crawlId);
+    
+    // Start the crawl process asynchronously
+    // This won't block the response but will continue running
+    (async () => {
+      try {
+        await crawlPages(
+          supabase, 
+          url, 
+          crawlId, 
+          settings || {
+            max_pages: 100,
+            exclude_urls: [],
+            include_urls: [],
+            respect_robots_txt: true,
+            user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
+            crawl_sitemap: true,
+            follow_links: true,
+            max_depth: 3,
+            custom_headers: {}
+          },
+          brightDataUsername,
+          brightDataPassword,
+          brightDataApiKey
+        );
+      } catch (error) {
+        console.error("Crawl process error:", error);
+        
+        // Update crawl status to failed
+        await supabase
+          .from('seo_crawler_crawls')
+          .update({
+            status: 'failed',
+            error_message: error instanceof Error ? error.message : String(error),
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', crawlId);
+      }
+    })();
+    
+    // Return immediate success response
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: `Error in SEO crawler function: ${error instanceof Error ? error.message : String(error)}` 
+      JSON.stringify({
+        success: true,
+        message: "Crawl process started successfully and will continue in the background",
+        crawlId
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error("Error:", error);
+    
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
         status: 500,
       }
     );

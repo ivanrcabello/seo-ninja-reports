@@ -37,7 +37,10 @@ export async function startCrawl(
     // Merge default settings with custom settings
     const defaultSettings: CrawlSettings = {
       max_pages: 100,
-      exclude_urls: [],
+      exclude_urls: [
+        '/wp-admin', '/wp-login', '/logout', '/cart', '/checkout',
+        '.jpg', '.jpeg', '.png', '.gif', '.css', '.js', '.pdf'
+      ],
       include_urls: [],
       respect_robots_txt: true,
       user_agent: 'Mozilla/5.0 (compatible; SeoAuditBot/1.0)',
@@ -106,6 +109,7 @@ export async function startCrawl(
       console.log("Invoking seo-crawler edge function with params:", {
         crawlId: crawlRecord.id,
         url: normalizedUrl,
+        settings: mergedSettings,
         brightDataUsername: brightDataUsername ? 'provided' : 'not provided',
         brightDataPassword: brightDataPassword ? 'provided' : 'not provided', 
         brightDataApiKey: brightDataApiKey ? 'provided' : 'not provided'
@@ -169,7 +173,7 @@ export async function startCrawl(
       error_message: "Crawl started. The process will continue in the background.",
       settings: mergedSettings, // Use the merged settings instead of db record
       success: true,
-      message: 'Crawl started. It will continue in the background.',
+      message: 'Crawl started. It will continue in the background analyzing multiple pages.',
       
       // Include additional properties with default values
       total_time_seconds: 0,

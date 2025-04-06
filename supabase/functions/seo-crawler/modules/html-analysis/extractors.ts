@@ -1,119 +1,167 @@
 
-// HTML data extraction utilities
-import { isInternalUrl } from '../../utils.ts';
-import * as cheerio from 'https://esm.sh/cheerio@1.0.0-rc.12';
+// Extractors for HTML content
+import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
+import { sanitizeHtml, toAbsoluteUrl } from "../../utils.ts";
+import { Heading, Link, Image } from "../../types.ts";
 
 /**
- * Extract page title from HTML using both regex and DOM parsing for better reliability
+ * Extract title from HTML
  */
 export function extractTitle(html: string): string | null {
+  if (!html) return null;
+  
   try {
-    // First try with cheerio (DOM parsing)
     const $ = cheerio.load(html);
-    const titleElement = $('title').first();
-    if (titleElement && titleElement.text().trim()) {
-      return titleElement.text().trim();
-    }
-    
-    // Fallback to regex
-    const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
-    return titleMatch ? titleMatch[1].trim() : null;
+    return $('title').first().text().trim() || null;
   } catch (error) {
     console.error('Error extracting title:', error);
-    
-    // Last-resort regex attempt
-    try {
-      const lastResortMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
-      return lastResortMatch ? lastResortMatch[1].trim() : null;
-    } catch (e) {
-      return null;
-    }
+    return null;
   }
 }
 
 /**
- * Extract meta description from HTML using both regex and DOM parsing
+ * Extract meta description from HTML
  */
 export function extractMetaDescription(html: string): string | null {
+  if (!html) return null;
+  
   try {
-    // First try with cheerio (DOM parsing)
     const $ = cheerio.load(html);
-    const metaDesc = $('meta[name="description"]').attr('content');
-    if (metaDesc) {
-      return metaDesc.trim();
-    }
-    
-    // Fallback to regex
-    const metaMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["'](.*?)["'][^>]*>/i) || 
-                      html.match(/<meta[^>]*content=["'](.*?)["'][^>]*name=["']description["'][^>]*>/i);
-    return metaMatch ? metaMatch[1].trim() : null;
+    return $('meta[name="description"]').attr('content')?.trim() || null;
   } catch (error) {
     console.error('Error extracting meta description:', error);
-    
-    // Last-resort regex
-    try {
-      const lastResortMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["'](.*?)["'][^>]*>/i);
-      return lastResortMatch ? lastResortMatch[1].trim() : null;
-    } catch (e) {
-      return null;
-    }
+    return null;
   }
 }
 
 /**
- * Extract H1 from HTML using both regex and DOM parsing
+ * Extract meta keywords from HTML
+ */
+export function extractMetaKeywords(html: string): string | null {
+  if (!html) return null;
+  
+  try {
+    const $ = cheerio.load(html);
+    return $('meta[name="keywords"]').attr('content')?.trim() || null;
+  } catch (error) {
+    console.error('Error extracting meta keywords:', error);
+    return null;
+  }
+}
+
+/**
+ * Extract H1 from HTML
  */
 export function extractH1(html: string): string | null {
+  if (!html) return null;
+  
   try {
-    // First try with cheerio (DOM parsing)
     const $ = cheerio.load(html);
-    const h1Element = $('h1').first();
-    if (h1Element && h1Element.text().trim()) {
-      return h1Element.text().trim();
-    }
-    
-    // Fallback to regex
-    const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    return h1Match ? 
-      h1Match[1]
-        .replace(/<[^>]+>/g, '') // Remove any nested HTML tags
-        .trim() 
-      : null;
+    return $('h1').first().text().trim() || null;
   } catch (error) {
     console.error('Error extracting H1:', error);
+    return null;
+  }
+}
+
+/**
+ * Extract all links from HTML
+ */
+export function extractLinks(html: string, baseUrl: string): string[] {
+  if (!html) return [];
+  
+  try {
+    const $ = cheerio.load(html);
+    const links: string[] = [];
     
-    // Last-resort regex
+    $('a[href]').each((_, element) => {
+      const href = $(element).attr('href')?.trim();
+      if (href && !href.startsWith('javascript:') && href !== '#') {
+        try {
+          const absoluteUrl = toAbsoluteUrl(href, baseUrl);
+          links.push(absoluteUrl);
+        } catch (e) {
+          console.error(`Error converting to absolute URL: ${e}`);
+        }
+      }
+    });
+    
+    // Remove duplicates
+    return [...new Set(links)];
+  } catch (error) {
+    console.error('Error extracting links:', error);
+    return [];
+  }
+}
+
+/**
+ * Categorize links into internal and external
+ */
+export function categorizeLinks(links: string[], baseUrl: string): { internalLinks: string[], externalLinks: string[] } {
+  const internalLinks: string[] = [];
+  const externalLinks: string[] = [];
+  
+  const baseDomain = extractDomainFromUrl(baseUrl);
+  
+  for (const link of links) {
     try {
-      const lastResortMatch = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-      return lastResortMatch ? 
-        lastResortMatch[1].replace(/<[^>]+>/g, '').trim() : null;
+      const linkDomain = extractDomainFromUrl(link);
+      
+      if (linkDomain === baseDomain || !link.includes('://')) {
+        internalLinks.push(link);
+      } else {
+        externalLinks.push(link);
+      }
     } catch (e) {
-      return null;
+      console.error(`Error categorizing link ${link}: ${e}`);
+      // If we can't parse it, assume it's external
+      externalLinks.push(link);
     }
+  }
+  
+  return { internalLinks, externalLinks };
+}
+
+/**
+ * Helper function to extract domain from URL
+ */
+function extractDomainFromUrl(url: string): string {
+  try {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+  } catch (e) {
+    console.error(`Error extracting domain from ${url}: ${e}`);
+    return url;
   }
 }
 
 /**
  * Extract all headings from HTML
  */
-export function extractHeadings(html: string): Array<{type: string, content: string, position: number}> {
+export function extractHeadings(html: string): Heading[] {
+  if (!html) return [];
+  
   try {
-    const headings = [];
     const $ = cheerio.load(html);
+    const headings: Heading[] = [];
     
-    // Find all heading elements
-    $('h1, h2, h3, h4, h5, h6').each((index, element) => {
-      const type = element.name; // h1, h2, etc
-      const content = $(element).text().trim();
-      
-      if (content) {
-        headings.push({
-          type,
-          content,
-          position: index + 1
-        });
-      }
-    });
+    // Extract h1 through h6 tags
+    for (let i = 1; i <= 6; i++) {
+      $(`h${i}`).each((index, element) => {
+        const content = $(element).text().trim();
+        if (content) {
+          headings.push({
+            type: `h${i}`,
+            content,
+            position: headings.length + 1
+          });
+        }
+      });
+    }
     
     return headings;
   } catch (error) {
@@ -123,144 +171,31 @@ export function extractHeadings(html: string): Array<{type: string, content: str
 }
 
 /**
- * Extract links from HTML using both regex and DOM parsing
- */
-export function extractLinks(html: string, baseUrl: string): string[] {
-  try {
-    // First try with cheerio (DOM parsing)
-    const $ = cheerio.load(html);
-    const links: string[] = [];
-    
-    $('a[href]').each((_, element) => {
-      let href = $(element).attr('href')?.trim() || '';
-      
-      // Skip empty or javascript: links
-      if (!href || href.startsWith('javascript:') || href === '#') {
-        return;
-      }
-      
-      // Handle relative URLs
-      if (href.startsWith('/') || !href.includes('://')) {
-        try {
-          const url = new URL(href, baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`);
-          href = url.href;
-        } catch (e) {
-          console.warn(`Could not parse relative URL: ${href}, skipping`);
-          return;
-        }
-      }
-      
-      links.push(href);
-    });
-    
-    // If cheerio found links, return them
-    if (links.length > 0) {
-      return [...new Set(links)]; // Remove duplicates
-    }
-    
-    // Fallback to regex
-    const regexLinks: string[] = [];
-    const linkRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>/gi;
-    
-    let match;
-    while ((match = linkRegex.exec(html)) !== null) {
-      let href = match[1].trim();
-      
-      // Skip empty or javascript: links
-      if (!href || href.startsWith('javascript:') || href === '#') {
-        continue;
-      }
-      
-      // Handle relative URLs
-      if (href.startsWith('/') || !href.includes('://')) {
-        try {
-          const url = new URL(href, baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`);
-          href = url.href;
-        } catch (e) {
-          console.warn(`Could not parse relative URL: ${href}, skipping`);
-          continue;
-        }
-      }
-      
-      regexLinks.push(href);
-    }
-    
-    // Remove duplicates
-    return [...new Set(regexLinks)];
-  } catch (error) {
-    console.error('Error extracting links:', error);
-    
-    // Last attempt with basic regex
-    try {
-      const basicLinks: string[] = [];
-      const basicRegex = /href=["']([^"']*)["']/gi;
-      let match;
-      
-      while ((match = basicRegex.exec(html)) !== null) {
-        if (match[1] && !match[1].startsWith('javascript:') && match[1] !== '#') {
-          basicLinks.push(match[1]);
-        }
-      }
-      
-      return [...new Set(basicLinks)];
-    } catch (e) {
-      return [];
-    }
-  }
-}
-
-/**
- * Categorize links as internal or external
- */
-export function categorizeLinks(links: string[], baseUrl: string): { 
-  internalLinks: string[], 
-  externalLinks: string[] 
-} {
-  try {
-    const internalLinks: string[] = [];
-    const externalLinks: string[] = [];
-    
-    for (const link of links) {
-      if (isInternalUrl(link, baseUrl)) {
-        internalLinks.push(link);
-      } else {
-        externalLinks.push(link);
-      }
-    }
-    
-    return { internalLinks, externalLinks };
-  } catch (error) {
-    console.error('Error categorizing links:', error);
-    return { internalLinks: [], externalLinks: [] };
-  }
-}
-
-/**
  * Extract all images from HTML
  */
-export function extractImages(html: string, baseUrl: string): Array<{src: string, alt: string | null}> {
+export function extractImages(html: string, baseUrl: string): Image[] {
+  if (!html) return [];
+  
   try {
     const $ = cheerio.load(html);
-    const images: Array<{src: string, alt: string | null}> = [];
+    const images: Image[] = [];
     
     $('img').each((_, element) => {
-      let src = $(element).attr('src')?.trim() || '';
-      const alt = $(element).attr('alt')?.trim() || null;
-      
-      if (!src) return;
-      
-      // Handle relative URLs for src
-      if (src.startsWith('/') || !src.includes('://')) {
+      const src = $(element).attr('src');
+      if (src) {
         try {
-          const url = new URL(src, baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`);
-          src = url.href;
+          const absoluteSrc = toAbsoluteUrl(src, baseUrl);
+          const alt = $(element).attr('alt') || null;
+          
+          images.push({
+            src: absoluteSrc,
+            alt,
+            has_alt: alt !== null && alt.trim() !== ''
+          });
         } catch (e) {
-          console.warn(`Could not parse relative image URL: ${src}, skipping`);
-          return;
+          console.error(`Error processing image: ${e}`);
         }
       }
-      
-      images.push({ src, alt });
     });
     
     return images;
@@ -271,22 +206,169 @@ export function extractImages(html: string, baseUrl: string): Array<{src: string
 }
 
 /**
- * Extract word count from HTML content
+ * Extract word count from HTML
  */
 export function extractWordCount(html: string): number {
+  if (!html) return 0;
+  
   try {
     const $ = cheerio.load(html);
     
-    // Get text from body
+    // Get the text from body
     const bodyText = $('body').text();
+    if (!bodyText) return 0;
     
-    // Remove extra whitespace and split by spaces
-    const words = bodyText.replace(/\s+/g, ' ').trim().split(' ');
+    // Clean the text
+    const cleanText = sanitizeHtml(bodyText);
     
-    // Return word count
+    // Count words
+    const words = cleanText.split(/\s+/).filter(Boolean);
     return words.length;
   } catch (error) {
-    console.error('Error counting words:', error);
+    console.error('Error extracting word count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Check for canonical URL
+ */
+export function extractCanonicalUrl(html: string, baseUrl: string): string | null {
+  if (!html) return null;
+  
+  try {
+    const $ = cheerio.load(html);
+    const canonicalHref = $('link[rel="canonical"]').attr('href');
+    
+    if (canonicalHref) {
+      return toAbsoluteUrl(canonicalHref, baseUrl);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error extracting canonical URL:', error);
+    return null;
+  }
+}
+
+/**
+ * Extract robots meta tag directives
+ */
+export function extractRobotsDirectives(html: string): string | null {
+  if (!html) return null;
+  
+  try {
+    const $ = cheerio.load(html);
+    return $('meta[name="robots"]').attr('content')?.trim() || null;
+  } catch (error) {
+    console.error('Error extracting robots directives:', error);
+    return null;
+  }
+}
+
+/**
+ * Extract schema markup
+ */
+export function extractSchemaMarkup(html: string): any[] {
+  if (!html) return [];
+  
+  try {
+    const $ = cheerio.load(html);
+    const schemas: any[] = [];
+    
+    // Look for JSON-LD
+    $('script[type="application/ld+json"]').each((_, element) => {
+      try {
+        const text = $(element).html();
+        if (text) {
+          const parsed = JSON.parse(text);
+          schemas.push(parsed);
+        }
+      } catch (e) {
+        console.error('Error parsing JSON-LD:', e);
+      }
+    });
+    
+    return schemas;
+  } catch (error) {
+    console.error('Error extracting schema markup:', error);
+    return [];
+  }
+}
+
+/**
+ * Extract Open Graph metadata
+ */
+export function extractOpenGraphData(html: string): Record<string, string> {
+  if (!html) return {};
+  
+  try {
+    const $ = cheerio.load(html);
+    const ogData: Record<string, string> = {};
+    
+    $('meta[property^="og:"]').each((_, element) => {
+      const property = $(element).attr('property');
+      const content = $(element).attr('content');
+      
+      if (property && content) {
+        ogData[property.replace('og:', '')] = content;
+      }
+    });
+    
+    return ogData;
+  } catch (error) {
+    console.error('Error extracting Open Graph data:', error);
+    return {};
+  }
+}
+
+/**
+ * Extract Twitter Card metadata
+ */
+export function extractTwitterCardData(html: string): Record<string, string> {
+  if (!html) return {};
+  
+  try {
+    const $ = cheerio.load(html);
+    const twitterData: Record<string, string> = {};
+    
+    $('meta[name^="twitter:"]').each((_, element) => {
+      const name = $(element).attr('name');
+      const content = $(element).attr('content');
+      
+      if (name && content) {
+        twitterData[name.replace('twitter:', '')] = content;
+      }
+    });
+    
+    return twitterData;
+  } catch (error) {
+    console.error('Error extracting Twitter Card data:', error);
+    return {};
+  }
+}
+
+/**
+ * Calculate the text to HTML ratio
+ */
+export function calculateTextToHtmlRatio(html: string): number {
+  if (!html) return 0;
+  
+  try {
+    const $ = cheerio.load(html);
+    
+    // Get the text content
+    const text = $('body').text().trim();
+    
+    // Calculate ratio
+    const htmlLength = html.length;
+    const textLength = text.length;
+    
+    if (htmlLength === 0) return 0;
+    
+    return (textLength / htmlLength) * 100;
+  } catch (error) {
+    console.error('Error calculating text to HTML ratio:', error);
     return 0;
   }
 }
