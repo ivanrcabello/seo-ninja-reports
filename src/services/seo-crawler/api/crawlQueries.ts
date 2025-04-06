@@ -7,7 +7,7 @@ import { formatCrawlResult } from './crawlFormatter';
  * Get all crawl results for a client
  */
 export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> => {
-  // Use a type assertion to tell TypeScript what table we're using
+  // Use a hardcoded table name instead of a variable to avoid TypeScript inference issues
   const { data, error } = await supabase
     .from('seo_crawler_crawls')
     .select('*')
@@ -26,7 +26,7 @@ export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> 
  * Get a single crawl result by ID
  */
 export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
-  // Use a type assertion to tell TypeScript what table we're using
+  // Use a hardcoded table name instead of a variable to avoid TypeScript inference issues
   const { data, error } = await supabase
     .from('seo_crawler_crawls')
     .select('*')
@@ -49,14 +49,44 @@ export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
   const tables = ['seo_crawler_pages', 'seo_crawler_issues', 'seo_crawler_links', 'seo_crawler_headings'];
   
   for (const table of tables) {
-    const { error } = await supabase
-      .from(table)
-      .delete()
-      .eq('crawl_id', crawlId);
-    
-    if (error) {
-      console.error(`Error deleting records from ${table}:`, error);
-      // Continue with other tables despite errors
+    // Create a type assertion for each table deletion to avoid TypeScript errors
+    if (table === 'seo_crawler_pages') {
+      const { error } = await supabase
+        .from('seo_crawler_pages')
+        .delete()
+        .eq('crawl_id', crawlId);
+      
+      if (error) {
+        console.error(`Error deleting records from ${table}:`, error);
+        // Continue with other tables despite errors
+      }
+    } else if (table === 'seo_crawler_issues') {
+      const { error } = await supabase
+        .from('seo_crawler_issues')
+        .delete()
+        .eq('crawl_id', crawlId);
+      
+      if (error) {
+        console.error(`Error deleting records from ${table}:`, error);
+      }
+    } else if (table === 'seo_crawler_links') {
+      const { error } = await supabase
+        .from('seo_crawler_links')
+        .delete()
+        .eq('crawl_id', crawlId);
+      
+      if (error) {
+        console.error(`Error deleting records from ${table}:`, error);
+      }
+    } else if (table === 'seo_crawler_headings') {
+      const { error } = await supabase
+        .from('seo_crawler_headings')
+        .delete()
+        .eq('crawl_id', crawlId);
+      
+      if (error) {
+        console.error(`Error deleting records from ${table}:`, error);
+      }
     }
   }
   
