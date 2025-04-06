@@ -94,7 +94,14 @@ export async function processHtml(
     
     if (links.length > 0) {
       console.log(`[HTML Analysis] Saving ${links.length} links`);
-      await saveLinks(supabase, crawlId, pageId, links, url);
+      // Make sure all required properties are set before saving
+      const processedLinks = links.map(link => ({
+        ...link,
+        anchor_text: link.anchor_text || link.link_text || '',
+        follow: link.follow !== undefined ? link.follow : !link.rel?.includes('nofollow'),
+        link_text: link.link_text || link.anchor_text || '',
+      }));
+      await saveLinks(supabase, crawlId, pageId, processedLinks, url);
     }
     
     // Save images if found

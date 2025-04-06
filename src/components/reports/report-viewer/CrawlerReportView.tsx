@@ -33,18 +33,15 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState('overview');
   
-  // Group issues by type and severity
   const issuesByType: Record<string, CrawlIssue[]> = {};
   const issuesBySeverity: Record<string, CrawlIssue[]> = {};
   
   issues.forEach(issue => {
-    // Group by type
     if (!issuesByType[issue.issue_type]) {
       issuesByType[issue.issue_type] = [];
     }
     issuesByType[issue.issue_type].push(issue);
     
-    // Group by severity (with default value)
     const severity = issue.severity || 'info';
     if (!issuesBySeverity[severity]) {
       issuesBySeverity[severity] = [];
@@ -52,7 +49,6 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
     issuesBySeverity[severity].push(issue);
   });
   
-  // Prepare data for charts
   const issueTypeChartData = Object.entries(issuesByType).map(([type, typeIssues]) => ({
     name: type,
     count: typeIssues.length
@@ -63,7 +59,6 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
     value: sevIssues.length
   }));
   
-  // Group headings by page
   const headingsByPage: Record<string, CrawlHeading[]> = {};
   headings.forEach(heading => {
     if (!heading.page_id) return;
@@ -74,23 +69,22 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
     headingsByPage[heading.page_id].push(heading);
   });
 
-  // Helper function to check if a page has multiple h1 tags
+  const pageMap = new Map<string, CrawlPage>();
+  pages.forEach(page => pageMap.set(page.id, page));
+  
   const hasMultipleH1s = (pageId: string): boolean => {
     const pageHeadings = headingsByPage[pageId] || [];
     return pageHeadings.filter(h => h.heading_type === 'h1').length > 1;
   };
   
-  // Helper function to check if a page is missing h1 tags
   const isMissingH1 = (pageId: string): boolean => {
     const pageHeadings = headingsByPage[pageId] || [];
     return pageHeadings.filter(h => h.heading_type === 'h1').length === 0;
   };
   
-  // Count heading issues across all pages
   const pagesWithMultipleH1 = Object.keys(headingsByPage).filter(hasMultipleH1s).length;
   const pagesWithMissingH1 = Object.keys(headingsByPage).filter(isMissingH1).length;
   
-  // Helper function to get heading icon based on type
   const getHeadingIcon = (type: string) => {
     switch (type) {
       case 'h1': return <Heading1 className="h-4 w-4 text-blue-500" />;
@@ -100,7 +94,6 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
     }
   };
   
-  // Helper function to get indentation based on heading type
   const getIndentationClass = (type: string) => {
     switch (type) {
       case 'h1': return 'pl-0';
@@ -493,69 +486,79 @@ const CrawlerReportView: React.FC<CrawlerReportViewProps> = ({
                   <div>
                     <h3 className="font-medium text-lg mb-4">Encabezados por página</h3>
                     
-                    {Object.entries(headingsByPage).slice(0, 5).map(([pageId, pageHeadings]) => {
-                      // Find the page URL from the heading data or pages array
-                      const pageUrl = pageHeadings[0]?.page_url || 
-                        pages.find(p => p.id === pageId)?.url || 
-                        'Página desconocida';
+                    <div className="space-y-6">
+                      {Object.entries(headingsByPage).slice(0, 5).map(([pageId, pageHeadings]) => {
+                        const pageUrl = pageHeadings[0]?.page_url || 
+                          pages.find(p => p.id === pageId)?.url || 
+                          'Página desconocida';
+                          
+                        const multipleH1 = pageHeadings.filter(h => h.heading_type === 'h1').length > 1;
+                        const missingH1 = pageHeadings.filter(h => h.heading_type === 'h1').length === 0;
                         
-                      const multipleH1 = pageHeadings.filter(h => h.heading_type === 'h1').length > 1;
-                      const missingH1 = pageHeadings.filter(h => h.heading_type === 'h1').length === 0;
-                      
-                      return (
-                        <div key={pageId} className="mb-6 border rounded-lg p-4">
-                          <h4 className="font-medium text-primary mb-2 truncate">
-                            <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center">
-                              {pageUrl}
-                              <ExternalLink className="h-3 w-3 ml-1" />
-                            </a>
-                          </h4>
-                          
-                          {multipleH1 && (
-                            <Alert variant="destructive" className="mb-2">
-                              <AlertTriangle className="h-4 w-4" />
-                              <AlertTitle>Múltiples H1</AlertTitle>
-                              <AlertDescription>
-                                Esta página tiene {pageHeadings.filter(h => h.heading_type === 'h1').length} encabezados H1
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                          
-                          {missingH1 && (
-                            <Alert variant="destructive" className="mb-2">
-                              <AlertTriangle className="h-4 w-4" />
-                              <AlertTitle>Falta H1</AlertTitle>
-                              <AlertDescription>
-                                Esta página no tiene ningún encabezado H1
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                          
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-16">Tipo</TableHead>
-                                <TableHead>Contenido</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {pageHeadings.map((heading, index) => (
-                                <TableRow key={heading.id || `${pageId}-${index}`}>
-                                  <TableCell>
-                                    <div className="flex items-center justify-center">
+                        return (
+                          <div key={pageId} className="border rounded-lg overflow-hidden">
+                            <div className="bg-muted p-3 border-b">
+                              <h4 className="font-medium text-primary truncate flex items-center">
+                                <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                                <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center truncate">
+                                  {pageUrl}
+                                  <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
+                                </a>
+                              </h4>
+                            </div>
+                            
+                            {(multipleH1 || missingH1) && (
+                              <div className="p-3 border-b bg-amber-50">
+                                {multipleH1 && (
+                                  <div className="flex items-center text-amber-800 mb-1">
+                                    <AlertTriangle className="h-4 w-4 mr-1" />
+                                    <span className="text-sm">
+                                      Esta página tiene {pageHeadings.filter(h => h.heading_type === 'h1').length} encabezados H1
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {missingH1 && (
+                                  <div className="flex items-center text-amber-800">
+                                    <AlertTriangle className="h-4 w-4 mr-1" />
+                                    <span className="text-sm">
+                                      Esta página no tiene ningún encabezado H1
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            <div className="p-3">
+                              <div className="space-y-2">
+                                {pageHeadings.map((heading, index) => (
+                                  <div 
+                                    key={heading.id || `${pageId}-${index}`}
+                                    className={`flex items-start rounded-md p-2 ${
+                                      heading.heading_type === 'h1' ? 'bg-blue-50' : 
+                                      heading.heading_type === 'h2' ? 'bg-green-50' :
+                                      heading.heading_type === 'h3' ? 'bg-amber-50' : 'bg-gray-50'
+                                    } ${getIndentationClass(heading.heading_type)}`}
+                                  >
+                                    <div className="mr-3 flex-shrink-0 mt-0.5">
                                       {getHeadingIcon(heading.heading_type)}
                                     </div>
-                                  </TableCell>
-                                  <TableCell className={getIndentationClass(heading.heading_type)}>
-                                    {heading.content}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      );
-                    })}
+                                    <div>
+                                      <div className="text-sm font-medium">
+                                        {heading.heading_type.toUpperCase()}
+                                      </div>
+                                      <div className="text-sm text-muted-foreground">
+                                        {heading.content}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                     
                     {Object.keys(headingsByPage).length > 5 && (
                       <div className="text-center text-muted-foreground mt-4">
