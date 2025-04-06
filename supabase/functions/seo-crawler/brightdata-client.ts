@@ -1,3 +1,4 @@
+
 // Bright Data HTTP client for SEO crawler
 import { BRIGHT_DATA_CONFIG, CRAWLER_CONFIG } from './config.ts';
 
@@ -17,6 +18,7 @@ export async function fetchPage(
   const apiKey = customApiKey || Deno.env.get("BRIGHT_DATA_API_KEY") || BRIGHT_DATA_CONFIG.DEFAULT_API_KEY;
   
   console.log(`[Bright Data] Using credentials - Username: ${username ? 'provided' : 'not provided'}, API Key: ${apiKey ? 'provided' : 'not provided'}`);
+  console.log(`[Bright Data] API Key (first 10 chars): ${apiKey ? apiKey.substring(0, 10) + '...' : 'not provided'}`);
   
   try {
     // If we have an API key, use that to fetch the page via Bright Data API
@@ -41,22 +43,26 @@ export async function fetchPage(
 async function fetchWithBrightDataApi(url: string, apiKey: string): Promise<string> {
   console.log(`[Bright Data API] Fetching URL: ${url}`);
   
-  const brightDataApiUrl = 'https://api.brightdata.com/web-unlocker/fetch';
-  const encodedUrl = encodeURIComponent(url);
+  // Updated API endpoint for Web Unlocker
+  const brightDataApiUrl = 'https://api.brightdata.com/dca/fetch';
   
   const options = {
-    method: 'GET',
+    method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
-    }
+    },
+    body: JSON.stringify({
+      url: url,
+      render_js: true,
+      response_type: 'html'
+    })
   };
   
-  // URL with parameters
-  const requestUrl = `${brightDataApiUrl}?url=${encodedUrl}`;
-  console.log(`[Bright Data API] Request URL: ${requestUrl}`);
+  console.log(`[Bright Data API] Making request to ${brightDataApiUrl}`);
+  console.log(`[Bright Data API] Request body: ${options.body}`);
   
-  const response = await fetch(requestUrl, options);
+  const response = await fetch(brightDataApiUrl, options);
   
   if (!response.ok) {
     let errorText = '';
@@ -76,29 +82,46 @@ async function fetchWithBrightDataApi(url: string, apiKey: string): Promise<stri
   console.log(`[Bright Data API] Response content type: ${contentType}`);
   
   if (contentType.includes('application/json')) {
-    console.log('[Bright Data API] Response is JSON, parsing and extracting HTML...');
+    console.log('[Bright Data API] Response is JSON, parsing...');
     const jsonResponse = await response.json();
     console.log('[Bright Data API] JSON response keys:', Object.keys(jsonResponse));
     
-    // Check if the JSON response has HTML content
+    // Log the first 500 characters of the JSON response for debugging
+    console.log('[Bright Data API] JSON response sample:', JSON.stringify(jsonResponse).substring(0, 500));
+    
+    // Check for different possible response formats
     if (jsonResponse.body) {
-      console.log('[Bright Data API] Found HTML in body property');
+      console.log('[Bright Data API] Found HTML in body property, length:', jsonResponse.body.length);
       return jsonResponse.body;
     } else if (jsonResponse.html) {
-      console.log('[Bright Data API] Found HTML in html property');
+      console.log('[Bright Data API] Found HTML in html property, length:', jsonResponse.html.length);
       return jsonResponse.html;
     } else if (jsonResponse.content) {
-      console.log('[Bright Data API] Found HTML in content property');
+      console.log('[Bright Data API] Found HTML in content property, length:', jsonResponse.content.length);
       return jsonResponse.content;
+    } else if (jsonResponse.data && jsonResponse.data.body) {
+      console.log('[Bright Data API] Found HTML in data.body property, length:', jsonResponse.data.body.length);
+      return jsonResponse.data.body;
+    } else if (jsonResponse.data && jsonResponse.data.html) {
+      console.log('[Bright Data API] Found HTML in data.html property, length:', jsonResponse.data.html.length);
+      return jsonResponse.data.html;
+    } else if (jsonResponse.data && typeof jsonResponse.data === 'string' && jsonResponse.data.includes('<html')) {
+      console.log('[Bright Data API] Found HTML in data string property, length:', jsonResponse.data.length);
+      return jsonResponse.data;
+    } else if (typeof jsonResponse === 'string' && jsonResponse.includes('<html')) {
+      console.log('[Bright Data API] JSON response is actually HTML string, length:', jsonResponse.length);
+      return jsonResponse;
     } else {
-      // Return the whole JSON as string for debugging
-      console.log('[Bright Data API] No HTML found in JSON, returning full JSON');
-      return JSON.stringify(jsonResponse);
+      // If we didn't find HTML in any of the expected properties, throw an error
+      console.error('[Bright Data API] Could not extract HTML from JSON response');
+      throw new Error('Could not extract HTML from Bright Data API response');
     }
   } else {
     // Direct HTML response
     console.log('[Bright Data API] Response is not JSON, returning as text');
-    return await response.text();
+    const html = await response.text();
+    console.log(`[Bright Data API] Got HTML response, length: ${html.length}`);
+    return html;
   }
 }
 
