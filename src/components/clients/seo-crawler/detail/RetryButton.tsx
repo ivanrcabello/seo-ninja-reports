@@ -14,8 +14,39 @@ interface RetryButtonProps {
 const RetryButton: React.FC<RetryButtonProps> = ({ crawlId, status, onSuccess }) => {
   const [isRetrying, setIsRetrying] = React.useState(false);
   
-  // Only show the retry button for failed crawls
-  if (status !== 'failed') {
+  // Only show the retry button for failed crawls or completed crawls that have an error_message
+  const [canRetry, setCanRetry] = React.useState(status === 'failed');
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  
+  // Check if we should show the retry button for completed crawls with error_message
+  React.useEffect(() => {
+    const checkErrorMessage = async () => {
+      if (status === 'completed') {
+        try {
+          const { data, error } = await supabase
+            .from('seo_crawler_crawls')
+            .select('error_message')
+            .eq('id', crawlId)
+            .single();
+            
+          if (!error && data && data.error_message) {
+            setErrorMessage(data.error_message);
+            setCanRetry(true);
+          }
+        } catch (err) {
+          console.error('Error checking for error message:', err);
+        }
+      } else if (status === 'failed') {
+        setCanRetry(true);
+      } else {
+        setCanRetry(false);
+      }
+    };
+    
+    checkErrorMessage();
+  }, [crawlId, status]);
+  
+  if (!canRetry) {
     return null;
   }
   
@@ -30,7 +61,9 @@ const RetryButton: React.FC<RetryButtonProps> = ({ crawlId, status, onSuccess })
         .update({
           status: 'queued',
           updated_at: new Date().toISOString(),
-          error_message: null // Clear previous error message
+          error_message: null, // Clear previous error message
+          started_at: null,     // Clear previous start time
+          completed_at: null    // Clear previous completion time
         })
         .eq('id', crawlId);
         
@@ -106,20 +139,28 @@ const RetryButton: React.FC<RetryButtonProps> = ({ crawlId, status, onSuccess })
   };
   
   return (
-    <Button 
-      onClick={handleRetry} 
-      disabled={isRetrying}
-      variant="outline"
-      size="sm"
-      className="flex items-center gap-1"
-    >
-      {isRetrying ? (
-        <RefreshCw className="h-4 w-4 animate-spin" />
-      ) : (
-        <AlertCircle className="h-4 w-4" />
+    <div className="flex flex-col space-y-2">
+      {errorMessage && status === 'completed' && (
+        <div className="text-sm text-amber-600 mb-2">
+          <p>Completado con advertencias: {errorMessage}</p>
+        </div>
       )}
-      {isRetrying ? 'Reintentando...' : 'Reintentar análisis'}
-    </Button>
+      
+      <Button 
+        onClick={handleRetry} 
+        disabled={isRetrying}
+        variant="outline"
+        size="sm"
+        className="flex items-center gap-1"
+      >
+        {isRetrying ? (
+          <RefreshCw className="h-4 w-4 animate-spin" />
+        ) : (
+          <AlertCircle className="h-4 w-4" />
+        )}
+        {isRetrying ? 'Reintentando...' : 'Reintentar análisis'}
+      </Button>
+    </div>
   );
 };
 

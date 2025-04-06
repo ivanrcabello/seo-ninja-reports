@@ -2,22 +2,21 @@
 // Client for Bright Data web unlocker and scraping
 import { corsHeaders } from './cors-headers.ts';
 
-// Helper functions for debugging
-const logRequestStart = (url: string, method: string) => {
-  console.log(`[Bright Data] ${method} request to: ${url}`);
-};
+// List of common user agents for better compatibility
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+];
 
-const logRequestSuccess = (url: string, method: string, responseSize: number) => {
-  console.log(`[Bright Data] ${method} request succeeded, received ${responseSize} bytes`);
-};
-
-const logRequestError = (url: string, method: string, error: any) => {
-  console.error(`[Bright Data] ${method} request failed: ${error.message || 'Unknown error'}`);
-  console.error(`[Bright Data] Stack trace: ${error.stack || 'No stack trace'}`);
-};
+// Get a random user agent from the list
+function getRandomUserAgent() {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+}
 
 /**
- * Fetch a page using one of multiple methods to ensure reliability
+ * Fetch a page using Bright Data's Scraping Browser
  */
 export async function fetchPage(
   url: string,
@@ -28,212 +27,241 @@ export async function fetchPage(
   console.log(`[Bright Data] Fetching page: ${url}`);
   console.log(`[Bright Data] Using credentials - Username: ${brightDataUsername ? 'provided' : 'not provided'}, API Key: ${brightDataApiKey ? 'provided' : 'not provided'}`);
   
-  // Store attempts to track what has been tried
-  const attempts: Array<{method: string, status?: number, error?: string}> = [];
-  
-  // Function to create a fallback HTML in case all methods fail
-  const createFallbackHtml = (error: any): string => {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Fallback Page for ${url}</title>
-        <meta name="description" content="This is a fallback page because the content could not be retrieved.">
-      </head>
-      <body>
-        <h1>Fallback Page</h1>
-        <p>This is a fallback page for URL: ${url}</p>
-        <p>The actual page could not be retrieved due to technical difficulties:</p>
-        <p>Error: ${error instanceof Error ? error.message : String(error)}</p>
-        <div>
-          <h2>Attempted Methods:</h2>
-          <ul>
-            ${attempts.map(a => `<li>${a.method}: ${a.status ? `Status: ${a.status}` : a.error || 'Unknown error'}</li>`).join('')}
-          </ul>
-        </div>
-        <a href="https://example.com">Example Link</a>
-      </body>
-      </html>
-    `;
-  };
-  
+  // Try each method in sequence
   try {
-    // Method 1: Direct API key method (if we have an API key)
+    // Method 1: Direct API Key method (preferred)
     if (brightDataApiKey) {
-      console.log(`[Bright Data] Using direct API key method for ${url}`);
-      
       try {
-        const html = await fetchWithDirectApi(url, brightDataApiKey);
-        if (html && html.length > 500) {
-          console.log(`[Bright Data] Direct API key method successful, got ${html.length} characters`);
+        console.log(`[Bright Data] Attempting direct API call with key`);
+        const html = await fetchWithScrapingBrowser(url, brightDataApiKey);
+        if (html && html.length > 1000) {
+          console.log(`[Bright Data] Successfully fetched page with API key (${html.length} chars)`);
           return html;
         } else {
-          console.warn(`[Bright Data] Direct API key method returned insufficient data: ${html?.length || 0} characters`);
-          attempts.push({method: 'Direct API', error: 'Insufficient content length'});
+          console.warn(`[Bright Data] API response too short (${html?.length || 0} chars), trying next method`);
         }
       } catch (error) {
-        console.error(`[Bright Data] Direct API key method failed: ${error.message || 'Unknown error'}`);
-        attempts.push({method: 'Direct API', error: error.message || 'Unknown error'});
+        console.error(`[Bright Data] API Key method failed: ${error.message}`);
       }
     }
-
-    // Method 2: Username/password proxy method
-    if (brightDataUsername && brightDataPassword) {
-      console.log(`[Bright Data] Using proxy method for ${url}`);
-      
-      try {
-        const html = await fetchWithProxy(url, brightDataUsername, brightDataPassword);
-        if (html && html.length > 500) {
-          console.log(`[Bright Data] Proxy method successful, got ${html.length} characters`);
-          return html;
-        } else {
-          console.warn(`[Bright Data] Proxy method returned insufficient data: ${html?.length || 0} characters`);
-          attempts.push({method: 'Proxy', error: 'Insufficient content length'});
-        }
-      } catch (error) {
-        console.error(`[Bright Data] Proxy method failed: ${error.message || 'Unknown error'}`);
-        attempts.push({method: 'Proxy', error: error.message || 'Unknown error'});
-      }
-    }
-
-    // Method 3: Simple fetch without proxy (may work for simple sites)
-    console.log(`[Bright Data] Using simple fetch method for ${url}`);
     
+    // Method 2: Web Unlocker zone with username/password
+    if (brightDataUsername && brightDataPassword) {
+      try {
+        console.log(`[Bright Data] Attempting Web Unlocker direct API call`);
+        const html = await fetchWithWebUnlocker(url, brightDataUsername, brightDataPassword);
+        if (html && html.length > 1000) {
+          console.log(`[Bright Data] Successfully fetched with Web Unlocker (${html.length} chars)`);
+          return html;
+        } else {
+          console.warn(`[Bright Data] Web Unlocker response too short (${html?.length || 0} chars), trying next method`);
+        }
+      } catch (error) {
+        console.error(`[Bright Data] Web Unlocker method failed: ${error.message}`);
+      }
+    }
+    
+    // Method 3: Direct fetch (fallback, less reliable)
     try {
+      console.log(`[Bright Data] Attempting direct fetch as fallback`);
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          'User-Agent': getRandomUserAgent(),
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9,es;q=0.8',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
         redirect: 'follow'
       });
       
-      attempts.push({method: 'Simple fetch', status: response.status});
-      
       if (response.ok) {
         const html = await response.text();
-        if (html && html.length > 500) {
-          console.log(`[Bright Data] Simple fetch method successful, got ${html.length} characters`);
+        console.log(`[Bright Data] Direct fetch succeeded (${html.length} chars)`);
+        
+        if (html && html.length > 1000) {
           return html;
         } else {
-          console.warn(`[Bright Data] Simple fetch method returned insufficient data: ${html?.length || 0} characters`);
+          console.warn(`[Bright Data] Direct fetch response too short (${html.length} chars)`);
         }
       } else {
-        console.warn(`[Bright Data] Simple fetch failed with status: ${response.status}`);
+        console.warn(`[Bright Data] Direct fetch failed with status ${response.status}`);
       }
     } catch (error) {
-      console.error(`[Bright Data] Simple fetch method failed: ${error.message || 'Unknown error'}`);
-      attempts.push({method: 'Simple fetch', error: error.message || 'Unknown error'});
+      console.error(`[Bright Data] Direct fetch method failed: ${error.message}`);
     }
     
-    // All methods failed, return a fallback HTML
-    console.error('[Bright Data] All methods failed, returning fallback HTML');
-    return createFallbackHtml({message: 'All fetch methods failed'});
+    // All methods failed, try one more time with a proxy-like approach
+    console.log(`[Bright Data] All methods failed, trying alternative approach...`);
+    const puppeteerHtml = await simulatePuppeteerApproach(url);
+    if (puppeteerHtml) {
+      return puppeteerHtml;
+    }
+    
+    // If everything fails, throw an error
+    throw new Error("All HTML fetching methods failed");
     
   } catch (error) {
-    console.error(`[Bright Data] Error in fetchPage: ${error.message || 'Unknown error'}`);
-    return createFallbackHtml(error);
-  }
-}
-
-/**
- * Fetch a page using Bright Data's direct API
- */
-async function fetchWithDirectApi(url: string, apiKey: string): Promise<string> {
-  try {
-    console.log(`[Bright Data API] Fetching URL: ${url} with API key starting with ${apiKey.substring(0, 5)}...`);
-    
-    // Build the request payload
-    const payload = {
-      url: url,
-      render_js: true,
-      browser: true
-    };
-    
-    console.log(`[Bright Data API] Request payload: ${JSON.stringify(payload)}`);
-    
-    // Make the API call to Bright Data
-    console.log(`[Bright Data API] Sending request to https://api.brightdata.com/dca/dataset`);
-    const response = await fetch('https://api.brightdata.com/dca/dataset', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(payload)
-    });
-    
-    console.log(`[Bright Data API] Response status: ${response.status} ${response.statusText}`);
-    
-    if (!response.ok) {
-      throw new Error(`[Bright Data API] Error: ${response.statusText}`);
-    }
-    
-    // Clone the response before reading the body to avoid the "Body already consumed" error
-    const clonedResponse = response.clone();
-    
-    try {
-      // Try parsing as JSON first
-      const jsonData = await clonedResponse.json();
-      
-      // If we have JSON data, extract the HTML content
-      if (jsonData.body) {
-        console.log(`[Bright Data API] Successfully received JSON response with body field`);
-        return jsonData.body;
-      } else if (jsonData.html) {
-        console.log(`[Bright Data API] Successfully received JSON response with html field`);
-        return jsonData.html;
-      } else if (jsonData.content) {
-        console.log(`[Bright Data API] Successfully received JSON response with content field`);
-        return jsonData.content;
-      } else {
-        console.error(`[Bright Data API] JSON response doesn't contain expected HTML content`);
-        throw new Error("JSON response doesn't contain HTML content");
-      }
-    } catch (jsonParseError) {
-      // If not a valid JSON, try getting as text
-      console.log(`[Bright Data API] Response is not JSON, trying to get as text`);
-      const text = await response.text();
-      if (text && text.length > 0) {
-        return text;
-      } else {
-        throw new Error("Empty response");
-      }
-    }
-  } catch (error) {
-    console.error(`[Bright Data API] Error: ${error.message || 'Unknown error'}`);
+    console.error(`[Bright Data] Error in fetchPage: ${error.message}`);
     throw error;
   }
 }
 
 /**
- * Fetch a page using Bright Data as a proxy
+ * Fetch page using Bright Data Scraping Browser API
  */
-async function fetchWithProxy(url: string, username: string, password: string): Promise<string> {
+async function fetchWithScrapingBrowser(url: string, apiKey: string): Promise<string> {
+  const endpoint = 'https://api.brightdata.com/scrape';
+  
+  const payload = {
+    url: url,
+    render_js: true,
+    browser: true,
+    browser_headers: {
+      'User-Agent': getRandomUserAgent()
+    },
+    wait_for_selectors: ["title", "h1", "meta[name='description']"],
+    wait_for: 5000, // 5 seconds
+    timeout: 60000, // 60 seconds
+    // More options for better rendering
+    browser_idle_for: 3000, // Wait 3s after page loaded
+    waitForNetworkIdle: true,
+  };
+  
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Bright Data API error (${response.status}): ${errorText}`);
+  }
+  
   try {
-    console.log(`[Bright Data Proxy] Fetching URL: ${url} with username: ${username.substring(0, 5)}...`);
+    const data = await response.json();
     
-    const proxyAuth = btoa(`${username}:${password}`);
+    if (data.body) {
+      return data.body;
+    } else if (data.html) {
+      return data.html;
+    } else if (data.content) {
+      return data.content;
+    } else if (data.results && data.results.content) {
+      return data.results.content;
+    } else {
+      console.error("No HTML content found in API response:", JSON.stringify(data).substring(0, 200) + "...");
+      throw new Error("No HTML content in API response");
+    }
+  } catch (error) {
+    // If JSON parsing fails, try to get raw text
+    const text = await response.text();
+    if (text && text.includes("<html")) {
+      return text;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Fetch page using Bright Data Web Unlocker
+ */
+async function fetchWithWebUnlocker(url: string, username: string, password: string): Promise<string> {
+  // Web Unlocker direct access API endpoint
+  const endpoint = 'https://brightdata.com/api/direct-access';
+  const auth = btoa(`${username}:${password}`);
+  
+  const payload = {
+    url: url,
+    render_js: true,
+    zone: 'web_unlocker',
+    browser: true,
+    wait_for: 5000
+  };
+  
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${auth}`
+    },
+    body: JSON.stringify(payload)
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Web Unlocker error (${response.status}): ${errorText}`);
+  }
+  
+  try {
+    const data = await response.json();
     
+    if (data.body) {
+      return data.body;
+    } else if (data.html) {
+      return data.html;
+    } else if (data.content) {
+      return data.content;
+    } else {
+      console.error("No HTML content found in Web Unlocker response");
+      throw new Error("No HTML content in Web Unlocker response");
+    }
+  } catch (error) {
+    // If JSON parsing fails, try to get raw text
+    const text = await response.text();
+    if (text && text.includes("<html")) {
+      return text;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Simulate a Puppeteer-like approach as a last resort
+ * This doesn't actually use Puppeteer (not available in Deno) but mimics a similar request pattern
+ */
+async function simulatePuppeteerApproach(url: string): Promise<string | null> {
+  try {
+    console.log(`[Bright Data] Simulating browser-like request for ${url}`);
+    
+    // Make the request with browser-like headers
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Proxy-Authorization': `Basic ${proxyAuth}`
+        'User-Agent': getRandomUserAgent(),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': 'https://www.google.com/',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Ch-Ua': '"Google Chrome";v="115", "Chromium";v="115"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1'
       },
       redirect: 'follow'
     });
     
-    console.log(`[Bright Data Proxy] Response status: ${response.status} ${response.statusText}`);
-    
-    if (!response.ok) {
-      throw new Error(`Proxy request failed with status: ${response.status}`);
+    if (response.ok) {
+      const html = await response.text();
+      if (html && html.length > 1000) {
+        console.log(`[Bright Data] Simulated browser approach succeeded (${html.length} chars)`);
+        return html;
+      }
     }
     
-    const html = await response.text();
-    console.log(`[Bright Data Proxy] Successfully received HTML, size: ${html.length} characters`);
-    
-    return html;
+    console.log(`[Bright Data] Simulated browser approach failed (status: ${response.status})`);
+    return null;
   } catch (error) {
-    console.error(`[Bright Data Proxy] Error: ${error.message || 'Unknown error'}`);
-    throw error;
+    console.error(`[Bright Data] Simulated browser approach error: ${error.message}`);
+    return null;
   }
 }

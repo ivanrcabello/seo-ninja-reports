@@ -160,6 +160,117 @@ export async function saveLinks(
 }
 
 /**
+ * Save headings to the database
+ */
+export async function saveHeadings(
+  supabase: SupabaseInstance,
+  crawlId: string,
+  pageId: string,
+  headings: Array<{type: string, content: string, position: number}>
+): Promise<boolean> {
+  if (headings.length === 0) return true;
+  
+  try {
+    console.log(`Saving ${headings.length} headings to database for page ${pageId}`);
+    
+    // Format headings for insertion
+    const headingRecords = headings.map(heading => ({
+      crawl_id: crawlId,
+      page_id: pageId,
+      heading_type: heading.type,
+      content: heading.content,
+      position: heading.position
+    }));
+    
+    // Insert in batches
+    const batchSize = 50;
+    for (let i = 0; i < headingRecords.length; i += batchSize) {
+      const batch = headingRecords.slice(i, i + batchSize);
+      const { error } = await supabase
+        .from('seo_crawler_headings')
+        .insert(batch);
+      
+      if (error) {
+        console.error(`Error saving headings batch: ${error.message}`, error);
+        console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
+      } else {
+        console.log(`Successfully saved batch of ${batch.length} headings`);
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in saveHeadings:', error);
+    return false;
+  }
+}
+
+/**
+ * Save images to the database
+ */
+export async function saveImages(
+  supabase: SupabaseInstance,
+  crawlId: string,
+  pageId: string,
+  images: Array<{src: string, alt: string | null}>
+): Promise<boolean> {
+  if (images.length === 0) return true;
+  
+  try {
+    console.log(`Saving ${images.length} images to database for page ${pageId}`);
+    
+    // Format images for insertion
+    const imageRecords = images.map((image, index) => ({
+      crawl_id: crawlId,
+      page_id: pageId,
+      src: image.src,
+      alt: image.alt,
+      position: index + 1,
+      has_alt: image.alt !== null && image.alt !== ''
+    }));
+    
+    // Insert in batches
+    const batchSize = 50;
+    for (let i = 0; i < imageRecords.length; i += batchSize) {
+      const batch = imageRecords.slice(i, i + batchSize);
+      
+      // Check if the seo_crawler_images table exists
+      const { error } = await supabase
+        .from('seo_crawler_images')
+        .insert(batch)
+        .catch(err => {
+          // If table doesn't exist, log it but don't fail
+          console.warn(`Note: seo_crawler_images table might not exist: ${err.message}`);
+          return { error: null }; // Continue execution
+        });
+      
+      if (error) {
+        console.error(`Error saving images batch: ${error.message}`, error);
+      } else {
+        console.log(`Successfully saved batch of ${batch.length} images`);
+      }
+    }
+    
+    // Count images without alt text
+    const imagesWithoutAlt = images.filter(img => !img.alt).length;
+    
+    // Update page record with image counts
+    await supabase
+      .from('seo_crawler_pages')
+      .update({
+        image_count: images.length,
+        images_without_alt: imagesWithoutAlt
+      })
+      .eq('id', pageId);
+    
+    return true;
+  } catch (error) {
+    console.error('Error in saveImages:', error);
+    return false;
+  }
+}
+
+/**
  * Updates the page record with analysis results
  */
 export async function updatePageWithAnalysisResults(
@@ -169,9 +280,12 @@ export async function updatePageWithAnalysisResults(
     title?: string;
     metaDescription?: string;
     h1?: string;
+    wordCount?: number;
     issuesCount: number;
     internalLinksCount: number;
     externalLinksCount: number;
+    imageCount?: number;
+    imagesWithoutAlt?: number;
   }
 ): Promise<boolean> {
   try {
@@ -183,9 +297,12 @@ export async function updatePageWithAnalysisResults(
         title: results.title || null,
         meta_description: results.metaDescription || null,
         h1: results.h1 || null,
+        word_count: results.wordCount || null,
         issues_count: results.issuesCount || 0,
         internal_links_count: results.internalLinksCount || 0,
         external_links_count: results.externalLinksCount || 0,
+        image_count: results.imageCount || null,
+        images_without_alt: results.imagesWithoutAlt || 0,
         crawled_at: new Date().toISOString()
       })
       .eq('id', pageId);

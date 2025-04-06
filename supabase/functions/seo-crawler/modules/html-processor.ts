@@ -3,6 +3,7 @@
 import { SupabaseInstance, PageCrawlResult } from '../types.ts';
 import { registerCrawlerError } from '../utils.ts';
 import { processHtml as analyzeHtml } from './html-analysis/index.ts';
+import * as cheerio from 'https://esm.sh/cheerio@1.0.0-rc.12';
 
 /**
  * Process HTML content from a crawled page
@@ -22,87 +23,131 @@ export async function processHtml(
       console.log(`[HTML Processor] HTML preview: ${html.substring(0, 300)}...`);
     }
     
-    // Improved JSON detection
+    // Determine if we received HTML or JSON
     let processedHtml = html;
     let isJson = false;
     
-    try {
-      if (html.trim().startsWith('{') || html.trim().startsWith('[')) {
-        isJson = true;
-        console.log('[HTML Processor] Content appears to be JSON instead of HTML');
-        const jsonData = JSON.parse(html);
-        console.log('[HTML Processor] Successfully parsed JSON:', JSON.stringify(jsonData).substring(0, 300));
-        
-        // Try to extract HTML from various JSON properties
-        if (jsonData.body) {
-          console.log('[HTML Processor] Found HTML content in JSON body field');
-          processedHtml = jsonData.body;
-        } else if (jsonData.html) {
-          console.log('[HTML Processor] Found HTML content in JSON html field');
-          processedHtml = jsonData.html;
-        } else if (jsonData.content) {
-          console.log('[HTML Processor] Found HTML content in JSON content field');
-          processedHtml = jsonData.content;
-        } else if (jsonData.data && jsonData.data.body) {
-          console.log('[HTML Processor] Found HTML content in JSON data.body field');
-          processedHtml = jsonData.data.body;
-        } else if (jsonData.data && jsonData.data.html) {
-          console.log('[HTML Processor] Found HTML content in JSON data.html field');
-          processedHtml = jsonData.data.html;
-        } else if (jsonData.data && typeof jsonData.data === 'string') {
-          console.log('[HTML Processor] Found potential HTML content in JSON data field (string)');
-          processedHtml = jsonData.data;
-        } else if (jsonData.error || jsonData.message) {
-          const errorMessage = `Bright Data returned JSON error: ${jsonData.error || jsonData.message}`;
-          console.error('[HTML Processor] ' + errorMessage);
-          await registerCrawlerError(supabase, crawlId, url, errorMessage);
+    // First try to detect HTML by checking for common tags
+    const hasHtmlTag = html.includes('<html') || html.includes('<!DOCTYPE') || html.includes('<body');
+    
+    if (!hasHtmlTag) {
+      // This might be JSON, try to parse it
+      try {
+        if (html.trim().startsWith('{') || html.trim().startsWith('[')) {
+          isJson = true;
+          console.log('[HTML Processor] Content appears to be JSON instead of HTML');
           
-          // Don't abort yet, just log the error
-        }
-        
-        // Log the length of the extracted HTML
-        console.log(`[HTML Processor] Extracted HTML from JSON, new length: ${processedHtml.length} characters`);
-        
-        // Check if what we extracted is actually HTML
-        if (processedHtml && processedHtml.length > 0) {
-          const htmlCheck = processedHtml.toLowerCase();
-          if (!htmlCheck.includes('<html') && !htmlCheck.includes('<!doctype') && !htmlCheck.includes('<body')) {
-            console.log('[HTML Processor] Extracted content does not appear to be HTML, will try to use it anyway');
+          const jsonData = JSON.parse(html);
+          console.log('[HTML Processor] Successfully parsed JSON:', JSON.stringify(jsonData).substring(0, 300));
+          
+          // Try to extract HTML from various JSON properties
+          if (jsonData.body) {
+            console.log('[HTML Processor] Found HTML content in JSON body field');
+            processedHtml = jsonData.body;
+          } else if (jsonData.html) {
+            console.log('[HTML Processor] Found HTML content in JSON html field');
+            processedHtml = jsonData.html;
+          } else if (jsonData.content) {
+            console.log('[HTML Processor] Found HTML content in JSON content field');
+            processedHtml = jsonData.content;
+          } else if (jsonData.data && jsonData.data.body) {
+            console.log('[HTML Processor] Found HTML content in JSON data.body field');
+            processedHtml = jsonData.data.body;
+          } else if (jsonData.data && jsonData.data.html) {
+            console.log('[HTML Processor] Found HTML content in JSON data.html field');
+            processedHtml = jsonData.data.html;
+          } else if (jsonData.data && typeof jsonData.data === 'string') {
+            console.log('[HTML Processor] Found potential HTML content in JSON data field (string)');
+            processedHtml = jsonData.data;
+          } else if (jsonData.results && jsonData.results.content) {
+            console.log('[HTML Processor] Found HTML content in JSON results.content field');
+            processedHtml = jsonData.results.content;
+          } else if (jsonData.error || jsonData.message) {
+            const errorMessage = `Bright Data returned JSON error: ${jsonData.error || jsonData.message}`;
+            console.error('[HTML Processor] ' + errorMessage);
+            await registerCrawlerError(supabase, crawlId, url, errorMessage);
+          }
+          
+          // Log the length of the extracted HTML
+          console.log(`[HTML Processor] Extracted HTML from JSON, new length: ${processedHtml.length} characters`);
+          
+          // Check if what we extracted is actually HTML
+          if (processedHtml && processedHtml.length > 0) {
+            const htmlCheck = processedHtml.toLowerCase();
+            if (!htmlCheck.includes('<html') && !htmlCheck.includes('<!doctype') && !htmlCheck.includes('<body')) {
+              console.log('[HTML Processor] Extracted content does not appear to be HTML, will try to use it anyway');
+            }
           }
         }
+      } catch (jsonError) {
+        console.log('[HTML Processor] Failed to parse content as JSON, will process as HTML:', jsonError);
       }
-    } catch (jsonError) {
-      console.log('[HTML Processor] Failed to parse content as JSON, will process as HTML:', jsonError);
     }
     
-    // Check for really empty content
-    if (!processedHtml || processedHtml.length === 0) {
-      console.error('[HTML Processor] HTML content is empty');
-      await registerCrawlerError(supabase, crawlId, url, 'HTML content is empty from Bright Data');
+    // Check if the HTML is meaningful by attempting to load with cheerio
+    let isValidHtml = true;
+    try {
+      const $ = cheerio.load(processedHtml);
+      const title = $('title').text().trim();
+      const h1 = $('h1').text().trim();
+      const links = $('a').length;
       
-      // Generate a minimal HTML for analysis to prevent complete failure
+      console.log(`[HTML Processor] Cheerio test: Title: "${title}", H1: "${h1}", Links: ${links}`);
+      
+      if (!title && !h1 && links === 0) {
+        console.warn('[HTML Processor] HTML content might be missing core elements');
+        
+        // Check if there's any visible content at all
+        const bodyText = $('body').text().trim();
+        if (!bodyText || bodyText.length < 50) {
+          console.warn('[HTML Processor] HTML content appears to be empty or invalid');
+          isValidHtml = false;
+        }
+      }
+    } catch (cheerioError) {
+      console.error('[HTML Processor] Error parsing HTML with cheerio:', cheerioError);
+      isValidHtml = false;
+    }
+    
+    // If HTML appears to be invalid or empty, create a better fallback
+    if (!isValidHtml || !processedHtml || processedHtml.length < 100) {
+      console.error('[HTML Processor] HTML content is invalid or too short, generating fallback content');
+      
+      // Generate a more useful fallback HTML for analysis
       processedHtml = `
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Generated Page for ${url}</title>
-          <meta name="description" content="This is a generated page because the actual content could not be retrieved.">
+          <title>Page analysis for ${url}</title>
+          <meta name="description" content="The page content could not be properly retrieved. This is a generated placeholder.">
         </head>
         <body>
-          <h1>Generated Page</h1>
-          <p>This is a generated page for URL: ${url}</p>
-          <p>The actual page could not be retrieved due to technical difficulties.</p>
-          <p>This placeholder is created to allow basic analysis to continue.</p>
-          <a href="https://example.com">Example Link</a>
+          <h1>Content Not Available</h1>
+          <p>The content for <a href="${url}">${url}</a> could not be properly retrieved.</p>
+          <p>This may be due to one of the following reasons:</p>
+          <ul>
+            <li>The website uses advanced JavaScript that requires browser rendering</li>
+            <li>The website has protective measures against automated access</li>
+            <li>The website content loads dynamically after the initial page load</li>
+            <li>There might be connectivity issues with Bright Data's services</li>
+          </ul>
+          <p>You may want to try again later or check the website manually.</p>
+          
+          <h2>Technical Details</h2>
+          <p>URL: ${url}</p>
+          <p>Crawl ID: ${crawlId}</p>
+          <p>Response length: ${html.length} characters</p>
+          
+          <div style="display:none">
+            <!-- Additional metadata for analysis -->
+            <p>Original content preview: ${html.substring(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;')}...</p>
+          </div>
         </body>
         </html>
       `;
       
-      console.log('[HTML Processor] Created minimal placeholder HTML');
+      console.log('[HTML Processor] Created enhanced fallback HTML');
     }
-    
-    // Be less strict about validation - if it's not empty, we'll try to process it
-    console.log('[HTML Processor] Proceeding with HTML analysis on available content');
     
     // Process the HTML content
     console.log('[HTML Processor] Calling HTML analysis module...');

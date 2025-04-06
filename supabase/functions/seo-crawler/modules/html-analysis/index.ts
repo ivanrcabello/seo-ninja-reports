@@ -7,13 +7,18 @@ import {
   extractMetaDescription, 
   extractH1, 
   extractLinks,
-  categorizeLinks 
+  categorizeLinks,
+  extractHeadings,
+  extractImages,
+  extractWordCount
 } from './extractors.ts';
 import { detectAllIssues } from './issue-detector.ts';
 import {
   createPageRecord,
   saveIssues,
   saveLinks,
+  saveHeadings,
+  saveImages,
   updatePageWithAnalysisResults
 } from './database-operations.ts';
 
@@ -39,7 +44,7 @@ export async function processHtml(
       return null;
     }
     
-    console.log('Starting regex-based HTML analysis');
+    console.log('Starting HTML analysis for page content');
     
     // Extract data from HTML
     const title = extractTitle(html);
@@ -51,11 +56,32 @@ export async function processHtml(
     const h1 = extractH1(html);
     console.log(`H1 extracted: ${h1 || 'Not found'}`);
     
+    // Extract word count
+    const wordCount = extractWordCount(html);
+    console.log(`Word count: ${wordCount}`);
+    
+    // Extract and save headings
+    const headings = extractHeadings(html);
+    console.log(`Found ${headings.length} headings on the page`);
+    
+    if (headings.length > 0) {
+      await saveHeadings(supabase, crawlId, pageId, headings);
+    }
+    
+    // Extract and save images
+    const images = extractImages(html, url);
+    console.log(`Found ${images.length} images on the page`);
+    
+    if (images.length > 0) {
+      await saveImages(supabase, crawlId, pageId, images);
+    }
+    
     // Extract and categorize links
     const links = extractLinks(html, url);
     console.log(`Found ${links.length} links on the page`);
     
     const { internalLinks, externalLinks } = categorizeLinks(links, url);
+    console.log(`Internal links: ${internalLinks.length}, External links: ${externalLinks.length}`);
     
     // Detect SEO issues
     console.log('Starting SEO issue analysis');
@@ -63,7 +89,9 @@ export async function processHtml(
     const { issues, count: issuesCount } = detectAllIssues(pageId, {
       title,
       metaDescription,
-      h1
+      h1,
+      wordCount,
+      images
     });
     
     // Save issues to database
@@ -83,9 +111,12 @@ export async function processHtml(
       title,
       metaDescription,
       h1,
+      wordCount,
       issuesCount,
       internalLinksCount: internalLinks.length,
-      externalLinksCount: externalLinks.length
+      externalLinksCount: externalLinks.length,
+      imageCount: images.length,
+      imagesWithoutAlt: images.filter(img => !img.alt).length
     });
     
     console.log(`Analysis complete: Found ${issuesCount} issues`);

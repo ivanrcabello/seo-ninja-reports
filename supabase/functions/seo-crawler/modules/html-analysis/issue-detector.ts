@@ -1,104 +1,141 @@
 
-// SEO issue detection logic
-import { SEOIssue } from '../../types.ts';
+// SEO Issue detection module
 
-interface ContentData {
-  title: string | null;
-  metaDescription: string | null;
-  h1: string | null;
+interface PageData {
+  title?: string | null;
+  metaDescription?: string | null;
+  h1?: string | null;
+  wordCount?: number | null;
+  images?: Array<{src: string, alt: string | null}>;
+}
+
+interface Issue {
+  crawl_id?: string;
+  page_id: string;
+  issue_type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical' | 'info';
+  description: string;
+  details?: any;
 }
 
 /**
  * Detect all SEO issues in the page
  */
-export function detectAllIssues(
-  pageId: string, 
-  data: ContentData
-): { issues: SEOIssue[], count: number } {
-  const issues: SEOIssue[] = [];
+export function detectAllIssues(pageId: string, pageData: PageData): { issues: Issue[], count: number } {
+  const issues: Issue[] = [];
   
-  // Check missing title
-  if (!data.title) {
+  // Title issues
+  if (!pageData.title) {
     issues.push({
       page_id: pageId,
       issue_type: 'missing_title',
+      severity: 'critical',
       description: 'The page is missing a title tag',
+      details: { message: 'Title tags are crucial for SEO and user experience' }
+    });
+  } else if (pageData.title.length < 10) {
+    issues.push({
+      page_id: pageId,
+      issue_type: 'title_too_short',
       severity: 'high',
-      created_at: new Date().toISOString()
+      description: 'The title tag is too short',
+      details: { title: pageData.title, length: pageData.title.length, min_recommended: 10 }
     });
-  } 
-  // Check title length
-  else if (data.title.length < 10) {
+  } else if (pageData.title.length > 60) {
     issues.push({
       page_id: pageId,
-      issue_type: 'short_title',
-      description: `The page title is too short (${data.title.length} characters)`,
+      issue_type: 'title_too_long',
       severity: 'medium',
-      created_at: new Date().toISOString()
-    });
-  } else if (data.title.length > 70) {
-    issues.push({
-      page_id: pageId,
-      issue_type: 'long_title',
-      description: `The page title is too long (${data.title.length} characters)`,
-      severity: 'low',
-      created_at: new Date().toISOString()
+      description: 'The title tag is too long and might be truncated in search results',
+      details: { title: pageData.title, length: pageData.title.length, max_recommended: 60 }
     });
   }
   
-  // Check missing meta description
-  if (!data.metaDescription) {
+  // Meta description issues
+  if (!pageData.metaDescription) {
     issues.push({
       page_id: pageId,
       issue_type: 'missing_meta_description',
-      description: 'The page is missing a meta description',
       severity: 'high',
-      created_at: new Date().toISOString()
+      description: 'The page is missing a meta description',
+      details: { message: 'Meta descriptions help improve click-through rates from search results' }
     });
-  } 
-  // Check meta description length
-  else if (data.metaDescription.length < 50) {
+  } else if (pageData.metaDescription.length < 50) {
     issues.push({
       page_id: pageId,
-      issue_type: 'short_meta_description',
-      description: `The meta description is too short (${data.metaDescription.length} characters)`,
+      issue_type: 'meta_description_too_short',
       severity: 'medium',
-      created_at: new Date().toISOString()
+      description: 'The meta description is too short',
+      details: { meta_description: pageData.metaDescription, length: pageData.metaDescription.length, min_recommended: 50 }
     });
-  } else if (data.metaDescription.length > 160) {
+  } else if (pageData.metaDescription.length > 160) {
     issues.push({
       page_id: pageId,
-      issue_type: 'long_meta_description',
-      description: `The meta description is too long (${data.metaDescription.length} characters)`,
+      issue_type: 'meta_description_too_long',
       severity: 'low',
-      created_at: new Date().toISOString()
+      description: 'The meta description is too long and might be truncated in search results',
+      details: { meta_description: pageData.metaDescription, length: pageData.metaDescription.length, max_recommended: 160 }
     });
   }
   
-  // Check missing H1
-  if (!data.h1) {
+  // H1 issues
+  if (!pageData.h1) {
     issues.push({
       page_id: pageId,
       issue_type: 'missing_h1',
-      description: 'The page is missing an H1 heading',
       severity: 'high',
-      created_at: new Date().toISOString()
+      description: 'The page is missing an H1 heading',
+      details: { message: 'H1 headings help search engines understand the main topic of the page' }
     });
   }
   
-  // Check if title and H1 are identical
-  if (data.title && data.h1 && data.title === data.h1) {
+  // Word count issues
+  if (pageData.wordCount !== undefined && pageData.wordCount !== null) {
+    if (pageData.wordCount < 300) {
+      issues.push({
+        page_id: pageId,
+        issue_type: 'low_word_count',
+        severity: 'medium',
+        description: 'The page has thin content',
+        details: { word_count: pageData.wordCount, min_recommended: 300 }
+      });
+    }
+  }
+  
+  // Image alt text issues
+  if (pageData.images && pageData.images.length > 0) {
+    const imagesWithoutAlt = pageData.images.filter(img => !img.alt);
+    
+    if (imagesWithoutAlt.length > 0) {
+      issues.push({
+        page_id: pageId,
+        issue_type: 'images_missing_alt',
+        severity: 'medium',
+        description: `${imagesWithoutAlt.length} images are missing alt text`,
+        details: { 
+          total_images: pageData.images.length,
+          images_without_alt: imagesWithoutAlt.length,
+          image_urls: imagesWithoutAlt.map(img => img.src).slice(0, 10) // Limit to first 10 URLs
+        }
+      });
+    }
+  }
+  
+  // Title and H1 matching/relationship
+  if (pageData.title && pageData.h1 && 
+      pageData.title.toLowerCase() === pageData.h1.toLowerCase()) {
     issues.push({
       page_id: pageId,
-      issue_type: 'identical_title_h1',
-      description: 'The page title and H1 heading are identical',
+      issue_type: 'identical_title_and_h1',
       severity: 'low',
-      created_at: new Date().toISOString()
+      description: 'The title tag and H1 heading are identical',
+      details: { 
+        title: pageData.title,
+        h1: pageData.h1,
+        recommendation: 'Consider making the title and H1 different but complementary'
+      }
     });
   }
   
-  return {
-    issues,
-    count: issues.length
-  };
+  return { issues, count: issues.length };
 }
