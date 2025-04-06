@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlHeading, CrawlIssue, CrawlLink } from '../types';
 
@@ -75,13 +76,23 @@ export const getPageLinks = async (pageId: string) => {
   
   console.log(`[PageQueries] Found ${data?.length || 0} links for page ID: ${pageId}`);
   
+  // Get the current timestamp as ISO string to use as default for created_at
+  const now = new Date().toISOString();
+  
   // Format the data to ensure all fields match the CrawlLink type
-  const formattedLinks = (data || []).map(link => ({
-    ...link,
-    text: link.anchor_text || link.link_text || '',
-    is_followed: typeof link.follow === 'boolean' ? link.follow : true,
-    created_at: link.created_at || new Date().toISOString()
-  }));
+  const formattedLinks = (data || []).map(link => {
+    // First create a base object with all the properties from the link
+    const baseLink = { ...link };
+    
+    // Then explicitly add the required properties for CrawlLink
+    return {
+      ...baseLink,
+      text: baseLink.anchor_text || baseLink.link_text || '',
+      is_followed: typeof baseLink.follow === 'boolean' ? baseLink.follow : true,
+      created_at: now, // Add a default created_at since it doesn't exist in the database
+      page_url: ''  // Empty string as default
+    } as CrawlLink; // Use type assertion to ensure compatibility
+  });
   
   return formattedLinks;
 };
@@ -108,15 +119,24 @@ export const getCrawlLinks = async (crawlId: string) => {
   
   console.log(`[PageQueries] Found ${data?.length || 0} links for crawl ID: ${crawlId}`);
   
+  // Get the current timestamp as ISO string to use as default for created_at
+  const now = new Date().toISOString();
+  
   // Format returned data to ensure all required properties are present
-  const formattedLinks = (data || []).map(link => ({
-    ...link,
-    page_url: link.page?.url || '',
-    anchor_text: link.anchor_text || link.link_text || '',
-    text: link.anchor_text || link.link_text || '',
-    is_followed: link.follow !== undefined ? link.follow : true,
-    created_at: link.created_at || new Date().toISOString()
-  }));
+  const formattedLinks = (data || []).map(link => {
+    // Create a base object with all properties from link
+    const baseLink = { ...link };
+    
+    // Add required properties for CrawlLink
+    return {
+      ...baseLink,
+      page_url: baseLink.page?.url || '',
+      anchor_text: baseLink.anchor_text || baseLink.link_text || '',
+      text: baseLink.anchor_text || baseLink.link_text || '',
+      is_followed: baseLink.follow !== undefined ? baseLink.follow : true,
+      created_at: now // Add default created_at
+    } as CrawlLink; // Use type assertion
+  });
   
   return formattedLinks;
 };
