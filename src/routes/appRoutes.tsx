@@ -4,49 +4,49 @@ import { Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
 import ClientDetail from '@/pages/ClientDetail';
 import ReportDetail from '@/pages/ReportDetail';
-import Home from '@/pages/Home';
-import Services from '@/pages/Services';
-import Contact from '@/pages/Contact';
-import About from '@/pages/About';
-import Pricing from '@/pages/Pricing';
-import SeoTecnico from '@/pages/servicios/SeoTecnico';
-import ContentMarketing from '@/pages/servicios/ContentMarketing';
-import LocalSeo from '@/pages/servicios/LocalSeo';
 import Layout from '@/components/layout/Layout';
 import AuthGuard from '@/components/auth/AuthGuard';
+import Index from '@/pages/Index';
+import Servicios from '@/pages/Servicios';
+import Contacto from '@/pages/Contacto';
+import Paquetes from '@/pages/Paquetes';
+import Precios from '@/pages/Precios';
+import SeoTecnico from '@/pages/servicios/SeoTecnico';
+import ContenidoSeo from '@/pages/servicios/ContenidoSeo';
+import SeoLocal from '@/pages/servicios/SeoLocal';
 
 export const appRoutes = [
   {
     path: '/',
-    element: <Home />,
+    element: <Index />,
   },
   {
-    path: '/services',
-    element: <Services />,
+    path: '/servicios',
+    element: <Servicios />,
   },
   {
-    path: '/contact',
-    element: <Contact />,
+    path: '/contacto',
+    element: <Contacto />,
   },
   {
-    path: '/about',
-    element: <About />,
+    path: '/paquetes',
+    element: <Paquetes />,
   },
   {
-    path: '/pricing',
-    element: <Pricing />,
+    path: '/precios',
+    element: <Precios />,
   },
   {
     path: '/servicios/seo-tecnico',
     element: <SeoTecnico />,
   },
   {
-    path: '/servicios/content-marketing',
-    element: <ContentMarketing />,
+    path: '/servicios/contenido-seo',
+    element: <ContenidoSeo />,
   },
   {
-    path: '/servicios/local-seo',
-    element: <LocalSeo />,
+    path: '/servicios/seo-local',
+    element: <SeoLocal />,
   },
   {
     path: '/dashboard',

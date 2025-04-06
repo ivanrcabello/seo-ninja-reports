@@ -12,11 +12,11 @@ const MobileNavigation: React.FC<{ closeMenu?: () => void }> = ({ closeMenu = ()
   const mobileNavItems = [
     { href: "/", label: "Inicio" },
     { href: "/servicios/seo-tecnico", label: "SEO Técnico" },
-    { href: "/servicios/content-marketing", label: "Content Marketing" },
-    { href: "/servicios/local-seo", label: "SEO Local" },
-    { href: "/pricing", label: "Precios" },
-    { href: "/about", label: "Nosotros" },
-    { href: "/contact", label: "Contacto" },
+    { href: "/servicios/contenido-seo", label: "Content Marketing" },
+    { href: "/servicios/seo-local", label: "SEO Local" },
+    { href: "/precios", label: "Precios" },
+    { href: "/paquetes", label: "Paquetes" },
+    { href: "/contacto", label: "Contacto" },
   ];
   
   return (
