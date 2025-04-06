@@ -46,48 +46,47 @@ export const getCrawlResult = async (crawlId: string): Promise<CrawlResult> => {
  */
 export const deleteCrawlRecord = async (crawlId: string): Promise<void> => {
   // First delete all related records in child tables
-  const tables = ['seo_crawler_pages', 'seo_crawler_issues', 'seo_crawler_links', 'seo_crawler_headings'];
+  // Instead of using a loop with a variable table name, handle each table deletion separately
   
-  for (const table of tables) {
-    // Create a type assertion for each table deletion to avoid TypeScript errors
-    if (table === 'seo_crawler_pages') {
-      const { error } = await supabase
-        .from('seo_crawler_pages')
-        .delete()
-        .eq('crawl_id', crawlId);
-      
-      if (error) {
-        console.error(`Error deleting records from ${table}:`, error);
-        // Continue with other tables despite errors
-      }
-    } else if (table === 'seo_crawler_issues') {
-      const { error } = await supabase
-        .from('seo_crawler_issues')
-        .delete()
-        .eq('crawl_id', crawlId);
-      
-      if (error) {
-        console.error(`Error deleting records from ${table}:`, error);
-      }
-    } else if (table === 'seo_crawler_links') {
-      const { error } = await supabase
-        .from('seo_crawler_links')
-        .delete()
-        .eq('crawl_id', crawlId);
-      
-      if (error) {
-        console.error(`Error deleting records from ${table}:`, error);
-      }
-    } else if (table === 'seo_crawler_headings') {
-      const { error } = await supabase
-        .from('seo_crawler_headings')
-        .delete()
-        .eq('crawl_id', crawlId);
-      
-      if (error) {
-        console.error(`Error deleting records from ${table}:`, error);
-      }
-    }
+  // Delete pages
+  const { error: pagesError } = await supabase
+    .from('seo_crawler_pages')
+    .delete()
+    .eq('crawl_id', crawlId);
+    
+  if (pagesError) {
+    console.error('Error deleting records from seo_crawler_pages:', pagesError);
+    // Continue with other tables despite errors
+  }
+  
+  // Delete issues
+  const { error: issuesError } = await supabase
+    .from('seo_crawler_issues')
+    .delete()
+    .eq('crawl_id', crawlId);
+    
+  if (issuesError) {
+    console.error('Error deleting records from seo_crawler_issues:', issuesError);
+  }
+  
+  // Delete links
+  const { error: linksError } = await supabase
+    .from('seo_crawler_links')
+    .delete()
+    .eq('crawl_id', crawlId);
+    
+  if (linksError) {
+    console.error('Error deleting records from seo_crawler_links:', linksError);
+  }
+  
+  // Delete headings
+  const { error: headingsError } = await supabase
+    .from('seo_crawler_headings')
+    .delete()
+    .eq('crawl_id', crawlId);
+    
+  if (headingsError) {
+    console.error('Error deleting records from seo_crawler_headings:', headingsError);
   }
   
   // Then delete the main crawl record
