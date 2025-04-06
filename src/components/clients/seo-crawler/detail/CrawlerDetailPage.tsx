@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { CrawlResult, CrawlPage, CrawlIssue, CrawlLink, CrawlHeading } from '@/services/seo-crawler/types';
 import { getCrawlResult, getCrawlPages } from '@/services/seo-crawler/api';
@@ -5,6 +6,7 @@ import { getPageIssues, getCrawlIssues, getPageHeadings, getCrawlHeadings, getPa
 import CrawlerDetailHeader from './CrawlerDetailHeader';
 import CrawlerTabs from './CrawlerTabs';
 import CrawlerReportView from '@/components/reports/report-viewer/CrawlerReportView';
+import CrawlerErrorDisplay from './CrawlerErrorDisplay';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,85 +37,86 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
   const [issuesByType, setIssuesByType] = useState<Record<string, CrawlIssue[]>>({});
   const [issuesBySeverity, setIssuesBySeverity] = useState<Record<string, CrawlIssue[]>>({});
   
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!crawlId) {
-        setIsLoading(false);
-        toast.error('ID de análisis no válido');
-        return;
+  // Function to load all data
+  const loadData = async () => {
+    if (!crawlId) {
+      setIsLoading(false);
+      toast.error('ID de análisis no válido');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      const result = await getCrawlResult(crawlId);
+      console.log('Crawl result:', result);
+      setCrawl(result);
+      
+      const pagesData = await getCrawlPages(crawlId);
+      console.log('Pages data:', pagesData);
+      
+      const formattedPages = pagesData.map((page: CrawlPage) => ({
+        ...page,
+        issues_count: Number(page.issues_count || 0)
+      }));
+      
+      let issuesData: CrawlIssue[] = [];
+      try {
+        issuesData = await getCrawlIssues(crawlId);
+        console.log('Issues data:', issuesData);
+        
+        const tempIssuesByType: Record<string, CrawlIssue[]> = {};
+        const tempIssuesBySeverity: Record<string, CrawlIssue[]> = {};
+        
+        issuesData.forEach((issue: CrawlIssue) => {
+          if (!issue.issue_type || !issue.severity) return;
+          
+          if (!tempIssuesByType[issue.issue_type]) {
+            tempIssuesByType[issue.issue_type] = [];
+          }
+          tempIssuesByType[issue.issue_type].push(issue);
+          
+          if (!tempIssuesBySeverity[issue.severity]) {
+            tempIssuesBySeverity[issue.severity] = [];
+          }
+          tempIssuesBySeverity[issue.severity].push(issue);
+        });
+        
+        setIssuesByType(tempIssuesByType);
+        setIssuesBySeverity(tempIssuesBySeverity);
+      } catch (err) {
+        console.error('Failed to fetch issues:', err);
+        toast.error('Error al cargar los problemas de SEO');
       }
       
+      let headingsData: CrawlHeading[] = [];
       try {
-        setIsLoading(true);
-        
-        const result = await getCrawlResult(crawlId);
-        console.log('Crawl result:', result);
-        setCrawl(result);
-        
-        const pagesData = await getCrawlPages(crawlId);
-        console.log('Pages data:', pagesData);
-        
-        const formattedPages = pagesData.map((page: CrawlPage) => ({
-          ...page,
-          issues_count: Number(page.issues_count || 0)
-        }));
-        
-        let issuesData: CrawlIssue[] = [];
-        try {
-          issuesData = await getCrawlIssues(crawlId);
-          console.log('Issues data:', issuesData);
-          
-          const tempIssuesByType: Record<string, CrawlIssue[]> = {};
-          const tempIssuesBySeverity: Record<string, CrawlIssue[]> = {};
-          
-          issuesData.forEach((issue: CrawlIssue) => {
-            if (!issue.issue_type || !issue.severity) return;
-            
-            if (!tempIssuesByType[issue.issue_type]) {
-              tempIssuesByType[issue.issue_type] = [];
-            }
-            tempIssuesByType[issue.issue_type].push(issue);
-            
-            if (!tempIssuesBySeverity[issue.severity]) {
-              tempIssuesBySeverity[issue.severity] = [];
-            }
-            tempIssuesBySeverity[issue.severity].push(issue);
-          });
-          
-          setIssuesByType(tempIssuesByType);
-          setIssuesBySeverity(tempIssuesBySeverity);
-        } catch (err) {
-          console.error('Failed to fetch issues:', err);
-          toast.error('Error al cargar los problemas de SEO');
-        }
-        
-        let headingsData: CrawlHeading[] = [];
-        try {
-          headingsData = await getCrawlHeadings(crawlId);
-          console.log('Headings data:', headingsData);
-        } catch (err) {
-          console.error('Failed to fetch headings:', err);
-          headingsData = [];
-        }
-        
-        setPages(formattedPages);
-        setIssues(issuesData);
-        setAllHeadings(headingsData);
-        
-        if (formattedPages.length > 0) {
-          setSelectedPage(formattedPages[0]);
-          
-          await loadPageData(formattedPages[0], issuesData, headingsData);
-        }
-      } catch (error) {
-        console.error('Error fetching crawl data:', error);
-        toast.error('Error al cargar los datos del análisis');
-      } finally {
-        setIsLoading(false);
+        headingsData = await getCrawlHeadings(crawlId);
+        console.log('Headings data:', headingsData);
+      } catch (err) {
+        console.error('Failed to fetch headings:', err);
+        headingsData = [];
       }
-    };
-    
-    fetchData();
+      
+      setPages(formattedPages);
+      setIssues(issuesData);
+      setAllHeadings(headingsData);
+      
+      if (formattedPages.length > 0) {
+        setSelectedPage(formattedPages[0]);
+        
+        await loadPageData(formattedPages[0], issuesData, headingsData);
+      }
+    } catch (error) {
+      console.error('Error fetching crawl data:', error);
+      toast.error('Error al cargar los datos del análisis');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    loadData();
   }, [crawlId]);
   
   const loadPageData = async (page: CrawlPage, allIssues: CrawlIssue[] = [], allHeadings: CrawlHeading[] = []) => {
@@ -211,6 +214,11 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
         showReport={() => setShowReport(!showReport)} 
         isReportShown={showReport}
       />
+      
+      {/* Show error display if there's an error and status is failed */}
+      {crawl.error_message && crawl.status === 'failed' && (
+        <CrawlerErrorDisplay crawl={crawl} onRefresh={loadData} />
+      )}
       
       {showReport ? (
         <CrawlerReportView 

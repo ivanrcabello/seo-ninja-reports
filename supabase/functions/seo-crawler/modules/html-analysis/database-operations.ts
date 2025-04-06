@@ -1,10 +1,8 @@
 
-// Database operations for HTML analysis
-import { SupabaseInstance } from '../../types.ts';
-import { isInternalUrl } from '../../utils.ts';
+import { SupabaseInstance, Heading, Image, Link, SEOIssue } from "../../types.ts";
 
 /**
- * Creates a page record in the database
+ * Create a page record in the database
  */
 export async function createPageRecord(
   supabase: SupabaseInstance, 
@@ -20,142 +18,87 @@ export async function createPageRecord(
         crawl_id: crawlId,
         url: url,
         status_code: 200,
-        content_type: 'text/html',
-        is_indexable: true,
-        crawled_at: new Date().toISOString()
+        crawled_at: new Date().toISOString(),
       })
       .select('id')
       .single();
     
     if (error) {
       console.error(`Error inserting page record: ${error.message}`, error);
-      console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
       
-      // Try to get the page if it already exists
-      try {
-        const { data: existingPage, error: selectError } = await supabase
-          .from('seo_crawler_pages')
-          .select('id')
-          .eq('crawl_id', crawlId)
-          .eq('url', url)
-          .maybeSingle();
-          
-        if (selectError) {
-          console.error(`Error checking for existing page: ${selectError.message}`);
-          return null;
-        }
+      // The error is likely an RLS issue, let's try to update the crawl with this information
+      await supabase
+        .from('seo_crawler_crawls')
+        .update({
+          error_message: `Database permission error: ${error.message}. This may be a Row Level Security (RLS) issue.`,
+        })
+        .eq('id', crawlId);
         
-        if (existingPage) {
-          console.log(`Found existing page record with ID: ${existingPage.id}`);
-          return existingPage.id;
-        }
-      } catch (selectErr) {
-        console.error(`Error checking for existing page: ${selectErr}`);
-      }
-      
       return null;
     }
     
-    console.log(`Created page record with ID: ${data.id}`);
     return data.id;
   } catch (error) {
-    console.error('Error in createPageRecord:', error);
+    console.error(`Exception creating page record: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
 
 /**
- * Saves SEO issues to the database
+ * Save SEO issues to the database
  */
 export async function saveIssues(
   supabase: SupabaseInstance, 
-  issues: Array<any>
-): Promise<boolean> {
-  if (issues.length === 0) return true;
+  issues: SEOIssue[]
+): Promise<void> {
+  if (issues.length === 0) return;
   
   try {
-    console.log(`Saving ${issues.length} issues to database`);
+    const { error } = await supabase
+      .from('seo_crawler_issues')
+      .insert(issues);
     
-    // Insert in batches to avoid payload size limitations
-    const batchSize = 50;
-    for (let i = 0; i < issues.length; i += batchSize) {
-      const batch = issues.slice(i, i + batchSize);
-      const { error } = await supabase
-        .from('seo_crawler_issues')
-        .insert(batch);
-      
-      if (error) {
-        console.error(`Error saving issues batch: ${error.message}`, error);
-        console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
-      } else {
-        console.log(`Successfully saved batch of ${batch.length} issues`);
-      }
+    if (error) {
+      console.error(`Error inserting issues: ${error.message}`, error);
     }
-    
-    return true;
   } catch (error) {
-    console.error('Error in saveIssues:', error);
-    return false;
+    console.error(`Exception saving issues: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
- * Saves links found on the page to the database
+ * Save links to the database
  */
 export async function saveLinks(
   supabase: SupabaseInstance, 
-  crawlId: string, 
+  crawlId: string,
   pageId: string, 
-  links: Array<string>, 
-  baseUrl: string
-): Promise<boolean> {
-  if (links.length === 0) return true;
+  links: Link[], 
+  sourceUrl: string
+): Promise<void> {
+  if (links.length === 0) return;
   
   try {
-    console.log(`Saving ${links.length} links to database for page ${pageId}`);
-    
-    // Convert links to proper format for insertion
-    const linkRecords = links.map(link => ({
+    const linksToInsert = links.map((link, index) => ({
       crawl_id: crawlId,
       page_id: pageId,
-      url: link,
-      is_internal: isInternalUrl(link, baseUrl),
-      is_broken: false // We'll update this later if needed
+      url: link.url,
+      text: link.text || '',
+      is_internal: link.is_internal,
+      is_followed: link.is_followed,
+      source_url: sourceUrl,
+      position: index + 1,
     }));
     
-    // Insert in batches to avoid payload size limitations
-    const batchSize = 50;
-    for (let i = 0; i < linkRecords.length; i += batchSize) {
-      const batch = linkRecords.slice(i, i + batchSize);
-      const { error } = await supabase
-        .from('seo_crawler_links')
-        .insert(batch);
-      
-      if (error) {
-        console.error(`Error saving links batch: ${error.message}`, error);
-        console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
-      } else {
-        console.log(`Successfully saved batch of ${batch.length} links`);
-      }
+    const { error } = await supabase
+      .from('seo_crawler_links')
+      .insert(linksToInsert);
+    
+    if (error) {
+      console.error(`Error inserting links: ${error.message}`, error);
     }
-    
-    // Update crawl record with link counts
-    const internalLinks = linkRecords.filter(link => link.is_internal).length;
-    const externalLinks = linkRecords.length - internalLinks;
-    
-    await supabase
-      .from('seo_crawler_crawls')
-      .update({
-        total_links: linkRecords.length,
-        total_internal_links: internalLinks,
-        total_external_links: externalLinks
-      })
-      .eq('id', crawlId);
-    
-    return true;
   } catch (error) {
-    console.error('Error in saveLinks:', error);
-    return false;
+    console.error(`Exception saving links: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -163,45 +106,31 @@ export async function saveLinks(
  * Save headings to the database
  */
 export async function saveHeadings(
-  supabase: SupabaseInstance,
+  supabase: SupabaseInstance, 
   crawlId: string,
-  pageId: string,
-  headings: Array<{type: string, content: string, position: number}>
-): Promise<boolean> {
-  if (headings.length === 0) return true;
+  pageId: string, 
+  headings: Heading[]
+): Promise<void> {
+  if (headings.length === 0) return;
   
   try {
-    console.log(`Saving ${headings.length} headings to database for page ${pageId}`);
-    
-    // Format headings for insertion
-    const headingRecords = headings.map(heading => ({
+    const headingsToInsert = headings.map(heading => ({
       crawl_id: crawlId,
       page_id: pageId,
-      heading_type: heading.type,
+      type: heading.type,
       content: heading.content,
-      position: heading.position
+      position: heading.position,
     }));
     
-    // Insert in batches
-    const batchSize = 50;
-    for (let i = 0; i < headingRecords.length; i += batchSize) {
-      const batch = headingRecords.slice(i, i + batchSize);
-      const { error } = await supabase
-        .from('seo_crawler_headings')
-        .insert(batch);
-      
-      if (error) {
-        console.error(`Error saving headings batch: ${error.message}`, error);
-        console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
-      } else {
-        console.log(`Successfully saved batch of ${batch.length} headings`);
-      }
-    }
+    const { error } = await supabase
+      .from('seo_crawler_headings')
+      .insert(headingsToInsert);
     
-    return true;
+    if (error) {
+      console.error(`Error inserting headings: ${error.message}`, error);
+    }
   } catch (error) {
-    console.error('Error in saveHeadings:', error);
-    return false;
+    console.error(`Exception saving headings: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -209,114 +138,113 @@ export async function saveHeadings(
  * Save images to the database
  */
 export async function saveImages(
-  supabase: SupabaseInstance,
+  supabase: SupabaseInstance, 
   crawlId: string,
-  pageId: string,
-  images: Array<{src: string, alt: string | null}>
-): Promise<boolean> {
-  if (images.length === 0) return true;
+  pageId: string, 
+  images: Image[]
+): Promise<void> {
+  if (images.length === 0) return;
   
   try {
-    console.log(`Saving ${images.length} images to database for page ${pageId}`);
-    
-    // Format images for insertion
-    const imageRecords = images.map((image, index) => ({
+    const imagesToInsert = images.map((image, index) => ({
       crawl_id: crawlId,
       page_id: pageId,
       src: image.src,
       alt: image.alt,
+      has_alt: image.has_alt,
       position: index + 1,
-      has_alt: image.alt !== null && image.alt !== ''
     }));
     
-    // Insert in batches
-    const batchSize = 50;
-    for (let i = 0; i < imageRecords.length; i += batchSize) {
-      const batch = imageRecords.slice(i, i + batchSize);
-      
-      // Check if the seo_crawler_images table exists
-      const { error } = await supabase
-        .from('seo_crawler_images')
-        .insert(batch)
-        .catch(err => {
-          // If table doesn't exist, log it but don't fail
-          console.warn(`Note: seo_crawler_images table might not exist: ${err.message}`);
-          return { error: null }; // Continue execution
-        });
-      
-      if (error) {
-        console.error(`Error saving images batch: ${error.message}`, error);
-      } else {
-        console.log(`Successfully saved batch of ${batch.length} images`);
-      }
+    const { error } = await supabase
+      .from('seo_crawler_images')
+      .insert(imagesToInsert);
+    
+    if (error) {
+      console.error(`Error inserting images: ${error.message}`, error);
     }
-    
-    // Count images without alt text
-    const imagesWithoutAlt = images.filter(img => !img.alt).length;
-    
-    // Update page record with image counts
-    await supabase
-      .from('seo_crawler_pages')
-      .update({
-        image_count: images.length,
-        images_without_alt: imagesWithoutAlt
-      })
-      .eq('id', pageId);
-    
-    return true;
   } catch (error) {
-    console.error('Error in saveImages:', error);
-    return false;
+    console.error(`Exception saving images: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
- * Updates the page record with analysis results
+ * Update a page record with analysis results
  */
 export async function updatePageWithAnalysisResults(
-  supabase: SupabaseInstance, 
-  pageId: string, 
+  supabase: SupabaseInstance,
+  pageId: string,
   results: {
-    title?: string;
-    metaDescription?: string;
-    h1?: string;
-    wordCount?: number;
+    title: string;
+    metaDescription: string;
+    h1: string;
+    wordCount: number;
     issuesCount: number;
     internalLinksCount: number;
     externalLinksCount: number;
-    imageCount?: number;
-    imagesWithoutAlt?: number;
+    imageCount: number;
+    imagesWithoutAlt: number;
   }
-): Promise<boolean> {
+): Promise<void> {
   try {
-    console.log(`Updating page ${pageId} with analysis results`);
-    
     const { error } = await supabase
       .from('seo_crawler_pages')
       .update({
-        title: results.title || null,
-        meta_description: results.metaDescription || null,
-        h1: results.h1 || null,
-        word_count: results.wordCount || null,
+        title: results.title || '',
+        meta_description: results.metaDescription || '',
+        h1: results.h1 || '',
+        word_count: results.wordCount || 0,
         issues_count: results.issuesCount || 0,
         internal_links_count: results.internalLinksCount || 0,
         external_links_count: results.externalLinksCount || 0,
-        image_count: results.imageCount || null,
-        images_without_alt: results.imagesWithoutAlt || 0,
-        crawled_at: new Date().toISOString()
+        images_count: results.imageCount || 0,
+        images_without_alt_count: results.imagesWithoutAlt || 0,
+        updated_at: new Date().toISOString()
       })
       .eq('id', pageId);
     
     if (error) {
-      console.error(`Error updating page with analysis results: ${error.message}`, error);
-      console.error(`SQL: ${error.details || 'No details'}, Hint: ${error.hint || 'No hint'}`);
-      return false;
+      console.error(`Error updating page record: ${error.message}`, error);
     }
-    
-    console.log(`Successfully updated page ${pageId} with analysis results`);
-    return true;
   } catch (error) {
-    console.error('Error in updatePageWithAnalysisResults:', error);
-    return false;
+    console.error(`Exception updating page: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Update crawl summary with aggregate data
+ */
+export async function updateCrawlSummary(
+  supabase: SupabaseInstance,
+  crawlId: string,
+  data: {
+    totalPages: number;
+    totalIssues: number;
+    totalLinks: number;
+    totalInternalLinks: number;
+    totalExternalLinks: number;
+    totalBrokenLinks: number;
+    pagesCrawled: number;
+  }
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('seo_crawler_crawls')
+      .update({
+        total_pages: data.totalPages,
+        total_issues: data.totalIssues,
+        total_links: data.totalLinks,
+        total_internal_links: data.totalInternalLinks,
+        total_external_links: data.totalExternalLinks,
+        total_broken_links: data.totalBrokenLinks,
+        pages_crawled: data.pagesCrawled,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', crawlId);
+    
+    if (error) {
+      console.error(`Error updating crawl summary: ${error.message}`, error);
+    }
+  } catch (error) {
+    console.error(`Exception updating crawl summary: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

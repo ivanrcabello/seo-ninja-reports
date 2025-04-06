@@ -7,7 +7,14 @@ import { crawlPages } from "./crawler.ts";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    headers: {
+      // Add the Supabase service role key to bypass RLS
+      Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""}`,
+    },
+  },
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -32,6 +39,11 @@ serve(async (req) => {
     
     // Log the settings
     console.log(`Starting crawl with settings: max_pages=${settings?.max_pages || 'default'}`);
+
+    // Verify we have the service role key to bypass RLS
+    if (!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
+      console.warn("Warning: SUPABASE_SERVICE_ROLE_KEY is not set. Crawler may encounter RLS permission issues.");
+    }
 
     // Update crawl record to processing state
     await supabase
