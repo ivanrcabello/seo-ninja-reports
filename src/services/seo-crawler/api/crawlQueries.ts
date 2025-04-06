@@ -11,7 +11,7 @@ export const getCrawlResults = async (clientId: string): Promise<CrawlResult[]> 
     .from('seo_crawler_crawls')
     .select('*')
     .eq('client_id', clientId)
-    .order('created_at', { ascending: false });
+    .order('inserted_at', { ascending: false });
   
   if (error) {
     console.error('Error fetching crawl results:', error);

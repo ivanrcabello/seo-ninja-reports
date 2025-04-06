@@ -22,19 +22,20 @@ export interface CrawlResult {
   client_id: string;
   url: string;
   domain: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
+  status: 'queued' | 'processing' | 'completed' | 'failed' | 'pending';
   error_message?: string;
   started_at?: string;
   completed_at?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+  inserted_at?: string; // Database field
   total_pages?: number;
   pages_crawled?: number;
   total_issues?: number;
   total_links?: number;
   settings: CrawlSettings;
   
-  // These properties might come from various parts of the application
+  // Additional properties with default values
   success?: boolean;
   message?: string;
   total_time_seconds?: number;
@@ -63,11 +64,13 @@ export interface CrawlPage {
   internal_links_count?: number;
   external_links_count?: number;
   
+  // Required fields with default values when receiving from API
+  is_internal: boolean;
+  is_crawled: boolean;
+  created_at: string;
+  updated_at: string;
+  
   // Optional fields based on database schema
-  is_internal?: boolean;
-  is_crawled?: boolean;
-  created_at?: string;
-  updated_at?: string;
   is_indexable?: boolean;
   word_count?: number;
   image_count?: number;
@@ -95,6 +98,7 @@ export interface CrawlPage {
   hreflang_count?: number;
   h2_count?: number;
   h3_count?: number;
+  content_similarity_score?: number;
 }
 
 // Crawl issue data
@@ -106,7 +110,7 @@ export interface CrawlIssue {
   type?: string; // Alias for 'issue_type' for backward compatibility
   severity: 'low' | 'medium' | 'high' | 'critical' | 'info';
   description: string;
-  created_at?: string;
+  created_at: string;
   
   // Additional fields from database schema
   page_url?: string;
@@ -115,7 +119,6 @@ export interface CrawlIssue {
   fix_suggestion?: string;
   category?: string;
   details?: any;
-  seo_crawler_pages?: { url: string };
 }
 
 // Crawl link data
@@ -127,11 +130,11 @@ export interface CrawlLink {
   text?: string;
   anchor_text?: string; // Alias for 'text'
   is_internal: boolean;
-  is_followed?: boolean;
+  is_followed: boolean;
   follow?: boolean; // Alias for is_followed
   is_broken?: boolean;
   status_code?: number;
-  created_at?: string;
+  created_at: string;
   
   // Additional fields from database schema
   rel_attributes?: string[];
@@ -151,7 +154,6 @@ export interface CrawlHeading {
   position: number;
   created_at?: string;
   page_url?: string;
-  seo_crawler_pages?: { url: string };
 }
 
 // Crawl summary data

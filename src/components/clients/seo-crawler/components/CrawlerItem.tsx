@@ -1,64 +1,85 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Trash2, ChevronRight } from 'lucide-react';
-import { CrawlResult } from '@/services/seo-crawler/types';
-import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
+import { formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { CrawlResult } from '@/services/seo-crawler/types';
+import CrawlStatusBadge from './CrawlStatusBadge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Trash2, LineChart, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface CrawlerItemProps {
   crawl: CrawlResult;
-  onClick: () => void;
-  onDelete: (e: React.MouseEvent) => void;
+  clientId: string;
+  onDelete?: (crawlId: string) => void;
 }
 
-const CrawlerItem: React.FC<CrawlerItemProps> = ({ crawl, onClick, onDelete }) => {
-  const formatCrawlDate = (crawl: CrawlResult) => {
-    const dateStr = crawl.started_at || crawl.inserted_at;
-    if (!dateStr) return 'Fecha desconocida';
-    return format(new Date(dateStr), 'd MMM yyyy', { locale: es });
-  };
-
-  const getCrawlStatusBadge = (status: string) => {
-    if (status === 'completed') {
-      return <Badge className="bg-green-500">Completado</Badge>;
-    } else if (status === 'processing') {
-      return <Badge className="bg-orange-500">Procesando</Badge>;
-    } else if (status === 'pending' || status === 'queued') {
-      return <Badge className="bg-blue-500">Pendiente</Badge>;
-    } else if (status === 'error' || status === 'failed') {
-      return <Badge variant="destructive">Error</Badge>;
-    }
-    return <Badge>{status}</Badge>;
-  };
-
+const CrawlerItem: React.FC<CrawlerItemProps> = ({ crawl, clientId, onDelete }) => {
+  // Get the creation date, using any available timestamp (created_at, inserted_at, or updated_at)
+  const creationDate = crawl.created_at || crawl.inserted_at || crawl.updated_at;
+  
   return (
-    <div
-      onClick={onClick}
-      className="flex items-center justify-between bg-background/50 hover:bg-primary/5 border border-border rounded-lg p-3 cursor-pointer transition-colors"
-    >
-      <div className="flex flex-col">
-        <div className="font-medium truncate max-w-[200px] sm:max-w-[300px]">
-          {crawl.domain}
+    <Card className="overflow-hidden hover:border-primary/20 transition-colors">
+      <CardContent className="p-0">
+        <div className="flex flex-col md:flex-row md:items-center p-4 gap-4">
+          <div className="flex-1">
+            <div className="flex items-center">
+              <h3 className="font-medium text-lg break-all mr-2 leading-tight">
+                {crawl.domain || crawl.url}
+              </h3>
+              <CrawlStatusBadge status={crawl.status} />
+            </div>
+            <p className="text-muted-foreground text-sm mt-1.5">
+              {crawl.status === 'completed' ? (
+                <span>
+                  {crawl.pages_crawled} {crawl.pages_crawled === 1 ? 'página' : 'páginas'} analizadas
+                  {crawl.total_issues ? ` • ${crawl.total_issues} problemas` : ''}
+                  {crawl.completed_at && creationDate ? 
+                    ` • Tiempo: ${formatDistance(
+                      new Date(crawl.completed_at),
+                      new Date(creationDate),
+                      { locale: es }
+                    )}` : 
+                    ''
+                  }
+                </span>
+              ) : crawl.status === 'processing' ? (
+                <span>{crawl.pages_crawled ? `${crawl.pages_crawled} páginas analizadas hasta ahora` : 'Analizando...'}</span>
+              ) : crawl.status === 'failed' ? (
+                <span className="text-destructive">Error: {crawl.error_message || 'Error desconocido'}</span>
+              ) : (
+                <span>En espera para comenzar</span>
+              )}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 self-end md:self-center">
+            {onDelete && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (onDelete) onDelete(crawl.id);
+                }}
+              >
+                <Trash2 className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            )}
+            
+            <Link to={`/clients/${clientId}/crawler/${crawl.id}`}>
+              <Button variant="outline" className="gap-1.5">
+                <LineChart className="h-4 w-4" />
+                <span className="hidden sm:inline">Ver análisis</span>
+                <ArrowRight className="h-4 w-4 sm:hidden" />
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
-          <span>{formatCrawlDate(crawl)}</span>
-          {getCrawlStatusBadge(crawl.status)}
-        </div>
-      </div>
-      <div className="flex items-center">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onDelete}
-          className="mr-1 text-muted-foreground hover:text-destructive"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

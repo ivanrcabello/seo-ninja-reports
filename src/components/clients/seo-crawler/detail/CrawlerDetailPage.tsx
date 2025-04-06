@@ -102,7 +102,7 @@ const CrawlerDetailPage: React.FC<CrawlerDetailPageProps> = ({
       
       let headingsData: CrawlHeading[] = [];
       try {
-        headingsData = await getCrawlHeadings(crawlId);
+        headingsData = await getCrawlHeadings(crawlId) as CrawlHeading[];
         console.log('Headings data:', headingsData);
       } catch (err) {
         console.error('Failed to fetch headings:', err);

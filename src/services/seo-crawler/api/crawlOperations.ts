@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlSettings } from '../types';
 import { debugCrawlData } from './debugUtils';
@@ -163,10 +162,10 @@ export async function startCrawl(
       domain: crawlRecord.domain,
       status: 'processing', // Use processing status since we already updated it
       started_at: new Date().toISOString(), // Use current time since we just started
-      start_time: new Date().toISOString(),
       completed_at: null,
       created_at: crawlRecord.inserted_at || new Date().toISOString(),
       updated_at: crawlRecord.updated_at || crawlRecord.inserted_at || new Date().toISOString(),
+      inserted_at: crawlRecord.inserted_at || new Date().toISOString(),
       total_pages: 0,
       pages_crawled: 0,
       total_issues: 0,
@@ -181,7 +180,6 @@ export async function startCrawl(
       total_internal_links: 0,
       total_external_links: 0,
       total_broken_links: 0,
-      inserted_at: crawlRecord.inserted_at || new Date().toISOString(),
       avg_page_load_time_ms: 0,
       crawl_depth: 0,
       duplicate_content_count: 0,
