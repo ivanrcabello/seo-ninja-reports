@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlResult, CrawlSettings } from '../types';
 import { debugCrawlData } from './debugUtils';
@@ -160,6 +161,7 @@ export async function startCrawl(
       client_id: crawlRecord.client_id,
       url: crawlRecord.url,
       domain: crawlRecord.domain,
+      start_url: crawlRecord.url || '', // Add the start_url property here
       status: 'processing', // Use processing status since we already updated it
       started_at: new Date().toISOString(), // Use current time since we just started
       completed_at: null,
