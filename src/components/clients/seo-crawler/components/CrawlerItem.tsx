@@ -59,9 +59,7 @@ const CrawlerItem: React.FC<CrawlerItemProps> = ({ crawl, clientId, onDelete }) 
               <Button 
                 variant="ghost" 
                 size="icon"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
+                onClick={() => {
                   if (onDelete) onDelete(crawl.id);
                 }}
               >

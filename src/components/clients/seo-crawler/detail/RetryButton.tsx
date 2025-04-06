@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface RetryButtonProps {
   crawlId: string;
-  status: 'processing' | 'completed' | 'failed' | 'queued';
+  status: 'processing' | 'completed' | 'failed' | 'queued' | 'pending';
   onSuccess?: () => void;
 }
 

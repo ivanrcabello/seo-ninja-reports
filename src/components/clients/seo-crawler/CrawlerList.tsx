@@ -58,12 +58,7 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
     }
   }, [searchTerm, crawls]);
 
-  const handleOpenCrawl = (crawl: CrawlResult) => {
-    navigate(`/clients/${client.id}/crawl/${crawl.id}`);
-  };
-
-  const handleDeleteCrawl = (crawlId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteCrawl = (crawlId: string) => {
     setCrawlToDelete(crawlId);
     setDeleteDialogOpen(true);
   };
@@ -109,8 +104,8 @@ const CrawlerList: React.FC<CrawlerListProps> = ({ client }) => {
             <CrawlerItem
               key={crawl.id}
               crawl={crawl}
-              onClick={() => handleOpenCrawl(crawl)}
-              onDelete={(e) => handleDeleteCrawl(crawl.id, e)}
+              clientId={client.id}
+              onDelete={handleDeleteCrawl}
             />
           ))}
         </div>

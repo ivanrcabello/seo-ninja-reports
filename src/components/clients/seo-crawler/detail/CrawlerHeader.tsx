@@ -45,6 +45,7 @@ const CrawlerHeader: React.FC<CrawlerHeaderProps> = ({
           </Badge>
         );
       case 'queued':
+      case 'pending': // Handle both queued and pending the same way
         return (
           <Badge variant="outline" className="bg-yellow-100 text-yellow-800 flex items-center gap-1">
             <Clock className="h-3 w-3" />

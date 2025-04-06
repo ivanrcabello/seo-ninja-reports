@@ -18,7 +18,7 @@ export const saveCrawlSettings = async (clientId: string, settings: CrawlSetting
     crawl_sitemap: settings.crawl_sitemap,
     follow_links: settings.follow_links,
     max_depth: settings.max_depth,
-    custom_headers: settings.custom_headers as any,
+    custom_headers: settings.custom_headers || {},
     updated_at: new Date().toISOString()
   };
   
@@ -61,6 +61,6 @@ export const getCrawlSettings = async (clientId: string): Promise<CrawlSettings 
     crawl_sitemap: data.crawl_sitemap,
     follow_links: data.follow_links,
     max_depth: data.max_depth,
-    custom_headers: data.custom_headers || {}
+    custom_headers: data.custom_headers ? (data.custom_headers as Record<string, string>) : {}
   };
 };
