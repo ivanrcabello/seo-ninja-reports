@@ -76,7 +76,9 @@ export async function startCrawl(
     const brightDataPassword = localStorage.getItem('bright_data_password') || 
       'obz0lal9qh4g';
     
-    console.log(`Using Bright Data credentials - Username: ${brightDataUsername}, Password: ${brightDataPassword ? 'Available' : 'Not available'}`);
+    console.log(`Using Bright Data credentials for crawl`);
+    console.log(`Username: ${brightDataUsername.substring(0, 10)}... (${brightDataUsername.length} chars)`);
+    console.log(`Password: ${brightDataPassword ? '*** (set)' : '(not set)'}`);
     
     // Set crawl to processing state immediately to show progress to user
     await supabase

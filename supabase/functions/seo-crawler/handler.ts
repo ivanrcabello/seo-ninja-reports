@@ -55,7 +55,15 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
     }
     
     console.log(`Starting SEO crawler for URL: ${url}, crawl ID: ${crawlId}`);
-    console.log(`Using custom credentials: ${brightDataUsername ? 'Yes' : 'No'}, ${brightDataPassword ? 'Password provided' : 'No password'}`);
+    
+    // Set Bright Data credentials as environment variables if provided
+    if (brightDataUsername && brightDataPassword) {
+      console.log('Using custom Bright Data credentials');
+      Deno.env.set("BRIGHT_DATA_USERNAME", brightDataUsername);
+      Deno.env.set("BRIGHT_DATA_PASSWORD", brightDataPassword);
+    } else {
+      console.log('Using default Bright Data credentials');
+    }
 
     // Update crawl status to processing
     const { error: updateError } = await supabase

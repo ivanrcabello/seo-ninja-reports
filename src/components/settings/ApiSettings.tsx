@@ -33,27 +33,41 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
 
   // Load Bright Data credentials from localStorage if we received empty values
   useEffect(() => {
-    if (!brightDataUsername) {
-      const savedUsername = localStorage.getItem('bright_data_username');
-      if (savedUsername) {
-        setBrightDataUsername(savedUsername);
-      }
+    const savedUsername = localStorage.getItem('bright_data_username');
+    const savedPassword = localStorage.getItem('bright_data_password');
+    
+    console.log('Loading saved Bright Data credentials from localStorage');
+    console.log('Saved username exists:', !!savedUsername);
+    console.log('Saved password exists:', !!savedPassword);
+    
+    if (savedUsername && (!brightDataUsername || brightDataUsername === BRIGHT_DATA_CONFIG.DEFAULT_USER)) {
+      console.log('Setting saved username from localStorage');
+      setBrightDataUsername(savedUsername);
+    } else if (!brightDataUsername) {
+      console.log('Setting default username from config');
+      setBrightDataUsername(BRIGHT_DATA_CONFIG.DEFAULT_USER);
     }
     
-    if (!brightDataPassword) {
-      const savedPassword = localStorage.getItem('bright_data_password');
-      if (savedPassword) {
-        setBrightDataPassword(savedPassword);
-      }
+    if (savedPassword && (!brightDataPassword || brightDataPassword === BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD)) {
+      console.log('Setting saved password from localStorage');
+      setBrightDataPassword(savedPassword);
+    } else if (!brightDataPassword) {
+      console.log('Setting default password from config');
+      setBrightDataPassword(BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD);
     }
-  }, [brightDataUsername, brightDataPassword, setBrightDataUsername, setBrightDataPassword]);
+  }, []);
 
   const handleSave = () => {
     // Ensure Bright Data credentials are saved to localStorage
-    if (brightDataUsername || brightDataPassword) {
-      localStorage.setItem('bright_data_username', brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER);
-      localStorage.setItem('bright_data_password', brightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD);
-    }
+    const usernameToSave = brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER;
+    const passwordToSave = brightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
+    
+    localStorage.setItem('bright_data_username', usernameToSave);
+    localStorage.setItem('bright_data_password', passwordToSave);
+    
+    console.log('Saved Bright Data credentials to localStorage');
+    console.log('Username saved:', usernameToSave.substring(0, 10) + '...');
+    console.log('Password saved:', passwordToSave ? '*** (set)' : '(not set)');
     
     toast.success('Configuración guardada correctamente');
   };
@@ -64,6 +78,7 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
         <TabsTrigger value="openai">OpenAI</TabsTrigger>
         <TabsTrigger value="google">Google</TabsTrigger>
         <TabsTrigger value="valueserp">Value SERP</TabsTrigger>
+        <TabsTrigger value="brightdata">Bright Data</TabsTrigger>
       </TabsList>
       <TabsContent value="openai">
         <Card className="bg-background/50 border border-border/50">
@@ -101,8 +116,8 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
       <TabsContent value="valueserp">
         <Card className="bg-background/50 border border-border/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-medium">Value SERP y Bright Data</CardTitle>
-            <CardDescription>Configura tus credenciales para los servicios de rastreo SEO.</CardDescription>
+            <CardTitle className="text-lg font-medium">Value SERP</CardTitle>
+            <CardDescription>Configura tu clave API de Value SERP para análisis de perfiles de negocio.</CardDescription>
           </CardHeader>
           <CardContent>
             <ValueSerpSettings
@@ -117,8 +132,71 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
           </CardContent>
         </Card>
       </TabsContent>
+      <TabsContent value="brightdata">
+        <Card className="bg-background/50 border border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-medium">Bright Data</CardTitle>
+            <CardDescription>Configura tus credenciales para el servicio de rastreo SEO.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="brightDataUsername">Usuario de Bright Data</Label>
+                <Input
+                  id="brightDataUsername"
+                  type="text"
+                  value={brightDataUsername}
+                  onChange={(e) => setBrightDataUsername(e.target.value)}
+                  className="glass-input"
+                  placeholder={BRIGHT_DATA_CONFIG.DEFAULT_USER}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tu usuario de Bright Data para rastreo SEO. <br />
+                  Valor por defecto: {BRIGHT_DATA_CONFIG.DEFAULT_USER}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="brightDataPassword">Contraseña de Bright Data</Label>
+                <Input
+                  id="brightDataPassword"
+                  type="password"
+                  value={brightDataPassword}
+                  onChange={(e) => setBrightDataPassword(e.target.value)}
+                  className="glass-input"
+                  placeholder={BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tu contraseña de Bright Data para rastreo SEO. <br />
+                  Valor por defecto: {BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Información de conexión:</Label>
+                <div className="bg-muted p-3 rounded-md text-sm font-mono">
+                  <p>Host: {BRIGHT_DATA_CONFIG.PROXY_HOST}</p>
+                  <p>Puerto: {BRIGHT_DATA_CONFIG.PROXY_PORT}</p>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={handleSave}
+                className="w-full"
+              >
+                Guardar credenciales
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
     </Tabs>
   );
 };
+
+// We need to import the Label and Input components
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export default ApiSettings;
