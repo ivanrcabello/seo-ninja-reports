@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { CrawlLink, CrawlPage } from '@/services/seo-crawler/types';
 import { Loader2 } from 'lucide-react';
 import LinksTabContent from './LinksTabContent';
-import { getCrawlLinks, getPageLinks } from '@/services/seo-crawler/api/pageQueries';
+import { getPageLinks } from '@/services/seo-crawler/api/pageQueries';
 
 interface LinksTabProps {
   pageLinks: CrawlLink[];
@@ -20,7 +20,7 @@ const LinksTab: React.FC<LinksTabProps> = ({
   onPageSelect,
   isLoading = false 
 }) => {
-  console.log("[LinksTab] Rendering with links:", pageLinks.length);
+  console.log("[LinksTab] Rendering with links:", pageLinks?.length || 0);
   
   // Additional state to handle the links fetching directly if needed
   const [localLinks, setLocalLinks] = useState<CrawlLink[]>([]);
@@ -29,7 +29,7 @@ const LinksTab: React.FC<LinksTabProps> = ({
   // If we don't have links in props, try to fetch them directly
   useEffect(() => {
     const fetchLinks = async () => {
-      if (pageLinks.length === 0 && selectedPage) {
+      if ((!pageLinks || pageLinks.length === 0) && selectedPage?.id) {
         setLocalLoading(true);
         try {
           console.log("[LinksTab] Fetching links directly for page:", selectedPage.id);
@@ -44,10 +44,10 @@ const LinksTab: React.FC<LinksTabProps> = ({
             url: link.url || '',
             text: link.anchor_text || link.link_text || '',
             anchor_text: link.anchor_text || link.link_text || '',
-            is_internal: link.is_internal !== undefined ? link.is_internal : false,
-            is_followed: link.follow !== undefined ? link.follow : true,
-            follow: link.follow !== undefined ? link.follow : true,
-            is_broken: link.is_broken !== undefined ? link.is_broken : false,
+            is_internal: typeof link.is_internal === 'boolean' ? link.is_internal : false,
+            is_followed: typeof link.follow === 'boolean' ? link.follow : true,
+            follow: typeof link.follow === 'boolean' ? link.follow : true,
+            is_broken: typeof link.is_broken === 'boolean' ? link.is_broken : false,
             status_code: link.status_code || 200,
             created_at: link.created_at || new Date().toISOString(),
             rel_attributes: link.rel_attributes || [],
@@ -58,22 +58,34 @@ const LinksTab: React.FC<LinksTabProps> = ({
             page_url: selectedPage.url || '' // Use the page URL from selectedPage
           }));
           
+          console.log("[LinksTab] Formatted links:", formattedLinks.length);
           setLocalLinks(formattedLinks);
         } catch (error) {
           console.error("[LinksTab] Error fetching links:", error);
+          setLocalLinks([]); // Set empty array on error
         } finally {
           setLocalLoading(false);
         }
-      } else {
-        setLocalLinks([]);
+      } else if (pageLinks && pageLinks.length > 0) {
+        // Use provided links but ensure they're properly formatted
+        const formattedLinks = pageLinks.map(link => ({
+          ...link,
+          text: link.text || link.anchor_text || link.link_text || '',
+          anchor_text: link.anchor_text || link.text || link.link_text || '',
+          is_internal: typeof link.is_internal === 'boolean' ? link.is_internal : false,
+          is_followed: typeof link.is_followed === 'boolean' ? link.is_followed : true,
+          follow: typeof link.follow === 'boolean' ? link.follow : true,
+          link_text: link.link_text || link.text || link.anchor_text || '',
+        }));
+        setLocalLinks(formattedLinks);
       }
     };
     
     fetchLinks();
-  }, [selectedPage, pageLinks.length]);
+  }, [selectedPage?.id, pageLinks]);
   
   // Use either provided links or locally fetched ones
-  const effectiveLinks = pageLinks.length > 0 ? pageLinks : localLinks;
+  const effectiveLinks = (pageLinks && pageLinks.length > 0) ? pageLinks : localLinks;
   const effectiveLoading = isLoading || localLoading;
   
   if (effectiveLoading) {

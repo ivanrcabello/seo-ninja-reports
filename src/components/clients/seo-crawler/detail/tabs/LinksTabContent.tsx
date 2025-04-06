@@ -23,23 +23,35 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
 }) => {
   const [linkTypeFilter, setLinkTypeFilter] = useState<string>("all");
   
+  // Ensure we have valid data to work with
+  const validLinks = Array.isArray(pageLinks) ? pageLinks : [];
+  
   // Count internal and external links
-  const internalLinks = pageLinks.filter(link => link.is_internal);
-  const externalLinks = pageLinks.filter(link => !link.is_internal);
-  const brokenLinks = pageLinks.filter(link => link.is_broken);
+  const internalLinks = validLinks.filter(link => link.is_internal);
+  const externalLinks = validLinks.filter(link => !link.is_internal);
+  const brokenLinks = validLinks.filter(link => link.is_broken);
   
   // Filter links based on selected type
   const filteredLinks = linkTypeFilter === "all" 
-    ? pageLinks 
+    ? validLinks 
     : linkTypeFilter === "internal" 
       ? internalLinks 
       : linkTypeFilter === "external" 
         ? externalLinks 
         : linkTypeFilter === "broken" 
           ? brokenLinks 
-          : pageLinks;
+          : validLinks;
   
-  if (pageLinks.length === 0) {
+  // Debugging
+  console.log("[LinksTabContent] Props received:", { 
+    pageLinksLength: validLinks.length,
+    internalLinksLength: internalLinks.length,
+    externalLinksLength: externalLinks.length,
+    brokenLinksLength: brokenLinks.length,
+    selectedPageId: selectedPage?.id
+  });
+  
+  if (validLinks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
@@ -59,7 +71,7 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="border rounded-lg p-4">
               <div className="text-lg font-medium mb-2">Total enlaces</div>
-              <div className="text-3xl font-bold">{pageLinks.length}</div>
+              <div className="text-3xl font-bold">{validLinks.length}</div>
             </div>
             
             <div className="border rounded-lg p-4">
