@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { CrawlHeading, CrawlPage } from '@/services/seo-crawler/types';
-import { Loader2, Heading1, Heading2, Heading3 } from 'lucide-react';
+import { Loader2, Heading1, Heading2, Heading3, HeadingIcon } from 'lucide-react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
@@ -15,6 +16,8 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
   selectedPage,
   isLoading = false 
 }) => {
+  console.log(`[HeadingsTab] Rendering with ${pageHeadings.length} headings, selectedPage: ${selectedPage?.url}`);
+  
   // Group headings by page when no specific page is selected
   const groupedHeadings = React.useMemo(() => {
     if (selectedPage) return { [selectedPage.id]: pageHeadings };
@@ -38,6 +41,9 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
       case 'h1': return <Heading1 className="h-5 w-5 text-blue-500" />;
       case 'h2': return <Heading2 className="h-5 w-5 text-green-500" />;
       case 'h3': return <Heading3 className="h-5 w-5 text-amber-500" />;
+      case 'h4': return <HeadingIcon className="h-5 w-5 text-purple-500" />;
+      case 'h5': return <HeadingIcon className="h-5 w-5 text-pink-500" />;
+      case 'h6': return <HeadingIcon className="h-5 w-5 text-gray-500" />;
       default: return <Heading2 className="h-5 w-5 text-gray-500" />;
     }
   };
@@ -48,6 +54,9 @@ const HeadingsTab: React.FC<HeadingsTabProps> = ({
       case 'h1': return 'pl-0';
       case 'h2': return 'pl-6';
       case 'h3': return 'pl-12';
+      case 'h4': return 'pl-16';
+      case 'h5': return 'pl-20';
+      case 'h6': return 'pl-24';
       default: return 'pl-0';
     }
   };

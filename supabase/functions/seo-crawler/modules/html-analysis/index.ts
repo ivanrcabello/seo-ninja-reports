@@ -31,168 +31,113 @@ export async function processHtml(
   crawlId: string, 
   html: string
 ): Promise<PageCrawlResult | null> {
+  console.log(`[HTML Analysis] Starting analysis for URL: ${url}`);
+  
   try {
-    console.log(`[HTML Analysis] Processing HTML for URL: ${url}, HTML length: ${html.length} characters`);
-    
-    // First, create the page record in the database
-    console.log(`[HTML Analysis] Creating initial page record for crawl_id: ${crawlId}, url: ${url}`);
-    const pageId = await createPageRecord(supabase, crawlId, url);
-    
-    if (!pageId) {
-      console.error(`[HTML Analysis] Failed to create page record for ${url}`);
-      await registerCrawlerError(supabase, crawlId, url, 'Failed to create page record in database');
-      return null;
-    }
-    
-    console.log(`[HTML Analysis] Page record created with ID: ${pageId}`);
-    console.log('[HTML Analysis] Starting extraction of page elements');
-    
-    // Extract data from HTML
+    // Extract core page data
     const title = extractTitle(html);
     const metaDescription = extractMetaDescription(html);
     const h1 = extractH1(html);
-    
-    // Log extracted data
-    console.log(`[HTML Analysis] Extracted title: "${title || 'Not found'}"`);
-    console.log(`[HTML Analysis] Extracted meta description: "${metaDescription ? (metaDescription.substring(0, 50) + '...') : 'Not found'}"`);
-    console.log(`[HTML Analysis] Extracted H1: "${h1 || 'Not found'}"`);
-    
-    // Extract word count
     const wordCount = extractWordCount(html);
-    console.log(`[HTML Analysis] Word count: ${wordCount}`);
+    const images = extractImages(html, url);
+
+    console.log(`[HTML Analysis] Extracted core data - Title: ${title ? 'Yes' : 'No'}, Meta: ${metaDescription ? 'Yes' : 'No'}, H1: ${h1 ? 'Yes' : 'No'}, Words: ${wordCount}`);
+
+    // Create the page record and get the page ID
+    console.log(`[HTML Analysis] Creating page record for: ${url}`);
+    const pageId = await createPageRecord(supabase, crawlId, url, {
+      title,
+      metaDescription,
+      h1,
+      wordCount,
+      statusCode: 200,
+      isIndexable: true
+    });
+    
+    if (!pageId) {
+      throw new Error('Failed to create page record in database');
+    }
+    
+    console.log(`[HTML Analysis] Page record created with ID: ${pageId}`);
     
     // Extract and save headings
     const headings = extractHeadings(html);
-    console.log(`[HTML Analysis] Found ${headings.length} headings on the page`);
+    console.log(`[HTML Analysis] Extracted ${headings.length} headings (H1s: ${headings.filter(h => h.type === 'h1').length}, H2s: ${headings.filter(h => h.type === 'h2').length}, H3+: ${headings.filter(h => !['h1', 'h2'].includes(h.type)).length})`);
     
     if (headings.length > 0) {
-      console.log('[HTML Analysis] Saving headings to database');
+      console.log(`[HTML Analysis] Saving ${headings.length} headings`);
       await saveHeadings(supabase, crawlId, pageId, headings);
     }
     
-    // Extract and save images
-    const images = extractImages(html, url);
-    console.log(`[HTML Analysis] Found ${images.length} images on the page`);
+    // Extract and process links
+    const links = extractLinks(html, url);
+    const { 
+      internalLinks, 
+      externalLinks 
+    } = categorizeLinks(links, url);
     
+    console.log(`[HTML Analysis] Extracted ${links.length} links (internal: ${internalLinks.length}, external: ${externalLinks.length})`);
+    
+    if (links.length > 0) {
+      console.log(`[HTML Analysis] Saving ${links.length} links`);
+      await saveLinks(supabase, crawlId, pageId, links, url);
+    }
+    
+    // Save images if found
     if (images.length > 0) {
-      console.log('[HTML Analysis] Saving images to database');
+      console.log(`[HTML Analysis] Saving ${images.length} images`);
       await saveImages(supabase, crawlId, pageId, images);
     }
     
-    // Extract and categorize links
-    console.log('[HTML Analysis] Extracting links');
-    const links = extractLinks(html, url);
-    console.log(`[HTML Analysis] Found ${links.length} links on the page`);
-    
-    const { internalLinks, externalLinks } = categorizeLinks(links, url);
-    console.log(`[HTML Analysis] Internal links: ${internalLinks.length}, External links: ${externalLinks.length}`);
-    
-    // Detect SEO issues
-    console.log('[HTML Analysis] Starting SEO issue detection');
-    
-    const { issues, count: issuesCount } = detectAllIssues(pageId, {
+    // Detect issues and save them
+    const pageData = {
       title,
       metaDescription,
       h1,
       wordCount,
       images
-    });
+    };
     
-    console.log(`[HTML Analysis] Detected ${issues.length} issues with count ${issuesCount}`);
+    const { issues, count } = detectAllIssues(pageId, pageData);
+    console.log(`[HTML Analysis] Detected ${count} issues`);
     
-    // Save issues to database
     if (issues.length > 0) {
-      console.log('[HTML Analysis] Saving issues to database');
-      await saveIssues(supabase, issues);
-    }
-    
-    // Save links to database
-    if (links.length > 0) {
-      console.log('[HTML Analysis] Saving links to database');
-      await saveLinks(supabase, crawlId, pageId, links, url);
+      console.log(`[HTML Analysis] Saving ${issues.length} issues`);
+      await saveIssues(supabase, crawlId, issues);
     }
     
     // Update the page record with analysis results
-    console.log('[HTML Analysis] Updating page record with analysis results');
-    
     await updatePageWithAnalysisResults(supabase, pageId, {
-      title,
-      metaDescription,
-      h1,
-      wordCount,
-      issuesCount,
-      internalLinksCount: internalLinks.length,
-      externalLinksCount: externalLinks.length,
-      imageCount: images.length,
-      imagesWithoutAlt: images.filter(img => !img.alt).length
+      issuesCount: count
     });
     
-    console.log(`[HTML Analysis] Analysis complete for ${url}: Found ${issuesCount} issues`);
+    console.log(`[HTML Analysis] Analysis completed for: ${url}`);
     
-    // Return the page result with links
+    // Return data for the crawler to continue
     return {
       pageId,
       url,
-      title: title || '',
-      metaDescription: metaDescription || '',
-      h1: h1 || '',
-      issues: issuesCount,
+      title: title || null,
+      metaDescription: metaDescription || null,
+      h1: h1 || null,
+      issues: count,
       statusCode: 200,
-      links: links // Return all links, not just internal
+      links: internalLinks.map(link => link.url)
     };
-    
   } catch (error) {
-    console.error(`[HTML Analysis] Error processing HTML: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    console.error(`[HTML Analysis] Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`);
-    await registerCrawlerError(supabase, crawlId, url, error instanceof Error ? error.message : String(error));
+    console.error(`[HTML Analysis] Error processing HTML for ${url}:`, error);
     
+    // Register the error in database
     try {
-      // Create a minimal page record for the failure case
-      console.log(`[HTML Analysis] Creating minimal page record for error case: ${url}`);
-      const { data, error: pageError } = await supabase
-        .from('seo_crawler_pages')
-        .insert({
-          crawl_id: crawlId,
-          url: url,
-          status_code: 500,
-          is_indexable: false,
-          title: `Error analyzing ${url}`,
-          meta_description: `Analysis error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          h1: 'Error page',
-          issues_count: 1
-        })
-        .select('id')
-        .single();
-        
-      if (pageError) {
-        console.error(`[HTML Analysis] Failed to create error page record: ${pageError.message}`);
-        return null;
-      }
-      
-      // Add an error issue
-      await supabase
-        .from('seo_crawler_issues')
-        .insert({
-          crawl_id: crawlId,
-          page_id: data.id,
-          issue_type: 'analysis_error',
-          description: `Error during HTML analysis: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          severity: 'high'
-        });
-      
-      return {
-        pageId: data.id,
-        url,
-        title: `Error analyzing ${url}`,
-        metaDescription: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        h1: 'Error page',
-        issues: 1,
-        statusCode: 500,
-        links: []
-      };
+      await registerCrawlerError(
+        supabase,
+        crawlId,
+        `HTML analysis error for ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } catch (dbError) {
-      console.error(`[HTML Analysis] Error creating fallback page record: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
-      return null;
+      console.error(`[HTML Analysis] Failed to register error in database:`, dbError);
     }
+    
+    return null;
   }
 }

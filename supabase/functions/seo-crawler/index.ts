@@ -30,6 +30,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       Authorization: `Bearer ${supabaseServiceRoleKey}`,
     },
   },
+  auth: {
+    persistSession: false
+  }
 });
 
 // Handle shutdown event if available
