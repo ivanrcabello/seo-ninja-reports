@@ -26,9 +26,21 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
     const loadCrawlResults = async () => {
       try {
         setIsCrawlsLoading(true);
-        const results = await getCrawlResults();
-        console.log('SEO Crawler results for dashboard:', results);
-        setCrawlResults(results);
+        // Get all crawl results for all clients
+        const allCrawlResults: CrawlResult[] = [];
+        
+        // Fetch crawl results for each client
+        for (const client of clients) {
+          try {
+            const clientCrawls = await getCrawlResults(client.id);
+            allCrawlResults.push(...clientCrawls);
+          } catch (error) {
+            console.error(`Error loading SEO crawler results for client ${client.id}:`, error);
+          }
+        }
+        
+        console.log('All SEO Crawler results for dashboard:', allCrawlResults);
+        setCrawlResults(allCrawlResults);
       } catch (error) {
         console.error('Error loading SEO crawler results:', error);
       } finally {
@@ -36,8 +48,13 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
       }
     };
 
-    loadCrawlResults();
-  }, []);
+    // Only load crawl results if we have clients
+    if (clients.length > 0) {
+      loadCrawlResults();
+    } else {
+      setIsCrawlsLoading(false);
+    }
+  }, [clients]);
 
   const filteredReports = reports?.filter(report =>
     report.title?.toLowerCase().includes(searchQuery.toLowerCase())
