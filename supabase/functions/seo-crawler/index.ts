@@ -21,18 +21,18 @@ serve(async (req) => {
 
   try {
     console.log("SEO Crawler function invoked");
-    console.log("Function version: 1.2.0"); // Updated version for tracking
+    console.log("Function version: 1.3.0"); // Updated version for tracking
     
     // Use the dedicated handler function
     return await handleRequest(req, supabase);
   } catch (error) {
-    console.error(`Error in SEO crawler function: ${error.message}`);
-    console.error(`Stack trace: ${error.stack || 'No stack trace'}`);
+    console.error(`Error in SEO crawler function: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error(`Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`);
     
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: `Error in SEO crawler function: ${error.message}` 
+        error: `Error in SEO crawler function: ${error instanceof Error ? error.message : String(error)}` 
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

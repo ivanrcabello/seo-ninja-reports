@@ -29,7 +29,8 @@ const RetryButton: React.FC<RetryButtonProps> = ({ crawlId, status, onSuccess })
         .from('seo_crawler_crawls')
         .update({
           status: 'queued',
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          error_message: null // Clear previous error message
         })
         .eq('id', crawlId);
         
@@ -55,6 +56,13 @@ const RetryButton: React.FC<RetryButtonProps> = ({ crawlId, status, onSuccess })
         'obz0lal9qh4g';
       const brightDataApiKey = localStorage.getItem('bright_data_api_key') || '';
       
+      // Log credentials (without exposing sensitive data)
+      console.log('Using Bright Data credentials:', {
+        username: brightDataUsername ? 'provided' : 'not provided',
+        password: brightDataPassword ? 'provided' : 'not provided',
+        apiKey: brightDataApiKey ? 'provided' : 'not provided'
+      });
+      
       // Call the edge function to restart the crawl
       const { error: functionError } = await supabase.functions.invoke('seo-crawler', {
         body: { 
@@ -69,12 +77,15 @@ const RetryButton: React.FC<RetryButtonProps> = ({ crawlId, status, onSuccess })
       
       if (functionError) {
         console.error('Edge function error during retry:', functionError);
-        // We'll still show success since the crawl will be retried in background
+        // Show error but don't fully fail - the crawl will continue in background
+        toast.warning('Error invoking crawler function, but request was queued', {
+          description: 'The crawl will continue processing in the background.'
+        });
+      } else {
+        toast.success('Análisis puesto en cola para reintentar', {
+          description: 'El proceso se ha reiniciado correctamente.'
+        });
       }
-      
-      toast.success('Análisis puesto en cola para reintentar', {
-        description: 'El proceso se ha reiniciado correctamente.'
-      });
       
       if (onSuccess) {
         onSuccess();

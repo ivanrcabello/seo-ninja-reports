@@ -23,7 +23,9 @@ export async function handleRequest(req: Request, supabase: SupabaseInstance) {
     let requestBody;
 
     try {
-      requestBody = await req.json();
+      // Get a clone of the request to avoid "Body already consumed" errors
+      const requestClone = req.clone();
+      requestBody = await requestClone.json();
     } catch (err) {
       console.error('Error parsing request body:', err);
       return new Response(
