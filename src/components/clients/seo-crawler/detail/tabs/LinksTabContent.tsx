@@ -18,6 +18,7 @@ interface LinksTabContentProps {
   onPageSelect: (page: CrawlPage) => void;
   fetchAttempted?: boolean;
   fetchError?: string | null;
+  onRetryFetch?: () => void;
 }
 
 const LinksTabContent: React.FC<LinksTabContentProps> = ({ 
@@ -26,7 +27,8 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
   pages,
   onPageSelect,
   fetchAttempted = false,
-  fetchError = null
+  fetchError = null,
+  onRetryFetch
 }) => {
   const [linkTypeFilter, setLinkTypeFilter] = useState<string>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -65,14 +67,19 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
     
     setIsRefreshing(true);
     try {
-      const freshLinks = await getPageLinks(selectedPage.id);
-      // We don't set the links here, but trigger a refresh via parent component
-      if (freshLinks.length === 0) {
-        toast.info('No se encontraron enlaces en esta página');
+      if (onRetryFetch) {
+        onRetryFetch();
+        toast.info('Reintentando obtener enlaces...');
       } else {
-        toast.success(`Se encontraron ${freshLinks.length} enlaces`);
-        // Force a re-render by selecting the page again
-        onPageSelect(selectedPage);
+        const freshLinks = await getPageLinks(selectedPage.id);
+        // We don't set the links here, but trigger a refresh via parent component
+        if (freshLinks.length === 0) {
+          toast.info('No se encontraron enlaces en esta página');
+        } else {
+          toast.success(`Se encontraron ${freshLinks.length} enlaces`);
+          // Force a re-render by selecting the page again
+          onPageSelect(selectedPage);
+        }
       }
     } catch (error) {
       console.error('Error refreshing links:', error);

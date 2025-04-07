@@ -1,4 +1,3 @@
-
 /**
  * Types for the SEO crawler service
  */
@@ -63,21 +62,23 @@ export interface CrawlResult {
 // Crawl page data
 export interface CrawlPage {
   id: string;
-  crawl_id: string;
+  crawl_id?: string;
   url: string;
-  title?: string;
-  meta_description?: string;
-  h1?: string;
-  status_code: number;
-  issues_count: number;
+  title?: string | null;
+  meta_description?: string | null;
+  h1?: string | null;
+  status_code?: number;
+  is_indexable?: boolean;
+  word_count?: number;
+  issues_count?: number;
   internal_links_count?: number;
   external_links_count?: number;
-  
-  // Required fields with default values when receiving from API
-  is_internal: boolean;
-  is_crawled: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  html_content?: string; // Add this line to support HTML content storage
+  is_crawled?: boolean;
+  is_internal?: boolean;
+  created_at?: string;
+  updated_at?: string;
   
   // Optional fields based on database schema
   is_indexable?: boolean;
