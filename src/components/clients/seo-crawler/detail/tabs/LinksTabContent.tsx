@@ -5,23 +5,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { AlertTriangle, Check, ExternalLink, Link as LinkIcon } from 'lucide-react';
+import { AlertTriangle, Check, ExternalLink, Link as LinkIcon, RefreshCcw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from '@/components/ui/button';
+import { getPageLinks } from '@/services/seo-crawler/api/pageQueries';
+import { toast } from 'sonner';
 
 interface LinksTabContentProps {
   pageLinks: CrawlLink[];
   selectedPage: CrawlPage | null;
   pages: CrawlPage[];
   onPageSelect: (page: CrawlPage) => void;
+  fetchAttempted?: boolean;
 }
 
 const LinksTabContent: React.FC<LinksTabContentProps> = ({ 
   pageLinks, 
   selectedPage,
   pages,
-  onPageSelect
+  onPageSelect,
+  fetchAttempted = false
 }) => {
   const [linkTypeFilter, setLinkTypeFilter] = useState<string>("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Ensure we have valid data to work with
   const validLinks = Array.isArray(pageLinks) ? pageLinks : [];
@@ -48,17 +54,54 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
     internalLinksLength: internalLinks.length,
     externalLinksLength: externalLinks.length,
     brokenLinksLength: brokenLinks.length,
-    selectedPageId: selectedPage?.id
+    selectedPageId: selectedPage?.id,
+    fetchAttempted
   });
+
+  const handleRefreshLinks = async () => {
+    if (!selectedPage?.id) return;
+    
+    setIsRefreshing(true);
+    try {
+      const freshLinks = await getPageLinks(selectedPage.id);
+      // We don't set the links here, but trigger a refresh via parent component
+      if (freshLinks.length === 0) {
+        toast.info('No se encontraron enlaces en esta página');
+      } else {
+        toast.success(`Se encontraron ${freshLinks.length} enlaces`);
+        // Force a re-render by selecting the page again
+        onPageSelect(selectedPage);
+      }
+    } catch (error) {
+      console.error('Error refreshing links:', error);
+      toast.error('Error al actualizar los enlaces');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   
   if (validLinks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
         <h3 className="text-lg font-medium">No se encontraron enlaces</h3>
-        <p className="text-muted-foreground mt-2 max-w-md">
-          No se pudieron encontrar enlaces en esta página.
+        <p className="text-muted-foreground mt-2 max-w-md mb-6">
+          {fetchAttempted 
+            ? 'No se pudieron encontrar enlaces en esta página. Es posible que la página no tenga enlaces o que haya ocurrido un error al analizarla.'
+            : 'Cargando enlaces...'}
         </p>
+        
+        {selectedPage && fetchAttempted && (
+          <Button 
+            variant="outline" 
+            onClick={handleRefreshLinks}
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Actualizando...' : 'Reintentar carga de enlaces'}
+          </Button>
+        )}
       </div>
     );
   }
@@ -94,22 +137,35 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
           <div className="flex justify-between items-center">
             <h3 className="font-medium text-lg">Enlaces</h3>
             
-            <Select 
-              value={linkTypeFilter} 
-              onValueChange={setLinkTypeFilter}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filtrar por tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los enlaces</SelectItem>
-                <SelectItem value="internal">Enlaces internos</SelectItem>
-                <SelectItem value="external">Enlaces externos</SelectItem>
-                {brokenLinks.length > 0 && (
-                  <SelectItem value="broken">Enlaces rotos</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefreshLinks}
+                disabled={isRefreshing}
+                className="flex items-center gap-1"
+              >
+                <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+              </Button>
+              
+              <Select 
+                value={linkTypeFilter} 
+                onValueChange={setLinkTypeFilter}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los enlaces</SelectItem>
+                  <SelectItem value="internal">Enlaces internos</SelectItem>
+                  <SelectItem value="external">Enlaces externos</SelectItem>
+                  {brokenLinks.length > 0 && (
+                    <SelectItem value="broken">Enlaces rotos</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           {/* Links table */}

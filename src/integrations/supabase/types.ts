@@ -2257,11 +2257,7 @@ export type Database = {
     }
     Functions: {
       authenticate_client_portal_account: {
-        Args: {
-          p_email: string
-          p_password: string
-          p_session_hours?: number
-        }
+        Args: { p_email: string; p_password: string; p_session_hours?: number }
         Returns: {
           account_id: string
           client_id: string
@@ -2278,63 +2274,39 @@ export type Database = {
         Returns: boolean
       }
       check_content_exists: {
-        Args: {
-          content_id: string
-          content_type: string
-        }
+        Args: { content_id: string; content_type: string }
         Returns: boolean
       }
       check_content_password_protected: {
-        Args: {
-          content_id: string
-          content_type: string
-        }
+        Args: { content_id: string; content_type: string }
         Returns: boolean
       }
       check_invoice_password_protection: {
-        Args: {
-          shared_url_param: string
-        }
+        Args: { shared_url_param: string }
         Returns: boolean
       }
       check_proposal_password_protection: {
-        Args: {
-          shared_url_param: string
-        }
+        Args: { shared_url_param: string }
         Returns: boolean
       }
       check_report_exists: {
-        Args: {
-          report_id_param: string
-        }
+        Args: { report_id_param: string }
         Returns: boolean
       }
       check_report_password_protection: {
-        Args: {
-          report_id_param: string
-        }
+        Args: { report_id_param: string }
         Returns: boolean
       }
       check_shared_content_exists: {
-        Args: {
-          content_id: string
-          content_type?: string
-        }
+        Args: { content_id: string; content_type?: string }
         Returns: boolean
       }
       check_shared_content_password: {
-        Args: {
-          content_id: string
-          content_type?: string
-        }
+        Args: { content_id: string; content_type?: string }
         Returns: boolean
       }
       create_client_portal_account: {
-        Args: {
-          p_client_id: string
-          p_email: string
-          p_password: string
-        }
+        Args: { p_client_id: string; p_email: string; p_password: string }
         Returns: string
       }
       create_settings_table_if_not_exists: {
@@ -2350,10 +2322,7 @@ export type Database = {
         Returns: string[]
       }
       get_client_portal_account_data: {
-        Args: {
-          client_id_param: string
-          account_id_param: string
-        }
+        Args: { client_id_param: string; account_id_param: string }
         Returns: {
           client_id: string
           client_name: string
@@ -2366,9 +2335,7 @@ export type Database = {
         }[]
       }
       get_client_portal_contracts: {
-        Args: {
-          client_id_param: string
-        }
+        Args: { client_id_param: string }
         Returns: {
           client_id: string
           client_signature: string | null
@@ -2384,16 +2351,11 @@ export type Database = {
         }[]
       }
       get_client_portal_data: {
-        Args: {
-          client_id_param: string
-          table_name: string
-        }
+        Args: { client_id_param: string; table_name: string }
         Returns: Record<string, unknown>[]
       }
       get_client_portal_invoices: {
-        Args: {
-          client_id_param: string
-        }
+        Args: { client_id_param: string }
         Returns: {
           amount: number
           client_id: string
@@ -2411,9 +2373,7 @@ export type Database = {
         }[]
       }
       get_client_portal_proposals: {
-        Args: {
-          client_id_param: string
-        }
+        Args: { client_id_param: string }
         Returns: {
           client_id: string
           created_at: string
@@ -2428,9 +2388,7 @@ export type Database = {
         }[]
       }
       get_client_portal_reports: {
-        Args: {
-          client_id_param: string
-        }
+        Args: { client_id_param: string }
         Returns: {
           client_id: string
           content: Json | null
@@ -2445,9 +2403,7 @@ export type Database = {
         }[]
       }
       get_contract_by_shared_url: {
-        Args: {
-          shared_url_param: string
-        }
+        Args: { shared_url_param: string }
         Returns: {
           id: string
           title: string
@@ -2467,9 +2423,7 @@ export type Database = {
         }[]
       }
       get_crawl_headings: {
-        Args: {
-          crawl_id_param: string
-        }
+        Args: { crawl_id_param: string }
         Returns: {
           id: string
           crawl_id: string
@@ -2481,9 +2435,7 @@ export type Database = {
         }[]
       }
       get_invoice_by_shared_url: {
-        Args: {
-          shared_url_param: string
-        }
+        Args: { shared_url_param: string }
         Returns: {
           id: string
           title: string
@@ -2503,9 +2455,7 @@ export type Database = {
         }[]
       }
       get_page_headings: {
-        Args: {
-          page_id_param: string
-        }
+        Args: { page_id_param: string }
         Returns: {
           id: string
           crawl_id: string
@@ -2517,9 +2467,7 @@ export type Database = {
         }[]
       }
       get_proposal_by_shared_url: {
-        Args: {
-          shared_url_param: string
-        }
+        Args: { shared_url_param: string }
         Returns: {
           id: string
           title: string
@@ -2536,9 +2484,7 @@ export type Database = {
         }[]
       }
       get_public_contract_by_shared_url: {
-        Args: {
-          shared_url_param: string
-        }
+        Args: { shared_url_param: string }
         Returns: {
           id: string
           title: string
@@ -2558,9 +2504,7 @@ export type Database = {
         }[]
       }
       get_public_invoice_by_shared_url: {
-        Args: {
-          shared_url_param: string
-        }
+        Args: { shared_url_param: string }
         Returns: {
           id: string
           title: string
@@ -2579,9 +2523,7 @@ export type Database = {
         }[]
       }
       get_report_by_shared_url: {
-        Args: {
-          shared_url_param: string
-        }
+        Args: { shared_url_param: string }
         Returns: {
           id: string
           title: string
@@ -2601,27 +2543,19 @@ export type Database = {
         Returns: number
       }
       insert_public_report: {
-        Args: {
-          report_data: Json
-        }
+        Args: { report_data: Json }
         Returns: undefined
       }
       invalidate_client_portal_session: {
-        Args: {
-          p_token: string
-        }
+        Args: { p_token: string }
         Returns: boolean
       }
       is_client_portal_session_valid: {
-        Args: {
-          client_id_param: string
-        }
+        Args: { client_id_param: string }
         Returns: boolean
       }
       is_client_portal_user: {
-        Args: {
-          client_id_param: string
-        }
+        Args: { client_id_param: string }
         Returns: boolean
       }
       log_shared_content_access: {
@@ -2637,31 +2571,19 @@ export type Database = {
         Returns: string
       }
       sync_contract_to_client_portal: {
-        Args: {
-          contract_id_param: string
-          client_id_param: string
-        }
+        Args: { contract_id_param: string; client_id_param: string }
         Returns: string
       }
       sync_invoice_to_client_portal: {
-        Args: {
-          invoice_id_param: string
-          client_id_param: string
-        }
+        Args: { invoice_id_param: string; client_id_param: string }
         Returns: string
       }
       sync_proposal_to_client_portal: {
-        Args: {
-          proposal_id_param: string
-          client_id_param: string
-        }
+        Args: { proposal_id_param: string; client_id_param: string }
         Returns: string
       }
       sync_report_to_client_portal: {
-        Args: {
-          report_id_param: string
-          client_id_param: string
-        }
+        Args: { report_id_param: string; client_id_param: string }
         Returns: string
       }
       update_contract_by_shared_url: {
@@ -2675,10 +2597,7 @@ export type Database = {
         Returns: string
       }
       update_public_report: {
-        Args: {
-          report_id: string
-          report_data: Json
-        }
+        Args: { report_id: string; report_data: Json }
         Returns: undefined
       }
       update_shared_contract_with_signature: {
@@ -2692,15 +2611,11 @@ export type Database = {
         Returns: boolean
       }
       update_vat_rate_wrapper: {
-        Args: {
-          new_rate: number
-        }
+        Args: { new_rate: number }
         Returns: undefined
       }
       validate_client_portal_session: {
-        Args: {
-          p_token: string
-        }
+        Args: { p_token: string }
         Returns: {
           account_id: string
           client_id: string
@@ -2725,24 +2640,15 @@ export type Database = {
         Returns: boolean
       }
       verify_shared_invoice_password: {
-        Args: {
-          shared_url_param: string
-          password_param: string
-        }
+        Args: { shared_url_param: string; password_param: string }
         Returns: boolean
       }
       verify_shared_proposal_password: {
-        Args: {
-          shared_url_param: string
-          password_param: string
-        }
+        Args: { shared_url_param: string; password_param: string }
         Returns: boolean
       }
       verify_shared_report_password: {
-        Args: {
-          report_id_param: string
-          password_param: string
-        }
+        Args: { report_id_param: string; password_param: string }
         Returns: boolean
       }
     }
@@ -2755,27 +2661,29 @@ export type Database = {
   }
 }
 
-type PublicSchema = Database[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-        Database[PublicTableNameOrOptions["schema"]]["Views"])
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-        PublicSchema["Views"])
-    ? (PublicSchema["Tables"] &
-        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -2783,20 +2691,22 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -2804,20 +2714,22 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -2825,21 +2737,23 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof PublicSchema["Enums"]
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema["CompositeTypes"]
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
@@ -2848,6 +2762,12 @@ export type CompositeTypes<
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
   ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
-    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

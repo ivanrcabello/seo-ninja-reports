@@ -174,7 +174,8 @@ export function extractLinks(html: string, baseUrl: string): any[] {
       }
       
       // Check if link is followed (doesn't have rel="nofollow")
-      const isFollowed = !match[0].includes('rel="nofollow"') && !match[0].includes("rel='nofollow'");
+      const nofollow = match[0].includes('rel="nofollow"') || match[0].includes("rel='nofollow'");
+      const isFollowed = !nofollow;
       
       // Extract the rel attributes if any
       const relMatch = match[0].match(/rel=["']([^"']*)["']/i);
@@ -186,7 +187,10 @@ export function extractLinks(html: string, baseUrl: string): any[] {
         anchor_text: text,
         is_followed: isFollowed,
         follow: isFollowed,
-        rel_attributes: relAttributes
+        rel_attributes: relAttributes,
+        nofollow: nofollow,
+        link_text: text,
+        created_at: new Date().toISOString() // Add created_at field explicitly
       });
     }
     
@@ -232,11 +236,14 @@ export function categorizeLinks(links: any[], baseUrl: string): { internalLinks:
         // Check if URL contains the same domain
         const isInternal = fullUrl.includes(baseDomain);
         
-        // Create the link object with is_internal flag
+        // Create the link object with is_internal flag and ensure all required properties
         const linkObj = {
           ...link,
           url: fullUrl,
-          is_internal: isInternal
+          is_internal: isInternal,
+          is_broken: false, // Default to false until verified
+          status_code: 200, // Default value
+          created_at: link.created_at || new Date().toISOString()
         };
         
         if (isInternal) {
@@ -249,7 +256,8 @@ export function categorizeLinks(links: any[], baseUrl: string): { internalLinks:
         // If there's an error, default to external
         externalLinks.push({
           ...link,
-          is_internal: false
+          is_internal: false,
+          created_at: link.created_at || new Date().toISOString()
         });
       }
     }
