@@ -1,3 +1,4 @@
+
 /**
  * Types for the SEO crawler service
  */
@@ -73,16 +74,13 @@ export interface CrawlPage {
   issues_count?: number;
   internal_links_count?: number;
   external_links_count?: number;
-  created_at?: string;
-  html_content?: string; // Add this line to support HTML content storage
+  html_content?: string; // Support HTML content storage
   is_crawled?: boolean;
   is_internal?: boolean;
   created_at?: string;
   updated_at?: string;
   
   // Optional fields based on database schema
-  is_indexable?: boolean;
-  word_count?: number;
   image_count?: number;
   canonical_url?: string;
   meta_robots?: string;
