@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { AlertTriangle, Check, ExternalLink, Link as LinkIcon, RefreshCcw } from 'lucide-react';
+import { AlertTriangle, Check, ExternalLink, Link as LinkIcon, RefreshCcw, InfoIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { getPageLinks } from '@/services/seo-crawler/api/pageQueries';
@@ -17,6 +17,7 @@ interface LinksTabContentProps {
   pages: CrawlPage[];
   onPageSelect: (page: CrawlPage) => void;
   fetchAttempted?: boolean;
+  fetchError?: string | null;
 }
 
 const LinksTabContent: React.FC<LinksTabContentProps> = ({ 
@@ -24,7 +25,8 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
   selectedPage,
   pages,
   onPageSelect,
-  fetchAttempted = false
+  fetchAttempted = false,
+  fetchError = null
 }) => {
   const [linkTypeFilter, setLinkTypeFilter] = useState<string>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -83,12 +85,22 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
   if (validLinks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
-        <h3 className="text-lg font-medium">No se encontraron enlaces</h3>
+        {fetchError ? (
+          <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        ) : (
+          <InfoIcon className="h-12 w-12 text-amber-500 mb-4" />
+        )}
+        
+        <h3 className="text-lg font-medium">
+          {fetchError ? 'Error al obtener enlaces' : 'No se encontraron enlaces'}
+        </h3>
+        
         <p className="text-muted-foreground mt-2 max-w-md mb-6">
-          {fetchAttempted 
-            ? 'No se pudieron encontrar enlaces en esta página. Es posible que la página no tenga enlaces o que haya ocurrido un error al analizarla.'
-            : 'Cargando enlaces...'}
+          {fetchError 
+            ? fetchError
+            : fetchAttempted 
+              ? 'No se pudieron encontrar enlaces en esta página. Es posible que la página no tenga enlaces o que haya ocurrido un error al analizarla.'
+              : 'Cargando enlaces...'}
         </p>
         
         {selectedPage && fetchAttempted && (

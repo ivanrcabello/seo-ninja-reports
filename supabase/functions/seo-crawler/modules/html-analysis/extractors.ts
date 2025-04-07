@@ -1,4 +1,3 @@
-
 // Import cheerio for HTML parsing if not already imported
 // import * as cheerio from 'cheerio';
 
@@ -161,42 +160,63 @@ export function detectMobileFriendly(html: string): boolean {
 export function extractLinks(html: string, baseUrl: string): any[] {
   try {
     const links = [];
-    const regex = /<a\s[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    // Improved regex to match more HTML link patterns
+    const regex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi;
     
     let match;
     while ((match = regex.exec(html)) !== null) {
-      const url = match[1];
-      const text = match[0].replace(/<[^>]+>/g, '').trim();
+      const url = match[1].trim();
+      const linkAttributes = match[2] || '';
+      let text = '';
+      
+      // Extract text content, handling potential HTML inside
+      try {
+        const linkContent = match[3];
+        // Simple HTML tag removal for text extraction
+        text = linkContent.replace(/<[^>]+>/g, '').trim();
+      } catch (e) {
+        text = ''; // Default to empty if extraction fails
+      }
       
       // Skip empty or javascript links
-      if (!url || url.startsWith('javascript:') || url === '#') {
+      if (!url || url.startsWith('javascript:')) {
         continue;
       }
       
-      // Check if link is followed (doesn't have rel="nofollow")
-      const nofollow = match[0].includes('rel="nofollow"') || match[0].includes("rel='nofollow'");
-      const isFollowed = !nofollow;
+      // Check if link has nofollow attribute anywhere in the link tag
+      const nofollow = 
+        linkAttributes.includes('rel="nofollow"') || 
+        linkAttributes.includes("rel='nofollow'") ||
+        linkAttributes.includes('rel=nofollow');
       
-      // Extract the rel attributes if any
-      const relMatch = match[0].match(/rel=["']([^"']*)["']/i);
-      const relAttributes = relMatch ? relMatch[1].split(' ') : [];
+      // Extract all rel attributes
+      const relMatch = linkAttributes.match(/rel=["']([^"']*)["']/i) || 
+                      linkAttributes.match(/rel=([^\s>]*)/i);
+      const relAttributes = relMatch 
+        ? relMatch[1].split(/\s+/).filter(attr => attr.length > 0)
+        : [];
       
       links.push({
         url: url,
-        text: text,
-        anchor_text: text,
-        is_followed: isFollowed,
-        follow: isFollowed,
+        text: text || '',
+        anchor_text: text || '',
+        link_text: text || '',
+        is_followed: !nofollow,
+        follow: !nofollow,
         rel_attributes: relAttributes,
         nofollow: nofollow,
-        link_text: text,
-        created_at: new Date().toISOString() // Add created_at field explicitly
+        is_broken: false, // Will be determined later
+        status_code: 200, // Default value
+        created_at: new Date().toISOString(),
+        link_location: 'body', // Default location
+        link_type: url.startsWith('#') ? 'anchor' : 'regular' // Basic type classification
       });
     }
     
+    console.log(`[Extractors] Found ${links.length} raw links on page`);
     return links;
   } catch (error) {
-    console.error('Error extracting links:', error);
+    console.error('[Extractors] Error extracting links:', error);
     return [];
   }
 }

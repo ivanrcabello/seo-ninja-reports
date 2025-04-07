@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlHeading, CrawlIssue, CrawlLink } from '../types';
 
@@ -107,9 +106,13 @@ export const getPageLinks = async (pageId: string): Promise<CrawlLink[]> => {
       // If created_at exists in the data, use it but ensure it's a string
       if ('created_at' in link && link.created_at) {
         // Ensure created_at is a string before assigning
-        formattedLink.created_at = typeof link.created_at === 'string' 
+        const createdAt = typeof link.created_at === 'string' 
           ? link.created_at 
-          : now;
+          : String(link.created_at); // Convert to string if not already
+        
+        if (createdAt) {
+          formattedLink.created_at = createdAt;
+        }
       }
       
       return formattedLink;
@@ -176,9 +179,13 @@ export const getCrawlLinks = async (crawlId: string): Promise<CrawlLink[]> => {
       // If created_at exists in the data, use it but ensure it's a string
       if ('created_at' in link && link.created_at) {
         // Ensure created_at is a string before assigning
-        formattedLink.created_at = typeof link.created_at === 'string' 
+        const createdAt = typeof link.created_at === 'string' 
           ? link.created_at 
-          : now;
+          : String(link.created_at); // Convert to string if not already
+        
+        if (createdAt) {
+          formattedLink.created_at = createdAt;
+        }
       }
       
       return formattedLink;
