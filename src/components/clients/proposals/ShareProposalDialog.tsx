@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -103,6 +104,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
           }
         }
         
+        // Create URL with correct path format
         const fullUrl = `${window.location.origin}/shared/proposals/${sharedUrl}`;
         setShareUrl(fullUrl);
         toast.success('Enlace generado correctamente');

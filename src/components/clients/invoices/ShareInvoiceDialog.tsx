@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -104,6 +105,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
           }
         }
         
+        // Create URL with correct path format
         const fullUrl = `${window.location.origin}/shared/invoices/${sharedUrl}`;
         setShareUrl(fullUrl);
         toast.success('Enlace generado correctamente');

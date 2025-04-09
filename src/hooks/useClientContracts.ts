@@ -252,10 +252,8 @@ export const useClientContracts = (clientId?: string) => {
         }
       }
       
-      const fullShareUrl = `${window.location.origin}/shared/contracts/${shareId}`;
-      console.log('Full share URL:', fullShareUrl);
-      
-      return fullShareUrl;
+      // Return only the share ID, not the full URL
+      return shareId;
     } catch (err: any) {
       console.error('Error generating share URL:', err);
       toast.error('Error al generar enlace para compartir');

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,11 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
     setIsLoading(true);
     try {
       const shareId = await onGenerateShareUrl();
+      if (!shareId) {
+        throw new Error('Failed to generate share URL');
+      }
+      
+      // Create the share URL with the correct path format
       const fullShareUrl = `${window.location.origin}/shared/contracts/${shareId}`;
       console.log('Full share URL:', fullShareUrl);
       
