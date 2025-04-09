@@ -1,15 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Check, Clipboard, Info, Key, KeyRound, LinkIcon, RotateCw, Share2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Share2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import ValueSerpSettings from './ValueSerpSettings';
-import { toast } from 'sonner';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
+import OpenAITabContent from './tabs/OpenAITabContent';
+import PageSpeedTabContent from './tabs/PageSpeedTabContent';
+import BrightDataTabContent from './tabs/BrightDataTabContent';
 
 interface ApiSettingsProps {
   brightDataUsername?: string;
@@ -41,14 +41,10 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
   valueSerpKey: propsValueSerpKey,
   setValueSerpKey: propsSetValueSerpKey
 }) => {
+  // Use persistent state for better state management
   const [openAIKey, setOpenAIKey] = usePersistentState('openai_api_key', propsOpenAIKey || '');
-  const [openAIKeyVisible, setOpenAIKeyVisible] = useState(false);
-  const [openAICopied, setOpenAICopied] = useState(false);
-  
   const [pageSpeedKey, setPageSpeedKey] = usePersistentState('pagespeed_api_key', propsPageSpeedKey || '');
-  const [pageSpeedKeyVisible, setPageSpeedKeyVisible] = useState(false);
-  const [pageSpeedCopied, setPageSpeedCopied] = useState(false);
-
+  
   const [brightDataUsername, setBrightDataUsername] = usePersistentState(
     'bright_data_username',
     propsBrightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER
@@ -67,8 +63,7 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     propsValueSerpKey || ''
   );
   
-  const [testingConnection, setTestingConnection] = useState(false);
-  
+  // Sync the local state with props
   useEffect(() => {
     if (propsBrightDataUsername) {
       setBrightDataUsername(propsBrightDataUsername);
@@ -94,6 +89,7 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     propsOpenAIKey, propsPageSpeedKey, propsValueSerpKey
   ]);
   
+  // Sync props with local state
   useEffect(() => {
     if (openAIKey !== propsOpenAIKey && propsSetOpenAIKey) {
       propsSetOpenAIKey(openAIKey);
@@ -114,87 +110,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
       propSetBrightDataApiKey(brightDataApiKey);
     }
   }, [openAIKey, pageSpeedKey, valueSerpApiKey, brightDataUsername, brightDataPassword, brightDataApiKey]);
-  
-  const copyToClipboard = (text: string, setCopied: (copied: boolean) => void) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-  
-  const testOpenAIKey = async () => {
-    if (!openAIKey.trim()) {
-      toast.error('Por favor, introduce una clave de API de OpenAI');
-      return;
-    }
-    
-    try {
-      setTestingConnection(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('Conexión exitosa con la API de OpenAI');
-    } catch (error) {
-      console.error('Error testing OpenAI API:', error);
-      toast.error('Error al conectar con la API de OpenAI');
-    } finally {
-      setTestingConnection(false);
-    }
-  };
-  
-  const testPageSpeedKey = async () => {
-    if (!pageSpeedKey.trim()) {
-      toast.error('Por favor, introduce una clave de API de Google PageSpeed');
-      return;
-    }
-    
-    try {
-      setTestingConnection(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('Conexión exitosa con la API de Google PageSpeed');
-    } catch (error) {
-      console.error('Error testing PageSpeed API:', error);
-      toast.error('Error al conectar con la API de Google PageSpeed');
-    } finally {
-      setTestingConnection(false);
-    }
-  };
-  
-  const testBrightDataCredentials = async () => {
-    if (!brightDataUsername.trim() || !brightDataPassword.trim()) {
-      toast.error('Por favor, introduce las credenciales de Bright Data');
-      return;
-    }
-    
-    try {
-      setTestingConnection(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('Conexión exitosa con Bright Data');
-    } catch (error) {
-      console.error('Error testing Bright Data:', error);
-      toast.error('Error al conectar con Bright Data');
-    } finally {
-      setTestingConnection(false);
-    }
-  };
-  
-  const saveBrightDataChanges = () => {
-    if (propSetBrightDataUsername) {
-      propSetBrightDataUsername(brightDataUsername);
-    }
-    if (propSetBrightDataPassword) {
-      propSetBrightDataPassword(brightDataPassword);
-    }
-    if (propSetBrightDataApiKey) {
-      propSetBrightDataApiKey(brightDataApiKey);
-    }
-    
-    toast.success('Credenciales de Bright Data guardadas');
-  };
 
   return (
     <Card className="border border-border/40 shadow-sm">
@@ -214,192 +129,31 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
             <TabsTrigger value="valueserp">ValueSERP</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="openai" className="space-y-4">
-            <Alert className="bg-primary/5 border-primary/20">
-              <Info className="h-4 w-4" />
-              <AlertTitle>OpenAI API Key</AlertTitle>
-              <AlertDescription>
-                Se requiere para la generación de informes SEO y otras funcionalidades de IA.
-                Obtén tu clave en <a href="https://platform.openai.com/api-keys" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">platform.openai.com</a>
-              </AlertDescription>
-            </Alert>
-            
-            <div className="space-y-2">
-              <Label htmlFor="openai-key">Clave de API de OpenAI</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-grow">
-                  <Input
-                    id="openai-key"
-                    type={openAIKeyVisible ? 'text' : 'password'}
-                    placeholder="sk-..."
-                    value={openAIKey}
-                    onChange={(e) => setOpenAIKey(e.target.value)}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setOpenAIKeyVisible(!openAIKeyVisible)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {openAIKeyVisible ? (
-                      <KeyRound className="h-4 w-4" />
-                    ) : (
-                      <Key className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(openAIKey, setOpenAICopied)}
-                  disabled={!openAIKey}
-                >
-                  {openAICopied ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Clipboard className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  onClick={testOpenAIKey}
-                  disabled={!openAIKey || testingConnection}
-                >
-                  {testingConnection ? (
-                    <RotateCw className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <LinkIcon className="h-4 w-4 mr-2" />
-                  )}
-                  Probar Conexión
-                </Button>
-              </div>
-            </div>
+          <TabsContent value="openai">
+            <OpenAITabContent 
+              openAIKey={openAIKey}
+              setOpenAIKey={setOpenAIKey}
+              hasConfiguredOpenAIKey={!!openAIKey || !!localStorage.getItem('openai_api_key')}
+            />
           </TabsContent>
           
-          <TabsContent value="pagespeed" className="space-y-4">
-            <Alert className="bg-primary/5 border-primary/20">
-              <Info className="h-4 w-4" />
-              <AlertTitle>Google PageSpeed API Key</AlertTitle>
-              <AlertDescription>
-                Se utiliza para obtener métricas de rendimiento para los informes.
-                Obtén tu clave en <a href="https://developers.google.com/speed/docs/insights/v5/get-started" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">developers.google.com</a>
-              </AlertDescription>
-            </Alert>
-            
-            <div className="space-y-2">
-              <Label htmlFor="pagespeed-key">Clave de API de Google PageSpeed</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-grow">
-                  <Input
-                    id="pagespeed-key"
-                    type={pageSpeedKeyVisible ? 'text' : 'password'}
-                    placeholder="AIza..."
-                    value={pageSpeedKey}
-                    onChange={(e) => setPageSpeedKey(e.target.value)}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPageSpeedKeyVisible(!pageSpeedKeyVisible)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {pageSpeedKeyVisible ? (
-                      <KeyRound className="h-4 w-4" />
-                    ) : (
-                      <Key className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(pageSpeedKey, setPageSpeedCopied)}
-                  disabled={!pageSpeedKey}
-                >
-                  {pageSpeedCopied ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Clipboard className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  onClick={testPageSpeedKey}
-                  disabled={!pageSpeedKey || testingConnection}
-                >
-                  {testingConnection ? (
-                    <RotateCw className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <LinkIcon className="h-4 w-4 mr-2" />
-                  )}
-                  Probar Conexión
-                </Button>
-              </div>
-            </div>
+          <TabsContent value="pagespeed">
+            <PageSpeedTabContent 
+              pageSpeedKey={pageSpeedKey}
+              setPageSpeedKey={setPageSpeedKey}
+              hasConfiguredPageSpeedKey={!!pageSpeedKey || !!localStorage.getItem('pagespeed_api_key')}
+            />
           </TabsContent>
           
-          <TabsContent value="brightdata" className="space-y-4">
-            <Alert className="bg-primary/5 border-primary/20">
-              <Info className="h-4 w-4" />
-              <AlertTitle>Bright Data Credentials</AlertTitle>
-              <AlertDescription>
-                Se requiere para el crawleo y análisis SEO técnico.
-                Obtén tus credenciales en <a href="https://brightdata.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">brightdata.com</a>
-              </AlertDescription>
-            </Alert>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="bright-data-username">Nombre de usuario</Label>
-                <Input
-                  id="bright-data-username"
-                  type="text"
-                  placeholder="brd-customer-..."
-                  value={brightDataUsername}
-                  onChange={(e) => setBrightDataUsername(e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="bright-data-password">Contraseña</Label>
-                <Input
-                  id="bright-data-password"
-                  type="password"
-                  placeholder="****"
-                  value={brightDataPassword}
-                  onChange={(e) => setBrightDataPassword(e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="bright-data-api-key">API Key</Label>
-                <Input
-                  id="bright-data-api-key"
-                  type="password"
-                  placeholder="****"
-                  value={brightDataApiKey}
-                  onChange={(e) => setBrightDataApiKey(e.target.value)}
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  onClick={testBrightDataCredentials}
-                  disabled={!brightDataUsername || !brightDataPassword || testingConnection}
-                  variant="outline"
-                >
-                  {testingConnection ? (
-                    <RotateCw className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <LinkIcon className="h-4 w-4 mr-2" />
-                  )}
-                  Probar Conexión
-                </Button>
-                
-                <Button onClick={saveBrightDataChanges}>
-                  <Check className="h-4 w-4 mr-2" />
-                  Guardar Cambios
-                </Button>
-              </div>
-            </div>
+          <TabsContent value="brightdata">
+            <BrightDataTabContent 
+              brightDataUsername={brightDataUsername}
+              setBrightDataUsername={setBrightDataUsername}
+              brightDataPassword={brightDataPassword}
+              setBrightDataPassword={setBrightDataPassword}
+              brightDataApiKey={brightDataApiKey}
+              setBrightDataApiKey={setBrightDataApiKey}
+            />
           </TabsContent>
           
           <TabsContent value="valueserp">
