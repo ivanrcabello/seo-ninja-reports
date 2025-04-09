@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
@@ -22,6 +21,7 @@ interface Keyword {
 interface ReportsContextType {
   reports: Report[];
   isLoading: boolean;
+  refreshReports: () => Promise<void>;
   getReport: (id: string) => Report | undefined;
   getClientReports: (clientId: string) => Report[];
   generateReport: (
@@ -46,24 +46,25 @@ const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
 export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const location = useLocation();
+
+  // Create a dedicated function for fetching reports that can be called to refresh data
+  const refreshReports = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchReports();
+      setReports(data);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast.error('Error al cargar los informes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Fetch all reports on component mount
   useEffect(() => {
-    const loadReports = async () => {
-      try {
-        const data = await fetchReports();
-        setReports(data);
-      } catch (error) {
-        console.error('Error fetching reports:', error);
-        toast.error('Error al cargar los informes');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadReports();
-  }, [location.pathname]);
+    refreshReports();
+  }, []);
 
   // Get a specific report by ID
   const getReport = useCallback((id: string): Report | undefined => {
@@ -186,6 +187,7 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const value = {
     reports,
     isLoading,
+    refreshReports,
     getReport,
     getClientReports,
     generateReport,

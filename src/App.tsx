@@ -1,6 +1,6 @@
 
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './context/AuthContext';
 import { ClientsProvider } from './hooks/useClients';
 import { ReportsProvider } from './context/ReportsContext';
@@ -25,6 +25,7 @@ const LoadingSpinner = () => {
   );
 };
 
+// Lazy load components
 const Auth = lazy(() => import('./pages/Auth'));
 const Index = lazy(() => import('./pages/Index'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -121,64 +122,62 @@ function App() {
       <ClientsProvider>
         <ReportsProvider>
           <QueryClientProvider client={queryClient}>
-            <Router>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
 
-                  <Route path="/servicios" element={<Servicios />} />
-                  <Route path="/servicios/seo-local" element={<SeoLocal />} />
-                  <Route path="/servicios/seo-tecnico" element={<SeoTecnico />} />
-                  <Route path="/servicios/seo-ia" element={<SeoIA />} />
-                  <Route path="/servicios/contenido-seo" element={<ContenidoSeo />} />
-                  <Route path="/servicios/seo-competencia" element={<SeoCompetencia />} />
-                  <Route path="/servicios/google-business" element={<GoogleBusiness />} />
-                  <Route path="/servicios/resenas" element={<Resenas />} />
-                  <Route path="/paquetes" element={<Paquetes />} />
-                  <Route path="/paquetes/starter" element={<PackStarter />} />
-                  <Route path="/paquetes/ascenso" element={<PackAscenso />} />
-                  <Route path="/paquetes/master" element={<PackMaster />} />
-                  <Route path="/blog" element={<Blog />} />
-                  <Route path="/blog/:slug" element={<BlogDetail />} />
-                  <Route path="/caracteristicas" element={<Caracteristicas />} />
-                  <Route path="/precios" element={<Precios />} />
-                  <Route path="/guias" element={<Guias />} />
-                  <Route path="/documentacion" element={<Documentacion />} />
-                  <Route path="/recursos" element={<Recursos />} />
-                  <Route path="/contacto" element={<Contacto />} />
-                  <Route path="/privacidad" element={<Privacidad />} />
-                  <Route path="/cookies" element={<Cookies />} />
-                  <Route path="/terminos" element={<Terminos />} />
-                  
-                  <Route path="/shared/invoices/:sharedUrl" element={<SharedInvoice />} />
-                  <Route path="/shared/proposals/:sharedUrl" element={<SharedProposal />} />
-                  <Route path="/shared/contracts/:sharedUrl" element={<SharedContract />} />
-                  <Route path="/shared/reports/:id" element={<PublicReport />} />
-                  <Route path="/portal" element={<ClientPortal />} />
-                  <Route path="/portal/dashboard" element={<ClientPortalDashboard />} />
-                  
-                  <Route path="/admin" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
-                  
-                  <Route path="/dashboard" element={
-                    <ErrorBoundary fallback={<div>Dashboard error</div>}>
-                      <AuthGuard><Dashboard /></AuthGuard>
-                    </ErrorBoundary>
-                  } />
-                  
-                  <Route path="/clients/new" element={<AuthGuard><NewClientPage /></AuthGuard>} />
-                  <Route path="/clients/:id" element={<AuthGuard><ClientDetail /></AuthGuard>} />
-                  <Route path="/clients/:clientId/crawler/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
-                  <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
-                  <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
-                  <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
-                  <Route path="/admin/blog" element={<AuthGuard><BlogAdmin /></AuthGuard>} />
-                  <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+                <Route path="/servicios" element={<Servicios />} />
+                <Route path="/servicios/seo-local" element={<SeoLocal />} />
+                <Route path="/servicios/seo-tecnico" element={<SeoTecnico />} />
+                <Route path="/servicios/seo-ia" element={<SeoIA />} />
+                <Route path="/servicios/contenido-seo" element={<ContenidoSeo />} />
+                <Route path="/servicios/seo-competencia" element={<SeoCompetencia />} />
+                <Route path="/servicios/google-business" element={<GoogleBusiness />} />
+                <Route path="/servicios/resenas" element={<Resenas />} />
+                <Route path="/paquetes" element={<Paquetes />} />
+                <Route path="/paquetes/starter" element={<PackStarter />} />
+                <Route path="/paquetes/ascenso" element={<PackAscenso />} />
+                <Route path="/paquetes/master" element={<PackMaster />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:slug" element={<BlogDetail />} />
+                <Route path="/caracteristicas" element={<Caracteristicas />} />
+                <Route path="/precios" element={<Precios />} />
+                <Route path="/guias" element={<Guias />} />
+                <Route path="/documentacion" element={<Documentacion />} />
+                <Route path="/recursos" element={<Recursos />} />
+                <Route path="/contacto" element={<Contacto />} />
+                <Route path="/privacidad" element={<Privacidad />} />
+                <Route path="/cookies" element={<Cookies />} />
+                <Route path="/terminos" element={<Terminos />} />
+                
+                <Route path="/shared/invoices/:sharedUrl" element={<SharedInvoice />} />
+                <Route path="/shared/proposals/:sharedUrl" element={<SharedProposal />} />
+                <Route path="/shared/contracts/:sharedUrl" element={<SharedContract />} />
+                <Route path="/shared/reports/:id" element={<PublicReport />} />
+                <Route path="/portal" element={<ClientPortal />} />
+                <Route path="/portal/dashboard" element={<ClientPortalDashboard />} />
+                
+                <Route path="/admin" element={<AuthGuard><Navigate to="/dashboard" replace /></AuthGuard>} />
+                
+                <Route path="/dashboard" element={
+                  <ErrorBoundary fallback={<div>Dashboard error</div>}>
+                    <AuthGuard><Dashboard /></AuthGuard>
+                  </ErrorBoundary>
+                } />
+                
+                <Route path="/clients/new" element={<AuthGuard><NewClientPage /></AuthGuard>} />
+                <Route path="/clients/:id" element={<AuthGuard><ClientDetail /></AuthGuard>} />
+                <Route path="/clients/:clientId/crawler/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
+                <Route path="/clients/:clientId/crawl/:crawlId" element={<AuthGuard><CrawlerDetailPage /></AuthGuard>} />
+                <Route path="/clients/:clientId/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
+                <Route path="/reports/:id" element={<AuthGuard><ReportDetail /></AuthGuard>} />
+                <Route path="/admin/blog" element={<AuthGuard><BlogAdmin /></AuthGuard>} />
+                <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
 
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-              </Suspense>
-            </Router>
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Suspense>
             <Toaster position="top-right" richColors closeButton />
           </QueryClientProvider>
         </ReportsProvider>
