@@ -62,6 +62,11 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     propsBrightDataApiKey || BRIGHT_DATA_CONFIG.DEFAULT_API_KEY
   );
   
+  const [valueSerpApiKey, setValueSerpApiKey] = usePersistentState(
+    'valueserp_api_key',
+    propsValueSerpKey || ''
+  );
+  
   const [testingConnection, setTestingConnection] = useState(false);
   
   useEffect(() => {
@@ -81,28 +86,34 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     if (propsPageSpeedKey && propsSetPageSpeedKey) {
       setPageSpeedKey(propsPageSpeedKey);
     }
+    if (propsValueSerpKey) {
+      setValueSerpApiKey(propsValueSerpKey);
+    }
   }, [
     propsBrightDataUsername, propsBrightDataPassword, propsBrightDataApiKey,
-    propsOpenAIKey, propsPageSpeedKey
+    propsOpenAIKey, propsPageSpeedKey, propsValueSerpKey
   ]);
   
   useEffect(() => {
-    if (openAIKey !== propsOpenAIKey) {
+    if (openAIKey !== propsOpenAIKey && propsSetOpenAIKey) {
       propsSetOpenAIKey(openAIKey);
     }
-    if (pageSpeedKey !== propsPageSpeedKey) {
+    if (pageSpeedKey !== propsPageSpeedKey && propsSetPageSpeedKey) {
       propsSetPageSpeedKey(pageSpeedKey);
     }
-    if (brightDataUsername !== propsBrightDataUsername) {
+    if (valueSerpApiKey !== propsValueSerpKey && propsSetValueSerpKey) {
+      propsSetValueSerpKey(valueSerpApiKey);
+    }
+    if (brightDataUsername !== propsBrightDataUsername && propSetBrightDataUsername) {
       propSetBrightDataUsername(brightDataUsername);
     }
-    if (brightDataPassword !== propsBrightDataPassword) {
+    if (brightDataPassword !== propsBrightDataPassword && propSetBrightDataPassword) {
       propSetBrightDataPassword(brightDataPassword);
     }
-    if (brightDataApiKey !== propsBrightDataApiKey) {
-      setBrightDataApiKey(brightDataApiKey);
+    if (brightDataApiKey !== propsBrightDataApiKey && propSetBrightDataApiKey) {
+      propSetBrightDataApiKey(brightDataApiKey);
     }
-  }, [openAIKey, pageSpeedKey, brightDataUsername, brightDataPassword, brightDataApiKey]);
+  }, [openAIKey, pageSpeedKey, valueSerpApiKey, brightDataUsername, brightDataPassword, brightDataApiKey]);
   
   const copyToClipboard = (text: string, setCopied: (copied: boolean) => void) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -393,9 +404,9 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
           
           <TabsContent value="valueserp">
             <ValueSerpSettings 
-              valueSerpApiKey={propsValueSerpKey || ''}
-              setValueSerpApiKey={propsSetValueSerpKey || setPageSpeedKey}
-              hasConfiguredValueSerpKey={!!propsValueSerpKey || !!localStorage.getItem('valueserp_api_key')}
+              valueSerpApiKey={valueSerpApiKey}
+              setValueSerpApiKey={setValueSerpApiKey}
+              hasConfiguredValueSerpKey={!!valueSerpApiKey || !!localStorage.getItem('valueserp_api_key')}
               brightDataUsername={brightDataUsername}
               setBrightDataUsername={setBrightDataUsername}
               brightDataPassword={brightDataPassword}

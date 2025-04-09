@@ -9,11 +9,43 @@ import { usePersistentState } from '@/hooks/usePersistentState';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-const ValueSerpSettings: React.FC = () => {
-  const [valueSerpKey, setValueSerpKey] = usePersistentState('valueserp_api_key', '');
+interface ValueSerpSettingsProps {
+  valueSerpApiKey?: string;
+  setValueSerpApiKey?: (key: string) => void;
+  hasConfiguredValueSerpKey?: boolean;
+  brightDataUsername?: string;
+  setBrightDataUsername?: (username: string) => void;
+  brightDataPassword?: string;
+  setBrightDataPassword?: (password: string) => void;
+}
+
+const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
+  valueSerpApiKey,
+  setValueSerpApiKey,
+  hasConfiguredValueSerpKey = false,
+  brightDataUsername,
+  setBrightDataUsername,
+  brightDataPassword,
+  setBrightDataPassword
+}) => {
+  const [valueSerpKey, setValueSerpKey] = usePersistentState('valueserp_api_key', valueSerpApiKey || '');
   const [valueSerpKeyVisible, setValueSerpKeyVisible] = useState(false);
   const [valueSerpCopied, setValueSerpCopied] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
+  
+  // Sync the local state with props
+  useEffect(() => {
+    if (valueSerpApiKey && valueSerpApiKey !== valueSerpKey) {
+      setValueSerpKey(valueSerpApiKey);
+    }
+  }, [valueSerpApiKey]);
+  
+  // Sync props with local state
+  useEffect(() => {
+    if (setValueSerpApiKey && valueSerpKey !== valueSerpApiKey) {
+      setValueSerpApiKey(valueSerpKey);
+    }
+  }, [valueSerpKey, valueSerpApiKey, setValueSerpApiKey]);
   
   // Después de montar el componente, intentar guardar las claves API en la base de datos
   useEffect(() => {
