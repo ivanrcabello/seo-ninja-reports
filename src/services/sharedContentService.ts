@@ -165,8 +165,7 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
           content: contentObj,
           date: sharedData.created_at,
           client_name: sharedData.client_name || 'Cliente',
-          client_website: sharedData.client_website || undefined,
-          shared_url: sharedData.shared_url
+          client_website: sharedData.client_website || undefined
         }
       };
     }
@@ -186,7 +185,19 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
     }
     
     const report = data[0];
-    return { data: report };
+    
+    // Make sure we return the data in the format expected by the SharedReportResponse type
+    const formattedReport = {
+      id: report.id,
+      title: report.title,
+      summary: report.summary || undefined,
+      content: report.content,
+      date: report.date,
+      client_name: report.client_name || 'Cliente',
+      client_website: report.client_website || undefined
+    };
+    
+    return { data: formattedReport };
   } catch (error: any) {
     console.error('Error fetching shared report:', error);
     return { data: null, error: error.message || 'Error al obtener el informe' };

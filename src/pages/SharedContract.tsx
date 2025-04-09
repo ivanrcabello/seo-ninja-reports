@@ -10,7 +10,6 @@ import {
 } from '@/components/shared-contract';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
-import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 import { toast } from 'sonner';
 
 const SharedContract = () => {
@@ -34,29 +33,28 @@ const SharedContract = () => {
     }
   };
 
-  // Handle browser navigation events
+  // Handle browser navigation events in a safer way
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Allow normal navigation
-    };
-
     // For handling user closing the browser
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    // For handling back button and manual navigation
-    const handlePopState = () => {
-      // This runs when the user uses browser back/forward buttons
-      console.log('Navigation detected');
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Don't need to do anything special here
     };
     
-    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     // Clean up
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  // Use a simpler approach for navigation with React Router
+  useEffect(() => {
+    // This component is mounted, so let's make sure we can navigate properly
+    return () => {
+      // Clean up when unmounting
+    };
+  }, [navigate]);
 
   if (loading) {
     return (
