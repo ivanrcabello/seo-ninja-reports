@@ -155,19 +155,36 @@ export function detectMobileFriendly(html: string): boolean {
 }
 
 /**
- * Extract all links from the page
+ * Extract all links from HTML content with improved detection
  */
 export function extractLinks(html: string, baseUrl: string): any[] {
   try {
+    // Early return for empty HTML
+    if (!html || html.length === 0) {
+      console.log(`[Extractors] Empty HTML content for ${baseUrl}, no links to extract`);
+      return [];
+    }
+    
     const links = [];
+    
     // Improved regex to match more HTML link patterns
-    const regex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi;
+    const regex = /<a\s+(?:[^>]*?\s+)?(?:href=["']([^"']+)["']|["']([^"']+)["']=href)(?:[^>]*?)>([\s\S]*?)<\/a>/gi;
     
     let match;
     while ((match = regex.exec(html)) !== null) {
-      const url = match[1].trim();
-      const linkAttributes = match[2] || '';
+      const url = (match[1] || match[2] || '').trim();
+      const rawAttributes = match[0] || '';
       let text = '';
+      
+      // Skip empty links
+      if (!url) {
+        continue;
+      }
+      
+      // Skip javascript: links
+      if (url.startsWith('javascript:')) {
+        continue;
+      }
       
       // Extract text content, handling potential HTML inside
       try {
@@ -175,23 +192,19 @@ export function extractLinks(html: string, baseUrl: string): any[] {
         // Simple HTML tag removal for text extraction
         text = linkContent.replace(/<[^>]+>/g, '').trim();
       } catch (e) {
+        console.log('[Extractors] Error extracting link text:', e);
         text = ''; // Default to empty if extraction fails
       }
       
-      // Skip empty or javascript links
-      if (!url || url.startsWith('javascript:')) {
-        continue;
-      }
-      
-      // Check if link has nofollow attribute anywhere in the link tag
+      // Check if link has nofollow attribute
       const nofollow = 
-        linkAttributes.includes('rel="nofollow"') || 
-        linkAttributes.includes("rel='nofollow'") ||
-        linkAttributes.includes('rel=nofollow');
+        rawAttributes.includes('rel="nofollow"') || 
+        rawAttributes.includes("rel='nofollow'") ||
+        rawAttributes.includes('rel=nofollow');
       
       // Extract all rel attributes
-      const relMatch = linkAttributes.match(/rel=["']([^"']*)["']/i) || 
-                      linkAttributes.match(/rel=([^\s>]*)/i);
+      const relMatch = rawAttributes.match(/rel=["']([^"']*)["']/i) || 
+                     rawAttributes.match(/rel=([^\s>]*)/i);
       const relAttributes = relMatch 
         ? relMatch[1].split(/\s+/).filter(attr => attr.length > 0)
         : [];
@@ -214,6 +227,41 @@ export function extractLinks(html: string, baseUrl: string): any[] {
     }
     
     console.log(`[Extractors] Found ${links.length} raw links on page`);
+    
+    // If no links found with the regex, try an alternative approach with a simpler regex
+    if (links.length === 0) {
+      console.log('[Extractors] Trying alternative extraction method');
+      const simpleRegex = /href=["']([^"']+)["']/gi;
+      let simpleMatch;
+      
+      while ((simpleMatch = simpleRegex.exec(html)) !== null) {
+        const url = simpleMatch[1].trim();
+        
+        // Skip empty or javascript: links
+        if (!url || url.startsWith('javascript:')) {
+          continue;
+        }
+        
+        links.push({
+          url: url,
+          text: '',
+          anchor_text: '',
+          link_text: '',
+          is_followed: true,
+          follow: true,
+          rel_attributes: [],
+          nofollow: false,
+          is_broken: false,
+          status_code: 200,
+          created_at: new Date().toISOString(),
+          link_location: 'body',
+          link_type: url.startsWith('#') ? 'anchor' : 'regular'
+        });
+      }
+      
+      console.log(`[Extractors] Alternative method found ${links.length} links`);
+    }
+    
     return links;
   } catch (error) {
     console.error('[Extractors] Error extracting links:', error);
@@ -222,7 +270,7 @@ export function extractLinks(html: string, baseUrl: string): any[] {
 }
 
 /**
- * Categorize links as internal or external
+ * Categorize links as internal or external with improved URL handling
  */
 export function categorizeLinks(links: any[], baseUrl: string): { internalLinks: any[], externalLinks: any[] } {
   try {
@@ -230,40 +278,64 @@ export function categorizeLinks(links: any[], baseUrl: string): { internalLinks:
     const externalLinks = [];
     
     // Extract domain from base URL to compare
-    const baseUrlObj = new URL(baseUrl);
-    const baseDomain = baseUrlObj.hostname;
+    let baseDomain = '';
+    try {
+      // Handle base URL without protocol
+      const normalizedBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+      const baseUrlObj = new URL(normalizedBaseUrl);
+      baseDomain = baseUrlObj.hostname;
+    } catch (e) {
+      console.error(`[Extractors] Invalid base URL: ${baseUrl}`, e);
+      // Fallback to string matching if URL parsing fails
+      const domainMatch = baseUrl.match(/https?:\/\/([^\/]+)/i) || baseUrl.match(/^([^\/]+)/i);
+      baseDomain = domainMatch ? domainMatch[1] : '';
+    }
+    
+    if (!baseDomain) {
+      console.warn(`[Extractors] Could not extract base domain from ${baseUrl}`);
+      return { internalLinks: [], externalLinks: links };
+    }
     
     // For each link, determine if it's internal or external
     for (const link of links) {
       try {
-        // Handle relative URLs
+        let isInternal = false;
         let fullUrl = link.url;
+        
+        // Handle relative URLs
         if (fullUrl.startsWith('/')) {
-          fullUrl = `${baseUrlObj.protocol}//${baseDomain}${fullUrl}`;
-        } else if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
-          // Handle URLs without protocol
-          if (fullUrl.includes(baseDomain)) {
-            fullUrl = `${baseUrlObj.protocol}//${fullUrl}`;
+          isInternal = true;
+          // Convert to absolute URL for consistency
+          fullUrl = `https://${baseDomain}${fullUrl}`;
+        } else if (!fullUrl.includes('://')) {
+          if (fullUrl.startsWith('www.')) {
+            // www.domain.com style URLs
+            isInternal = fullUrl.includes(baseDomain) || 
+                        baseDomain.includes(fullUrl.substring(4)); // account for www. prefix
           } else {
-            // It might be relative to current path
-            const path = baseUrlObj.pathname.endsWith('/') 
-              ? baseUrlObj.pathname 
-              : baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/') + 1);
-            fullUrl = `${baseUrlObj.protocol}//${baseDomain}${path}${fullUrl}`;
+            // It's likely a relative URL without leading slash
+            isInternal = true;
+            fullUrl = `https://${baseDomain}/${fullUrl}`;
+          }
+        } else {
+          // It's an absolute URL, check if it contains the same domain
+          try {
+            const linkUrlObj = new URL(fullUrl);
+            const linkDomain = linkUrlObj.hostname;
+            isInternal = linkDomain === baseDomain || 
+                        linkDomain.endsWith(`.${baseDomain}`) || 
+                        baseDomain.endsWith(`.${linkDomain}`);
+          } catch {
+            // If URL parsing fails, do a simple string check
+            isInternal = fullUrl.includes(baseDomain);
           }
         }
-        
-        // Check if URL contains the same domain
-        const isInternal = fullUrl.includes(baseDomain);
         
         // Create the link object with is_internal flag and ensure all required properties
         const linkObj = {
           ...link,
           url: fullUrl,
           is_internal: isInternal,
-          is_broken: false, // Default to false until verified
-          status_code: 200, // Default value
-          created_at: link.created_at || new Date().toISOString()
         };
         
         if (isInternal) {
@@ -272,19 +344,18 @@ export function categorizeLinks(links: any[], baseUrl: string): { internalLinks:
           externalLinks.push(linkObj);
         }
       } catch (e) {
-        console.error(`Error processing link ${link.url}:`, e);
+        console.error(`[Extractors] Error processing link ${link.url}:`, e);
         // If there's an error, default to external
         externalLinks.push({
           ...link,
           is_internal: false,
-          created_at: link.created_at || new Date().toISOString()
         });
       }
     }
     
     return { internalLinks, externalLinks };
   } catch (error) {
-    console.error('Error categorizing links:', error);
+    console.error('[Extractors] Error categorizing links:', error);
     return { internalLinks: [], externalLinks: [] };
   }
 }

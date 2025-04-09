@@ -8,7 +8,6 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { AlertTriangle, Check, ExternalLink, Link as LinkIcon, RefreshCcw, InfoIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { getPageLinks } from '@/services/seo-crawler/api/pageQueries';
 import { toast } from 'sonner';
 
 interface LinksTabContentProps {
@@ -59,7 +58,8 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
     externalLinksLength: externalLinks.length,
     brokenLinksLength: brokenLinks.length,
     selectedPageId: selectedPage?.id,
-    fetchAttempted
+    fetchAttempted,
+    fetchError
   });
 
   const handleRefreshLinks = async () => {
@@ -70,16 +70,6 @@ const LinksTabContent: React.FC<LinksTabContentProps> = ({
       if (onRetryFetch) {
         onRetryFetch();
         toast.info('Reintentando obtener enlaces...');
-      } else {
-        const freshLinks = await getPageLinks(selectedPage.id);
-        // We don't set the links here, but trigger a refresh via parent component
-        if (freshLinks.length === 0) {
-          toast.info('No se encontraron enlaces en esta página');
-        } else {
-          toast.success(`Se encontraron ${freshLinks.length} enlaces`);
-          // Force a re-render by selecting the page again
-          onPageSelect(selectedPage);
-        }
       }
     } catch (error) {
       console.error('Error refreshing links:', error);

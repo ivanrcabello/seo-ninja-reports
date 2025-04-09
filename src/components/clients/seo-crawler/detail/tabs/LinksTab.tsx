@@ -49,24 +49,39 @@ const LinksTab: React.FC<LinksTabProps> = ({
         if (fetchedLinks.length === 0 && selectedPage.html_content) {
           console.log("[LinksTab] No links in database, attempting to extract from HTML content");
           try {
-            const extractedRawLinks = extractLinks(selectedPage.html_content, selectedPage.url || '');
-            const { internalLinks, externalLinks } = categorizeLinks(extractedRawLinks, selectedPage.url || '');
-            fetchedLinks = [...internalLinks, ...externalLinks].map((link, index) => ({
-              ...link,
-              id: `extracted-${index}`,
-              crawl_id: selectedPage.crawl_id || '',
-              page_id: selectedPage.id || '',
-              text: link.anchor_text || link.link_text || '',
-              created_at: new Date().toISOString(),
-            }));
-            console.log("[LinksTab] Extracted links from HTML:", fetchedLinks.length);
+            const pageUrl = selectedPage.url || '';
+            console.log("[LinksTab] Page URL for extraction:", pageUrl);
+            console.log("[LinksTab] HTML content length:", selectedPage.html_content.length);
+            
+            const extractedRawLinks = extractLinks(selectedPage.html_content, pageUrl);
+            console.log("[LinksTab] Raw extracted links:", extractedRawLinks.length);
+            
+            if (extractedRawLinks.length > 0) {
+              const { internalLinks, externalLinks } = categorizeLinks(extractedRawLinks, pageUrl);
+              console.log("[LinksTab] Categorized links - Internal:", internalLinks.length, "External:", externalLinks.length);
+              
+              fetchedLinks = [...internalLinks, ...externalLinks].map((link, index) => ({
+                ...link,
+                id: `extracted-${index}`,
+                crawl_id: selectedPage.crawl_id || '',
+                page_id: selectedPage.id || '',
+                text: link.anchor_text || link.link_text || '',
+                created_at: new Date().toISOString(),
+              }));
+              console.log("[LinksTab] Extracted links from HTML:", fetchedLinks.length);
+            } else {
+              console.log("[LinksTab] No links extracted from HTML");
+              setFetchError("No se pudieron extraer enlaces del contenido HTML de la página");
+            }
           } catch (extractError) {
             console.error("[LinksTab] Error extracting links from HTML:", extractError);
+            setFetchError("Error al extraer enlaces del HTML: " + (extractError instanceof Error ? extractError.message : 'Error desconocido'));
           }
         }
         
         if (fetchedLinks.length === 0) {
-          console.log("[LinksTab] No links found for this page. This might be expected for some pages.");
+          console.log("[LinksTab] No links found for this page.");
+          setFetchError("No se encontraron enlaces en esta página. Es posible que la página no tenga enlaces o que el análisis no haya podido procesarlos correctamente.");
         }
         
         // Ensure all links have required properties
@@ -86,7 +101,7 @@ const LinksTab: React.FC<LinksTabProps> = ({
       } catch (error) {
         console.error("[LinksTab] Error fetching links:", error);
         toast.error('Error al cargar los enlaces');
-        setFetchError('Error al obtener los enlaces de esta página');
+        setFetchError('Error al obtener los enlaces de esta página: ' + (error instanceof Error ? error.message : 'Error desconocido'));
         setLocalLinks([]); // Set empty array on error
       } finally {
         setLocalLoading(false);
