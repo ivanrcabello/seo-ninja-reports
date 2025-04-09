@@ -15,6 +15,41 @@ const ValueSerpSettings: React.FC = () => {
   const [valueSerpCopied, setValueSerpCopied] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   
+  // Después de montar el componente, intentar guardar las claves API en la base de datos
+  useEffect(() => {
+    const saveApiKeysToDatabase = async () => {
+      try {
+        // Solo actualizar si la clave no está vacía
+        if (valueSerpKey.trim()) {
+          // Intentar obtener el registro de configuración actual
+          const { data, error } = await supabase
+            .from('settings')
+            .select('id, value_serp_key')
+            .limit(1)
+            .single();
+            
+          if (!error) {
+            // Actualizar el valor en la base de datos
+            await supabase
+              .from('settings')
+              .update({ value_serp_key: valueSerpKey })
+              .eq('id', data.id);
+            
+            console.log('ValueSERP API key saved to database');
+          }
+        }
+      } catch (error) {
+        console.error('Error saving API key to database:', error);
+        // No mostrar toast de error para no molestar al usuario
+      }
+    };
+    
+    // Si hay una clave guardada, intentar sincronizarla con la base de datos
+    if (valueSerpKey) {
+      saveApiKeysToDatabase();
+    }
+  }, [valueSerpKey]);
+  
   // Copy API key to clipboard
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {

@@ -14,6 +14,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
@@ -29,6 +31,65 @@ const Settings = () => {
     'bright_data_api_key',
     BRIGHT_DATA_CONFIG.DEFAULT_API_KEY
   );
+  
+  // Estado para las otras claves API
+  const [openAIKey, setOpenAIKey] = usePersistentState('openai_api_key', '');
+  const [pageSpeedKey, setPageSpeedKey] = usePersistentState('pagespeed_api_key', '');
+  const [valueSerpKey, setValueSerpKey] = usePersistentState('valueserp_api_key', '');
+
+  // Cargar claves API desde la base de datos al iniciar
+  useEffect(() => {
+    const loadApiKeysFromDatabase = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('openai_key, google_key, value_serp_key')
+          .limit(1)
+          .single();
+          
+        if (error) {
+          console.error('Error loading API keys from database:', error);
+          return;
+        }
+        
+        if (data) {
+          // Solo actualizar si tenemos valores en la base de datos y son diferentes a los actuales
+          if (data.openai_key && data.openai_key !== openAIKey) {
+            setOpenAIKey(data.openai_key);
+            localStorage.setItem('openai_api_key', data.openai_key);
+            console.log('OpenAI API key loaded from database');
+          }
+          
+          if (data.google_key && data.google_key !== pageSpeedKey) {
+            setPageSpeedKey(data.google_key);
+            localStorage.setItem('pagespeed_api_key', data.google_key);
+            console.log('PageSpeed API key loaded from database');
+          }
+          
+          if (data.value_serp_key && data.value_serp_key !== valueSerpKey) {
+            setValueSerpKey(data.value_serp_key);
+            localStorage.setItem('valueserp_api_key', data.value_serp_key);
+            console.log('ValueSERP API key loaded from database');
+          }
+          
+          // Solo mostrar toast si se cargó alguna clave nueva
+          if (
+            (data.openai_key && data.openai_key !== openAIKey) ||
+            (data.google_key && data.google_key !== pageSpeedKey) ||
+            (data.value_serp_key && data.value_serp_key !== valueSerpKey)
+          ) {
+            toast.success('Claves API cargadas correctamente');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading API keys:', error);
+      }
+    };
+    
+    if (user && !authLoading) {
+      loadApiKeysFromDatabase();
+    }
+  }, [user, authLoading]);
 
   // Handle visibility changes to ensure page state is preserved
   useEffect(() => {
@@ -128,6 +189,13 @@ const Settings = () => {
                     setBrightDataPassword={setBrightDataPassword}
                     brightDataApiKey={brightDataApiKey}
                     setBrightDataApiKey={setBrightDataApiKey}
+                    // Pasar también las otras claves API
+                    openAIKey={openAIKey}
+                    setOpenAIKey={setOpenAIKey}
+                    pageSpeedKey={pageSpeedKey}
+                    setPageSpeedKey={setPageSpeedKey}
+                    valueSerpKey={valueSerpKey}
+                    setValueSerpKey={setValueSerpKey}
                   />
                 </TabsContent>
                 

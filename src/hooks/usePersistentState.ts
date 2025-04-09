@@ -2,16 +2,16 @@
 import { useState, useEffect } from 'react';
 
 /**
- * Hook to persist state between tab focus changes
+ * Hook to persist state between browser sessions
  * @param key A unique key to identify this state in storage
  * @param initialValue The initial value for the state
  * @returns A stateful value and a function to update it, like useState
  */
 export function usePersistentState<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  // Get stored value from sessionStorage
+  // Get stored value from localStorage instead of sessionStorage
   const getStoredValue = (): T => {
     try {
-      const item = sessionStorage.getItem(key);
+      const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
       console.error('Error retrieving stored value:', error);
@@ -22,10 +22,10 @@ export function usePersistentState<T>(key: string, initialValue: T): [T, (value:
   // State to store our value
   const [value, setValue] = useState<T>(getStoredValue);
 
-  // Save to sessionStorage whenever the state changes
+  // Save to localStorage whenever the state changes
   useEffect(() => {
     try {
-      sessionStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
       console.error('Error storing value:', error);
     }
@@ -37,7 +37,7 @@ export function usePersistentState<T>(key: string, initialValue: T): [T, (value:
       // When tab becomes visible again, check if the value was updated in another tab
       if (document.visibilityState === 'visible') {
         try {
-          const storedValue = sessionStorage.getItem(key);
+          const storedValue = localStorage.getItem(key);
           if (storedValue !== null) {
             const parsedValue = JSON.parse(storedValue);
             // Only update if the value is different to avoid unnecessary renders

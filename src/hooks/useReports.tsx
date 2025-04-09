@@ -1,9 +1,13 @@
 
 import { useReportsContext } from '@/context/ReportsContext';
+import { usePersistentState } from '@/hooks/usePersistentState';
 
 // Export a hook that combines context access and additional functionality if needed
 const useReports = () => {
   const reportsContext = useReportsContext();
+  
+  // Cargar la clave API de OpenAI desde localStorage para tenerla disponible en todo momento
+  const [openAIKey] = usePersistentState('openai_api_key', '');
   
   if (!reportsContext) {
     console.error('useReports must be used within a ReportsProvider');
@@ -17,10 +21,15 @@ const useReports = () => {
       updateReport: async () => false,
       deleteReport: async () => false,
       refreshReports: async () => false,
+      openAIKey
     };
   }
   
-  return reportsContext;
+  // Add the OpenAI key to the context
+  return {
+    ...reportsContext,
+    openAIKey
+  };
 };
 
 export default useReports;

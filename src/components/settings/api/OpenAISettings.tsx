@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import usePersistentState from '@/hooks/usePersistentState';
+import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_PROMPT = `Genera un informe profesional de SEO para clientes de una empresa de marketing digital, claramente estructurado y formateado en secciones específicas con títulos fáciles de entender para clientes sin conocimientos técnicos profundos. Usa lenguaje sencillo, directo y con un tono profesional, asegurando claridad y precisión.
 
@@ -76,7 +77,7 @@ const OpenAISettings: React.FC<OpenAISettingsProps> = ({
   onSave,
 }) => {
   // Use persistent state for the form inputs
-  const [localApiKey, setLocalApiKey] = usePersistentState<string>('openai_settings_api_key', apiKey);
+  const [localApiKey, setLocalApiKey] = usePersistentState<string>('openai_api_key', apiKey);
   const [localPrompt, setLocalPrompt] = usePersistentState<string>('openai_settings_prompt', defaultPrompt);
 
   // Update props when local state changes
@@ -98,6 +99,45 @@ const OpenAISettings: React.FC<OpenAISettingsProps> = ({
     }
   }, [apiKey, defaultPrompt]);
 
+  // Intenta guardar la clave API en la base de datos
+  useEffect(() => {
+    const saveApiKeyToDatabase = async () => {
+      try {
+        // Solo actualizar si la clave no está vacía
+        if (localApiKey.trim()) {
+          // Intentar obtener el registro de configuración actual
+          const { data, error } = await supabase
+            .from('settings')
+            .select('id, openai_key, default_prompt')
+            .limit(1)
+            .single();
+            
+          if (!error) {
+            // Actualizar el valor en la base de datos
+            await supabase
+              .from('settings')
+              .update({ 
+                openai_key: localApiKey,
+                // También actualizar el prompt si existe
+                ...(localPrompt ? { default_prompt: localPrompt } : {})
+              })
+              .eq('id', data.id);
+            
+            console.log('OpenAI API key and prompt saved to database');
+          }
+        }
+      } catch (error) {
+        console.error('Error saving API key to database:', error);
+        // No mostrar toast de error para no molestar al usuario
+      }
+    };
+    
+    // Si hay una clave guardada, intentar sincronizarla con la base de datos
+    if (localApiKey) {
+      saveApiKeyToDatabase();
+    }
+  }, [localApiKey, localPrompt]);
+
   const handleReset = () => {
     setLocalPrompt(DEFAULT_PROMPT);
     toast.info('Prompt restaurado a su valor predeterminado');
@@ -107,6 +147,31 @@ const OpenAISettings: React.FC<OpenAISettingsProps> = ({
     // Save to localStorage
     localStorage.setItem('openai_api_key', localApiKey);
     localStorage.setItem('default_seo_prompt', localPrompt);
+    
+    // También guardar en la base de datos
+    const saveToDatabase = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('id')
+          .limit(1)
+          .single();
+          
+        if (!error && data) {
+          await supabase
+            .from('settings')
+            .update({ 
+              openai_key: localApiKey,
+              default_prompt: localPrompt 
+            })
+            .eq('id', data.id);
+        }
+      } catch (error) {
+        console.error('Error saving to database:', error);
+      }
+    };
+    
+    saveToDatabase();
     
     // Call the original onSave
     onSave();
