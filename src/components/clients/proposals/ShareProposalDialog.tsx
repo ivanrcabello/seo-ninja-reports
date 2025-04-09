@@ -23,20 +23,16 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   const [shareUrl, setShareUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Reset state when dialog opens or closes
   useEffect(() => {
     if (!open) {
-      // Reset state when dialog closes
       setCopied(false);
       return;
     }
     
-    // Generate URL when dialog opens
     const generateShareUrl = async () => {
       try {
         setIsLoading(true);
         
-        // Verificar si la propuesta ya tiene un shared_url
         const { data: proposalData, error: proposalError } = await supabase
           .from('client_proposals')
           .select('shared_url, client_id, clients(name, website)')
@@ -49,7 +45,6 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
         
         let sharedUrl = proposalData.shared_url;
         
-        // Si no tiene shared_url, generamos uno
         if (!sharedUrl) {
           const { data: updatedProposal, error: updateError } = await supabase
             .from('client_proposals')
@@ -65,7 +60,6 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
           sharedUrl = updatedProposal.shared_url;
         }
         
-        // Verificar si ya existe en shared_content
         const { data: existingContent } = await supabase
           .from('shared_content')
           .select('id')
@@ -73,9 +67,7 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
           .eq('content_type', 'proposal')
           .single();
         
-        // Si no existe en shared_content, lo creamos
         if (!existingContent) {
-          // Obtenemos todos los datos de la propuesta
           const { data: fullProposal, error: fullProposalError } = await supabase
             .from('client_proposals')
             .select('*')
@@ -86,13 +78,11 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
             throw new Error('Error al obtener datos completos de la propuesta');
           }
           
-          // Prepare content as JSON
           const content = {
             services: fullProposal.services,
             price: fullProposal.price
           };
           
-          // Insertamos en shared_content
           const { error: insertError } = await supabase
             .from('shared_content')
             .insert([{
@@ -113,7 +103,6 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
           }
         }
         
-        // Construir la URL completa
         const fullUrl = `${window.location.origin}/shared/proposals/${sharedUrl}`;
         setShareUrl(fullUrl);
         toast.success('Enlace generado correctamente');

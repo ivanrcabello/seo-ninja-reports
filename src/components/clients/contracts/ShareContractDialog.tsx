@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,6 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
   const [isCopied, setIsCopied] = useState(false);
   const isMounted = useRef(true);
   
-  // Set up the mounted ref
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -34,14 +32,12 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
     };
   }, []);
   
-  // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
       setIsCopied(false);
     }
     
     return () => {
-      // Clean up when component unmounts or dialog closes
       if (!open) {
         setShareUrl('');
         setIsLoading(false);
@@ -55,16 +51,17 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
     
     setIsLoading(true);
     try {
-      const url = await onGenerateShareUrl();
+      const shareId = await onGenerateShareUrl();
+      const fullShareUrl = `${window.location.origin}/shared/contracts/${shareId}`;
+      console.log('Full share URL:', fullShareUrl);
+      
       if (isMounted.current) {
-        console.log('Generated share URL:', url);
-        setShareUrl(url);
+        setShareUrl(fullShareUrl);
       }
-    } catch (error) {
-      console.error('Error generating share URL:', error);
-      if (isMounted.current) {
-        toast.error('No se pudo generar el enlace para compartir');
-      }
+    } catch (err: any) {
+      console.error('Error generating share URL:', err);
+      toast.error('Error al generar enlace para compartir');
+      throw err;
     } finally {
       if (isMounted.current) {
         setIsLoading(false);

@@ -20,7 +20,7 @@ export const sharedRoutes: RouteObject[] = [
     element: <SharedContract />
   },
   {
-    path: '/shared/reports/:id',
+    path: '/shared/reports/:sharedUrl',
     element: <PublicReport />
   }
 ];

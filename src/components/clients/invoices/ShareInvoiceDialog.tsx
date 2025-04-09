@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -31,20 +30,16 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const { generateShareUrl } = useClientInvoices();
   
-  // Reset state when dialog opens or closes
   useEffect(() => {
     if (!open) {
-      // Reset state when dialog closes
       setCopied(false);
       return;
     }
     
-    // Generate URL when dialog opens
     const createShareUrl = async () => {
       try {
         setIsLoading(true);
         
-        // Get the invoice data first
         const { data: invoiceData, error: invoiceError } = await supabase
           .from('client_invoices')
           .select('*')
@@ -57,7 +52,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
         
         let sharedUrl = invoiceData.shared_url;
         
-        // If there's no shared_url, generate one
         if (!sharedUrl) {
           sharedUrl = await generateShareUrl(invoiceId);
           if (!sharedUrl) {
@@ -65,7 +59,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
           }
         }
         
-        // Check if already exists in shared_content
         const { data: existingContent } = await supabase
           .from('shared_content')
           .select('id')
@@ -73,9 +66,7 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
           .eq('content_type', 'invoice')
           .single();
         
-        // If it doesn't exist in shared_content, create it
         if (!existingContent) {
-          // Create content JSON
           const content = {
             amount: invoiceData.amount,
             status: invoiceData.status,
@@ -93,7 +84,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
             invoice_number: invoiceData.invoice_number
           };
           
-          // Insert into shared_content
           const { error: insertError } = await supabase
             .from('shared_content')
             .insert({
@@ -114,7 +104,6 @@ const ShareInvoiceDialog: React.FC<ShareInvoiceDialogProps> = ({
           }
         }
         
-        // Construct the full URL
         const fullUrl = `${window.location.origin}/shared/invoices/${sharedUrl}`;
         setShareUrl(fullUrl);
         toast.success('Enlace generado correctamente');
