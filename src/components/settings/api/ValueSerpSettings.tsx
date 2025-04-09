@@ -8,28 +8,73 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
+import { usePersistentState } from '@/hooks/usePersistentState';
 
 interface ValueSerpSettingsProps {
-  valueSerpApiKey: string;
-  setValueSerpApiKey: (key: string) => void;
-  hasConfiguredValueSerpKey: boolean;
-  brightDataUsername: string;
-  setBrightDataUsername: (username: string) => void;
-  brightDataPassword: string;
-  setBrightDataPassword: (password: string) => void;
+  valueSerpApiKey?: string;
+  setValueSerpApiKey?: (key: string) => void;
+  hasConfiguredValueSerpKey?: boolean;
+  brightDataUsername?: string;
+  setBrightDataUsername?: (username: string) => void;
+  brightDataPassword?: string;
+  setBrightDataPassword?: (password: string) => void;
 }
 
 const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   valueSerpApiKey,
   setValueSerpApiKey,
-  hasConfiguredValueSerpKey,
-  brightDataUsername,
-  setBrightDataUsername,
-  brightDataPassword,
-  setBrightDataPassword,
+  hasConfiguredValueSerpKey = false,
+  brightDataUsername: propBrightDataUsername,
+  setBrightDataUsername: propSetBrightDataUsername,
+  brightDataPassword: propBrightDataPassword,
+  setBrightDataPassword: propSetBrightDataPassword,
 }) => {
+  // Use persistent state for better state handling
+  const [localValueSerpApiKey, setLocalValueSerpApiKey] = usePersistentState(
+    'valueserp_api_key',
+    valueSerpApiKey || ''
+  );
+  const [localBrightDataUsername, setLocalBrightDataUsername] = usePersistentState(
+    'bright_data_username',
+    propBrightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER
+  );
+  const [localBrightDataPassword, setLocalBrightDataPassword] = usePersistentState(
+    'bright_data_password',
+    propBrightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD
+  );
+  
   const [hasSavedBrightData, setHasSavedBrightData] = useState(false);
   const [brightDataApiKey, setBrightDataApiKey] = useState('');
+  
+  // Synchronize local state with props
+  useEffect(() => {
+    if (valueSerpApiKey && valueSerpApiKey !== localValueSerpApiKey) {
+      setLocalValueSerpApiKey(valueSerpApiKey);
+    }
+    
+    if (propBrightDataUsername && propBrightDataUsername !== localBrightDataUsername) {
+      setLocalBrightDataUsername(propBrightDataUsername);
+    }
+    
+    if (propBrightDataPassword && propBrightDataPassword !== localBrightDataPassword) {
+      setLocalBrightDataPassword(propBrightDataPassword);
+    }
+  }, [valueSerpApiKey, propBrightDataUsername, propBrightDataPassword]);
+  
+  // Synchronize props with local state
+  useEffect(() => {
+    if (setValueSerpApiKey && localValueSerpApiKey !== valueSerpApiKey) {
+      setValueSerpApiKey(localValueSerpApiKey);
+    }
+    
+    if (propSetBrightDataUsername && localBrightDataUsername !== propBrightDataUsername) {
+      propSetBrightDataUsername(localBrightDataUsername);
+    }
+    
+    if (propSetBrightDataPassword && localBrightDataPassword !== propBrightDataPassword) {
+      propSetBrightDataPassword(localBrightDataPassword);
+    }
+  }, [localValueSerpApiKey, localBrightDataUsername, localBrightDataPassword]);
   
   // Check if Bright Data credentials are already in localStorage
   useEffect(() => {
@@ -37,27 +82,19 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
     const savedPassword = localStorage.getItem('bright_data_password');
     const savedApiKey = localStorage.getItem('bright_data_api_key');
     
-    if (savedUsername && savedUsername !== brightDataUsername) {
-      setBrightDataUsername(savedUsername);
-    }
-    
-    if (savedPassword && savedPassword !== brightDataPassword) {
-      setBrightDataPassword(savedPassword);
-    }
+    setHasSavedBrightData(!!savedUsername && !!savedPassword);
     
     if (savedApiKey) {
       setBrightDataApiKey(savedApiKey);
     }
-    
-    setHasSavedBrightData(!!savedUsername && !!savedPassword);
-  }, [brightDataUsername, brightDataPassword, setBrightDataUsername, setBrightDataPassword]);
+  }, []);
 
   // Save Bright Data credentials to localStorage when they change
   const handleSaveBrightData = () => {
     try {
       // Always ensure we have username and password, defaulting to the config values if not provided
-      const usernameToSave = brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER;
-      const passwordToSave = brightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
+      const usernameToSave = localBrightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER;
+      const passwordToSave = localBrightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
       
       localStorage.setItem('bright_data_username', usernameToSave);
       localStorage.setItem('bright_data_password', passwordToSave);
@@ -84,8 +121,8 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
   // For testing the credentials
   const handleTestBrightData = async () => {
     try {
-      const usernameToTest = brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER;
-      const passwordToTest = brightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
+      const usernameToTest = localBrightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER;
+      const passwordToTest = localBrightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD;
       
       if (!usernameToTest || !passwordToTest) {
         toast.error('Las credenciales de Bright Data son obligatorias para realizar la prueba');
@@ -153,8 +190,8 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
             <Input
               id="valueSerpApiKey"
               type="password"
-              value={valueSerpApiKey}
-              onChange={(e) => setValueSerpApiKey(e.target.value)}
+              value={localValueSerpApiKey}
+              onChange={(e) => setLocalValueSerpApiKey(e.target.value)}
               className="glass-input"
               placeholder="vsrp_..."
             />
@@ -176,7 +213,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => copyToClipboard(brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER, 'Usuario')}
+                onClick={() => copyToClipboard(localBrightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER, 'Usuario')}
                 className="h-6 w-6 p-0"
               >
                 <Copy className="h-4 w-4" />
@@ -185,8 +222,8 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
             <Input
               id="brightDataUsername"
               type="text"
-              value={brightDataUsername}
-              onChange={(e) => setBrightDataUsername(e.target.value)}
+              value={localBrightDataUsername}
+              onChange={(e) => setLocalBrightDataUsername(e.target.value)}
               className="glass-input"
               placeholder={BRIGHT_DATA_CONFIG.DEFAULT_USER}
             />
@@ -201,7 +238,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => copyToClipboard(brightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD, 'Contraseña')}
+                onClick={() => copyToClipboard(localBrightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD, 'Contraseña')}
                 className="h-6 w-6 p-0"
               >
                 <Copy className="h-4 w-4" />
@@ -210,8 +247,8 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
             <Input
               id="brightDataPassword"
               type="password"
-              value={brightDataPassword}
-              onChange={(e) => setBrightDataPassword(e.target.value)}
+              value={localBrightDataPassword}
+              onChange={(e) => setLocalBrightDataPassword(e.target.value)}
               className="glass-input"
               placeholder={BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}
             />
@@ -256,7 +293,7 @@ const ValueSerpSettings: React.FC<ValueSerpSettingsProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(`${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}:${brightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER}:${brightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}`, 'Formato completo')}
+                  onClick={() => copyToClipboard(`${BRIGHT_DATA_CONFIG.PROXY_HOST}:${BRIGHT_DATA_CONFIG.PROXY_PORT}:${localBrightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER}:${localBrightDataPassword || BRIGHT_DATA_CONFIG.DEFAULT_PASSWORD}`, 'Formato completo')}
                   className="h-6 w-6 p-0"
                 >
                   <Copy className="h-4 w-4" />

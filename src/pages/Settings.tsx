@@ -189,7 +189,6 @@ const Settings = () => {
                     setBrightDataPassword={setBrightDataPassword}
                     brightDataApiKey={brightDataApiKey}
                     setBrightDataApiKey={setBrightDataApiKey}
-                    // Pasar también las otras claves API
                     openAIKey={openAIKey}
                     setOpenAIKey={setOpenAIKey}
                     pageSpeedKey={pageSpeedKey}

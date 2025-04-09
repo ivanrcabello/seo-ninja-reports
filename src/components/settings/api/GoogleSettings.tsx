@@ -11,22 +11,24 @@ import { usePersistentState } from '@/hooks/usePersistentState';
 import { supabase } from '@/integrations/supabase/client';
 
 interface GoogleSettingsProps {
-  googleApiKey: string;
-  setGoogleKey: (key: string) => void;
-  hasConfiguredGoogle: boolean;
+  googleApiKey?: string;
+  setGoogleKey?: (key: string) => void;
+  hasConfiguredGoogle?: boolean;
 }
 
 const GoogleSettings: React.FC<GoogleSettingsProps> = ({
   googleApiKey,
   setGoogleKey,
-  hasConfiguredGoogle,
+  hasConfiguredGoogle = false,
 }) => {
   // Use localStorage instead of props for better persistence
-  const [localGoogleKey, setLocalGoogleKey] = usePersistentState('pagespeed_api_key', googleApiKey);
+  const [localGoogleKey, setLocalGoogleKey] = usePersistentState('pagespeed_api_key', googleApiKey || '');
   
   // Sync the local state with the props
   useEffect(() => {
-    setGoogleKey(localGoogleKey);
+    if (setGoogleKey) {
+      setGoogleKey(localGoogleKey);
+    }
   }, [localGoogleKey, setGoogleKey]);
   
   // Also sync props with local state on mount
@@ -73,7 +75,9 @@ const GoogleSettings: React.FC<GoogleSettingsProps> = ({
   
   // Función para guardar los cambios
   const handleSave = async () => {
-    setGoogleKey(localGoogleKey);
+    if (setGoogleKey) {
+      setGoogleKey(localGoogleKey);
+    }
     
     // También guardar en la base de datos
     try {

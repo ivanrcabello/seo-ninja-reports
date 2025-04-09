@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,13 @@ interface ApiSettingsProps {
   setBrightDataPassword?: (value: string) => void;
   brightDataApiKey?: string;
   setBrightDataApiKey?: (value: string) => void;
+  
+  openAIKey?: string;
+  setOpenAIKey?: (value: string) => void;
+  pageSpeedKey?: string;
+  setPageSpeedKey?: (value: string) => void;
+  valueSerpKey?: string;
+  setValueSerpKey?: (value: string) => void;
 }
 
 const ApiSettings: React.FC<ApiSettingsProps> = ({
@@ -27,19 +33,22 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
   brightDataPassword: propsBrightDataPassword,
   setBrightDataPassword: propSetBrightDataPassword,
   brightDataApiKey: propsBrightDataApiKey,
-  setBrightDataApiKey: propSetBrightDataApiKey
+  setBrightDataApiKey: propSetBrightDataApiKey,
+  openAIKey: propsOpenAIKey,
+  setOpenAIKey: propsSetOpenAIKey,
+  pageSpeedKey: propsPageSpeedKey,
+  setPageSpeedKey: propsSetPageSpeedKey,
+  valueSerpKey: propsValueSerpKey,
+  setValueSerpKey: propsSetValueSerpKey
 }) => {
-  // OpenAI API key state
-  const [openAIKey, setOpenAIKey] = usePersistentState('openai_api_key', '');
+  const [openAIKey, setOpenAIKey] = usePersistentState('openai_api_key', propsOpenAIKey || '');
   const [openAIKeyVisible, setOpenAIKeyVisible] = useState(false);
   const [openAICopied, setOpenAICopied] = useState(false);
   
-  // Google PageSpeed API key state
-  const [pageSpeedKey, setPageSpeedKey] = usePersistentState('pagespeed_api_key', '');
+  const [pageSpeedKey, setPageSpeedKey] = usePersistentState('pagespeed_api_key', propsPageSpeedKey || '');
   const [pageSpeedKeyVisible, setPageSpeedKeyVisible] = useState(false);
   const [pageSpeedCopied, setPageSpeedCopied] = useState(false);
 
-  // Bright Data Credentials
   const [brightDataUsername, setBrightDataUsername] = usePersistentState(
     'bright_data_username',
     propsBrightDataUsername || BRIGHT_DATA_CONFIG.DEFAULT_USER
@@ -53,10 +62,8 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     propsBrightDataApiKey || BRIGHT_DATA_CONFIG.DEFAULT_API_KEY
   );
   
-  // State for testing connection
   const [testingConnection, setTestingConnection] = useState(false);
   
-  // Effect to sync props with local state
   useEffect(() => {
     if (propsBrightDataUsername) {
       setBrightDataUsername(propsBrightDataUsername);
@@ -67,9 +74,36 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     if (propsBrightDataApiKey) {
       setBrightDataApiKey(propsBrightDataApiKey);
     }
-  }, [propsBrightDataUsername, propsBrightDataPassword, propsBrightDataApiKey]);
+    
+    if (propsOpenAIKey && propsSetOpenAIKey) {
+      setOpenAIKey(propsOpenAIKey);
+    }
+    if (propsPageSpeedKey && propsSetPageSpeedKey) {
+      setPageSpeedKey(propsPageSpeedKey);
+    }
+  }, [
+    propsBrightDataUsername, propsBrightDataPassword, propsBrightDataApiKey,
+    propsOpenAIKey, propsPageSpeedKey
+  ]);
   
-  // Copy API key to clipboard
+  useEffect(() => {
+    if (openAIKey !== propsOpenAIKey) {
+      propsSetOpenAIKey(openAIKey);
+    }
+    if (pageSpeedKey !== propsPageSpeedKey) {
+      propsSetPageSpeedKey(pageSpeedKey);
+    }
+    if (brightDataUsername !== propsBrightDataUsername) {
+      propSetBrightDataUsername(brightDataUsername);
+    }
+    if (brightDataPassword !== propsBrightDataPassword) {
+      propSetBrightDataPassword(brightDataPassword);
+    }
+    if (brightDataApiKey !== propsBrightDataApiKey) {
+      setBrightDataApiKey(brightDataApiKey);
+    }
+  }, [openAIKey, pageSpeedKey, brightDataUsername, brightDataPassword, brightDataApiKey]);
+  
   const copyToClipboard = (text: string, setCopied: (copied: boolean) => void) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -77,7 +111,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     });
   };
   
-  // Test API key for OpenAI
   const testOpenAIKey = async () => {
     if (!openAIKey.trim()) {
       toast.error('Por favor, introduce una clave de API de OpenAI');
@@ -87,7 +120,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     try {
       setTestingConnection(true);
       
-      // Todo: implement actual OpenAI API test
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success('Conexión exitosa con la API de OpenAI');
@@ -99,7 +131,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     }
   };
   
-  // Test API key for PageSpeed
   const testPageSpeedKey = async () => {
     if (!pageSpeedKey.trim()) {
       toast.error('Por favor, introduce una clave de API de Google PageSpeed');
@@ -109,7 +140,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     try {
       setTestingConnection(true);
       
-      // Todo: implement actual PageSpeed API test
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success('Conexión exitosa con la API de Google PageSpeed');
@@ -121,7 +151,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     }
   };
   
-  // Test Bright Data credentials
   const testBrightDataCredentials = async () => {
     if (!brightDataUsername.trim() || !brightDataPassword.trim()) {
       toast.error('Por favor, introduce las credenciales de Bright Data');
@@ -131,7 +160,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     try {
       setTestingConnection(true);
       
-      // Todo: implement actual Bright Data API test
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success('Conexión exitosa con Bright Data');
@@ -143,7 +171,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
     }
   };
   
-  // Save changes and propagate to parent if needed
   const saveBrightDataChanges = () => {
     if (propSetBrightDataUsername) {
       propSetBrightDataUsername(brightDataUsername);
@@ -176,7 +203,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
             <TabsTrigger value="valueserp">ValueSERP</TabsTrigger>
           </TabsList>
           
-          {/* OpenAI API Key Tab */}
           <TabsContent value="openai" className="space-y-4">
             <Alert className="bg-primary/5 border-primary/20">
               <Info className="h-4 w-4" />
@@ -238,7 +264,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
             </div>
           </TabsContent>
           
-          {/* Google PageSpeed API Key Tab */}
           <TabsContent value="pagespeed" className="space-y-4">
             <Alert className="bg-primary/5 border-primary/20">
               <Info className="h-4 w-4" />
@@ -300,7 +325,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
             </div>
           </TabsContent>
           
-          {/* Bright Data Credentials Tab */}
           <TabsContent value="brightdata" className="space-y-4">
             <Alert className="bg-primary/5 border-primary/20">
               <Info className="h-4 w-4" />
@@ -367,9 +391,16 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({
             </div>
           </TabsContent>
           
-          {/* ValueSERP API Key Tab */}
           <TabsContent value="valueserp">
-            <ValueSerpSettings />
+            <ValueSerpSettings 
+              valueSerpApiKey={propsValueSerpKey || ''}
+              setValueSerpApiKey={propsSetValueSerpKey || setPageSpeedKey}
+              hasConfiguredValueSerpKey={!!propsValueSerpKey || !!localStorage.getItem('valueserp_api_key')}
+              brightDataUsername={brightDataUsername}
+              setBrightDataUsername={setBrightDataUsername}
+              brightDataPassword={brightDataPassword}
+              setBrightDataPassword={setBrightDataPassword}
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
