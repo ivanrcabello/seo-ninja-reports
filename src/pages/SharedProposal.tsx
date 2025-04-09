@@ -1,9 +1,12 @@
+
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 import { 
   checkContentPasswordProtection, 
@@ -40,12 +43,17 @@ const formatDate = (date: string) => {
 
 const SharedProposal = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
+  const navigate = useNavigate();
   const [proposal, setProposal] = useState<SharedProposalData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
+
+  const handleBackToHome = () => {
+    navigate('/');
+  };
 
   const verifyPassword = async (password: string) => {
     try {
@@ -119,7 +127,10 @@ const SharedProposal = () => {
     return (
       <PasswordProtectionDialog 
         onSubmit={verifyPassword}
-        onCancel={() => setError('Acceso denegado')}
+        onCancel={() => {
+          setError('Acceso denegado');
+          setIsPasswordDialogOpen(false);
+        }}
         type="proposal"
       />
     );
@@ -140,17 +151,16 @@ const SharedProposal = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-md w-full p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-red-200">
-          <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar la propuesta</h1>
-          <p className="text-center text-muted-foreground mb-6">
-            {error || 'La propuesta solicitada no existe o ha sido eliminada.'}
-          </p>
-          <div className="flex justify-center">
-            <a
-              href="/"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
+          <div className="text-center flex flex-col items-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar la propuesta</h1>
+            <p className="text-center text-muted-foreground mb-6">
+              {error || 'La propuesta solicitada no existe o ha sido eliminada.'}
+            </p>
+            <Button onClick={handleBackToHome} variant="default">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Volver al inicio
-            </a>
+            </Button>
           </div>
         </div>
       </div>
@@ -160,6 +170,15 @@ const SharedProposal = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
+        <Button 
+          onClick={handleBackToHome} 
+          variant="ghost" 
+          className="mb-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver al inicio
+        </Button>
+        
         <Card className="bg-background/80 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden">
           <CardHeader className="bg-primary/5 border-b border-primary/10">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">

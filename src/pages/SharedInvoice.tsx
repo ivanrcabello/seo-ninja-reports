@@ -1,9 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { InvoiceContent, InvoiceHeader, InvoiceActions } from '@/components/shared-invoice';
 import type { SharedInvoice as SharedInvoiceType } from '@/components/shared-invoice/types';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
 import { 
   checkContentPasswordProtection, 
@@ -13,12 +15,17 @@ import { getSharedInvoice } from '@/services/sharedContentService';
 
 const SharedInvoice = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
+  const navigate = useNavigate();
   const [invoice, setInvoice] = useState<SharedInvoiceType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
+
+  const handleBackToHome = () => {
+    navigate('/');
+  };
 
   const handlePrint = () => {
     window.print();
@@ -93,7 +100,10 @@ const SharedInvoice = () => {
     return (
       <PasswordProtectionDialog 
         onSubmit={verifyPassword}
-        onCancel={() => setError('Acceso denegado')}
+        onCancel={() => {
+          setError('Acceso denegado');
+          setIsPasswordDialogOpen(false);
+        }}
         type="invoice"
       />
     );
@@ -114,17 +124,16 @@ const SharedInvoice = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-md w-full p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-red-200">
-          <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar la factura</h1>
-          <p className="text-center text-muted-foreground mb-6">
-            {error || 'La factura solicitada no existe o ha sido eliminada.'}
-          </p>
-          <div className="flex justify-center">
-            <a
-              href="/"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
+          <div className="text-center flex flex-col items-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar la factura</h1>
+            <p className="text-center text-muted-foreground mb-6">
+              {error || 'La factura solicitada no existe o ha sido eliminada.'}
+            </p>
+            <Button onClick={handleBackToHome} variant="default">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Volver al inicio
-            </a>
+            </Button>
           </div>
         </div>
       </div>
@@ -133,20 +142,31 @@ const SharedInvoice = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-primary/10 overflow-hidden">
-        <InvoiceHeader 
-          invoice={invoice}
-          onPrint={handlePrint}
-        />
-        
-        <InvoiceContent 
-          invoice={invoice}
-        />
-        
-        <InvoiceActions 
-          invoice={invoice}
-          onPrint={handlePrint}
-        />
+      <div className="max-w-4xl mx-auto">
+        <Button 
+          onClick={handleBackToHome} 
+          variant="ghost" 
+          className="mb-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver al inicio
+        </Button>
+      
+        <div className="bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-primary/10 overflow-hidden">
+          <InvoiceHeader 
+            invoice={invoice}
+            onPrint={handlePrint}
+          />
+          
+          <InvoiceContent 
+            invoice={invoice}
+          />
+          
+          <InvoiceActions 
+            invoice={invoice}
+            onPrint={handlePrint}
+          />
+        </div>
       </div>
     </div>
   );

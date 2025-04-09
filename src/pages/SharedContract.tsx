@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ContractHeader,
   ContractContent,
@@ -8,10 +8,14 @@ import {
   useContractData,
   useContractActions
 } from '@/components/shared-contract';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import PasswordProtectionDialog from '@/components/shared-content/PasswordProtectionDialog';
+import { toast } from 'sonner';
 
 const SharedContract = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
+  const navigate = useNavigate();
   const { contract, setContract, loading, error, logo } = useContractData(sharedUrl);
   const { 
     isSignDialogOpen, 
@@ -19,6 +23,25 @@ const SharedContract = () => {
     handleSignContract, 
     handlePrint 
   } = useContractActions(sharedUrl, contract, setContract);
+
+  const handleBackToHome = () => {
+    navigate('/');
+  };
+
+  // We add a catch handler for errors during navigation
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Allow normal navigation
+    };
+
+    // Add event listener
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -35,17 +58,16 @@ const SharedContract = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-md w-full p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-red-200">
-          <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar el contrato</h1>
-          <p className="text-center text-muted-foreground mb-6">
-            {error || 'El contrato solicitado no existe o ha sido eliminado.'}
-          </p>
-          <div className="flex justify-center">
-            <a
-              href="/"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
+          <div className="text-center flex flex-col items-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h1 className="text-2xl font-bold text-center text-red-600 mb-4">Error al cargar el contrato</h1>
+            <p className="text-center text-muted-foreground mb-6">
+              {error || 'El contrato solicitado no existe o ha sido eliminado.'}
+            </p>
+            <Button onClick={handleBackToHome} variant="default">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Volver al inicio
-            </a>
+            </Button>
           </div>
         </div>
       </div>
@@ -56,6 +78,15 @@ const SharedContract = () => {
     <>
       <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-6">
         <div className="max-w-4xl mx-auto">
+          <Button 
+            onClick={handleBackToHome} 
+            variant="ghost" 
+            className="mb-6"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver al inicio
+          </Button>
+          
           {/* Contract Header */}
           <ContractHeader contract={contract} logo={logo} />
           

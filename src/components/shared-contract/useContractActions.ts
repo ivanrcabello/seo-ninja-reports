@@ -1,15 +1,20 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { SharedContract, PublicContract } from './types';
 import { supabase } from '@/integrations/supabase/client';
+import { PublicContract } from './types';
 
 export function useContractActions(
-  sharedUrl?: string, 
-  contract: SharedContract = null,
-  setContract?: (contract: SharedContract) => void
+  sharedUrl?: string,
+  contract: PublicContract | null = null,
+  setContract?: (contract: PublicContract | null) => void
 ) {
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
+  const [isSigningContract, setIsSigningContract] = useState(false);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const handleSignContract = async (signature: string) => {
     if (!sharedUrl || !contract) {
@@ -17,120 +22,65 @@ export function useContractActions(
       return;
     }
 
+    setIsSigningContract(true);
+
     try {
-      // Current date for signature timestamp
-      const now = new Date().toISOString();
+      console.log('Signing contract:', sharedUrl);
+      console.log('Signature:', signature);
+
+      // Try first directly with shared_content table
+      const { error: updateError } = await supabase.rpc('update_shared_contract_with_signature', {
+        shared_url_param: sharedUrl,
+        client_signed_param: true,
+        client_signed_at_param: new Date().toISOString(),
+        client_signature_param: signature,
+        status_param: 'signed'
+      });
       
-      // Call the RPC function to update the contract with signature
-      const { data, error } = await supabase
-        .rpc('update_shared_contract_with_signature', {
+      if (updateError) {
+        console.error('Error updating shared contract with signature:', updateError);
+        // Fall back to direct contract update if RPC fails
+        const { error } = await supabase.rpc('update_contract_by_shared_url', {
           shared_url_param: sharedUrl,
           client_signed_param: true,
-          client_signed_at_param: now,
+          client_signed_at_param: new Date().toISOString(),
           client_signature_param: signature,
           status_param: 'signed'
         });
 
-      if (error) {
-        console.error('Error signing contract:', error);
-        throw error;
+        if (error) {
+          throw error;
+        }
       }
 
-      // Also try to update the original contract if possible
-      try {
-        await supabase
-          .rpc('update_contract_by_shared_url', {
-            shared_url_param: sharedUrl,
-            client_signed_param: true,
-            client_signed_at_param: now,
-            client_signature_param: signature,
-            status_param: 'signed'
-          });
-      } catch (originalContractError) {
-        console.warn('Could not update original contract, but shared contract was updated:', originalContractError);
-      }
-
-      // Update local state
+      // Update local state if successful
       if (setContract && contract) {
         setContract({
           ...contract,
           client_signed: true,
-          client_signed_at: now,
+          client_signed_at: new Date().toISOString(),
           client_signature: signature,
           status: 'signed'
         });
       }
 
+      toast.success('¡Contrato firmado correctamente!');
       setIsSignDialogOpen(false);
-      toast.success('Contrato firmado correctamente');
-    } catch (err: any) {
-      console.error('Error signing contract:', err);
-      toast.error(err.message || 'Error al firmar el contrato');
+    } catch (error: any) {
+      console.error('Error signing contract:', error);
+      toast.error('Error al firmar el contrato', {
+        description: error.message || 'Ocurrió un error al procesar la firma'
+      });
+    } finally {
+      setIsSigningContract(false);
     }
-  };
-
-  const handlePrint = () => {
-    if (!contract) return;
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('No se pudo abrir la ventana de impresión');
-      return;
-    }
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${contract.title}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 40px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .content { margin-bottom: 50px; }
-            .signature { margin-top: 50px; display: flex; justify-content: space-between; }
-            .signature-box { border-top: 1px solid #000; padding-top: 10px; width: 40%; text-align: center; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>${contract.title}</h1>
-            ${contract.client_name ? `<p>Cliente: ${contract.client_name}</p>` : ''}
-          </div>
-          
-          <div class="content">${contract.content}</div>
-          
-          <div class="signature">
-            <div class="signature-box">
-              ${contract.admin_signature ? `
-                <img src="${contract.admin_signature}" style="max-height: 60px;" />
-                <p>Firma Administrador</p>
-                <p>Fecha: ${contract.admin_signed_at ? new Date(contract.admin_signed_at).toLocaleDateString() : 'Sin firmar'}</p>
-              ` : 'Firma Administrador (Pendiente)'}
-            </div>
-            
-            <div class="signature-box">
-              ${contract.client_signature ? `
-                <img src="${contract.client_signature}" style="max-height: 60px;" />
-                <p>Firma Cliente</p>
-                <p>Fecha: ${contract.client_signed_at ? new Date(contract.client_signed_at).toLocaleDateString() : 'Sin firmar'}</p>
-              ` : 'Firma Cliente (Pendiente)'}
-            </div>
-          </div>
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
-    
-    // Wait for content to load before printing
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
   };
 
   return {
     isSignDialogOpen,
     setIsSignDialogOpen,
-    handleSignContract,
-    handlePrint
+    isSigningContract,
+    handlePrint,
+    handleSignContract
   };
 }

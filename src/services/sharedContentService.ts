@@ -62,7 +62,25 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
       };
     }
     
-    // If not found in shared_content, try to get directly from client_invoices
+    // Try to get the invoice from the public_invoices view
+    console.log('Fetching invoice from public_invoices view with shared URL:', sharedUrl);
+    const { data: publicData, error: publicError } = await supabase
+      .from('public_invoices')
+      .select('*')
+      .eq('shared_url', sharedUrl)
+      .single();
+    
+    if (publicError && publicError.code !== 'PGRST116') {
+      console.error('Error with public_invoices view:', publicError);
+      throw publicError;
+    }
+    
+    if (publicData) {
+      console.log('Invoice data from public_invoices view:', publicData);
+      return { data: publicData as SharedInvoiceResponse['data'] };
+    }
+    
+    // If not found in shared_content or public view, try the RPC function
     console.log('Fetching invoice from RPC function with shared URL:', sharedUrl);
     const { data, error } = await supabase
       .rpc('get_public_invoice_by_shared_url', {
@@ -139,6 +157,22 @@ export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoice
 
 export async function getSharedReport(sharedUrl: string): Promise<SharedReportResponse> {
   try {
+    // First try the public_reports view
+    const { data: publicData, error: publicError } = await supabase
+      .from('public_reports')
+      .select('*') 
+      .eq('shared_url', sharedUrl)
+      .single();
+    
+    if (!publicError && publicData) {
+      return { data: publicData as SharedReportResponse['data'] };
+    }
+    
+    if (publicError && publicError.code !== 'PGRST116') {
+      console.error('Error with public_reports view:', publicError);
+    }
+    
+    // If not found in view, try the RPC function
     const { data, error } = await supabase
       .rpc('get_report_by_shared_url', {
         shared_url_param: sharedUrl
@@ -162,6 +196,22 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
 
 export async function getSharedProposal(sharedUrl: string): Promise<SharedProposalResponse> {
   try {
+    // First try the public_proposals view
+    const { data: publicData, error: publicError } = await supabase
+      .from('public_proposals')
+      .select('*')
+      .eq('shared_url', sharedUrl)
+      .single();
+    
+    if (!publicError && publicData) {
+      return { data: publicData as SharedProposalResponse['data'] };
+    }
+    
+    if (publicError && publicError.code !== 'PGRST116') {
+      console.error('Error with public_proposals view:', publicError);
+    }
+    
+    // If not found in view, try the RPC function
     const { data, error } = await supabase
       .rpc('get_proposal_by_shared_url', {
         shared_url_param: sharedUrl
@@ -185,6 +235,22 @@ export async function getSharedProposal(sharedUrl: string): Promise<SharedPropos
 
 export async function getSharedContract(sharedUrl: string): Promise<SharedContractResponse> {
   try {
+    // First try the public_contracts view
+    const { data: publicData, error: publicError } = await supabase
+      .from('public_contracts')
+      .select('*')
+      .eq('shared_url', sharedUrl)
+      .single();
+    
+    if (!publicError && publicData) {
+      return { data: publicData as SharedContractResponse['data'] };
+    }
+    
+    if (publicError && publicError.code !== 'PGRST116') {
+      console.error('Error with public_contracts view:', publicError);
+    }
+    
+    // If not found in view, try the RPC function
     const { data, error } = await supabase
       .rpc('get_contract_by_shared_url', {
         shared_url_param: sharedUrl
