@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ContractHeader,
   ContractContent,
@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 const SharedContract = () => {
   const { sharedUrl } = useParams<{ sharedUrl: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { contract, setContract, loading, error, logo } = useContractData(sharedUrl);
   const { 
     isSignDialogOpen, 
@@ -25,21 +26,35 @@ const SharedContract = () => {
   } = useContractActions(sharedUrl, contract, setContract);
 
   const handleBackToHome = () => {
-    navigate('/');
+    // Check if we came from another page in the app
+    if (location.key !== 'default') {
+      navigate(-1); // Go back in history if possible
+    } else {
+      navigate('/'); // Otherwise go to home
+    }
   };
 
-  // We add a catch handler for errors during navigation
+  // Handle browser navigation events
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       // Allow normal navigation
     };
 
-    // Add event listener
+    // For handling user closing the browser
     window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // For handling back button and manual navigation
+    const handlePopState = () => {
+      // This runs when the user uses browser back/forward buttons
+      console.log('Navigation detected');
+    };
+    
+    window.addEventListener('popstate', handlePopState);
 
     // Clean up
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
