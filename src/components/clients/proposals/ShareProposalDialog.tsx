@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Check, Copy, Link, Mail } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useShareProposal } from './share-dialog/useShareProposal';
+import ShareUrlSection from '@/components/reports/share-dialog/ShareUrlSection';
+import ShareActionButtons from '@/components/reports/share-dialog/ShareActionButtons';
+import LoadingState from '@/components/reports/share-dialog/LoadingState';
+import ErrorState from '@/components/reports/share-dialog/ErrorState';
 
 interface ShareProposalDialogProps {
   open: boolean;
@@ -20,126 +20,14 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
   proposalId,
   proposalTitle
 }) => {
-  const [copied, setCopied] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  useEffect(() => {
-    if (!open) {
-      setCopied(false);
-      return;
-    }
-    
-    const generateShareUrl = async () => {
-      try {
-        setIsLoading(true);
-        
-        const { data: proposalData, error: proposalError } = await supabase
-          .from('client_proposals')
-          .select('shared_url, client_id, clients(name, website)')
-          .eq('id', proposalId)
-          .single();
-        
-        if (proposalError) {
-          throw new Error('Error al obtener la propuesta');
-        }
-        
-        let sharedUrl = proposalData.shared_url;
-        
-        if (!sharedUrl) {
-          const { data: updatedProposal, error: updateError } = await supabase
-            .from('client_proposals')
-            .update({ shared_url: crypto.randomUUID() })
-            .eq('id', proposalId)
-            .select('shared_url')
-            .single();
-          
-          if (updateError) {
-            throw new Error('Error al generar enlace compartido');
-          }
-          
-          sharedUrl = updatedProposal.shared_url;
-        }
-        
-        const { data: existingContent } = await supabase
-          .from('shared_content')
-          .select('id')
-          .eq('shared_url', sharedUrl)
-          .eq('content_type', 'proposal')
-          .single();
-        
-        if (!existingContent) {
-          const { data: fullProposal, error: fullProposalError } = await supabase
-            .from('client_proposals')
-            .select('*')
-            .eq('id', proposalId)
-            .single();
-          
-          if (fullProposalError) {
-            throw new Error('Error al obtener datos completos de la propuesta');
-          }
-          
-          const content = {
-            services: fullProposal.services,
-            price: fullProposal.price
-          };
-          
-          const { error: insertError } = await supabase
-            .from('shared_content')
-            .insert([{
-              original_id: fullProposal.id,
-              content_type: 'proposal',
-              title: fullProposal.title,
-              description: fullProposal.description,
-              content: content,
-              password: fullProposal.password,
-              status: fullProposal.status,
-              shared_url: sharedUrl,
-              client_name: proposalData.clients?.name,
-              client_website: proposalData.clients?.website
-            }]);
-          
-          if (insertError) {
-            throw new Error('Error al crear propuesta pública');
-          }
-        }
-        
-        // Create URL with correct path format
-        const fullUrl = `${window.location.origin}/shared/proposals/${sharedUrl}`;
-        setShareUrl(fullUrl);
-        toast.success('Enlace generado correctamente');
-      } catch (error: any) {
-        console.error('Error generating share URL:', error);
-        toast.error('Error: ' + (error.message || 'Error al generar enlace'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    generateShareUrl();
-  }, [open, proposalId]);
-  
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      toast.success('Enlace copiado al portapapeles');
-      
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch (error) {
-      toast.error('No se pudo copiar el enlace');
-      console.error('Error copiando al portapapeles:', error);
-    }
-  };
-  
-  const handleEmailShare = () => {
-    const subject = encodeURIComponent(`Propuesta: ${proposalTitle}`);
-    const body = encodeURIComponent(`Hola,\n\nQuiero compartir contigo esta propuesta.\n\nPuedes verla en: ${shareUrl}\n\nSaludos.`);
-    
-    window.open(`mailto:?subject=${subject}&body=${body}`);
-  };
+  const {
+    copied,
+    isLoading,
+    shareUrl,
+    error,
+    handleCopyLink,
+    handleEmailShare
+  } = useShareProposal({ open, proposalId, proposalTitle });
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -152,50 +40,21 @@ const ShareProposalDialog: React.FC<ShareProposalDialogProps> = ({
         </DialogHeader>
         <div className="space-y-6 py-4">
           {isLoading ? (
-            <div className="flex justify-center py-4">
-              <p>Generando enlace...</p>
-            </div>
+            <LoadingState />
+          ) : error ? (
+            <ErrorState error={error} onClose={() => onOpenChange(false)} />
           ) : (
             <>
-              <div className="flex items-center space-x-2">
-                <div className="grid flex-1 gap-2">
-                  <Input
-                    value={shareUrl}
-                    readOnly
-                    className="w-full"
-                  />
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handleCopyLink} 
-                  className="transition-all group hover:bg-primary hover:text-primary-foreground"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500 group-hover:text-primary-foreground" />
-                  ) : (
-                    <Copy className="h-4 w-4 group-hover:text-primary-foreground" />
-                  )}
-                </Button>
-              </div>
+              <ShareUrlSection 
+                shareUrl={shareUrl}
+                copied={copied}
+                onCopyLink={handleCopyLink}
+              />
               
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button 
-                  onClick={handleCopyLink} 
-                  className="w-full sm:w-auto gap-2 group"
-                >
-                  <Link className="h-4 w-4 group-hover:animate-pulse" />
-                  Copiar enlace
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleEmailShare} 
-                  className="w-full sm:w-auto gap-2 group transition-colors hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Mail className="h-4 w-4 group-hover:animate-pulse" />
-                  Compartir por email
-                </Button>
-              </div>
+              <ShareActionButtons 
+                onCopyLink={handleCopyLink}
+                onEmailShare={handleEmailShare}
+              />
             </>
           )}
         </div>
