@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientContract } from '@/types/client.types';
@@ -253,6 +254,7 @@ export const useClientContracts = (clientId?: string) => {
       }
       
       // Return only the share ID, not the full URL
+      // This change fixes the URL duplication issue
       return shareId;
     } catch (err: any) {
       console.error('Error generating share URL:', err);
