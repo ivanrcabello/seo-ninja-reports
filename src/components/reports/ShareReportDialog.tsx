@@ -109,7 +109,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           sharedUrl = existingContent.shared_url;
         }
         
-        // Construct the full URL
+        // Construct the full URL with the correct path
         const publicUrl = `${window.location.origin}/shared/reports/${sharedUrl}`;
         setShareUrl(publicUrl);
         

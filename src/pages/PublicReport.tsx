@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -14,7 +13,7 @@ import { checkContentPasswordProtection, verifyContentPassword } from '@/api/sha
 import { getSharedReport } from '@/services/sharedContentService';
 
 const PublicReport = () => {
-  const { id } = useParams<{ id: string }>();
+  const { sharedUrl } = useParams<{ sharedUrl: string }>();
   const [report, setReport] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +23,7 @@ const PublicReport = () => {
 
   const verifyPassword = async (password: string) => {
     try {
-      // Call function to verify password from our API utility
-      const verified = await verifyContentPassword(id || '', 'report', password);
+      const verified = await verifyContentPassword(sharedUrl || '', 'report', password);
       
       if (verified) {
         setAccessGranted(true);
@@ -42,15 +40,13 @@ const PublicReport = () => {
   };
 
   const fetchReport = async () => {
-    if (!id) return;
+    if (!sharedUrl) return;
     
     try {
       setIsLoading(true);
       
-      // Check if report is password protected
-      const isProtected = await checkContentPasswordProtection(id, 'report');
+      const isProtected = await checkContentPasswordProtection(sharedUrl, 'report');
       
-      // If password protected and access not granted yet, show password dialog
       if (isProtected && !accessGranted) {
         setIsPasswordProtected(true);
         setIsPasswordDialogOpen(true);
@@ -58,8 +54,7 @@ const PublicReport = () => {
         return;
       }
       
-      // Use service to get the report
-      const response = await getSharedReport(id);
+      const response = await getSharedReport(sharedUrl);
       
       if (response.error) {
         console.error("Error fetching report:", response.error);
@@ -85,7 +80,7 @@ const PublicReport = () => {
   
   useEffect(() => {
     fetchReport();
-  }, [id]);
+  }, [sharedUrl]);
 
   if (isPasswordDialogOpen) {
     return (
