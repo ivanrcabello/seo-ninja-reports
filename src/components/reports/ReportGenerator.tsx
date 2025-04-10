@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -58,7 +57,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   const [useKeywordsData, setUseKeywordsData] = usePersistentState<boolean>(
     `report-generator-use-keywords-${clientId}`, true);
   
-  // Nuevos estados para las funcionalidades añadidas
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [generatedReportId, setGeneratedReportId] = useState<string | null>(null);
@@ -147,8 +145,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       
       const formattedKeywords = keywords.map(k => ({
         keyword: k.keyword,
-        searchVolume: k.searchVolume ? parseInt(k.searchVolume) : undefined,
-        difficulty: k.difficulty ? parseInt(k.difficulty) : undefined
+        searchVolume: k.searchVolume ? Number(k.searchVolume) : undefined,
+        difficulty: k.difficulty ? Number(k.difficulty) : undefined
       }));
       
       const seoReportData = selectedSeoReport 
@@ -172,14 +170,17 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       console.log('Report generated successfully:', report);
       
       if (report && report.id) {
-        // Store report ID for progress tracking
         setGeneratedReportId(report.id);
         
         toast.success('Informe creado', {
           description: 'Procesando informe en segundo plano...',
         });
         
-        // No navigating immediately - we'll show progress instead
+        setTimeout(() => {
+          if (generatedReportId) {
+            navigate(`/reports/${generatedReportId}`);
+          }
+        }, 500);
       } else {
         throw new Error('El informe no tiene un ID válido');
       }
@@ -212,15 +213,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
   };
 
   const handleReportComplete = () => {
-    // When report generation is complete, clean up and navigate
     clearPersistedData();
     setIsLoading(false);
-        
-    setTimeout(() => {
-      if (generatedReportId) {
-        navigate(`/reports/${generatedReportId}`);
-      }
-    }, 500);
   };
 
   const goToNextStep = () => {
@@ -243,7 +237,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     goToNextStep();
   };
 
-  // Si hay un informe en progreso, muestra el indicador de progreso
   if (generatedReportId) {
     return (
       <BlurredCard animation="scale" className="w-full max-w-2xl mx-auto">
@@ -270,7 +263,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       <Card className="border-none shadow-none bg-transparent">
         <ReportGeneratorHeader clientName={client?.name} step={step} />
         
-        {/* Nuevos botones para plantillas y programación */}
         <div className="px-6 pb-2 flex flex-wrap gap-2 justify-end">
           <Button 
             variant="outline" 
@@ -372,7 +364,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
         )}
       </Card>
       
-      {/* Diálogos para plantillas y programación */}
       <TemplatesDialog 
         open={showTemplatesDialog} 
         onOpenChange={setShowTemplatesDialog}

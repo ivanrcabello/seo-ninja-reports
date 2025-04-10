@@ -1,7 +1,6 @@
 
 import { useReportsContext } from '@/context/ReportsContext';
 import { usePersistentState } from '@/hooks/usePersistentState';
-import { ReportProgress, ReportTemplate, ScheduledReport } from '@/types/report-hooks.types';
 
 // Export a hook that combines context access and additional functionality if needed
 const useReports = () => {
@@ -15,13 +14,13 @@ const useReports = () => {
     // Return a safe fallback to prevent app crashes
     return {
       reports: [],
-      getReport: () => null,
+      getReport: () => undefined,
       isLoading: false,
       error: 'ReportsContext not available',
       createReport: async () => null,
-      updateReport: async () => false,
-      deleteReport: async () => false,
-      refreshReports: async () => false,
+      updateReport: async () => null,
+      deleteReport: async () => {},
+      refreshReports: async () => {},
       getReportProgress: async () => null,
       saveReportTemplate: async () => null,
       getReportTemplates: async () => [],

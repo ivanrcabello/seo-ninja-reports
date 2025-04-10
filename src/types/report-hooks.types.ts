@@ -4,8 +4,8 @@ import { SeoReport } from '@/types/seo-reporting.types';
 
 export interface Keyword {
   keyword: string;
-  searchVolume?: number;
-  difficulty?: number;
+  searchVolume?: number; // Aseguramos que es number
+  difficulty?: number;   // Aseguramos que es number
 }
 
 export interface ReportTemplate {

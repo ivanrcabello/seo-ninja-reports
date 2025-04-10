@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -159,7 +158,7 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
                           {mode === 'select' ? (
                             <Button 
                               size="sm" 
-                              onClick={() => onSelect && onSelect(template)}
+                              onClick={() => onSelect && onSelect(template as any)}
                             >
                               Seleccionar
                             </Button>

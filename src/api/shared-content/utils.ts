@@ -9,9 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 export async function checkContentExists(contentId: string, contentType: 'report' | 'invoice' | 'proposal' | 'contract'): Promise<boolean> {
   try {
     if (contentType === 'report') {
-      // For reports, we need to use a custom RPC function to avoid recursion
+      // Para informes, usamos una función RPC personalizada
       const { data, error } = await supabase
-        .rpc('check_report_exists_by_shared_url', {
+        .rpc('check_report_exists_by_shared_url' as any, {
           shared_url_param: contentId
         });
       
@@ -50,7 +50,7 @@ export async function checkContentPasswordProtection(contentId: string, contentT
     if (contentType === 'report') {
       // Use the dedicated function for reports to avoid recursion
       const { data, error } = await supabase
-        .rpc('check_report_password_protection_by_url', {
+        .rpc('check_report_password_protection_by_url' as any, {
           shared_url_param: contentId
         });
       
@@ -98,7 +98,7 @@ export async function verifyContentPassword(contentId: string, contentType: 'rep
     if (contentType === 'report') {
       // Use the dedicated function for reports to avoid recursion
       const { data, error } = await supabase
-        .rpc('verify_shared_report_password_by_url', {
+        .rpc('verify_shared_report_password_by_url' as any, {
           shared_url_param: contentId,
           password_param: password
         });
