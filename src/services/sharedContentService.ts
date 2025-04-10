@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   SharedInvoiceResponse, 
@@ -169,13 +170,15 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
       };
     }
     
-    // Use RPC function instead of direct query to the view
+    // Use the security definer RPC function to get the report data
+    // This avoids infinite recursion in RLS policies
     const { data, error } = await supabase
       .rpc('get_report_by_shared_url', {
         shared_url_param: sharedUrl
       });
       
     if (error) {
+      console.error('Error fetching report with RPC:', error);
       throw error;
     }
     
@@ -196,9 +199,36 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
       client_website: report.client_website || undefined
     };
     
+    // Log the access for analytics purposes
+    try {
+      await supabase.rpc('log_shared_content_access', {
+        content_type: 'report',
+        content_id: sharedUrl,
+        access_type: 'view',
+        successful: true
+      });
+    } catch (logError) {
+      console.error('Error logging access:', logError);
+      // Don't fail if logging fails
+    }
+    
     return { data: formattedReport };
   } catch (error: any) {
     console.error('Error fetching shared report:', error);
+    
+    // Log the error
+    try {
+      await supabase.rpc('log_shared_content_access', {
+        content_type: 'report',
+        content_id: sharedUrl || 'unknown',
+        access_type: 'view',
+        successful: false,
+        error_message: error.message || 'Unknown error'
+      });
+    } catch (logError) {
+      console.error('Error logging access error:', logError);
+    }
+    
     return { data: null, error: error.message || 'Error al obtener el informe' };
   }
 }

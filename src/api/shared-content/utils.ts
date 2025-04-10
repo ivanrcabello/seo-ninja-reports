@@ -1,100 +1,149 @@
 
+// This file contains utility functions for working with shared content
+
 import { supabase } from '@/integrations/supabase/client';
-import { AccessLogOptions, AccessLogType, SharedContentType } from '@/types/shared-content';
 
-export const logSharedContentAccess = async ({
-  contentType,
-  contentId,
-  accessType,
-  options = {}
-}: {
-  contentType: SharedContentType;
-  contentId: string;
-  accessType: AccessLogType;
-  options?: AccessLogOptions;
-}) => {
+/**
+ * Check if content exists with the given ID
+ */
+export async function checkContentExists(contentId: string, contentType: 'report' | 'invoice' | 'proposal' | 'contract'): Promise<boolean> {
   try {
-    // Use direct insert instead of function
-    await supabase
-      .from('shared_content_access_logs')
-      .insert({
-        content_type: contentType,
+    const { data, error } = await supabase
+      .rpc('check_shared_content_exists', {
         content_id: contentId,
-        access_type: accessType,
-        successful: options.success !== undefined ? options.success : true,
-        error_message: options.error_message || null,
-        password_attempt: options.password_attempt || false,
-        source: options.source || 'web_client'
+        content_type: contentType
       });
-  } catch (error) {
-    console.error('Error logging shared content access:', error);
-  }
-};
-
-export const checkContentExists = async (
-  contentId: string,
-  contentType: SharedContentType
-): Promise<boolean> => {
-  try {
-    // Use direct query instead of function
-    const { data, error } = await supabase
-      .from('shared_content')
-      .select('id')
-      .eq('shared_url', contentId)
-      .eq('content_type', contentType)
-      .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error checking if content exists:', error);
+      return false;
+    }
     
-    return !!data;
-  } catch (error) {
-    console.error('Error checking content existence:', error);
+    return data || false;
+  } catch (err) {
+    console.error('Exception checking if content exists:', err);
     return false;
   }
-};
+}
 
-export const checkContentPasswordProtection = async (
-  contentId: string,
-  contentType: SharedContentType
-): Promise<boolean> => {
+/**
+ * Check if content is password protected
+ */
+export async function checkContentPasswordProtection(contentId: string, contentType: 'report' | 'invoice' | 'proposal' | 'contract'): Promise<boolean> {
   try {
-    // Use direct query instead of function
-    const { data, error } = await supabase
-      .from('shared_content')
-      .select('password')
-      .eq('shared_url', contentId)
-      .eq('content_type', contentType)
-      .single();
-    
-    if (error) throw error;
-    
-    return data && data.password ? true : false;
-  } catch (error) {
-    console.error('Error checking content password protection:', error);
+    // Use the appropriate RPC function based on content type
+    if (contentType === 'report') {
+      // We need to specially handle reports to avoid infinite recursion
+      const { data: reportData, error: reportError } = await supabase
+        .from('reports')
+        .select('id')
+        .eq('shared_url', contentId)
+        .single();
+      
+      if (reportError) {
+        console.error('Error getting report ID:', reportError);
+        return false;
+      }
+      
+      if (!reportData?.id) {
+        return false;
+      }
+      
+      // Use the security definer function to check password protection
+      const { data, error } = await supabase
+        .rpc('check_report_password_protection', {
+          report_id_param: reportData.id
+        });
+      
+      if (error) {
+        console.error('Error checking report password protection:', error);
+        return false;
+      }
+      
+      return data || false;
+    } else {
+      // For other content types, use the generic function
+      const { data, error } = await supabase
+        .rpc('check_shared_content_password', {
+          content_id: contentId,
+          content_type: contentType
+        });
+      
+      if (error) {
+        console.error('Error checking content password protection:', error);
+        return false;
+      }
+      
+      return data || false;
+    }
+  } catch (err) {
+    console.error('Exception checking content password protection:', err);
     return false;
   }
-};
+}
 
-export const verifyContentPassword = async (
-  contentId: string,
-  contentType: SharedContentType,
-  password: string
-): Promise<boolean> => {
+/**
+ * Verify a content password
+ */
+export async function verifyContentPassword(contentId: string, contentType: 'report' | 'invoice' | 'proposal' | 'contract', password: string): Promise<boolean> {
   try {
-    // Use direct query to verify password
-    const { data, error } = await supabase
-      .from('shared_content')
-      .select('id')
-      .eq('shared_url', contentId)
-      .eq('content_type', contentType)
-      .eq('password', password)
-      .single();
+    // Log the password verification attempt (without the actual password)
+    await supabase.rpc('log_shared_content_access', {
+      content_type: contentType,
+      content_id: contentId,
+      access_type: 'password_verification',
+      password_attempt: true
+    });
     
-    if (error) throw error;
-    
-    return !!data;
-  } catch (error) {
-    console.error('Error verifying content password:', error);
+    // Use the appropriate RPC function based on content type
+    if (contentType === 'report') {
+      // We need to specially handle reports to avoid infinite recursion
+      const { data: reportData, error: reportError } = await supabase
+        .from('reports')
+        .select('id')
+        .eq('shared_url', contentId)
+        .single();
+      
+      if (reportError) {
+        console.error('Error getting report ID:', reportError);
+        return false;
+      }
+      
+      if (!reportData?.id) {
+        return false;
+      }
+      
+      // Use the security definer function to verify the password
+      const { data, error } = await supabase
+        .rpc('verify_shared_report_password', {
+          report_id_param: reportData.id,
+          password_param: password
+        });
+      
+      if (error) {
+        console.error('Error verifying report password:', error);
+        return false;
+      }
+      
+      return data || false;
+    } else {
+      // For other content types, use the generic function
+      const { data, error } = await supabase
+        .rpc('verify_shared_content_password', {
+          content_id: contentId,
+          content_type: contentType,
+          password_param: password
+        });
+      
+      if (error) {
+        console.error('Error verifying content password:', error);
+        return false;
+      }
+      
+      return data || false;
+    }
+  } catch (err) {
+    console.error('Exception verifying content password:', err);
     return false;
   }
-};
+}
