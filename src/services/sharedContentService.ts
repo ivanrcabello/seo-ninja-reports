@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   SharedInvoiceResponse, 
@@ -7,6 +6,7 @@ import {
   SharedReportResponse 
 } from '@/types/shared-content';
 import { Json } from '@/integrations/supabase/types';
+import { checkContentPasswordProtection } from '@/api/shared-content/utils';
 
 export async function getSharedInvoice(sharedUrl: string): Promise<SharedInvoiceResponse> {
   try {
@@ -170,37 +170,24 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
       };
     }
     
-    // Use the updated security definer RPC function to get the report data
-    // This avoids infinite recursion in RLS policies
+    // Use the generic content fetching function to get report data
     const { data, error } = await supabase
-      .rpc('get_report_by_shared_url', {
-        shared_url_param: sharedUrl
-      });
+      .from('public_reports')
+      .select('*')
+      .eq('shared_url', sharedUrl)
+      .single();
       
     if (error) {
-      console.error('Error fetching report with RPC:', error);
+      console.error('Error fetching report:', error);
       throw error;
     }
     
-    if (!data || data.length === 0) {
+    if (!data) {
       return { data: null, error: 'Informe no encontrado' };
     }
     
-    const report = data[0];
-    
-    // Make sure we return the data in the format expected by the SharedReportResponse type
-    const formattedReport = {
-      id: report.id,
-      title: report.title,
-      summary: report.summary || undefined,
-      content: report.content,
-      date: report.date,
-      client_name: report.client_name || 'Cliente',
-      client_website: report.client_website || undefined
-    };
-    
     // Check if password protected
-    const isPasswordProtected = report.password !== null && report.password !== '';
+    const isPasswordProtected = await checkContentPasswordProtection(sharedUrl, 'report');
     
     // Log the access for analytics purposes
     try {
@@ -216,7 +203,15 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
     }
     
     return { 
-      data: formattedReport,
+      data: {
+        id: data.id,
+        title: data.title,
+        summary: data.summary || undefined,
+        content: data.content,
+        date: data.date,
+        client_name: data.client_name || 'Cliente',
+        client_website: data.client_website || undefined
+      },
       isPasswordProtected
     };
   } catch (error: any) {

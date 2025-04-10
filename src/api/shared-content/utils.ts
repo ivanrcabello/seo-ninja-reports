@@ -9,10 +9,11 @@ import { supabase } from '@/integrations/supabase/client';
 export async function checkContentExists(contentId: string, contentType: 'report' | 'invoice' | 'proposal' | 'contract'): Promise<boolean> {
   try {
     if (contentType === 'report') {
-      // For reports, we need to use a custom RPC function to avoid recursion
+      // For reports, we need to check directly using our custom SQL function
       const { data, error } = await supabase
-        .rpc('check_report_exists_by_shared_url', {
-          shared_url_param: contentId
+        .rpc('check_content_exists', {
+          content_id: contentId,
+          content_type: contentType
         });
       
       if (error) {
@@ -23,7 +24,7 @@ export async function checkContentExists(contentId: string, contentType: 'report
       return Boolean(data);
     } else {
       const { data, error } = await supabase
-        .rpc('check_shared_content_exists', {
+        .rpc('check_content_exists', {
           content_id: contentId,
           content_type: contentType
         });
@@ -46,35 +47,19 @@ export async function checkContentExists(contentId: string, contentType: 'report
  */
 export async function checkContentPasswordProtection(contentId: string, contentType: 'report' | 'invoice' | 'proposal' | 'contract'): Promise<boolean> {
   try {
-    // Use the appropriate RPC function based on content type
-    if (contentType === 'report') {
-      // Use the dedicated function for reports to avoid recursion
-      const { data, error } = await supabase
-        .rpc('check_report_password_protection_by_url', {
-          shared_url_param: contentId
-        });
-      
-      if (error) {
-        console.error('Error checking report password protection:', error);
-        return false;
-      }
-      
-      return Boolean(data);
-    } else {
-      // For other content types, use the generic function
-      const { data, error } = await supabase
-        .rpc('check_shared_content_password', {
-          content_id: contentId,
-          content_type: contentType
-        });
-      
-      if (error) {
-        console.error('Error checking content password protection:', error);
-        return false;
-      }
-      
-      return Boolean(data);
+    // Use the unified function for checking password protection
+    const { data, error } = await supabase
+      .rpc('check_content_password_protected', {
+        content_id: contentId,
+        content_type: contentType
+      });
+    
+    if (error) {
+      console.error(`Error checking ${contentType} password protection:`, error);
+      return false;
     }
+    
+    return Boolean(data);
   } catch (err) {
     console.error('Exception checking content password protection:', err);
     return false;
@@ -94,37 +79,20 @@ export async function verifyContentPassword(contentId: string, contentType: 'rep
       password_attempt: true
     });
     
-    // Use the appropriate RPC function based on content type
-    if (contentType === 'report') {
-      // Use the dedicated function for reports to avoid recursion
-      const { data, error } = await supabase
-        .rpc('verify_shared_report_password_by_url', {
-          shared_url_param: contentId,
-          password_param: password
-        });
-      
-      if (error) {
-        console.error('Error verifying report password:', error);
-        return false;
-      }
-      
-      return Boolean(data);
-    } else {
-      // For other content types, use the generic function
-      const { data, error } = await supabase
-        .rpc('verify_shared_content_password', {
-          content_id: contentId,
-          content_type: contentType,
-          password_param: password
-        });
-      
-      if (error) {
-        console.error('Error verifying content password:', error);
-        return false;
-      }
-      
-      return Boolean(data);
+    // Use the unified function for all content types
+    const { data, error } = await supabase
+      .rpc('verify_content_password', {
+        content_id: contentId,
+        content_type: contentType,
+        password_param: password
+      });
+    
+    if (error) {
+      console.error(`Error verifying ${contentType} password:`, error);
+      return false;
     }
+    
+    return Boolean(data);
   } catch (err) {
     console.error('Exception verifying content password:', err);
     return false;
