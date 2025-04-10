@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { SharedProposalResponse, AccessLogOptions, AccessLogType } from '@/types/shared-content';
+import { SharedProposalResponse } from '@/types/shared-content';
 import { logSharedContentAccess, verifyContentPassword } from '@/api/shared-content/utils';
 import { getSharedProposal } from '@/services/sharedContentService';
 
