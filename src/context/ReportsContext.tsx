@@ -1,27 +1,39 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import useReportsHook from '@/hooks/useReports';
+import { Report } from '@/types/report.types';
+import { Keyword, ReportsHookReturn } from '@/types/report-hooks.types';
 
 // Create a context for reports with a default value to avoid undefined errors
-const defaultReportsContextValue = {
+const defaultReportsContextValue: ReportsHookReturn = {
   reports: [],
   isLoading: true,
   error: null,
-  getReport: () => undefined,
-  getClientReports: () => [],
-  generateReport: async () => {
+  getReport: (id: string) => undefined,
+  getClientReports: (clientId: string) => [],
+  generateReport: async (
+    clientId: string, 
+    url: string, 
+    files: File[], 
+    customPrompt?: string,
+    pageSpeedData?: any,
+    keywords?: Keyword[],
+    notes?: string,
+    businessProfile?: any,
+    seoReport?: any
+  ) => {
     throw new Error('ReportsContext not initialized');
   },
-  createReport: async () => {
+  createReport: async (data: any) => {
     throw new Error('ReportsContext not initialized');
   },
-  updateReport: async () => {
+  updateReport: async (id: string, data: any) => {
     throw new Error('ReportsContext not initialized');
   },
-  deleteReport: async () => {
+  deleteReport: async (id: string) => {
     throw new Error('ReportsContext not initialized');
   },
-  retryReport: async () => false,
+  retryReport: async (id: string) => false,
 };
 
 // Create a context for reports

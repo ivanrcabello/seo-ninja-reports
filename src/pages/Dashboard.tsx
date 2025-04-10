@@ -21,6 +21,13 @@ const Dashboard = () => {
   const [upcomingDeadlines, setUpcomingDeadlines] = useState<any[]>([]);
   const currentDate = new Date();
 
+  console.log('Dashboard - Auth loading:', authLoading);
+  console.log('Dashboard - Client loading:', clientsLoading);
+  console.log('Dashboard - Reports loading:', reportsLoading);
+  console.log('Dashboard - User:', user);
+  console.log('Dashboard - Client count:', clients?.length || 0);
+  console.log('Dashboard - Reports count:', reports?.length || 0);
+
   // Redirect if not authenticated
   if (!user && !authLoading) {
     console.log('No user authenticated, redirecting to auth page');
@@ -87,14 +94,6 @@ const Dashboard = () => {
       ]);
     }
   }, [isLoading, clients]);
-
-  // Debug logging
-  console.log('Auth loading:', authLoading);
-  console.log('Clients loading:', clientsLoading);
-  console.log('Reports loading:', reportsLoading);
-  console.log('Combined loading state:', isLoading);
-  console.log('Available clients:', clients);
-  console.log('Available reports:', reports);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
