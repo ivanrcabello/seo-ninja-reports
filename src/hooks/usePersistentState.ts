@@ -1,79 +1,69 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Dispatch, SetStateAction } from 'react';
 
 /**
- * Hook to persist state between browser sessions
- * @param key A unique key to identify this state in storage
- * @param initialValue The initial value for the state
- * @returns A stateful value and a function to update it, like useState
+ * A custom hook that works like useState but persists the value in session storage
+ * @param key - The key to use in session storage
+ * @param initialValue - The initial value to use if no value exists in storage
  */
-export function usePersistentState<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  // Get stored value from localStorage instead of sessionStorage
-  const getStoredValue = (): T => {
+function usePersistentState<T>(
+  key: string,
+  initialValue: T
+): [T, Dispatch<SetStateAction<T>>] {
+  // Get stored value from session storage or use initial value
+  const readValue = (): T => {
     try {
-      const item = localStorage.getItem(key);
+      const item = sessionStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error('Error retrieving stored value:', error);
+      console.warn(`Error reading sessionStorage key "${key}":`, error);
       return initialValue;
     }
   };
 
-  // State to store our value
-  const [value, setValue] = useState<T>(getStoredValue);
+  const [storedValue, setStoredValue] = useState<T>(readValue);
 
-  // Save to localStorage whenever the state changes
-  useEffect(() => {
+  // Update session storage when the state changes
+  const setValue: Dispatch<SetStateAction<T>> = (value) => {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      // Allow value to be a function so we have the same API as useState
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      
+      // Save to state
+      setStoredValue(valueToStore);
+      
+      // Save to session storage
+      if (valueToStore === undefined) {
+        sessionStorage.removeItem(key);
+      } else {
+        sessionStorage.setItem(key, JSON.stringify(valueToStore));
+      }
     } catch (error) {
-      console.error('Error storing value:', error);
+      console.warn(`Error setting sessionStorage key "${key}":`, error);
     }
-  }, [key, value]);
+  };
 
-  // Handle visibility change events
+  // Listen for changes to this key in other tabs/windows
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      // When tab becomes visible again, check if the value was updated in another tab
-      if (document.visibilityState === 'visible') {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === key && e.storageArea === sessionStorage) {
         try {
-          const storedValue = localStorage.getItem(key);
-          if (storedValue !== null) {
-            const parsedValue = JSON.parse(storedValue);
-            // Only update if the value is different to avoid unnecessary renders
-            if (JSON.stringify(parsedValue) !== JSON.stringify(value)) {
-              setValue(parsedValue);
-            }
-          }
+          setStoredValue(e.newValue ? JSON.parse(e.newValue) : initialValue);
         } catch (error) {
-          console.error('Error handling visibility change:', error);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Add storage event listener to detect changes in other tabs
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === key && event.newValue) {
-        try {
-          const newValue = JSON.parse(event.newValue);
-          setValue(newValue);
-        } catch (error) {
-          console.error('Error handling storage change:', error);
+          console.warn(`Error reading sessionStorage key "${key}" in storage event:`, error);
         }
       }
     };
     
+    // Listen for storage events
     window.addEventListener('storage', handleStorageChange);
-
+    
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [key, value, setValue]);
+  }, [key, initialValue]);
 
-  return [value, setValue];
+  return [storedValue, setValue];
 }
 
 export default usePersistentState;

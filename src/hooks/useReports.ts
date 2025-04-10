@@ -1,5 +1,3 @@
-
-// Import relevant functions and types
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
@@ -133,7 +131,6 @@ export default function useReportsHook(): ReportsHookReturn {
     } catch (error) {
       console.error('Error deleting report:', error);
       toast.error('Error al eliminar el informe');
-      throw error;
     }
   }, []);
 
@@ -189,10 +186,13 @@ export default function useReportsHook(): ReportsHookReturn {
       }
       
       // Simulated progress based on time
+      // En una implementación real, esto obtendría datos de la API
       const currentTimestamp = Date.now();
       const reportDate = new Date(report.date).getTime();
       const elapsedSeconds = Math.floor((currentTimestamp - reportDate) / 1000);
-      const maxTime = 5 * 60; // 5 minutes
+      
+      // Progreso simulado basado en el tiempo transcurrido (máximo 5 minutos)
+      const maxTime = 5 * 60; // 5 minutos en segundos
       const progress = Math.min(Math.floor((elapsedSeconds / maxTime) * 100), 99);
       
       let step = 'Inicializando';
@@ -200,25 +200,25 @@ export default function useReportsHook(): ReportsHookReturn {
       
       if (progress > 10) {
         step = 'Analizando URL';
-        detail = 'Extrayendo datos...';
+        detail = 'Extrayendo datos de la URL proporcionada...';
       }
       
       if (progress > 25) {
         step = 'Procesando datos';
-        detail = 'Procesando información...';
+        detail = 'Procesando datos de PageSpeed y business profile...';
       }
       
       if (progress > 50) {
         step = 'Generando informe';
-        detail = 'OpenAI está generando el contenido...';
+        detail = 'OpenAI está generando el contenido del informe...';
       }
       
       if (progress > 75) {
         step = 'Finalizando';
-        detail = 'Aplicando formato...';
+        detail = 'Aplicando formato y finalizando el informe...';
       }
       
-      return { step, percentage: progress, detail };
+      return { step: 'Procesando', percentage: 50, detail: 'Generando informe...' };
     } catch (error) {
       console.error('Error getting report progress:', error);
       return null;
@@ -228,6 +228,9 @@ export default function useReportsHook(): ReportsHookReturn {
   // Template management functions
   const saveReportTemplate = useCallback(async (template: Omit<ReportTemplate, 'id' | 'createdAt'>): Promise<ReportTemplate> => {
     try {
+      // Convert keywords to a valid JSON string for storage
+      const keywordsJson = JSON.stringify(template.keywords);
+      
       const { data, error } = await supabase
         .from('report_templates')
         .insert({
@@ -236,7 +239,7 @@ export default function useReportsHook(): ReportsHookReturn {
           use_page_speed_data: template.usePageSpeedData,
           use_gmb_data: template.useGmbData,
           use_keywords_data: template.useKeywordsData,
-          keywords: template.keywords,
+          keywords: keywordsJson,
           notes: template.notes
         })
         .select()
@@ -252,7 +255,7 @@ export default function useReportsHook(): ReportsHookReturn {
         usePageSpeedData: data.use_page_speed_data,
         useGmbData: data.use_gmb_data,
         useKeywordsData: data.use_keywords_data,
-        keywords: data.keywords,
+        keywords: JSON.parse(data.keywords || '[]'),
         notes: data.notes,
         createdAt: data.created_at
       };
@@ -271,7 +274,7 @@ export default function useReportsHook(): ReportsHookReturn {
 
       if (error) throw error;
       
-      // Convert from database format to our app format
+      // Convert from database format to our app format with proper JSON parsing
       return (data || []).map(item => ({
         id: item.id,
         name: item.name,
@@ -279,7 +282,7 @@ export default function useReportsHook(): ReportsHookReturn {
         usePageSpeedData: item.use_page_speed_data,
         useGmbData: item.use_gmb_data,
         useKeywordsData: item.use_keywords_data,
-        keywords: item.keywords,
+        keywords: JSON.parse(item.keywords || '[]'),
         notes: item.notes,
         createdAt: item.created_at
       }));

@@ -1,11 +1,10 @@
-
 import { Report, BusinessProfile, Keyword as ReportKeyword } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
 
 export interface Keyword {
   keyword: string;
-  searchVolume?: number; // Make sure this is a number
-  difficulty?: number;   // Make sure this is a number
+  searchVolume?: number; // Ensure this is a number type
+  difficulty?: number;   // Ensure this is a number type
 }
 
 export interface ReportTemplate {

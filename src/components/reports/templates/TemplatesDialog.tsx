@@ -164,6 +164,80 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
     }));
   };
   
+  const renderKeywordsSection = () => {
+    return (
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">Palabras clave incluidas</h3>
+        <KeywordsList 
+          keywords={keywords} 
+          readOnly={true}
+          showHeader={true}
+        />
+      </div>
+    );
+  };
+  
+  const renderTemplateCard = (template: ReportTemplate) => {
+    return (
+      <Card key={template.id} className="p-4 mb-4 relative">
+        <div className="space-y-4">
+          <div className="flex justify-between items-start">
+            <h3 className="text-lg font-medium">{template.name}</h3>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onSelect && onSelect(template)}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                Seleccionar
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-destructive hover:text-destructive-foreground hover:bg-destructive transition-colors"
+                onClick={() => handleDeleteTemplate(template.id)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Eliminar
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="font-medium">PageSpeed:</span>{' '}
+              {template.usePageSpeedData ? 'Activado' : 'Desactivado'}
+            </div>
+            <div>
+              <span className="font-medium">GMB:</span>{' '}
+              {template.useGmbData ? 'Activado' : 'Desactivado'}
+            </div>
+            <div>
+              <span className="font-medium">Keywords:</span>{' '}
+              {template.useKeywordsData ? 'Activado' : 'Desactivado'}
+            </div>
+          </div>
+          
+          {template.keywords && template.keywords.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Palabras clave ({template.keywords.length})</h4>
+              <KeywordsList keywords={template.keywords} readOnly={true} />
+            </div>
+          )}
+          
+          {template.notes && (
+            <div>
+              <h4 className="text-sm font-medium mb-1">Notas</h4>
+              <p className="text-sm text-muted-foreground">{template.notes}</p>
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  };
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
@@ -195,69 +269,9 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
                   {templates.map((template) => (
-                    <Card key={template.id} className="p-4 relative">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-semibold text-lg">{template.name}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            Creada el {new Date(template.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleEditTemplate(template)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-destructive" 
-                            onClick={() => handleDeleteTemplate(template.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="text-sm text-muted-foreground">
-                        <div className="flex gap-2 mb-2">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${template.usePageSpeedData ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            PageSpeed: {template.usePageSpeedData ? 'Sí' : 'No'}
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${template.useGmbData ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            GMB: {template.useGmbData ? 'Sí' : 'No'}
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${template.useKeywordsData ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            Keywords: {template.useKeywordsData ? 'Sí' : 'No'}
-                          </span>
-                        </div>
-                        
-                        <p className="line-clamp-2">
-                          {template.customPrompt.substring(0, 120)}...
-                        </p>
-                        
-                        {template.keywords && template.keywords.length > 0 && (
-                          <div className="mt-2">
-                            <p className="font-medium text-xs">
-                              {template.keywords.length} palabras clave
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {mode === 'select' && (
-                        <Button 
-                          className="mt-3 w-full"
-                          onClick={() => handleSelectTemplate(template)}
-                        >
-                          <Check className="mr-2 h-4 w-4" />
-                          Usar esta plantilla
-                        </Button>
-                      )}
-                    </Card>
+                    <div key={template.id}>
+                      {renderTemplateCard(template)}
+                    </div>
                   ))}
                 </div>
               </ScrollArea>

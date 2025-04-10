@@ -14,12 +14,14 @@ export interface ShareReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reportId: string | null;
+  reportTitle?: string; // Make this optional to maintain compatibility
 }
 
 const ShareReportDialog: React.FC<ShareReportDialogProps> = ({ 
   open, 
   onOpenChange,
-  reportId
+  reportId,
+  reportTitle
 }) => {
   const [shareUrl, setShareUrl] = useState('');
   const [protectWithPassword, setProtectWithPassword] = useState(false);
@@ -40,8 +42,8 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
           
           const { data, error } = await supabase
             .from('shared_content')
-            .select('id, password_protected')
-            .eq('content_id', reportId)
+            .select('id, password')
+            .eq('original_id', reportId)
             .eq('content_type', 'report')
             .single();
           
@@ -56,7 +58,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
             const url = `${window.location.origin}/shared/report/${data.id}`;
             setShareUrl(url);
             setHasSharedUrl(true);
-            setProtectWithPassword(data.password_protected);
+            setProtectWithPassword(!!data.password);
           } else {
             setHasSharedUrl(false);
             setShareUrl('');
@@ -80,7 +82,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       const { data: existingData, error: existingError } = await supabase
         .from('shared_content')
         .select('id')
-        .eq('content_id', reportId)
+        .eq('original_id', reportId)
         .eq('content_type', 'report')
         .single();
       
@@ -97,7 +99,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         const { data: updateData, error: updateError } = await supabase
           .from('shared_content')
           .update({
-            password_protected: protectWithPassword,
             password: protectWithPassword ? password : null,
             updated_at: new Date().toISOString()
           })
@@ -116,9 +117,10 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         const { data: insertData, error: insertError } = await supabase
           .from('shared_content')
           .insert({
-            content_id: reportId,
+            original_id: reportId,
             content_type: 'report',
-            password_protected: protectWithPassword,
+            title: report.title,
+            status: report.status,
             password: protectWithPassword ? password : null
           })
           .select('id')

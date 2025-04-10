@@ -9,9 +9,15 @@ interface KeywordsListProps {
   keywords: Keyword[];
   onRemove?: (index: number) => void;
   readOnly?: boolean;
+  showHeader?: boolean;
 }
 
-const KeywordsList: React.FC<KeywordsListProps> = ({ keywords, onRemove, readOnly = false }) => {
+const KeywordsList: React.FC<KeywordsListProps> = ({ 
+  keywords, 
+  onRemove, 
+  readOnly = false, 
+  showHeader = true 
+}) => {
   if (!keywords || keywords.length === 0) {
     return (
       <div className="text-center py-2 text-muted-foreground">
@@ -23,14 +29,16 @@ const KeywordsList: React.FC<KeywordsListProps> = ({ keywords, onRemove, readOnl
   return (
     <div className="max-h-[300px] overflow-y-auto">
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Palabra clave</TableHead>
-            <TableHead className="text-right">Volumen</TableHead>
-            <TableHead className="text-right">Dificultad</TableHead>
-            {!readOnly && <TableHead></TableHead>}
-          </TableRow>
-        </TableHeader>
+        {showHeader && (
+          <TableHeader>
+            <TableRow>
+              <TableHead>Palabra clave</TableHead>
+              <TableHead className="text-right">Volumen</TableHead>
+              <TableHead className="text-right">Dificultad</TableHead>
+              {!readOnly && <TableHead></TableHead>}
+            </TableRow>
+          </TableHeader>
+        )}
         <TableBody>
           {keywords.map((keyword, index) => (
             <TableRow key={index}>
