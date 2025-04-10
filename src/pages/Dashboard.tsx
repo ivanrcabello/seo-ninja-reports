@@ -34,6 +34,7 @@ const Dashboard = () => {
     return <Navigate to="/auth" replace />;
   }
 
+  // Calculate isLoading from all loading states
   const isLoading = authLoading || clientsLoading || reportsLoading;
 
   useEffect(() => {
@@ -55,43 +56,50 @@ const Dashboard = () => {
 
   // Setup sample data for dashboard when loading completes
   useEffect(() => {
-    if (!isLoading && clients) {
+    if (!isLoading) {
       console.log('Loading completed, setting up dashboard data');
-      setNextEvents([
-        {
-          title: 'Reunión mensual de estrategia',
-          date: new Date(new Date().setDate(new Date().getDate() + 3)),
-          type: 'meeting'
-        },
-        {
-          title: 'Entrega informe SEO Técnico',
-          date: new Date(new Date().setDate(new Date().getDate() + 7)),
-          type: 'deadline',
-          clientId: clients.length > 0 ? clients[0].id : null
-        },
-        {
-          title: 'Revisión de keywords',
-          date: new Date(new Date().setDate(new Date().getDate() + 10)),
-          type: 'task'
-        }
-      ]);
+      // Only set sample data if we have clients
+      if (clients && clients.length > 0) {
+        setNextEvents([
+          {
+            title: 'Reunión mensual de estrategia',
+            date: new Date(new Date().setDate(new Date().getDate() + 3)),
+            type: 'meeting'
+          },
+          {
+            title: 'Entrega informe SEO Técnico',
+            date: new Date(new Date().setDate(new Date().getDate() + 7)),
+            type: 'deadline',
+            clientId: clients[0].id
+          },
+          {
+            title: 'Revisión de keywords',
+            date: new Date(new Date().setDate(new Date().getDate() + 10)),
+            type: 'task'
+          }
+        ]);
 
-      const today = new Date();
-      
-      setUpcomingDeadlines([
-        {
-          title: 'Renovación contrato mensual',
-          client: clients.length > 0 ? clients[0].name : 'Cliente',
-          dueDate: new Date(today.getTime() + 1000 * 60 * 60 * 24 * 15),
-          type: 'contract'
-        },
-        {
-          title: 'Factura mensual pendiente',
-          client: clients.length > 1 ? clients[1].name : 'Cliente',
-          dueDate: new Date(today.getTime() + 1000 * 60 * 60 * 24 * 10),
-          type: 'invoice'
-        }
-      ]);
+        const today = new Date();
+        
+        setUpcomingDeadlines([
+          {
+            title: 'Renovación contrato mensual',
+            client: clients[0].name,
+            dueDate: new Date(today.getTime() + 1000 * 60 * 60 * 24 * 15),
+            type: 'contract'
+          },
+          {
+            title: 'Factura mensual pendiente',
+            client: clients.length > 1 ? clients[1].name : clients[0].name,
+            dueDate: new Date(today.getTime() + 1000 * 60 * 60 * 24 * 10),
+            type: 'invoice'
+          }
+        ]);
+      } else {
+        // Set empty arrays if no clients
+        setNextEvents([]);
+        setUpcomingDeadlines([]);
+      }
     }
   }, [isLoading, clients]);
 
@@ -111,8 +119,8 @@ const Dashboard = () => {
             <>
               <DashboardHeader 
                 currentDate={currentDate}
-                nextEvents={nextEvents || []}
-                upcomingDeadlines={upcomingDeadlines || []}
+                nextEvents={nextEvents}
+                upcomingDeadlines={upcomingDeadlines}
               />
               
               <DashboardTabs 
