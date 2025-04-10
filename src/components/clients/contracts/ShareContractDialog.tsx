@@ -57,7 +57,8 @@ const ShareContractDialog: React.FC<ShareContractDialogProps> = ({
         throw new Error('Failed to generate share URL');
       }
       
-      // Create the share URL with the correct path format - FIXED HERE
+      // Create the share URL with the correct path format
+      // Fix: Don't prepend the origin to the path part
       const fullShareUrl = `${window.location.origin}/shared/contracts/${shareId}`;
       console.log('Full share URL:', fullShareUrl);
       
