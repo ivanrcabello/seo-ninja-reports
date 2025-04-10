@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import useReportsHook from '@/hooks/useReports';
+import useReportsHook from '@/hooks/useReports.ts';
 import { Report } from '@/types/report.types';
 import { Keyword, ReportsHookReturn } from '@/types/report-hooks.types';
 

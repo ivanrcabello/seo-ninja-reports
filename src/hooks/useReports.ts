@@ -1,4 +1,3 @@
-
 // Import relevant functions and types
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -13,15 +12,10 @@ import {
 } from '@/services/reportService';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
-
-interface Keyword {
-  keyword: string;
-  searchVolume?: number;
-  difficulty?: number;
-}
+import { Keyword, ReportsHookReturn } from '@/types/report-hooks.types';
 
 // Create a standalone hook for direct use (not through context)
-export default function useReportsHook() {
+export default function useReportsHook(): ReportsHookReturn {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
