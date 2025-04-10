@@ -1,3 +1,4 @@
+
 // This file contains utility functions for working with shared content
 
 import { supabase } from '@/integrations/supabase/client';
@@ -7,18 +8,32 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export async function checkContentExists(contentId: string, contentType: 'report' | 'invoice' | 'proposal' | 'contract'): Promise<boolean> {
   try {
-    const { data, error } = await supabase
-      .rpc('check_shared_content_exists', {
-        content_id: contentId,
-        content_type: contentType
-      });
-    
-    if (error) {
-      console.error('Error checking if content exists:', error);
-      return false;
+    if (contentType === 'report') {
+      const { data, error } = await supabase
+        .rpc('check_report_exists_by_shared_url', {
+          shared_url_param: contentId
+        });
+      
+      if (error) {
+        console.error('Error checking if report exists:', error);
+        return false;
+      }
+      
+      return data || false;
+    } else {
+      const { data, error } = await supabase
+        .rpc('check_shared_content_exists', {
+          content_id: contentId,
+          content_type: contentType
+        });
+      
+      if (error) {
+        console.error('Error checking if content exists:', error);
+        return false;
+      }
+      
+      return data || false;
     }
-    
-    return data || false;
   } catch (err) {
     console.error('Exception checking if content exists:', err);
     return false;
@@ -32,26 +47,10 @@ export async function checkContentPasswordProtection(contentId: string, contentT
   try {
     // Use the appropriate RPC function based on content type
     if (contentType === 'report') {
-      // We need to specially handle reports to avoid infinite recursion
-      const { data: reportData, error: reportError } = await supabase
-        .from('reports')
-        .select('id')
-        .eq('shared_url', contentId)
-        .single();
-      
-      if (reportError) {
-        console.error('Error getting report ID:', reportError);
-        return false;
-      }
-      
-      if (!reportData?.id) {
-        return false;
-      }
-      
-      // Use the security definer function to check password protection
+      // Use the dedicated function for reports to avoid recursion
       const { data, error } = await supabase
-        .rpc('check_report_password_protection', {
-          report_id_param: reportData.id
+        .rpc('check_report_password_protection_by_url', {
+          shared_url_param: contentId
         });
       
       if (error) {
@@ -96,26 +95,10 @@ export async function verifyContentPassword(contentId: string, contentType: 'rep
     
     // Use the appropriate RPC function based on content type
     if (contentType === 'report') {
-      // We need to specially handle reports to avoid infinite recursion
-      const { data: reportData, error: reportError } = await supabase
-        .from('reports')
-        .select('id')
-        .eq('shared_url', contentId)
-        .single();
-      
-      if (reportError) {
-        console.error('Error getting report ID:', reportError);
-        return false;
-      }
-      
-      if (!reportData?.id) {
-        return false;
-      }
-      
-      // Use the security definer function to verify the password
+      // Use the dedicated function for reports to avoid recursion
       const { data, error } = await supabase
-        .rpc('verify_shared_report_password', {
-          report_id_param: reportData.id,
+        .rpc('verify_shared_report_password_by_url', {
+          shared_url_param: contentId,
           password_param: password
         });
       

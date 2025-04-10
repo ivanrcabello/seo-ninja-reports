@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   SharedInvoiceResponse, 
@@ -169,7 +170,7 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
       };
     }
     
-    // Use the security definer RPC function to get the report data
+    // Use the updated security definer RPC function to get the report data
     // This avoids infinite recursion in RLS policies
     const { data, error } = await supabase
       .rpc('get_report_by_shared_url', {
@@ -198,6 +199,9 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
       client_website: report.client_website || undefined
     };
     
+    // Check if password protected
+    const isPasswordProtected = report.password !== null && report.password !== '';
+    
     // Log the access for analytics purposes
     try {
       await supabase.rpc('log_shared_content_access', {
@@ -211,7 +215,10 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
       // Don't fail if logging fails
     }
     
-    return { data: formattedReport };
+    return { 
+      data: formattedReport,
+      isPasswordProtected
+    };
   } catch (error: any) {
     console.error('Error fetching shared report:', error);
     

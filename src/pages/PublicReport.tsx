@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -45,16 +46,15 @@ const PublicReport = () => {
     try {
       setIsLoading(true);
       
-      const isProtected = await checkContentPasswordProtection(sharedUrl, 'report');
+      // Check if the report is password protected directly from the response
+      const response = await getSharedReport(sharedUrl);
       
-      if (isProtected && !accessGranted) {
+      if (response.isPasswordProtected && !accessGranted) {
         setIsPasswordProtected(true);
         setIsPasswordDialogOpen(true);
         setIsLoading(false);
         return;
       }
-      
-      const response = await getSharedReport(sharedUrl);
       
       if (response.error) {
         console.error("Error fetching report:", response.error);
