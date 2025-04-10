@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 export async function checkContentExists(contentId: string, contentType: 'report' | 'invoice' | 'proposal' | 'contract'): Promise<boolean> {
   try {
     if (contentType === 'report') {
+      // For reports, we need to use a custom RPC function to avoid recursion
       const { data, error } = await supabase
         .rpc('check_report_exists_by_shared_url', {
           shared_url_param: contentId
@@ -19,7 +20,7 @@ export async function checkContentExists(contentId: string, contentType: 'report
         return false;
       }
       
-      return data || false;
+      return Boolean(data);
     } else {
       const { data, error } = await supabase
         .rpc('check_shared_content_exists', {
@@ -32,7 +33,7 @@ export async function checkContentExists(contentId: string, contentType: 'report
         return false;
       }
       
-      return data || false;
+      return Boolean(data);
     }
   } catch (err) {
     console.error('Exception checking if content exists:', err);
@@ -58,7 +59,7 @@ export async function checkContentPasswordProtection(contentId: string, contentT
         return false;
       }
       
-      return data || false;
+      return Boolean(data);
     } else {
       // For other content types, use the generic function
       const { data, error } = await supabase
@@ -72,7 +73,7 @@ export async function checkContentPasswordProtection(contentId: string, contentT
         return false;
       }
       
-      return data || false;
+      return Boolean(data);
     }
   } catch (err) {
     console.error('Exception checking content password protection:', err);
@@ -107,7 +108,7 @@ export async function verifyContentPassword(contentId: string, contentType: 'rep
         return false;
       }
       
-      return data || false;
+      return Boolean(data);
     } else {
       // For other content types, use the generic function
       const { data, error } = await supabase
@@ -122,7 +123,7 @@ export async function verifyContentPassword(contentId: string, contentType: 'rep
         return false;
       }
       
-      return data || false;
+      return Boolean(data);
     }
   } catch (err) {
     console.error('Exception verifying content password:', err);

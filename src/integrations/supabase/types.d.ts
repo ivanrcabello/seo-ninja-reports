@@ -600,6 +600,43 @@ export interface Database {
         }
         Returns: boolean
       }
+      check_report_exists_by_shared_url: {
+        Args: {
+          shared_url_param: string;
+        };
+        Returns: boolean;
+      }
+      check_report_password_protection_by_url: {
+        Args: {
+          shared_url_param: string;
+        };
+        Returns: boolean;
+      }
+      get_report_by_shared_url: {
+        Args: {
+          shared_url_param: string;
+        };
+        Returns: {
+          id: string;
+          title: string;
+          summary: string | null;
+          url: string | null;
+          status: string;
+          content: any | null;
+          date: string;
+          client_name: string;
+          client_website: string | null;
+          shared_url: string;
+          password: string | null;
+        }[];
+      };
+      verify_shared_report_password_by_url: {
+        Args: {
+          shared_url_param: string;
+          password_param: string;
+        };
+        Returns: boolean;
+      }
       create_settings_table_if_not_exists: {
         Args: Record<PropertyKey, never>
         Returns: undefined
