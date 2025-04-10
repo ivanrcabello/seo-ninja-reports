@@ -11,7 +11,6 @@ export interface Keyword {
 export interface ReportsHookReturn {
   reports: Report[];
   isLoading: boolean;
-  error: string | null; // Added error property
   getReport: (id: string) => Report | undefined;
   getClientReports: (clientId: string) => Report[];
   generateReport: (

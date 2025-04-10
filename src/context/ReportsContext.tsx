@@ -1,17 +1,30 @@
 
-import React, { createContext, useContext, ReactNode } from 'react';
-import useReportsHook from '@/hooks/useReports.ts';
-import { Report } from '@/types/report.types';
-import { Keyword, ReportsHookReturn } from '@/types/report-hooks.types';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { Report, BusinessProfile } from '@/types/report.types';
+import { SeoReport } from '@/types/seo-reporting.types';
+import { 
+  fetchReports, 
+  createNewReport, 
+  updateExistingReport, 
+  deleteReportById, 
+  generateSeoReport, 
+  retryFailedReport 
+} from '@/services/reportService';
 
-// Create a context for reports with a default value to avoid undefined errors
-const defaultReportsContextValue: ReportsHookReturn = {
-  reports: [],
-  isLoading: true,
-  error: null,
-  getReport: (id: string) => undefined,
-  getClientReports: (clientId: string) => [],
-  generateReport: async (
+interface Keyword {
+  keyword: string;
+  searchVolume?: number;
+  difficulty?: number;
+}
+
+interface ReportsContextType {
+  reports: Report[];
+  isLoading: boolean;
+  refreshReports: () => Promise<void>;
+  getReport: (id: string) => Report | undefined;
+  getClientReports: (clientId: string) => Report[];
+  generateReport: (
     clientId: string, 
     url: string, 
     files: File[], 
@@ -19,45 +32,183 @@ const defaultReportsContextValue: ReportsHookReturn = {
     pageSpeedData?: any,
     keywords?: Keyword[],
     notes?: string,
-    businessProfile?: any,
-    seoReport?: any
-  ) => {
-    throw new Error('ReportsContext not initialized');
-  },
-  createReport: async (data: any) => {
-    throw new Error('ReportsContext not initialized');
-  },
-  updateReport: async (id: string, data: any) => {
-    throw new Error('ReportsContext not initialized');
-  },
-  deleteReport: async (id: string) => {
-    throw new Error('ReportsContext not initialized');
-  },
-  retryReport: async (id: string) => false,
-};
+    businessProfile?: Partial<BusinessProfile> | null,
+    seoReport?: SeoReport | null
+  ) => Promise<Report>;
+  createReport: (data: Omit<Report, 'id' | 'date' | 'status'>) => Promise<Report>;
+  updateReport: (id: string, data: Partial<Report>) => Promise<Report>;
+  deleteReport: (id: string) => Promise<void>;
+  retryReport: (id: string) => Promise<boolean>;
+}
 
-// Create a context for reports
-const ReportsContext = createContext(defaultReportsContextValue);
+const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
 
-// Context provider component
-export const ReportsProvider = ({ children }: { children: ReactNode }) => {
-  const reportsData = useReportsHook();
-  
+export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Create a dedicated function for fetching reports that can be called to refresh data
+  const refreshReports = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchReports();
+      setReports(data);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast.error('Error al cargar los informes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch all reports on component mount
+  useEffect(() => {
+    refreshReports();
+  }, []);
+
+  // Get a specific report by ID
+  const getReport = useCallback((id: string): Report | undefined => {
+    return reports.find(report => report.id === id);
+  }, [reports]);
+
+  // Get reports for a specific client
+  const getClientReports = useCallback((clientId: string): Report[] => {
+    return reports.filter(report => report.clientId === clientId);
+  }, [reports]);
+
+  // Generate a new report
+  const generateReport = useCallback(async (
+    clientId: string, 
+    url: string, 
+    files: File[], 
+    customPrompt?: string,
+    pageSpeedData?: any,
+    keywords?: Keyword[],
+    notes?: string,
+    businessProfile?: Partial<BusinessProfile> | null,
+    seoReport?: SeoReport | null
+  ): Promise<Report> => {
+    try {
+      const report = await generateSeoReport(
+        clientId, 
+        url, 
+        files, 
+        customPrompt, 
+        pageSpeedData, 
+        keywords,
+        notes,
+        businessProfile,
+        seoReport
+      );
+      
+      // Add the new report to our local state
+      setReports(prev => [report, ...prev]);
+      
+      return report;
+    } catch (error) {
+      console.error('Error generating report:', error);
+      throw error;
+    }
+  }, []);
+
+  // Create a new report
+  const createReport = useCallback(async (data: Omit<Report, 'id' | 'date' | 'status'>): Promise<Report> => {
+    try {
+      const newReport = await createNewReport(data);
+      setReports(prev => [newReport, ...prev]);
+      return newReport;
+    } catch (error) {
+      console.error('Error creating report:', error);
+      throw error;
+    }
+  }, []);
+
+  // Update an existing report
+  const updateReport = useCallback(async (id: string, data: Partial<Report>): Promise<Report> => {
+    try {
+      // Ensure data has required fields for the Omit type constraint
+      if (data && typeof data === 'object') {
+        const reportToUpdate = reports.find(r => r.id === id);
+        if (reportToUpdate && !data.title) {
+          data.title = reportToUpdate.title;
+        }
+      }
+      
+      const updatedReport = await updateExistingReport(id, data as any);
+      setReports(prev => prev.map(report => 
+        report.id === id ? { ...report, ...updatedReport } : report
+      ));
+      return updatedReport;
+    } catch (error) {
+      console.error('Error updating report:', error);
+      throw error;
+    }
+  }, [reports]);
+
+  // Delete a report
+  const deleteReport = useCallback(async (id: string): Promise<void> => {
+    try {
+      await deleteReportById(id);
+      setReports(prev => prev.filter(report => report.id !== id));
+      toast.success('Informe eliminado');
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      toast.error('Error al eliminar el informe');
+      throw error;
+    }
+  }, []);
+
+  // Retry a failed report
+  const retryReport = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const result = await retryFailedReport(id);
+      
+      if (result) {
+        // Update report status in our local state
+        setReports(prev => prev.map(report => 
+          report.id === id 
+            ? { ...report, status: 'processing' as const, summary: 'Reintentando generación de informe...' } 
+            : report
+        ));
+        
+        toast.success('Reintentando generación del informe');
+      } else {
+        toast.error('No se pudo reintentar el informe');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error retrying report:', error);
+      toast.error('Error al reintentar el informe');
+      throw error;
+    }
+  }, []);
+
+  const value = {
+    reports,
+    isLoading,
+    refreshReports,
+    getReport,
+    getClientReports,
+    generateReport,
+    createReport,
+    updateReport,
+    deleteReport,
+    retryReport
+  };
+
   return (
-    <ReportsContext.Provider value={reportsData}>
+    <ReportsContext.Provider value={value}>
       {children}
     </ReportsContext.Provider>
   );
 };
 
-// Hook to use the reports context
-export const useReportsContext = () => {
+export const useReportsContext = (): ReportsContextType => {
   const context = useContext(ReportsContext);
   
   if (context === undefined) {
-    console.error('useReportsContext must be used within a ReportsProvider');
-    // Return default context instead of undefined to prevent crashes
-    return defaultReportsContextValue;
+    throw new Error('useReportsContext must be used within a ReportsProvider');
   }
   
   return context;

@@ -21,20 +21,11 @@ const Dashboard = () => {
   const [upcomingDeadlines, setUpcomingDeadlines] = useState<any[]>([]);
   const currentDate = new Date();
 
-  console.log('Dashboard - Auth loading:', authLoading);
-  console.log('Dashboard - Client loading:', clientsLoading);
-  console.log('Dashboard - Reports loading:', reportsLoading);
-  console.log('Dashboard - User:', user);
-  console.log('Dashboard - Client count:', clients?.length || 0);
-  console.log('Dashboard - Reports count:', reports?.length || 0);
-
   // Redirect if not authenticated
   if (!user && !authLoading) {
-    console.log('No user authenticated, redirecting to auth page');
     return <Navigate to="/auth" replace />;
   }
 
-  // Calculate isLoading from all loading states
   const isLoading = authLoading || clientsLoading || reportsLoading;
 
   useEffect(() => {
@@ -57,49 +48,41 @@ const Dashboard = () => {
   // Setup sample data for dashboard when loading completes
   useEffect(() => {
     if (!isLoading) {
-      console.log('Loading completed, setting up dashboard data');
-      // Only set sample data if we have clients
-      if (clients && clients.length > 0) {
-        setNextEvents([
-          {
-            title: 'Reunión mensual de estrategia',
-            date: new Date(new Date().setDate(new Date().getDate() + 3)),
-            type: 'meeting'
-          },
-          {
-            title: 'Entrega informe SEO Técnico',
-            date: new Date(new Date().setDate(new Date().getDate() + 7)),
-            type: 'deadline',
-            clientId: clients[0].id
-          },
-          {
-            title: 'Revisión de keywords',
-            date: new Date(new Date().setDate(new Date().getDate() + 10)),
-            type: 'task'
-          }
-        ]);
+      setNextEvents([
+        {
+          title: 'Reunión mensual de estrategia',
+          date: new Date(new Date().setDate(new Date().getDate() + 3)),
+          type: 'meeting'
+        },
+        {
+          title: 'Entrega informe SEO Técnico',
+          date: new Date(new Date().setDate(new Date().getDate() + 7)),
+          type: 'deadline',
+          clientId: clients.length > 0 ? clients[0].id : null
+        },
+        {
+          title: 'Revisión de keywords',
+          date: new Date(new Date().setDate(new Date().getDate() + 10)),
+          type: 'task'
+        }
+      ]);
 
-        const today = new Date();
-        
-        setUpcomingDeadlines([
-          {
-            title: 'Renovación contrato mensual',
-            client: clients[0].name,
-            dueDate: new Date(today.getTime() + 1000 * 60 * 60 * 24 * 15),
-            type: 'contract'
-          },
-          {
-            title: 'Factura mensual pendiente',
-            client: clients.length > 1 ? clients[1].name : clients[0].name,
-            dueDate: new Date(today.getTime() + 1000 * 60 * 60 * 24 * 10),
-            type: 'invoice'
-          }
-        ]);
-      } else {
-        // Set empty arrays if no clients
-        setNextEvents([]);
-        setUpcomingDeadlines([]);
-      }
+      const today = new Date();
+      
+      setUpcomingDeadlines([
+        {
+          title: 'Renovación contrato mensual',
+          client: clients.length > 0 ? clients[0].name : 'Cliente',
+          dueDate: new Date(today.getTime() + 1000 * 60 * 60 * 24 * 15),
+          type: 'contract'
+        },
+        {
+          title: 'Factura mensual pendiente',
+          client: clients.length > 1 ? clients[1].name : 'Cliente',
+          dueDate: new Date(today.getTime() + 1000 * 60 * 60 * 24 * 10),
+          type: 'invoice'
+        }
+      ]);
     }
   }, [isLoading, clients]);
 
@@ -110,10 +93,8 @@ const Dashboard = () => {
       <main className="flex-1 pt-24 pb-16">
         <div className="container px-4 sm:px-6 mx-auto">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <Loader2 className="h-12 w-12 text-primary animate-spin" />
-              <span className="text-lg font-medium">Cargando datos del panel...</span>
-              <p className="text-sm text-muted-foreground">Por favor espere mientras preparamos su información</p>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
             </div>
           ) : (
             <>
@@ -126,8 +107,8 @@ const Dashboard = () => {
               <DashboardTabs 
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
-                clients={clients || []}
-                reports={reports || []}
+                clients={clients}
+                reports={reports}
               />
             </>
           )}

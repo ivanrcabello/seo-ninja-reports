@@ -1,18 +1,33 @@
 
+import { useReportsContext } from '@/context/ReportsContext';
 import { usePersistentState } from '@/hooks/usePersistentState';
-import useReportsHook from '@/hooks/useReports.ts'; // Make sure we're importing from the .ts file
 
 // Export a hook that combines context access and additional functionality if needed
 const useReports = () => {
-  // Use the main reports hook
-  const reportsHook = useReportsHook();
+  const reportsContext = useReportsContext();
   
-  // Load the OpenAI API key from localStorage to have it available at all times
+  // Cargar la clave API de OpenAI desde localStorage para tenerla disponible en todo momento
   const [openAIKey] = usePersistentState('openai_api_key', '');
+  
+  if (!reportsContext) {
+    console.error('useReports must be used within a ReportsProvider');
+    // Return a safe fallback to prevent app crashes
+    return {
+      reports: [],
+      getReport: () => null,
+      isLoading: false,
+      error: 'ReportsContext not available',
+      createReport: async () => null,
+      updateReport: async () => false,
+      deleteReport: async () => false,
+      refreshReports: async () => false,
+      openAIKey
+    };
+  }
   
   // Add the OpenAI key to the context
   return {
-    ...reportsHook,
+    ...reportsContext,
     openAIKey
   };
 };

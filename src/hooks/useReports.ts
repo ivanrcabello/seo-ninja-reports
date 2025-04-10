@@ -1,3 +1,4 @@
+
 // Import relevant functions and types
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -12,28 +13,27 @@ import {
 } from '@/services/reportService';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
-import { Keyword, ReportsHookReturn } from '@/types/report-hooks.types';
+
+interface Keyword {
+  keyword: string;
+  searchVolume?: number;
+  difficulty?: number;
+}
 
 // Create a standalone hook for direct use (not through context)
-export default function useReportsHook(): ReportsHookReturn {
+export default function useReportsHook() {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const location = useLocation();
 
   // Fetch all reports on component mount
   useEffect(() => {
     const loadReports = async () => {
       try {
-        console.log('Fetching reports...');
-        setIsLoading(true);
         const data = await fetchReports();
-        console.log('Reports fetched:', data);
-        setReports(data || []);
-        setError(null);
-      } catch (error: any) {
+        setReports(data);
+      } catch (error) {
         console.error('Error fetching reports:', error);
-        setError(error.message || 'Error al cargar los informes');
         toast.error('Error al cargar los informes');
       } finally {
         setIsLoading(false);
@@ -164,7 +164,6 @@ export default function useReportsHook(): ReportsHookReturn {
   return {
     reports,
     isLoading,
-    error,
     getReport,
     getClientReports,
     generateReport,

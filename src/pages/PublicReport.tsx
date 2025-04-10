@@ -14,7 +14,7 @@ import { checkContentPasswordProtection, verifyContentPassword } from '@/api/sha
 import { getSharedReport } from '@/services/sharedContentService';
 
 const PublicReport = () => {
-  const { id } = useParams<{ id: string }>();
+  const { sharedUrl } = useParams<{ sharedUrl: string }>();
   const [report, setReport] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +24,7 @@ const PublicReport = () => {
 
   const verifyPassword = async (password: string) => {
     try {
-      const verified = await verifyContentPassword(id || '', 'report', password);
+      const verified = await verifyContentPassword(sharedUrl || '', 'report', password);
       
       if (verified) {
         setAccessGranted(true);
@@ -41,13 +41,13 @@ const PublicReport = () => {
   };
 
   const fetchReport = async () => {
-    if (!id) return;
+    if (!sharedUrl) return;
     
     try {
       setIsLoading(true);
       
       // Check if the report is password protected directly from the response
-      const response = await getSharedReport(id);
+      const response = await getSharedReport(sharedUrl);
       
       if (response.isPasswordProtected && !accessGranted) {
         setIsPasswordProtected(true);
@@ -80,7 +80,7 @@ const PublicReport = () => {
   
   useEffect(() => {
     fetchReport();
-  }, [id]);
+  }, [sharedUrl]);
 
   if (isPasswordDialogOpen) {
     return (

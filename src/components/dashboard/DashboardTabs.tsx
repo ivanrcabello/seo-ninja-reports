@@ -23,18 +23,9 @@ interface DashboardTabsProps {
 const DashboardTabs: React.FC<DashboardTabsProps> = ({
   activeTab,
   setActiveTab,
-  clients = [],
-  reports = []
+  clients,
+  reports
 }) => {
-  // Ensure we have arrays, even if empty
-  const safeClients = Array.isArray(clients) ? clients : [];
-  const safeReports = Array.isArray(reports) ? reports : [];
-  
-  console.log('DashboardTabs rendered with:', { 
-    clientsCount: safeClients.length, 
-    reportsCount: safeReports.length 
-  });
-  
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
       <TabsList className="mb-4">
@@ -60,11 +51,11 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           </TabsContent>
 
           <TabsContent value="clients">
-            <ClientsTab clients={safeClients} reports={safeReports} />
+            <ClientsTab clients={clients} reports={reports} />
           </TabsContent>
 
           <TabsContent value="reports">
-            <ReportsTab reports={safeReports} />
+            <ReportsTab reports={reports} />
           </TabsContent>
 
           <TabsContent value="invoices">
@@ -86,7 +77,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           </TabsContent>
 
           <TabsContent value="activity">
-            <ActivityTab clients={safeClients} reports={safeReports} />
+            <ActivityTab clients={clients} reports={reports} />
           </TabsContent>
         </motion.div>
       </AnimatePresence>
