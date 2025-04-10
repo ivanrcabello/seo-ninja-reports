@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   SharedInvoiceResponse, 
@@ -235,7 +234,7 @@ export async function getSharedReport(sharedUrl: string): Promise<SharedReportRe
 
 export async function getSharedProposal(sharedUrl: string): Promise<SharedProposalResponse> {
   try {
-    // First check shared_content table
+    // First check if the proposal exists in the shared_content table
     const { data: sharedData, error: sharedError } = await supabase
       .from('shared_content')
       .select('*')
@@ -255,6 +254,9 @@ export async function getSharedProposal(sharedUrl: string): Promise<SharedPropos
       
       const services = Array.isArray(contentObj.services) ? contentObj.services : [];
       
+      // Check if password protected
+      const isPasswordProtected = sharedData.password !== null && sharedData.password !== '';
+      
       return {
         data: {
           id: sharedData.id,
@@ -268,11 +270,12 @@ export async function getSharedProposal(sharedUrl: string): Promise<SharedPropos
           updated_at: sharedData.updated_at,
           client_name: sharedData.client_name || 'Cliente',
           client_website: sharedData.client_website || undefined
-        }
+        },
+        isPasswordProtected
       };
     }
     
-    // Use RPC function instead of direct query to the view
+    // Use RPC function to get the proposal data safely
     const { data, error } = await supabase
       .rpc('get_proposal_by_shared_url', {
         shared_url_param: sharedUrl
@@ -287,7 +290,15 @@ export async function getSharedProposal(sharedUrl: string): Promise<SharedPropos
     }
     
     const proposal = data[0];
-    return { data: proposal };
+    
+    // Check if password protected using the password field from the proposal
+    const isPasswordProtected = proposal.password !== null && proposal.password !== '';
+    
+    // Return the proposal data with password protection flag
+    return { 
+      data: proposal,
+      isPasswordProtected
+    };
   } catch (error: any) {
     console.error('Error fetching shared proposal:', error);
     return { data: null, error: error.message || 'Error al obtener la propuesta' };
