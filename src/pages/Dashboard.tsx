@@ -23,6 +23,7 @@ const Dashboard = () => {
 
   // Redirect if not authenticated
   if (!user && !authLoading) {
+    console.log('No user authenticated, redirecting to auth page');
     return <Navigate to="/auth" replace />;
   }
 
@@ -47,7 +48,8 @@ const Dashboard = () => {
 
   // Setup sample data for dashboard when loading completes
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && clients) {
+      console.log('Loading completed, setting up dashboard data');
       setNextEvents([
         {
           title: 'Reunión mensual de estrategia',
@@ -86,7 +88,7 @@ const Dashboard = () => {
     }
   }, [isLoading, clients]);
 
-  // Check if the reports and hooks are actually loading
+  // Debug logging
   console.log('Auth loading:', authLoading);
   console.log('Clients loading:', clientsLoading);
   console.log('Reports loading:', reportsLoading);
@@ -101,16 +103,17 @@ const Dashboard = () => {
       <main className="flex-1 pt-24 pb-16">
         <div className="container px-4 sm:px-6 mx-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 text-primary animate-spin mr-2" />
-              <span>Cargando datos...</span>
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
+              <span className="text-lg font-medium">Cargando datos del panel...</span>
+              <p className="text-sm text-muted-foreground">Por favor espere mientras preparamos su información</p>
             </div>
           ) : (
             <>
               <DashboardHeader 
                 currentDate={currentDate}
-                nextEvents={nextEvents}
-                upcomingDeadlines={upcomingDeadlines}
+                nextEvents={nextEvents || []}
+                upcomingDeadlines={upcomingDeadlines || []}
               />
               
               <DashboardTabs 
