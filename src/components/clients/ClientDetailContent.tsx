@@ -56,8 +56,7 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         
         {activeTab === 'reports' && (
           <ClientReportsList 
-            client={client} 
-            reports={reports} 
+            clientId={client.id} 
             onCreateReport={handleCreateReport} 
           />
         )}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -41,6 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ClientReportsListProps {
   clientId: string;
+  onCreateReport: () => void;
 }
 
 interface ReportsTableProps {
@@ -48,7 +50,7 @@ interface ReportsTableProps {
   isLoading: boolean;
   onRetry: (id: string) => void;
   onDelete: (id: string) => void;
-  onShare: (report: Report) => void;
+  onShare: (id: string) => void;
 }
 
 const ReportsTable: React.FC<ReportsTableProps> = ({ reports, isLoading, onDelete, onRetry, onShare }) => {
@@ -100,7 +102,7 @@ const ReportsTable: React.FC<ReportsTableProps> = ({ reports, isLoading, onDelet
                       Ver informe
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onShare(report)}>
+                  <DropdownMenuItem onClick={() => onShare(report.id)}>
                     <Share2 className="mr-2 h-4 w-4" />
                     Compartir
                   </DropdownMenuItem>
@@ -130,13 +132,22 @@ interface ScheduledReportsListProps {
 }
 
 const ScheduledReportsList: React.FC<ScheduledReportsListProps> = ({ clientId }) => {
-  const { getScheduledReports, isLoading: isLoadingScheduled, deleteScheduledReport, toggleScheduledReport } = useReports();
+  const { getScheduledReports, deleteScheduledReport, toggleScheduledReport } = useReports();
   const [scheduledReports, setScheduledReports] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadScheduledReports = async () => {
-      const reports = await getScheduledReports(clientId);
-      setScheduledReports(reports);
+      try {
+        setIsLoading(true);
+        const reports = await getScheduledReports(clientId);
+        setScheduledReports(reports);
+      } catch (error) {
+        console.error('Error loading scheduled reports:', error);
+        toast.error('Error al cargar los informes programados');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadScheduledReports();
@@ -164,7 +175,7 @@ const ScheduledReportsList: React.FC<ScheduledReportsListProps> = ({ clientId })
     }
   };
 
-  if (isLoadingScheduled) {
+  if (isLoading) {
     return <p>Cargando informes programados...</p>;
   }
 
@@ -219,16 +230,15 @@ const ScheduledReportsList: React.FC<ScheduledReportsListProps> = ({ clientId })
   );
 };
 
-const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId }) => {
+const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId, onCreateReport }) => {
   const { reports: allReports, isLoading, deleteReport, retryReport } = useReports();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reportToDeleteId, setReportToDeleteId] = useState<string | null>(null);
   const [clientReports, setClientReports] = useState<Report[]>([]);
   const [activeReports, setActiveReports] = useState<Report[]>([]);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
-  const { id } = useParams();
 
   useEffect(() => {
     if (allReports) {
@@ -266,8 +276,8 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId }) => {
     }
   };
 
-  const handleShare = (report: Report) => {
-    setSelectedReport(report);
+  const handleShare = (reportId: string) => {
+    setSelectedReportId(reportId);
     setIsShareDialogOpen(true);
   };
 
@@ -347,7 +357,7 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId }) => {
       <ShareReportDialog 
         open={isShareDialogOpen} 
         onOpenChange={setIsShareDialogOpen}
-        report={selectedReport}
+        reportId={selectedReportId}
       />
       
       <TemplatesDialog 
