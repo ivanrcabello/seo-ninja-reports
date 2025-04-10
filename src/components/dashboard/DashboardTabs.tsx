@@ -23,8 +23,8 @@ interface DashboardTabsProps {
 const DashboardTabs: React.FC<DashboardTabsProps> = ({
   activeTab,
   setActiveTab,
-  clients,
-  reports
+  clients = [],
+  reports = []
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">

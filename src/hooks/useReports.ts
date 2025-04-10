@@ -24,16 +24,22 @@ interface Keyword {
 export default function useReportsHook() {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const location = useLocation();
 
   // Fetch all reports on component mount
   useEffect(() => {
     const loadReports = async () => {
       try {
+        console.log('Fetching reports...');
+        setIsLoading(true);
         const data = await fetchReports();
-        setReports(data);
-      } catch (error) {
+        console.log('Reports fetched:', data);
+        setReports(data || []);
+        setError(null);
+      } catch (error: any) {
         console.error('Error fetching reports:', error);
+        setError(error.message || 'Error al cargar los informes');
         toast.error('Error al cargar los informes');
       } finally {
         setIsLoading(false);
@@ -164,6 +170,7 @@ export default function useReportsHook() {
   return {
     reports,
     isLoading,
+    error,
     getReport,
     getClientReports,
     generateReport,

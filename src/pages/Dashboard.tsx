@@ -86,6 +86,14 @@ const Dashboard = () => {
     }
   }, [isLoading, clients]);
 
+  // Check if the reports and hooks are actually loading
+  console.log('Auth loading:', authLoading);
+  console.log('Clients loading:', clientsLoading);
+  console.log('Reports loading:', reportsLoading);
+  console.log('Combined loading state:', isLoading);
+  console.log('Available clients:', clients);
+  console.log('Available reports:', reports);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />
@@ -94,7 +102,8 @@ const Dashboard = () => {
         <div className="container px-4 sm:px-6 mx-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <Loader2 className="h-8 w-8 text-primary animate-spin mr-2" />
+              <span>Cargando datos...</span>
             </div>
           ) : (
             <>
@@ -107,8 +116,8 @@ const Dashboard = () => {
               <DashboardTabs 
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
-                clients={clients}
-                reports={reports}
+                clients={clients || []}
+                reports={reports || []}
               />
             </>
           )}
