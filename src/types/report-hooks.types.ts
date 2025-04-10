@@ -1,5 +1,5 @@
 
-import { Report, BusinessProfile } from '@/types/report.types';
+import { Report, BusinessProfile, Keyword as ReportKeyword } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
 
 export interface Keyword {

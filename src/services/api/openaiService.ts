@@ -45,7 +45,13 @@ export const generateOpenAIReport = async (
    - Mejores prácticas: XX/100
    - SEO on-page: XX/100
 
-Estas métricas serán cruciales para la visualización gráfica del informe.`;
+ES FUNDAMENTAL que el informe incluya TODAS las siguientes secciones con títulos claramente marcados:
+- Resumen Ejecutivo
+- Análisis Técnico
+- Análisis de Contenido
+- Recomendaciones
+
+El informe no será válido si falta alguna de estas secciones principales.`;
     
     const startTime = Date.now();
     console.log(`[${new Date().toISOString()}] Enviando solicitud a OpenAI API...`);
@@ -114,6 +120,28 @@ Estas métricas serán cruciales para la visualización gráfica del informe.`;
     console.log('¿Se encontró sección Propuesta?', !!propuestaMatch);
     console.log('¿Se encontró sección Palabras Clave?', !!keywordsMatch);
     
+    // Set default values for required sections to avoid undefined
+    standardSections.executiveSummary = standardSections.executiveSummary || 'No se generó contenido para la sección de Resumen Ejecutivo.';
+    standardSections.technicalAnalysis = standardSections.technicalAnalysis || 'No se generó contenido para la sección de Análisis Técnico.';
+    standardSections.contentAnalysis = standardSections.contentAnalysis || 'No se generó contenido para la sección de Análisis de Contenido.';
+    standardSections.recommendations = standardSections.recommendations || 'No se generó contenido para la sección de Recomendaciones.';
+    
+    // Create fallback section content if necessary
+    if (!standardSections.executiveSummary) {
+      console.warn('No se encontró sección de Resumen Ejecutivo. Creando sección predeterminada.');
+      standardSections.executiveSummary = 'Este informe analiza el sitio web ' + url + '. Por favor, revisa las secciones a continuación para obtener información detallada sobre el análisis SEO.';
+    }
+    
+    if (!standardSections.technicalAnalysis) {
+      console.warn('No se encontró sección de Análisis Técnico. Creando sección predeterminada.');
+      standardSections.technicalAnalysis = 'Se necesita realizar un análisis técnico detallado del sitio web ' + url + '. Recomendamos revisar aspectos como velocidad de carga, estructura del sitio, optimización móvil y otros factores técnicos SEO.';
+    }
+    
+    if (!standardSections.recommendations) {
+      console.warn('No se encontró sección de Recomendaciones. Creando sección predeterminada.');
+      standardSections.recommendations = 'Basado en el análisis del sitio ' + url + ', recomendamos realizar una revisión detallada de los aspectos técnicos y de contenido identificados en este informe.';
+    }
+    
     // Combine all sections
     const sections = {
       ...standardSections,
@@ -126,7 +154,17 @@ Estas métricas serán cruciales para la visualización gráfica del informe.`;
     if (!sections.executiveSummary || !sections.technicalAnalysis || !sections.recommendations) {
       console.error('Faltan secciones principales en la respuesta generada:', Object.keys(sections));
       console.error('Texto generado completo:', generatedText);
-      throw new Error('La respuesta no contiene todas las secciones requeridas del informe');
+      
+      // Instead of throwing, create default sections with an explanation
+      const defaultMessage = 'Esta sección no pudo ser generada correctamente. El modelo de OpenAI no proporcionó contenido para esta parte del informe. Por favor, intente generar el informe nuevamente o edite esta sección manualmente.';
+      
+      sections.summary = sections.summary || 'Informe SEO generado para ' + url;
+      sections.executiveSummary = sections.executiveSummary || defaultMessage;
+      sections.technicalAnalysis = sections.technicalAnalysis || defaultMessage;
+      sections.recommendations = sections.recommendations || defaultMessage;
+      
+      // Log the error but don't stop the process
+      console.warn('Se están utilizando secciones predeterminadas debido a que faltan secciones en la respuesta de OpenAI');
     }
     
     return {

@@ -1,184 +1,362 @@
-
-import React, { useCallback, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale'; 
+import { es } from 'date-fns/locale';
+import {
+  FileText,
+  Download,
+  MoreHorizontal,
+  RefreshCw,
+  Trash2,
+  ExternalLink,
+  Clock,
+  Share2,
+  FileBarChart
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import BlurredCard from '@/components/ui/BlurredCard';
-import AnimatedContainer from '@/components/ui/AnimatedContainer';
-import { FileText, Plus, BarChart, PlusCircle, Calendar, SaveAll } from 'lucide-react';
-import { Client } from '@/types/client.types';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import useReports from '@/hooks/useReports';
 import { Report } from '@/types/report.types';
-import CrawlerList from './seo-crawler/CrawlerList';
-import ReportGenerator from '@/components/reports/ReportGenerator';
-import ScheduledReportsList from '@/components/reports/scheduler/ScheduledReportsList';
-import TemplatesDialog from '@/components/reports/templates/TemplatesDialog';
+import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import ShareReportDialog from '../reports/ShareReportDialog';
+import TemplatesDialog from '../reports/templates/TemplatesDialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ClientReportsListProps {
-  client: Client;
-  reports: Report[];
-  onCreateReport: () => void;
+  clientId: string;
 }
 
-const ClientReportsList: React.FC<ClientReportsListProps> = ({ 
-  client, 
-  reports, 
-  onCreateReport 
-}) => {
-  const [activeTab, setActiveTab] = useState<'reports' | 'crawler' | 'scheduled'>('reports');
-  const [showReportGenerator, setShowReportGenerator] = useState(false);
-  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
-  const navigate = useNavigate();
-  
-  const handleCreateReport = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowReportGenerator(true);
-  }, []);
+interface ReportsTableProps {
+  reports: Report[];
+  isLoading: boolean;
+  onRetry: (id: string) => void;
+  onDelete: (id: string) => void;
+  onShare: (report: Report) => void;
+}
 
-  const handleCloseReportGenerator = useCallback(() => {
-    setShowReportGenerator(false);
-  }, []);
+const ReportsTable: React.FC<ReportsTableProps> = ({ reports, isLoading, onDelete, onRetry, onShare }) => {
+  if (isLoading) {
+    return <p>Cargando informes...</p>;
+  }
 
-  const handleViewReport = useCallback((clientId: string, reportId: string) => {
-    navigate(`/clients/${clientId}/reports/${reportId}`);
-  }, [navigate]);
-
-  // If showing the report generator, render it instead of the list
-  if (showReportGenerator) {
-    return (
-      <div className="space-y-4">
-        <Button 
-          variant="outline" 
-          onClick={handleCloseReportGenerator}
-          className="mb-4"
-        >
-          ← Volver a informes
-        </Button>
-        <ReportGenerator clientId={client.id} />
-      </div>
-    );
+  if (reports.length === 0) {
+    return <p>No hay informes disponibles.</p>;
   }
 
   return (
-    <>
-      <BlurredCard>
-        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-          <div>
-            <CardTitle className="text-xl">Informes</CardTitle>
-            <CardDescription>
-              {reports.length} informes para {client.name}
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowTemplatesDialog(true)}
-              className="flex items-center gap-1"
-            >
-              <SaveAll className="h-4 w-4" />
-              <span className="hidden sm:inline">Plantillas</span>
-              <span className="sm:hidden">Plantillas</span>
-            </Button>
-            
-            <Button 
-              variant="outline"
-              onClick={handleCreateReport}
-            >
-              <PlusCircle className="h-4 w-4 mr-1.5" /> 
-              <span className="hidden sm:inline">Nuevo Informe Automatizado</span>
-              <span className="sm:hidden">Nuevo</span>
-            </Button>
-          </div>
-        </CardHeader>
-        <Separator />
-        <CardContent className="pt-6">
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="reports">Informes</TabsTrigger>
-              <TabsTrigger value="crawler">Análisis SEO Técnico</TabsTrigger>
-              <TabsTrigger value="scheduled">Informes Programados</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="reports">
-              {reports.length > 0 ? (
-                <div className="space-y-4">
-                  {reports.map((report, index) => (
-                    <AnimatedContainer
-                      key={report.id}
-                      animation="fade"
-                      delay={index * 100}
-                    >
-                      <div 
-                        onClick={() => handleViewReport(client.id, report.id)}
-                        className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-background/50 hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/10 cursor-pointer"
-                      >
-                        <div className="mb-3 sm:mb-0">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary" />
-                            <h3 className="font-medium">{report.title}</h3>
-                          </div>
-                          <div className="flex items-center mt-1">
-                            <div className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
-                            ${report.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                              report.status === 'processing' ? 'bg-blue-100 text-blue-800' : 
-                              'bg-red-100 text-red-800'}`}>
-                              {report.status === 'completed' ? 'Completado' : 
-                              report.status === 'processing' ? 'Procesando' : 
-                              'Error'}
-                            </div>
-                            {report.summary && (
-                              <p className="text-sm text-muted-foreground ml-2 line-clamp-1">
-                                {report.summary}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-sm text-muted-foreground self-end sm:self-auto">
-                          {format(new Date(report.date), 'd MMM yyyy', { locale: es })}
-                        </div>
-                      </div>
-                    </AnimatedContainer>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No hay informes todavía</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Genera tu primer informe SEO para {client.name} para comenzar.
-                  </p>
-                  <Button 
-                    onClick={handleCreateReport}
-                    className="focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  >
-                    Generar Informe Automatizado
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Título</TableHead>
+          <TableHead>Fecha</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead className="text-right">Acciones</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {reports.map((report) => (
+          <TableRow key={report.id}>
+            <TableCell>
+              <Link to={`/reports/${report.id}`} className="hover:underline">
+                {report.title}
+              </Link>
+            </TableCell>
+            <TableCell>{format(new Date(report.date), 'PPP', { locale: es })}</TableCell>
+            <TableCell>
+              {report.status === 'completed' && <Badge variant="success">Completado</Badge>}
+              {report.status === 'processing' && <Badge variant="secondary">Procesando</Badge>}
+              {report.status === 'failed' && <Badge variant="destructive">Fallido</Badge>}
+            </TableCell>
+            <TableCell className="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Abrir menú</span>
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="crawler">
-              <CrawlerList client={client} />
-            </TabsContent>
-            
-            <TabsContent value="scheduled">
-              <ScheduledReportsList clientId={client.id} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </BlurredCard>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link to={`/reports/${report.id}`}>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Ver informe
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onShare(report)}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Compartir
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {report.status === 'failed' && (
+                    <DropdownMenuItem onClick={() => onRetry(report.id)}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Reintentar
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem className="text-destructive" onClick={() => onDelete(report.id)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
+
+interface ScheduledReportsListProps {
+  clientId: string;
+}
+
+const ScheduledReportsList: React.FC<ScheduledReportsListProps> = ({ clientId }) => {
+  const { getScheduledReports, isLoading: isLoadingScheduled, deleteScheduledReport, toggleScheduledReport } = useReports();
+  const [scheduledReports, setScheduledReports] = useState([]);
+
+  useEffect(() => {
+    const loadScheduledReports = async () => {
+      const reports = await getScheduledReports(clientId);
+      setScheduledReports(reports);
+    };
+
+    loadScheduledReports();
+  }, [clientId, getScheduledReports]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteScheduledReport(id);
+      setScheduledReports(prev => prev.filter(report => report.id !== id));
+      toast.success('Informe programado eliminado');
+    } catch (error) {
+      console.error('Error deleting scheduled report:', error);
+      toast.error('Error al eliminar el informe programado');
+    }
+  };
+
+  const handleToggle = async (id: string, active: boolean) => {
+    try {
+      const updatedReport = await toggleScheduledReport(id, active);
+      setScheduledReports(prev => prev.map(report => report.id === id ? updatedReport : report));
+      toast.success(`Informe programado ${active ? 'activado' : 'desactivado'}`);
+    } catch (error) {
+      console.error('Error toggling scheduled report:', error);
+      toast.error('Error al cambiar el estado del informe programado');
+    }
+  };
+
+  if (isLoadingScheduled) {
+    return <p>Cargando informes programados...</p>;
+  }
+
+  if (scheduledReports.length === 0) {
+    return <p>No hay informes programados disponibles.</p>;
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>URL</TableHead>
+          <TableHead>Frecuencia</TableHead>
+          <TableHead>Próxima ejecución</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead className="text-right">Acciones</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {scheduledReports.map((report) => (
+          <TableRow key={report.id}>
+            <TableCell>{report.url}</TableCell>
+            <TableCell>{report.frequency}</TableCell>
+            <TableCell>{format(new Date(report.nextRunDate), 'PPP', { locale: es })}</TableCell>
+            <TableCell>
+              {report.active ? <Badge variant="success">Activo</Badge> : <Badge>Inactivo</Badge>}
+            </TableCell>
+            <TableCell className="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Abrir menú</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => handleToggle(report.id, !report.active)}>
+                    {report.active ? 'Desactivar' : 'Activar'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(report.id)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
+
+const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId }) => {
+  const { reports: allReports, isLoading, deleteReport, retryReport } = useReports();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [reportToDeleteId, setReportToDeleteId] = useState<string | null>(null);
+  const [clientReports, setClientReports] = useState<Report[]>([]);
+  const [activeReports, setActiveReports] = useState<Report[]>([]);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
+  const { id } = useParams();
+
+  useEffect(() => {
+    if (allReports) {
+      const filteredReports = allReports.filter((report) => report.clientId === clientId);
+      setClientReports(filteredReports);
+      setActiveReports(filteredReports.filter((report) => report.status !== 'failed'));
+    }
+  }, [allReports, clientId]);
+
+  const handleOpenDeleteDialog = (reportId: string) => {
+    setReportToDeleteId(reportId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (reportToDeleteId) {
+      try {
+        await deleteReport(reportToDeleteId);
+        toast.success('Informe eliminado correctamente');
+      } catch (error) {
+        toast.error('Error al eliminar el informe');
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setReportToDeleteId(null);
+      }
+    }
+  };
+
+  const handleRetry = async (reportId: string) => {
+    try {
+      await retryReport(reportId);
+      toast.success('Reintentando generación del informe');
+    } catch (error) {
+      toast.error('Error al reintentar el informe');
+    }
+  };
+
+  const handleShare = (report: Report) => {
+    setSelectedReport(report);
+    setIsShareDialogOpen(true);
+  };
+
+  return (
+    <div className="w-full">
+      <div className="flex justify-between mb-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Informes SEO
+        </h2>
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link to={`/clients/${clientId}/generate-report`}>
+              <FileText className="mr-2 h-4 w-4" />
+              Nuevo informe
+            </Link>
+          </Button>
+          
+          <Button variant="outline" onClick={() => setShowTemplatesDialog(true)}>
+            <FileBarChart className="mr-2 h-4 w-4" />
+            Plantillas
+          </Button>
+        </div>
+      </div>
+      
+      <Tabs defaultValue="active" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="active">Activos</TabsTrigger>
+          <TabsTrigger value="all">Todos</TabsTrigger>
+          <TabsTrigger value="scheduled">Programados</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="active">
+          <ReportsTable 
+            reports={activeReports} 
+            isLoading={isLoading} 
+            onRetry={handleRetry}
+            onDelete={handleOpenDeleteDialog}
+            onShare={handleShare}
+          />
+        </TabsContent>
+        
+        <TabsContent value="all">
+          <ReportsTable 
+            reports={clientReports} 
+            isLoading={isLoading} 
+            onRetry={handleRetry}
+            onDelete={handleOpenDeleteDialog}
+            onShare={handleShare}
+          />
+        </TabsContent>
+        
+        <TabsContent value="scheduled">
+          <ScheduledReportsList clientId={clientId} />
+        </TabsContent>
+      </Tabs>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El informe será eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleConfirmDelete}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <ShareReportDialog 
+        open={isShareDialogOpen} 
+        onOpenChange={setIsShareDialogOpen}
+        report={selectedReport}
+      />
       
       <TemplatesDialog 
         open={showTemplatesDialog} 
         onOpenChange={setShowTemplatesDialog}
-        mode="manage"
+        mode="save" 
       />
-    </>
+    </div>
   );
-};
+}
 
 export default ClientReportsList;

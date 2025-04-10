@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
@@ -249,7 +248,70 @@ export const processOpenAIReport = async (
       return formattedCompletedReport;
     } catch (openaiError: any) {
       console.error('Error en generación con OpenAI:', openaiError);
-      throw openaiError;
+      
+      // Instead of throwing the error, update the report with a failed status
+      // but also create a minimal report with empty sections
+      const defaultMessage = 'Esta sección no pudo ser generada correctamente. Por favor, edite esta sección manualmente.';
+      
+      // Create a minimal content object with empty sections
+      const fallbackContent = {
+        executiveSummary: defaultMessage,
+        technicalAnalysis: defaultMessage,
+        contentAnalysis: defaultMessage,
+        backlinksAnalysis: '',
+        recommendations: defaultMessage,
+        localSeo: '',
+        serviceProposal: '',
+        keywords: '',
+        pageSpeedData: pageSpeedData || null,
+        businessProfile: businessProfile || null,
+        seoReportData: seoReport ? JSON.parse(JSON.stringify(seoReport)) : null
+      };
+      
+      try {
+        // Update the report with fallback content
+        const { data: failedReport, error: updateError } = await supabase
+          .from('reports')
+          .update({
+            content: fallbackContent,
+            summary: `Error al generar informe: ${openaiError.message || 'Error desconocido'}`,
+            status: 'completed', // Mark as completed anyway so user can edit
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', reportId)
+          .select()
+          .single();
+          
+        if (updateError) {
+          console.error('Error al actualizar el informe fallido en Supabase:', updateError);
+          throw updateError;
+        }
+        
+        console.log('Informe actualizado con contenido básico debido a error en OpenAI');
+        
+        // Return the fallback report
+        const formattedFallbackReport: Report = {
+          id: failedReport.id,
+          clientId: failedReport.client_id,
+          title: failedReport.title,
+          date: failedReport.date,
+          status: failedReport.status as 'processing' | 'completed' | 'failed',
+          url: failedReport.url,
+          summary: failedReport.summary,
+          content: failedReport.content && typeof failedReport.content === 'object' 
+            ? (failedReport.content as any) as Report['content']
+            : undefined,
+          customPrompt: failedReport.custom_prompt,
+          notes: failedReport.notes,
+          hasBusinessProfile: failedReport.has_business_profile
+        };
+        
+        toast.warning('Informe generado con contenido básico debido a un error. Puede editar el informe manualmente.');
+        return formattedFallbackReport;
+      } catch (fallbackError) {
+        console.error('Error al intentar crear informe de respaldo:', fallbackError);
+        throw openaiError; // Throw the original error if we couldn't even create a fallback
+      }
     }
     
   } catch (apiError: any) {

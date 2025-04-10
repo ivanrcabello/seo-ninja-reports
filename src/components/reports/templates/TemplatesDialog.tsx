@@ -1,82 +1,79 @@
-
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { Keyword, ReportTemplate } from "@/types/report-hooks.types";
-import useReports from "@/hooks/useReports";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from 'sonner';
+import useReports from '@/hooks/useReports';
+import { Loader2, Trash2, Check, Edit, SaveAll } from 'lucide-react';
+import { Keyword, ReportTemplate } from '@/types/report-hooks.types';
+import KeywordsList from '../keywords/KeywordsList';
 
 interface TemplatesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSelect?: (template: ReportTemplate) => void;
+  mode: 'save' | 'select';
   initialPrompt?: string;
   initialKeywords?: Keyword[];
+  initialOptions?: {
+    usePageSpeedData: boolean;
+    useGmbData: boolean;
+    useKeywordsData: boolean;
+  };
   initialNotes?: string;
-  initialUsePageSpeedData?: boolean;
-  initialUseGmbData?: boolean;
-  initialUseKeywordsData?: boolean;
-  onSelect?: (template: ReportTemplate) => void;
-  mode?: 'save' | 'select';
 }
 
 const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
   open,
   onOpenChange,
-  initialPrompt = '',
-  initialKeywords = [],
-  initialNotes = '',
-  initialUsePageSpeedData = true,
-  initialUseGmbData = true,
-  initialUseKeywordsData = true,
   onSelect,
   mode = 'save',
+  initialPrompt = '',
+  initialKeywords = [],
+  initialOptions = {
+    usePageSpeedData: true,
+    useGmbData: true,
+    useKeywordsData: true,
+  },
+  initialNotes = '',
 }) => {
   const { saveReportTemplate, getReportTemplates, deleteReportTemplate } = useReports();
   
-  const [activeTab, setActiveTab] = useState<string>(mode === 'save' ? 'save' : 'select');
+  const [activeTab, setActiveTab] = useState<string>(mode === 'save' ? 'create' : 'select');
   const [templateName, setTemplateName] = useState<string>('');
   const [customPrompt, setCustomPrompt] = useState<string>(initialPrompt);
   const [keywords, setKeywords] = useState<Keyword[]>(initialKeywords);
   const [notes, setNotes] = useState<string>(initialNotes);
-  const [usePageSpeedData, setUsePageSpeedData] = useState<boolean>(initialUsePageSpeedData);
-  const [useGmbData, setUseGmbData] = useState<boolean>(initialUseGmbData);
-  const [useKeywordsData, setUseKeywordsData] = useState<boolean>(initialUseKeywordsData);
+  const [usePageSpeedData, setUsePageSpeedData] = useState<boolean>(initialOptions.usePageSpeedData);
+  const [useGmbData, setUseGmbData] = useState<boolean>(initialOptions.useGmbData);
+  const [useKeywordsData, setUseKeywordsData] = useState<boolean>(initialOptions.useKeywordsData);
   
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   
   useEffect(() => {
     if (open) {
       loadTemplates();
-      // Reset states
-      setTemplateeName('');
+      setTemplateName('');
       setCustomPrompt(initialPrompt);
       setKeywords(initialKeywords);
       setNotes(initialNotes);
-      setUsePageSpeedData(initialUsePageSpeedData);
-      setUseGmbData(initialUseGmbData);
-      setUseKeywordsData(initialUseKeywordsData);
-      setActiveTab(mode === 'save' ? 'save' : 'select');
+      setUsePageSpeedData(initialOptions.usePageSpeedData);
+      setUseGmbData(initialOptions.useGmbData);
+      setUseKeywordsData(initialOptions.useKeywordsData);
+      setActiveTab(mode === 'save' ? 'create' : 'select');
     }
-  }, [open, initialPrompt, initialKeywords, initialNotes, 
-      initialUsePageSpeedData, initialUseGmbData, initialUseKeywordsData, mode]);
+  }, [open, initialPrompt, initialKeywords, initialNotes, initialOptions, mode]);
   
   const loadTemplates = async () => {
     try {
@@ -98,7 +95,7 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
     }
     
     try {
-      setIsLoading(true);
+      setIsSaving(true);
       
       const templateData = {
         name: templateName,
@@ -119,7 +116,7 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
       console.error('Error saving template:', error);
       toast.error('Error al guardar la plantilla');
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
   
@@ -148,161 +145,217 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
     }
   };
   
-  // Define a function to set the template name with the correct signature
-  const setTemplateeName = (name: string) => {
-    setTemplateName(name);
+  const handleEditTemplate = (template: ReportTemplate) => {
+    setTemplateName(template.name);
+    setCustomPrompt(template.customPrompt);
+    setKeywords(convertKeywordsForTemplate(template.keywords));
+    setNotes(template.notes);
+    setUsePageSpeedData(template.usePageSpeedData);
+    setUseGmbData(template.useGmbData);
+    setUseKeywordsData(template.useKeywordsData);
+    setActiveTab('create');
+  };
+  
+  const convertKeywordsForTemplate = (keywords: Keyword[]): Keyword[] => {
+    return keywords.map(k => ({
+      keyword: k.keyword,
+      searchVolume: typeof k.searchVolume === 'string' ? Number(k.searchVolume) : k.searchVolume,
+      difficulty: typeof k.difficulty === 'string' ? Number(k.difficulty) : k.difficulty
+    }));
   };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Plantillas de informes</DialogTitle>
-          <DialogDescription>
-            Guarda y reutiliza configuraciones de informes para ahorrar tiempo.
-          </DialogDescription>
+          <DialogTitle>
+            {mode === 'save' ? 'Guardar como plantilla' : 'Seleccionar plantilla'}
+          </DialogTitle>
         </DialogHeader>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs defaultValue={mode === 'save' ? 'create' : 'select'}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="select">Seleccionar</TabsTrigger>
-            <TabsTrigger value="save">Guardar nueva</TabsTrigger>
+            <TabsTrigger value="select">Mis plantillas</TabsTrigger>
+            <TabsTrigger value="create">Crear plantilla</TabsTrigger>
           </TabsList>
           
           <TabsContent value="select" className="mt-4">
             {isLoading ? (
-              <div className="py-8 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : templates.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                <p>No hay plantillas guardadas</p>
-                <p className="text-sm mt-2">Crea tu primera plantilla en la pestaña "Guardar nueva"</p>
+              <div className="text-center p-6">
+                <p className="text-muted-foreground">No tienes plantillas guardadas.</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Crea tu primera plantilla para agilizar la creación de informes.
+                </p>
               </div>
             ) : (
-              <ScrollArea className="h-[300px] pr-4">
+              <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
                   {templates.map((template) => (
-                    <div 
-                      key={template.id} 
-                      className={`p-4 border rounded-md cursor-pointer transition-all hover:border-primary
-                        ${template.id === selectedTemplateId ? 'border-primary bg-primary/5' : 'border-border'}`}
-                      onClick={() => handleSelectTemplate(template)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium">{template.name}</h3>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteTemplate(template.id);
-                          }}
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                    <Card key={template.id} className="p-4 relative">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold text-lg">{template.name}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Creada el {new Date(template.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleEditTemplate(template)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-destructive" 
+                            onClick={() => handleDeleteTemplate(template.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {template.usePageSpeedData && (
-                            <span className="px-2 py-1 bg-primary/10 rounded-full text-xs">PageSpeed</span>
-                          )}
-                          {template.useGmbData && (
-                            <span className="px-2 py-1 bg-primary/10 rounded-full text-xs">Google My Business</span>
-                          )}
-                          {template.useKeywordsData && (
-                            <span className="px-2 py-1 bg-primary/10 rounded-full text-xs">
-                              Keywords ({template.keywords.length})
-                            </span>
-                          )}
+                      <div className="text-sm text-muted-foreground">
+                        <div className="flex gap-2 mb-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${template.usePageSpeedData ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            PageSpeed: {template.usePageSpeedData ? 'Sí' : 'No'}
+                          </span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${template.useGmbData ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            GMB: {template.useGmbData ? 'Sí' : 'No'}
+                          </span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${template.useKeywordsData ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            Keywords: {template.useKeywordsData ? 'Sí' : 'No'}
+                          </span>
                         </div>
                         
-                        <div className="mt-2 line-clamp-2">
-                          <span className="font-medium">Prompt:</span> {template.customPrompt}
-                        </div>
+                        <p className="line-clamp-2">
+                          {template.customPrompt.substring(0, 120)}...
+                        </p>
+                        
+                        {template.keywords && template.keywords.length > 0 && (
+                          <div className="mt-2">
+                            <p className="font-medium text-xs">
+                              {template.keywords.length} palabras clave
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                      
+                      {mode === 'select' && (
+                        <Button 
+                          className="mt-3 w-full"
+                          onClick={() => handleSelectTemplate(template)}
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          Usar esta plantilla
+                        </Button>
+                      )}
+                    </Card>
                   ))}
                 </div>
               </ScrollArea>
             )}
           </TabsContent>
           
-          <TabsContent value="save" className="mt-4">
+          <TabsContent value="create" className="mt-4">
             <div className="space-y-4">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="template-name">Nombre de la plantilla</Label>
-                <Input 
-                  id="template-name" 
-                  placeholder="Ej: Informe SEO estándar" 
-                  value={templateName} 
-                  onChange={(e) => setTemplateeName(e.target.value)} 
+                <Input
+                  id="template-name"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="Mi plantilla de análisis SEO"
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="prompt">Prompt personalizado</Label>
-                <Textarea 
-                  id="prompt" 
-                  placeholder="Prompt para el informe" 
-                  value={customPrompt} 
-                  onChange={(e) => setCustomPrompt(e.target.value)} 
-                  className="h-20"
-                />
-              </div>
-              
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center space-x-2">
                   <Switch 
                     id="use-pagespeed" 
                     checked={usePageSpeedData} 
-                    onCheckedChange={setUsePageSpeedData} 
+                    onCheckedChange={setUsePageSpeedData}
                   />
                   <Label htmlFor="use-pagespeed">Usar datos de PageSpeed</Label>
                 </div>
-                
                 <div className="flex items-center space-x-2">
                   <Switch 
                     id="use-gmb" 
                     checked={useGmbData} 
-                    onCheckedChange={setUseGmbData} 
+                    onCheckedChange={setUseGmbData}
                   />
                   <Label htmlFor="use-gmb">Usar datos de Google My Business</Label>
                 </div>
-                
                 <div className="flex items-center space-x-2">
                   <Switch 
                     id="use-keywords" 
                     checked={useKeywordsData} 
-                    onCheckedChange={setUseKeywordsData} 
+                    onCheckedChange={setUseKeywordsData}
                   />
-                  <Label htmlFor="use-keywords">Usar palabras clave ({keywords.length})</Label>
+                  <Label htmlFor="use-keywords">Usar palabras clave</Label>
                 </div>
               </div>
+              
+              <div>
+                <Label htmlFor="template-prompt">Prompt personalizado</Label>
+                <Textarea
+                  id="template-prompt"
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="Instrucciones para generar el informe..."
+                  className="min-h-[150px]"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="template-keywords">Palabras clave</Label>
+                <Card className="p-4">
+                  <KeywordsList
+                    keywords={keywords}
+                    setKeywords={setKeywords}
+                    showHeader={false}
+                  />
+                </Card>
+              </div>
+              
+              <div>
+                <Label htmlFor="template-notes">Notas adicionales</Label>
+                <Textarea
+                  id="template-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Notas adicionales para el informe..."
+                  className="min-h-[80px]"
+                />
+              </div>
+              
+              <Button 
+                className="w-full" 
+                onClick={handleSaveTemplate}
+                disabled={isLoading || !templateName}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <SaveAll className="mr-2 h-4 w-4" />
+                    Guardar plantilla
+                  </>
+                )}
+              </Button>
             </div>
           </TabsContent>
         </Tabs>
-        
-        <DialogFooter className="sm:justify-between">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          
-          {activeTab === 'save' && (
-            <Button onClick={handleSaveTemplate} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                'Guardar plantilla'
-              )}
-            </Button>
-          )}
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

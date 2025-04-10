@@ -2,17 +2,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
-import { Report, BusinessProfile, Keyword as ReportKeyword } from '@/types/report.types';
+import { Report, BusinessProfile } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
 import { 
   Keyword, 
   ReportProgress, 
   ReportTemplate, 
-  ScheduledReport 
+  ScheduledReport,
+  ReportsHookReturn
 } from '@/types/report-hooks.types';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  fetchReports,
+  createNewReport,
+  updateExistingReport,
+  deleteReportById,
+  generateSeoReport,
+  retryFailedReport,
+  checkAndFixStuckReports
+} from '@/services/reportService';
 
-export default function useReportsHook() {
+export default function useReportsHook(): ReportsHookReturn {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();

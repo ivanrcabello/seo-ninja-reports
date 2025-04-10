@@ -13,7 +13,7 @@ export async function checkContentExists(contentId: string, contentType: 'report
       const { data, error } = await supabase
         .rpc('check_report_exists_by_shared_url', {
           shared_url_param: contentId
-        });
+        } as any);
       
       if (error) {
         console.error('Error checking if report exists:', error);
@@ -52,7 +52,7 @@ export async function checkContentPasswordProtection(contentId: string, contentT
       const { data, error } = await supabase
         .rpc('check_report_password_protection_by_url', {
           shared_url_param: contentId
-        });
+        } as any);
       
       if (error) {
         console.error('Error checking report password protection:', error);
@@ -101,7 +101,7 @@ export async function verifyContentPassword(contentId: string, contentType: 'rep
         .rpc('verify_shared_report_password_by_url', {
           shared_url_param: contentId,
           password_param: password
-        });
+        } as any);
       
       if (error) {
         console.error('Error verifying report password:', error);

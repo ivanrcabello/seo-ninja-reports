@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -137,6 +138,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       console.log('Selected SEO report:', selectedSeoReport);
       console.log('Notes:', notes);
       
+      // Convert keywords to the proper format
       const formattedKeywords = keywords.map(k => ({
         keyword: k.keyword,
         searchVolume: k.searchVolume ? Number(k.searchVolume) : undefined,
