@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -16,6 +17,12 @@ import usePersistentState from '@/hooks/usePersistentState';
 import { PDFExtractor } from '@/utils/PDFExtractor';
 import { fetchClientSeoReports } from '@/services/seoReport';
 import { SeoReport } from '@/types/seo-reporting.types';
+import { ReportTemplate } from '@/types/report-hooks.types';
+import TemplatesDialog from './templates/TemplatesDialog';
+import ReportProgressIndicator from './ReportProgressIndicator';
+import ScheduleReportDialog from './scheduler/ScheduleReportDialog';
+import { Button } from '@/components/ui/button';
+import { SaveAll, Calendar, Timer } from 'lucide-react';
 
 interface ReportGeneratorProps {
   clientId: string;
@@ -50,6 +57,11 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     `report-generator-use-gmb-${clientId}`, true);
   const [useKeywordsData, setUseKeywordsData] = usePersistentState<boolean>(
     `report-generator-use-keywords-${clientId}`, true);
+  
+  // Nuevos estados para las funcionalidades añadidas
+  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [generatedReportId, setGeneratedReportId] = useState<string | null>(null);
   
   const { generateReport } = useReports();
   const { getClient } = useClients();
@@ -160,15 +172,14 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       console.log('Report generated successfully:', report);
       
       if (report && report.id) {
+        // Store report ID for progress tracking
+        setGeneratedReportId(report.id);
+        
         toast.success('Informe creado', {
-          description: 'Informe creado exitosamente',
+          description: 'Procesando informe en segundo plano...',
         });
         
-        clearPersistedData();
-        
-        setTimeout(() => {
-          navigate(`/reports/${report.id}`);
-        }, 500);
+        // No navigating immediately - we'll show progress instead
       } else {
         throw new Error('El informe no tiene un ID válido');
       }
@@ -177,9 +188,39 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       toast.error('Error', {
         description: error.message || 'Error al generar informe',
       });
-    } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleApplyTemplate = (template: ReportTemplate) => {
+    setCustomPrompt(template.customPrompt);
+    setUsePageSpeedData(template.usePageSpeedData);
+    setUseGmbData(template.useGmbData);
+    setUseKeywordsData(template.useKeywordsData);
+    setKeywords(template.keywords);
+    setNotes(template.notes);
+    
+    toast.success('Plantilla aplicada', {
+      description: `La plantilla "${template.name}" ha sido aplicada correctamente`,
+    });
+    
+    setShowTemplatesDialog(false);
+  };
+
+  const handleSaveAsTemplate = () => {
+    setShowTemplatesDialog(true);
+  };
+
+  const handleReportComplete = () => {
+    // When report generation is complete, clean up and navigate
+    clearPersistedData();
+    setIsLoading(false);
+        
+    setTimeout(() => {
+      if (generatedReportId) {
+        navigate(`/reports/${generatedReportId}`);
+      }
+    }, 500);
   };
 
   const goToNextStep = () => {
@@ -202,10 +243,55 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     goToNextStep();
   };
 
+  // Si hay un informe en progreso, muestra el indicador de progreso
+  if (generatedReportId) {
+    return (
+      <BlurredCard animation="scale" className="w-full max-w-2xl mx-auto">
+        <Card className="border-none shadow-none bg-transparent">
+          <ReportGeneratorHeader clientName={client?.name} step={0} />
+          <div className="p-6">
+            <h2 className="text-lg font-medium mb-4">Generando informe SEO</h2>
+            <p className="text-muted-foreground mb-6">
+              Tu informe se está generando. Este proceso puede tardar unos minutos.
+            </p>
+            
+            <ReportProgressIndicator 
+              reportId={generatedReportId} 
+              onComplete={handleReportComplete}
+            />
+          </div>
+        </Card>
+      </BlurredCard>
+    );
+  }
+
   return (
     <BlurredCard animation="scale" className="w-full max-w-2xl mx-auto">
       <Card className="border-none shadow-none bg-transparent">
         <ReportGeneratorHeader clientName={client?.name} step={step} />
+        
+        {/* Nuevos botones para plantillas y programación */}
+        <div className="px-6 pb-2 flex flex-wrap gap-2 justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowTemplatesDialog(true)}
+            className="flex items-center gap-1"
+          >
+            <SaveAll className="h-4 w-4" />
+            <span>Plantillas</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowScheduleDialog(true)}
+            className="flex items-center gap-1"
+          >
+            <Calendar className="h-4 w-4" />
+            <span>Programar</span>
+          </Button>
+        </div>
         
         {!hasOpenAIApiKey && (
           <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-md">
@@ -285,6 +371,21 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
           />
         )}
       </Card>
+      
+      {/* Diálogos para plantillas y programación */}
+      <TemplatesDialog 
+        open={showTemplatesDialog} 
+        onOpenChange={setShowTemplatesDialog}
+        onSelect={handleApplyTemplate}
+        mode="select"
+      />
+      
+      <ScheduleReportDialog 
+        open={showScheduleDialog} 
+        onOpenChange={setShowScheduleDialog}
+        client={client}
+        onScheduled={() => toast.success('Informe programado correctamente')}
+      />
     </BlurredCard>
   );
 };

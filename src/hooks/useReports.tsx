@@ -1,6 +1,7 @@
 
 import { useReportsContext } from '@/context/ReportsContext';
 import { usePersistentState } from '@/hooks/usePersistentState';
+import { ReportProgress, ReportTemplate, ScheduledReport } from '@/types/report-hooks.types';
 
 // Export a hook that combines context access and additional functionality if needed
 const useReports = () => {
@@ -21,6 +22,17 @@ const useReports = () => {
       updateReport: async () => false,
       deleteReport: async () => false,
       refreshReports: async () => false,
+      getReportProgress: async () => null,
+      saveReportTemplate: async () => null,
+      getReportTemplates: async () => [],
+      deleteReportTemplate: async () => {},
+      scheduleReport: async () => null,
+      getScheduledReports: async () => [],
+      deleteScheduledReport: async () => {},
+      toggleScheduledReport: async () => null,
+      retryReport: async () => false,
+      getClientReports: () => [],
+      generateReport: async () => null,
       openAIKey
     };
   }
