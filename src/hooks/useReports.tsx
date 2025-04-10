@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
-import { Report, BusinessProfile } from '@/types/report.types';
+import { Report, BusinessProfile, Keyword as ReportKeyword } from '@/types/report.types';
 import { SeoReport } from '@/types/seo-reporting.types';
 import { 
   Keyword, 
@@ -151,7 +152,7 @@ export default function useReportsHook() {
     }
   }, []);
 
-  // Implementar getReportProgress
+  // Get report progress
   const getReportProgress = useCallback(async (id: string): Promise<ReportProgress | null> => {
     try {
       const report = reports.find(r => r.id === id);
@@ -219,14 +220,31 @@ export default function useReportsHook() {
       const { data, error } = await supabase
         .from('report_templates')
         .insert({
-          ...template,
-          created_at: new Date().toISOString()
+          name: template.name,
+          custom_prompt: template.customPrompt,
+          use_page_speed_data: template.usePageSpeedData,
+          use_gmb_data: template.useGmbData,
+          use_keywords_data: template.useKeywordsData,
+          keywords: template.keywords,
+          notes: template.notes
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Convert from database format to our app format
+      return {
+        id: data.id,
+        name: data.name,
+        customPrompt: data.custom_prompt,
+        usePageSpeedData: data.use_page_speed_data,
+        useGmbData: data.use_gmb_data,
+        useKeywordsData: data.use_keywords_data,
+        keywords: data.keywords,
+        notes: data.notes,
+        createdAt: data.created_at
+      };
     } catch (error) {
       console.error('Error saving template:', error);
       throw error;
@@ -241,7 +259,19 @@ export default function useReportsHook() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Convert from database format to our app format
+      return (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        customPrompt: item.custom_prompt,
+        usePageSpeedData: item.use_page_speed_data,
+        useGmbData: item.use_gmb_data,
+        useKeywordsData: item.use_keywords_data,
+        keywords: item.keywords,
+        notes: item.notes,
+        createdAt: item.created_at
+      }));
     } catch (error) {
       console.error('Error getting templates:', error);
       return [];
@@ -266,20 +296,77 @@ export default function useReportsHook() {
   const scheduleReport = useCallback(async (scheduledReport: Omit<ScheduledReport, 'id' | 'createdAt' | 'nextRunDate'>): Promise<ScheduledReport> => {
     try {
       const nextRunDate = new Date();
-      nextRunDate.setDate(nextRunDate.getDate() + 7); // Default to 1 week
-
+      let daysToAdd = 7; // Default to 1 week
+      
+      if (scheduledReport.frequency === 'weekly' && typeof scheduledReport.dayOfWeek === 'number') {
+        const currentDay = nextRunDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const targetDay = scheduledReport.dayOfWeek;
+        daysToAdd = (targetDay + 7 - currentDay) % 7 || 7;
+      } else if (scheduledReport.frequency === 'monthly' && typeof scheduledReport.dayOfMonth === 'number') {
+        const currentDate = nextRunDate.getDate();
+        const targetDate = scheduledReport.dayOfMonth;
+        
+        if (targetDate > currentDate) {
+          // Target date is later this month
+          daysToAdd = targetDate - currentDate;
+        } else {
+          // Target date is next month
+          nextRunDate.setMonth(nextRunDate.getMonth() + 1);
+          nextRunDate.setDate(1);
+          daysToAdd = targetDate - 1;
+        }
+      } else if (scheduledReport.frequency === 'quarterly') {
+        // Set to first day of next quarter
+        const currentMonth = nextRunDate.getMonth();
+        const targetMonth = Math.floor(currentMonth / 3) * 3 + 3; // Next quarter start
+        
+        nextRunDate.setMonth(targetMonth % 12);
+        if (targetMonth >= 12) {
+          nextRunDate.setFullYear(nextRunDate.getFullYear() + 1);
+        }
+        
+        nextRunDate.setDate(1);
+        
+        // If day of month specified, add those days
+        if (typeof scheduledReport.dayOfMonth === 'number') {
+          daysToAdd = scheduledReport.dayOfMonth - 1;
+        } else {
+          daysToAdd = 0;
+        }
+      }
+      
+      nextRunDate.setDate(nextRunDate.getDate() + daysToAdd);
+      
       const { data, error } = await supabase
         .from('scheduled_reports')
         .insert({
-          ...scheduledReport,
+          client_id: scheduledReport.clientId,
+          url: scheduledReport.url,
+          template_id: scheduledReport.templateId,
+          frequency: scheduledReport.frequency,
+          day_of_week: scheduledReport.dayOfWeek,
+          day_of_month: scheduledReport.dayOfMonth,
           next_run_date: nextRunDate.toISOString(),
-          created_at: new Date().toISOString()
+          active: true
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Convert from database format to our app format
+      return {
+        id: data.id,
+        clientId: data.client_id,
+        url: data.url,
+        templateId: data.template_id,
+        frequency: data.frequency as 'weekly' | 'monthly' | 'quarterly',
+        dayOfWeek: data.day_of_week,
+        dayOfMonth: data.day_of_month,
+        nextRunDate: data.next_run_date,
+        active: data.active,
+        createdAt: data.created_at
+      };
     } catch (error) {
       console.error('Error scheduling report:', error);
       throw error;
@@ -300,7 +387,20 @@ export default function useReportsHook() {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data || [];
+      
+      // Convert from database format to our app format
+      return (data || []).map(item => ({
+        id: item.id,
+        clientId: item.client_id,
+        url: item.url,
+        templateId: item.template_id,
+        frequency: item.frequency as 'weekly' | 'monthly' | 'quarterly',
+        dayOfWeek: item.day_of_week,
+        dayOfMonth: item.day_of_month,
+        nextRunDate: item.next_run_date,
+        active: item.active,
+        createdAt: item.created_at
+      }));
     } catch (error) {
       console.error('Error getting scheduled reports:', error);
       return [];
@@ -331,7 +431,20 @@ export default function useReportsHook() {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Convert from database format to our app format
+      return {
+        id: data.id,
+        clientId: data.client_id,
+        url: data.url,
+        templateId: data.template_id,
+        frequency: data.frequency as 'weekly' | 'monthly' | 'quarterly',
+        dayOfWeek: data.day_of_week,
+        dayOfMonth: data.day_of_month,
+        nextRunDate: data.next_run_date,
+        active: data.active,
+        createdAt: data.created_at
+      };
     } catch (error) {
       console.error('Error toggling scheduled report:', error);
       throw error;

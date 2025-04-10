@@ -16,7 +16,7 @@ import usePersistentState from '@/hooks/usePersistentState';
 import { PDFExtractor } from '@/utils/PDFExtractor';
 import { fetchClientSeoReports } from '@/services/seoReport';
 import { SeoReport } from '@/types/seo-reporting.types';
-import { ReportTemplate } from '@/types/report-hooks.types';
+import { Keyword, ReportTemplate } from '@/types/report-hooks.types';
 import TemplatesDialog from './templates/TemplatesDialog';
 import ReportProgressIndicator from './ReportProgressIndicator';
 import ScheduleReportDialog from './scheduler/ScheduleReportDialog';
@@ -25,12 +25,6 @@ import { SaveAll, Calendar, Timer } from 'lucide-react';
 
 interface ReportGeneratorProps {
   clientId: string;
-}
-
-interface Keyword {
-  keyword: string;
-  searchVolume?: string;
-  difficulty?: string;
 }
 
 const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {

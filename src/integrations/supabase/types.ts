@@ -1083,6 +1083,42 @@ export type Database = {
         }
         Relationships: []
       }
+      report_templates: {
+        Row: {
+          created_at: string | null
+          custom_prompt: string | null
+          id: string
+          keywords: Json | null
+          name: string
+          notes: string | null
+          use_gmb_data: boolean | null
+          use_keywords_data: boolean | null
+          use_page_speed_data: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_prompt?: string | null
+          id?: string
+          keywords?: Json | null
+          name: string
+          notes?: string | null
+          use_gmb_data?: boolean | null
+          use_keywords_data?: boolean | null
+          use_page_speed_data?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_prompt?: string | null
+          id?: string
+          keywords?: Json | null
+          name?: string
+          notes?: string | null
+          use_gmb_data?: boolean | null
+          use_keywords_data?: boolean | null
+          use_page_speed_data?: boolean | null
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           client_id: string
@@ -1141,6 +1177,53 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_reports: {
+        Row: {
+          active: boolean | null
+          client_id: string
+          created_at: string | null
+          day_of_month: number | null
+          day_of_week: number | null
+          frequency: string
+          id: string
+          next_run_date: string
+          template_id: string | null
+          url: string
+        }
+        Insert: {
+          active?: boolean | null
+          client_id: string
+          created_at?: string | null
+          day_of_month?: number | null
+          day_of_week?: number | null
+          frequency: string
+          id?: string
+          next_run_date: string
+          template_id?: string | null
+          url: string
+        }
+        Update: {
+          active?: boolean | null
+          client_id?: string
+          created_at?: string | null
+          day_of_month?: number | null
+          day_of_week?: number | null
+          frequency?: string
+          id?: string
+          next_run_date?: string
+          template_id?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_reports_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
             referencedColumns: ["id"]
           },
         ]

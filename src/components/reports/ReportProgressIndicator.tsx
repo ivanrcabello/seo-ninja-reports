@@ -19,7 +19,7 @@ const ReportProgressIndicator: React.FC<ReportProgressIndicatorProps> = ({
   const { getReportProgress } = useReports();
 
   useEffect(() => {
-    let intervalId: number | null = null;
+    let intervalId: NodeJS.Timeout | null = null;
     
     const pollProgress = async () => {
       try {
@@ -43,7 +43,7 @@ const ReportProgressIndicator: React.FC<ReportProgressIndicatorProps> = ({
       pollProgress();
       
       // Set up interval for polling (every 2 seconds)
-      intervalId = window.setInterval(pollProgress, 2000);
+      intervalId = setInterval(pollProgress, 2000);
     }
     
     return () => {
@@ -71,6 +71,7 @@ const ReportProgressIndicator: React.FC<ReportProgressIndicatorProps> = ({
       <Progress 
         value={progress.percentage} 
         className="h-2 w-full" 
+        // Fixed color classes
         indicatorClassName={progress.percentage >= 100 ? "bg-green-500" : "bg-primary"}
       />
       <p className="text-xs text-muted-foreground">{progress.detail}</p>

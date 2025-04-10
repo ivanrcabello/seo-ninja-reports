@@ -11,7 +11,7 @@ export async function checkContentExists(contentId: string, contentType: 'report
     if (contentType === 'report') {
       // Para informes, usamos una función RPC personalizada
       const { data, error } = await supabase
-        .rpc('check_report_exists_by_shared_url' as any, {
+        .rpc('check_report_exists_by_shared_url', {
           shared_url_param: contentId
         });
       
@@ -50,7 +50,7 @@ export async function checkContentPasswordProtection(contentId: string, contentT
     if (contentType === 'report') {
       // Use the dedicated function for reports to avoid recursion
       const { data, error } = await supabase
-        .rpc('check_report_password_protection_by_url' as any, {
+        .rpc('check_report_password_protection_by_url', {
           shared_url_param: contentId
         });
       
@@ -98,7 +98,7 @@ export async function verifyContentPassword(contentId: string, contentType: 'rep
     if (contentType === 'report') {
       // Use the dedicated function for reports to avoid recursion
       const { data, error } = await supabase
-        .rpc('verify_shared_report_password_by_url' as any, {
+        .rpc('verify_shared_report_password_by_url', {
           shared_url_param: contentId,
           password_param: password
         });

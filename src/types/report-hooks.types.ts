@@ -4,8 +4,8 @@ import { SeoReport } from '@/types/seo-reporting.types';
 
 export interface Keyword {
   keyword: string;
-  searchVolume?: number; // Aseguramos que es number
-  difficulty?: number;   // Aseguramos que es number
+  searchVolume?: number; // Make sure this is a number
+  difficulty?: number;   // Make sure this is a number
 }
 
 export interface ReportTemplate {
@@ -42,7 +42,6 @@ export interface ScheduledReport {
 export interface ReportsHookReturn {
   reports: Report[];
   isLoading: boolean;
-  error: string | null;
   getReport: (id: string) => Report | undefined;
   getClientReports: (clientId: string) => Report[];
   generateReport: (
