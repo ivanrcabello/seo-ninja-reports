@@ -14,6 +14,7 @@ const MobileNavigation: React.FC<{ closeMenu?: () => void }> = ({ closeMenu = ()
     { href: "/servicios/seo-tecnico", label: "SEO Técnico" },
     { href: "/servicios/contenido-seo", label: "Content Marketing" },
     { href: "/servicios/seo-local", label: "SEO Local" },
+    { href: "/servicios/alquiler-paginas", label: "Alquiler de Páginas" },
     { href: "/precios", label: "Precios" },
     { href: "/paquetes", label: "Paquetes" },
     { href: "/contacto", label: "Contacto" },

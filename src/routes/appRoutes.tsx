@@ -14,6 +14,7 @@ import Precios from '@/pages/Precios';
 import SeoTecnico from '@/pages/servicios/SeoTecnico';
 import ContenidoSeo from '@/pages/servicios/ContenidoSeo';
 import SeoLocal from '@/pages/servicios/SeoLocal';
+import AlquilerPaginas from '@/pages/servicios/AlquilerPaginas';
 import CrawlerDetailPage from '@/pages/CrawlerDetailPage';
 
 export const appRoutes = [
@@ -48,6 +49,10 @@ export const appRoutes = [
   {
     path: '/servicios/seo-local',
     element: <SeoLocal />,
+  },
+  {
+    path: '/servicios/alquiler-paginas',
+    element: <AlquilerPaginas />,
   },
   {
     path: '/dashboard',

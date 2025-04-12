@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -30,6 +29,9 @@ const DesktopNavbar = () => {
               </ListItem>
               <ListItem href="/servicios/contenido-seo" title="Contenido SEO">
                 Creación de contenidos optimizados para conversión
+              </ListItem>
+              <ListItem href="/servicios/alquiler-paginas" title="Alquiler de Páginas">
+                Servicio de alquiler de páginas web ya posicionadas
               </ListItem>
               <li className="col-span-2">
                 <NavigationMenuLink asChild>

@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './context/AuthContext';
@@ -25,7 +24,6 @@ const LoadingSpinner = () => {
   );
 };
 
-// Lazy load components
 const Auth = lazy(() => import('./pages/Auth'));
 const Index = lazy(() => import('./pages/Index'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -80,6 +78,8 @@ const Dashboard = lazy(() =>
     })
 );
 
+const AlquilerPaginas = lazy(() => import('./pages/servicios/AlquilerPaginas'));
+
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback: React.ReactNode },
   { hasError: boolean }
@@ -132,6 +132,7 @@ function App() {
                 <Route path="/servicios/seo-tecnico" element={<SeoTecnico />} />
                 <Route path="/servicios/seo-ia" element={<SeoIA />} />
                 <Route path="/servicios/contenido-seo" element={<ContenidoSeo />} />
+                <Route path="/servicios/alquiler-paginas" element={<AlquilerPaginas />} />
                 <Route path="/servicios/seo-competencia" element={<SeoCompetencia />} />
                 <Route path="/servicios/google-business" element={<GoogleBusiness />} />
                 <Route path="/servicios/resenas" element={<Resenas />} />
