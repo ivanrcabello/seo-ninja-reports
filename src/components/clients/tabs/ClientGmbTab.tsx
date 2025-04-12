@@ -70,8 +70,8 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
         <div className="grid grid-cols-1 gap-1">
           {businessProfile.businessHours.Hours.map((hour: any, index: number) => (
             <div key={index} className="flex justify-between">
-              <span className="font-medium capitalize">{hour.name}:</span>
-              <span>{hour.value}</span>
+              <span className="font-medium capitalize">{hour.name || 'Día'}:</span>
+              <span>{hour.value || 'No disponible'}</span>
             </div>
           ))}
         </div>
@@ -87,8 +87,8 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
             <div className="grid grid-cols-1 gap-1">
               {parsedHours.Hours.map((hour: any, index: number) => (
                 <div key={index} className="flex justify-between">
-                  <span className="font-medium capitalize">{hour.name}:</span>
-                  <span>{hour.value}</span>
+                  <span className="font-medium capitalize">{hour.name || 'Día'}:</span>
+                  <span>{hour.value || 'No disponible'}</span>
                 </div>
               ))}
             </div>
@@ -125,7 +125,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           return (
             <div key={index} className="flex justify-between">
               <span className="font-medium capitalize">{day}:</span>
-              <span>{String(time)}</span>
+              <span>{time !== null ? String(time) : 'No disponible'}</span>
             </div>
           );
         }).filter(Boolean)}

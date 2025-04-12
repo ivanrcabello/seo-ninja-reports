@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BusinessProfile } from '@/types/report.types';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
-import ClientSummaryTab from './ClientSummaryTab';
+import ClientSummaryTab from './overview/ClientSummaryTab';
 import ClientGmbTab from './tabs/ClientGmbTab';
 import ClientPageSpeedTab from './tabs/ClientPageSpeedTab';
 import ClientCredentials from './ClientCredentials';
