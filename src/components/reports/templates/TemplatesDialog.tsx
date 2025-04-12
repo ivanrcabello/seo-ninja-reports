@@ -148,7 +148,7 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
   const handleEditTemplate = (template: ReportTemplate) => {
     setTemplateName(template.name);
     setCustomPrompt(template.customPrompt);
-    setKeywords(convertKeywordsForTemplate(template.keywords));
+    setKeywords(template.keywords);
     setNotes(template.notes);
     setUsePageSpeedData(template.usePageSpeedData);
     setUseGmbData(template.useGmbData);
@@ -156,12 +156,8 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
     setActiveTab('create');
   };
   
-  const convertKeywordsForTemplate = (keywords: Keyword[]): Keyword[] => {
-    return keywords.map(k => ({
-      keyword: k.keyword,
-      searchVolume: typeof k.searchVolume === 'string' ? Number(k.searchVolume) : k.searchVolume,
-      difficulty: typeof k.difficulty === 'string' ? Number(k.difficulty) : k.difficulty
-    }));
+  const handleRemoveKeyword = (index: number) => {
+    setKeywords(prevKeywords => prevKeywords.filter((_, i) => i !== index));
   };
   
   const renderKeywordsSection = () => {
@@ -187,7 +183,7 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => onSelect && onSelect(template)}
+                onClick={() => onSelect && handleSelectTemplate(template)}
               >
                 <Check className="h-4 w-4 mr-1" />
                 Seleccionar
@@ -223,7 +219,7 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
           {template.keywords && template.keywords.length > 0 && (
             <div>
               <h4 className="text-sm font-medium mb-2">Palabras clave ({template.keywords.length})</h4>
-              <KeywordsList keywords={template.keywords} readOnly={true} />
+              <KeywordsList keywords={template.keywords} readOnly={true} showHeader={false} />
             </div>
           )}
           
@@ -269,9 +265,62 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
                   {templates.map((template) => (
-                    <div key={template.id}>
-                      {renderTemplateCard(template)}
-                    </div>
+                    <Card key={template.id} className="p-4 mb-4 relative">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-lg font-medium">{template.name}</h3>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => onSelect && handleSelectTemplate(template)}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Seleccionar
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-destructive hover:text-destructive-foreground hover:bg-destructive transition-colors"
+                              onClick={() => handleDeleteTemplate(template.id)}
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Eliminar
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium">PageSpeed:</span>{' '}
+                            {template.usePageSpeedData ? 'Activado' : 'Desactivado'}
+                          </div>
+                          <div>
+                            <span className="font-medium">GMB:</span>{' '}
+                            {template.useGmbData ? 'Activado' : 'Desactivado'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Keywords:</span>{' '}
+                            {template.useKeywordsData ? 'Activado' : 'Desactivado'}
+                          </div>
+                        </div>
+                        
+                        {template.keywords && template.keywords.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Palabras clave ({template.keywords.length})</h4>
+                            <KeywordsList keywords={template.keywords} readOnly={true} showHeader={false} />
+                          </div>
+                        )}
+                        
+                        {template.notes && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-1">Notas</h4>
+                            <p className="text-sm text-muted-foreground">{template.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
                   ))}
                 </div>
               </ScrollArea>
@@ -286,83 +335,85 @@ const TemplatesDialog: React.FC<TemplatesDialogProps> = ({
                   id="template-name"
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
-                  placeholder="Mi plantilla de análisis SEO"
+                  placeholder="Mi plantilla personalizada"
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="custom-prompt">Prompt personalizado</Label>
+                <Textarea
+                  id="custom-prompt"
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="Introduce un prompt personalizado para el informe..."
+                  rows={4}
+                />
+              </div>
+              
+              <div className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <Switch 
                     id="use-pagespeed" 
-                    checked={usePageSpeedData} 
+                    checked={usePageSpeedData}
                     onCheckedChange={setUsePageSpeedData}
                   />
-                  <Label htmlFor="use-pagespeed">Usar datos de PageSpeed</Label>
+                  <Label htmlFor="use-pagespeed">Incluir datos de PageSpeed</Label>
                 </div>
+                
                 <div className="flex items-center space-x-2">
                   <Switch 
                     id="use-gmb" 
-                    checked={useGmbData} 
+                    checked={useGmbData}
                     onCheckedChange={setUseGmbData}
                   />
-                  <Label htmlFor="use-gmb">Usar datos de Google My Business</Label>
+                  <Label htmlFor="use-gmb">Incluir datos de Google My Business</Label>
                 </div>
+                
                 <div className="flex items-center space-x-2">
                   <Switch 
                     id="use-keywords" 
-                    checked={useKeywordsData} 
+                    checked={useKeywordsData}
                     onCheckedChange={setUseKeywordsData}
                   />
-                  <Label htmlFor="use-keywords">Usar palabras clave</Label>
+                  <Label htmlFor="use-keywords">Incluir análisis de palabras clave</Label>
                 </div>
               </div>
               
-              <div>
-                <Label htmlFor="template-prompt">Prompt personalizado</Label>
-                <Textarea
-                  id="template-prompt"
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder="Instrucciones para generar el informe..."
-                  className="min-h-[150px]"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="template-keywords">Palabras clave</Label>
-                <Card className="p-4">
-                  <KeywordsList
-                    keywords={keywords}
-                    setKeywords={setKeywords}
-                    showHeader={false}
+              {useKeywordsData && (
+                <div className="space-y-2 border-l-2 border-primary/20 pl-4">
+                  <h3 className="text-sm font-medium">Palabras clave</h3>
+                  <KeywordsList 
+                    keywords={keywords} 
+                    onRemove={handleRemoveKeyword}
+                    readOnly={false}
                   />
-                </Card>
-              </div>
+                </div>
+              )}
               
-              <div>
-                <Label htmlFor="template-notes">Notas adicionales</Label>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notas adicionales</Label>
                 <Textarea
-                  id="template-notes"
+                  id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Notas adicionales para el informe..."
-                  className="min-h-[80px]"
+                  rows={3}
                 />
               </div>
               
               <Button 
                 className="w-full" 
                 onClick={handleSaveTemplate}
-                disabled={isLoading || !templateName}
+                disabled={isSaving || !templateName.trim()}
               >
                 {isSaving ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Guardando...
                   </>
                 ) : (
                   <>
-                    <SaveAll className="mr-2 h-4 w-4" />
+                    <SaveAll className="h-4 w-4 mr-2" />
                     Guardar plantilla
                   </>
                 )}

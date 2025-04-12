@@ -14,14 +14,13 @@ export interface ShareReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reportId: string | null;
-  reportTitle?: string; // Make this optional to maintain compatibility
+  reportTitle?: string; // Optional, won't be used directly but kept for compatibility
 }
 
 const ShareReportDialog: React.FC<ShareReportDialogProps> = ({ 
   open, 
   onOpenChange,
-  reportId,
-  reportTitle
+  reportId
 }) => {
   const [shareUrl, setShareUrl] = useState('');
   const [protectWithPassword, setProtectWithPassword] = useState(false);
@@ -132,6 +131,21 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         }
         
         sharedId = insertData.id;
+      }
+      
+      // Log access for analytics
+      try {
+        await supabase
+          .from('shared_content_access_logs')
+          .insert({
+            content_id: sharedId,
+            content_type: 'report',
+            access_type: 'create_share',
+            source: 'web_client'
+          });
+      } catch (logError) {
+        // Just log the error but don't fail the operation
+        console.error('Error logging share creation:', logError);
       }
       
       // Generate the full URL

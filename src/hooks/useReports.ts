@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
@@ -131,6 +132,7 @@ export default function useReportsHook(): ReportsHookReturn {
     } catch (error) {
       console.error('Error deleting report:', error);
       toast.error('Error al eliminar el informe');
+      throw error;
     }
   }, []);
 
@@ -186,7 +188,6 @@ export default function useReportsHook(): ReportsHookReturn {
       }
       
       // Simulated progress based on time
-      // En una implementación real, esto obtendría datos de la API
       const currentTimestamp = Date.now();
       const reportDate = new Date(report.date).getTime();
       const elapsedSeconds = Math.floor((currentTimestamp - reportDate) / 1000);
@@ -282,7 +283,9 @@ export default function useReportsHook(): ReportsHookReturn {
         usePageSpeedData: item.use_page_speed_data,
         useGmbData: item.use_gmb_data,
         useKeywordsData: item.use_keywords_data,
-        keywords: JSON.parse(item.keywords || '[]'),
+        keywords: typeof item.keywords === 'string' ? 
+          JSON.parse(item.keywords || '[]') : 
+          (Array.isArray(item.keywords) ? item.keywords : []),
         notes: item.notes,
         createdAt: item.created_at
       }));

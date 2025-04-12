@@ -66,4 +66,6 @@ function usePersistentState<T>(
   return [storedValue, setValue];
 }
 
+// Export it as default AND as a named export for flexibility
+export { usePersistentState };
 export default usePersistentState;

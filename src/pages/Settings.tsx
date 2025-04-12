@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -12,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Loader2, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { usePersistentState } from '@/hooks/usePersistentState';
+import usePersistentState from '@/hooks/usePersistentState';
 import { BRIGHT_DATA_CONFIG } from '@/services/seo-crawler/constants';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -32,12 +31,10 @@ const Settings = () => {
     BRIGHT_DATA_CONFIG.DEFAULT_API_KEY
   );
   
-  // Estado para las otras claves API
   const [openAIKey, setOpenAIKey] = usePersistentState('openai_api_key', '');
   const [pageSpeedKey, setPageSpeedKey] = usePersistentState('pagespeed_api_key', '');
   const [valueSerpKey, setValueSerpKey] = usePersistentState('valueserp_api_key', '');
 
-  // Cargar claves API desde la base de datos al iniciar
   useEffect(() => {
     const loadApiKeysFromDatabase = async () => {
       try {
@@ -53,7 +50,6 @@ const Settings = () => {
         }
         
         if (data) {
-          // Solo actualizar si tenemos valores en la base de datos y son diferentes a los actuales
           if (data.openai_key && data.openai_key !== openAIKey) {
             setOpenAIKey(data.openai_key);
             localStorage.setItem('openai_api_key', data.openai_key);
@@ -72,7 +68,6 @@ const Settings = () => {
             console.log('ValueSERP API key loaded from database');
           }
           
-          // Solo mostrar toast si se cargó alguna clave nueva
           if (
             (data.openai_key && data.openai_key !== openAIKey) ||
             (data.google_key && data.google_key !== pageSpeedKey) ||
@@ -91,41 +86,30 @@ const Settings = () => {
     }
   }, [user, authLoading]);
 
-  // Handle visibility changes to ensure page state is preserved
   useEffect(() => {
-    // Load persisted form data from local storage
     const loadPersistedData = () => {
       try {
         console.log('Loading persisted settings data');
-        // We're using the usePersistentState hook in child components
-        // so we don't need to do anything here
       } catch (error) {
         console.error('Error loading persisted settings:', error);
       }
     };
 
-    // Initial load
     loadPersistedData();
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // When returning to the tab, check if we need to restore any state
         console.log('Returned to Settings page, checking for state to restore');
         loadPersistedData();
       } else if (document.visibilityState === 'hidden') {
-        // When leaving the tab, persist important state
         console.log('Leaving Settings page, persisting current state');
-        // The child components handle their own state persistence
       }
     };
 
-    // Add event listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Handle unload events to persist data
     const handleBeforeUnload = () => {
       console.log('Page unloading, persisting settings state');
-      // The child components handle their own state persistence
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -136,7 +120,6 @@ const Settings = () => {
     };
   }, []);
 
-  // Redirect if not logged in
   if (!user && !authLoading) {
     return <Navigate to="/auth" replace />;
   }
