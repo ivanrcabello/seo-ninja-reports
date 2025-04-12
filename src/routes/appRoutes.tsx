@@ -16,6 +16,7 @@ import ContenidoSeo from '@/pages/servicios/ContenidoSeo';
 import SeoLocal from '@/pages/servicios/SeoLocal';
 import AlquilerPaginas from '@/pages/servicios/AlquilerPaginas';
 import CrawlerDetailPage from '@/pages/CrawlerDetailPage';
+import ReportGeneratorWrapper from '@/components/reports/ReportGeneratorWrapper';
 
 export const appRoutes = [
   {
@@ -69,6 +70,14 @@ export const appRoutes = [
   {
     path: '/clients/:clientId/crawler/:crawlId',
     element: <AuthGuard><CrawlerDetailPage /></AuthGuard>,
+  },
+  {
+    path: '/clients/new/reports/new',
+    element: <AuthGuard><ReportGeneratorWrapper clientId="new" /></AuthGuard>,
+  },
+  {
+    path: '/clients/:clientId/reports/new',
+    element: <AuthGuard><ReportGeneratorWrapper clientId="new" /></AuthGuard>,
   },
   {
     path: '*',

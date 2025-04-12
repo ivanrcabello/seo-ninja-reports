@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useReports from '@/hooks/useReports'; 
@@ -23,17 +22,14 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
   const [crawlResults, setCrawlResults] = useState<CrawlResult[]>([]);
   const [isCrawlsLoading, setIsCrawlsLoading] = useState(true);
 
-  // Load SEO crawler results
   useEffect(() => {
     const loadCrawlResults = async () => {
       try {
         setIsCrawlsLoading(true);
-        // Get all crawl results for all clients
         const allCrawlResults: CrawlResult[] = [];
         
         console.log("Loading crawler results for clients:", clients.length);
         
-        // Fetch crawl results for each client
         for (const client of clients) {
           try {
             console.log(`Fetching crawler results for client: ${client.id}`);
@@ -58,7 +54,6 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
       }
     };
 
-    // Only load crawl results if we have clients
     if (clients && clients.length > 0) {
       loadCrawlResults();
     } else {
@@ -75,13 +70,11 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
     crawl.url?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Get client name helper function
   const getClientName = (clientId: string) => {
     const client = clients.find(client => client.id === clientId);
     return client?.name || 'Cliente no encontrado';
   };
 
-  // Handle loading states
   const isAllLoading = isLoading || isClientsLoading || isCrawlsLoading;
   
   return (
@@ -89,7 +82,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Informes</h1>
         <Button asChild className="flex gap-2">
-          <Link to="/reports/new">
+          <Link to="/clients/new/reports/new">
             <Plus size={16} />
             <span className="hidden sm:inline">Nuevo Informe</span>
             <span className="sm:hidden">Nuevo</span>
@@ -135,7 +128,6 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Automated SEO Reports Section */}
               {filteredReports && filteredReports.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium mb-4">Informes SEO Automáticos</h3>
@@ -158,7 +150,6 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
                 </div>
               )}
 
-              {/* Technical SEO Reports Section */}
               {filteredCrawls && filteredCrawls.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium mb-4">Análisis SEO Técnico</h3>
