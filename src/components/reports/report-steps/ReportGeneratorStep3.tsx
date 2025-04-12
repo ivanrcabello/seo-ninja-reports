@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Loader2, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-
-interface Keyword {
-  keyword: string;
-  searchVolume?: string;
-  difficulty?: string;
-}
+import { Keyword } from '@/types/report-hooks.types';
 
 interface ReportGeneratorStep3Props {
   keywords: Keyword[];

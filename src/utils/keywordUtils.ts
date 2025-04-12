@@ -1,28 +1,27 @@
 
 /**
- * Generates a text label for keyword difficulty based on a numeric value
+ * Get a human-readable label for a keyword difficulty score
  */
-export function getKeywordDifficultyLabel(difficulty: number): string {
-  if (difficulty < 30) return 'Fácil';
-  if (difficulty < 60) return 'Medio';
-  if (difficulty < 80) return 'Difícil';
-  return 'Muy difícil';
+export function getKeywordDifficultyLabel(difficulty: number | string): string {
+  const difficultyValue = typeof difficulty === 'string' ? parseInt(difficulty, 10) : difficulty;
+  
+  if (difficultyValue < 30) {
+    return 'Fácil';
+  } else if (difficultyValue < 60) {
+    return 'Medio';
+  } else {
+    return 'Difícil';
+  }
 }
 
 /**
- * Formats a search volume number with appropriate units
- * For example: 10500 becomes 10.5K
+ * Format a search volume number with thousands separators
  */
-export function formatSearchVolume(volume: number): string {
-  if (!volume && volume !== 0) return '-';
+export function formatSearchVolume(volume: number | string | undefined): string {
+  if (volume === undefined) return '-';
   
-  if (volume >= 1000000) {
-    return `${(volume / 1000000).toFixed(1)}M`;
-  }
+  const volumeValue = typeof volume === 'string' ? parseInt(volume, 10) : volume;
+  if (isNaN(volumeValue)) return '-';
   
-  if (volume >= 1000) {
-    return `${(volume / 1000).toFixed(1)}K`;
-  }
-  
-  return volume.toString();
+  return new Intl.NumberFormat('es-ES').format(volumeValue);
 }

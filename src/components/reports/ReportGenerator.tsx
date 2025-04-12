@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -141,8 +140,10 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
       // Convert keywords to the proper format
       const formattedKeywords = keywords.map(k => ({
         keyword: k.keyword,
-        searchVolume: k.searchVolume ? Number(k.searchVolume) : undefined,
-        difficulty: k.difficulty ? Number(k.difficulty) : undefined
+        searchVolume: k.searchVolume ? 
+          (typeof k.searchVolume === 'string' ? Number(k.searchVolume) : k.searchVolume) : undefined,
+        difficulty: k.difficulty ? 
+          (typeof k.difficulty === 'string' ? Number(k.difficulty) : k.difficulty) : undefined
       }));
       
       const seoReportData = selectedSeoReport 
@@ -194,7 +195,15 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ clientId }) => {
     setUsePageSpeedData(template.usePageSpeedData);
     setUseGmbData(template.useGmbData);
     setUseKeywordsData(template.useKeywordsData);
-    setKeywords(template.keywords);
+    
+    // Ensure keywords are properly converted
+    const convertedKeywords: Keyword[] = template.keywords.map(k => ({
+      keyword: k.keyword,
+      searchVolume: k.searchVolume,
+      difficulty: k.difficulty
+    }));
+    
+    setKeywords(convertedKeywords);
     setNotes(template.notes);
     
     toast.success('Plantilla aplicada', {

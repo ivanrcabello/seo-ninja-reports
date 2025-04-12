@@ -10,13 +10,15 @@ interface KeywordsListProps {
   onRemove?: (index: number) => void;
   readOnly?: boolean;
   showHeader?: boolean;
+  setKeywords?: (keywords: Keyword[]) => void;
 }
 
 const KeywordsList: React.FC<KeywordsListProps> = ({ 
   keywords, 
   onRemove, 
   readOnly = false, 
-  showHeader = true 
+  showHeader = true,
+  setKeywords
 }) => {
   if (!keywords || keywords.length === 0) {
     return (
@@ -74,9 +76,10 @@ const KeywordsList: React.FC<KeywordsListProps> = ({
 };
 
 // Helper function to determine badge variant based on difficulty
-function getDifficultyVariant(difficulty: number): 'default' | 'success' | 'warning' | 'destructive' {
-  if (difficulty < 30) return 'success';
-  if (difficulty < 60) return 'warning';
+function getDifficultyVariant(difficulty: number | string): 'default' | 'success' | 'warning' | 'destructive' {
+  const difficultyValue = typeof difficulty === 'string' ? parseInt(difficulty, 10) : difficulty;
+  if (difficultyValue < 30) return 'success';
+  if (difficultyValue < 60) return 'warning';
   return 'destructive';
 }
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
@@ -230,7 +229,7 @@ export default function useReportsHook(): ReportsHookReturn {
   const saveReportTemplate = useCallback(async (template: Omit<ReportTemplate, 'id' | 'createdAt'>): Promise<ReportTemplate> => {
     try {
       // Convert keywords to a valid JSON string for storage
-      const keywordsJson = JSON.stringify(template.keywords);
+      const keywordsJson = JSON.stringify(template.keywords || []);
       
       const { data, error } = await supabase
         .from('report_templates')
@@ -276,19 +275,32 @@ export default function useReportsHook(): ReportsHookReturn {
       if (error) throw error;
       
       // Convert from database format to our app format with proper JSON parsing
-      return (data || []).map(item => ({
-        id: item.id,
-        name: item.name,
-        customPrompt: item.custom_prompt,
-        usePageSpeedData: item.use_page_speed_data,
-        useGmbData: item.use_gmb_data,
-        useKeywordsData: item.use_keywords_data,
-        keywords: typeof item.keywords === 'string' ? 
-          JSON.parse(item.keywords || '[]') : 
-          (Array.isArray(item.keywords) ? item.keywords : []),
-        notes: item.notes,
-        createdAt: item.created_at
-      }));
+      return (data || []).map(item => {
+        let parsedKeywords = [];
+        try {
+          // Handle both string JSON and already parsed JSON from Supabase
+          if (typeof item.keywords === 'string') {
+            parsedKeywords = JSON.parse(item.keywords || '[]');
+          } else if (Array.isArray(item.keywords)) {
+            parsedKeywords = item.keywords;
+          }
+        } catch (e) {
+          console.error('Error parsing keywords:', e);
+          parsedKeywords = [];
+        }
+        
+        return {
+          id: item.id,
+          name: item.name,
+          customPrompt: item.custom_prompt,
+          usePageSpeedData: item.use_page_speed_data,
+          useGmbData: item.use_gmb_data,
+          useKeywordsData: item.use_keywords_data,
+          keywords: parsedKeywords,
+          notes: item.notes,
+          createdAt: item.created_at
+        };
+      });
     } catch (error) {
       console.error('Error getting templates:', error);
       return [];
