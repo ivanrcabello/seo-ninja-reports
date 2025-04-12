@@ -46,7 +46,6 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
   pageSpeedScore,
   clientWebsite,
   clientName,
-  clientLocation,
   clientId,
   isRefreshingBusinessProfile,
   isRefreshingPageSpeed,
@@ -85,7 +84,6 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
             <ClientGmbTab 
               clientId={client.id}
               clientName={client.name}
-              clientLocation={client.industry}
               businessProfile={businessProfile}
               isRefreshingBusinessProfile={isRefreshingBusinessProfile}
               onRefreshBusinessProfile={onRefreshBusinessProfile}

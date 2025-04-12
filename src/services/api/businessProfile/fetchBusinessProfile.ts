@@ -4,20 +4,80 @@ import { BusinessProfile } from '@/types/report.types';
 import { handleServiceError } from '../baseService';
 
 /**
- * Fetches the business profile for a specific report
+ * Fetches the business profile for a specific client
  */
-export const fetchBusinessProfile = async (reportId: string): Promise<BusinessProfile | null> => {
+export const fetchBusinessProfile = async (clientId: string): Promise<BusinessProfile | null> => {
   try {
-    if (!reportId) {
-      throw new Error('reportId is required');
+    if (!clientId) {
+      throw new Error('clientId is required');
     }
 
-    console.log(`Fetching business profile for report: ${reportId}`);
+    console.log(`Fetching business profile for client: ${clientId}`);
     
+    // First try to get from the newer google_business_listings table
+    const { data: businessListingData, error: businessListingError } = await supabase
+      .from('google_business_listings')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('updated_at', { ascending: false })
+      .limit(1);
+      
+    if (businessListingError) {
+      console.error('Error fetching business listing:', businessListingError);
+    }
+    
+    if (businessListingData && businessListingData.length > 0) {
+      const listing = businessListingData[0];
+      console.log('Fetched business listing data:', businessListingData);
+      
+      // Parse hours JSON
+      let businessHours = {};
+      if (listing.hours) {
+        try {
+          if (typeof listing.hours === 'string') {
+            businessHours = JSON.parse(listing.hours);
+          } else if (typeof listing.hours === 'object') {
+            businessHours = listing.hours;
+          }
+        } catch (e) {
+          console.error('Error parsing business hours:', e);
+        }
+      }
+      
+      console.log('Loaded real business profile from database:', {
+        businessName: listing.title,
+        businessAddress: listing.address,
+        businessPhone: listing.phone,
+        businessRating: listing.rating,
+        businessReviewsCount: listing.reviews,
+        businessHours,
+        businessWebsite: listing.website,
+        businessUrl: listing.place_id
+      });
+      
+      // Return transformed business listing
+      return {
+        id: listing.id,
+        reportId: null,
+        businessName: listing.title || '',
+        businessAddress: listing.address || '',
+        businessPhone: listing.phone || '',
+        businessCategory: '',
+        businessRating: listing.rating !== undefined ? listing.rating : null,
+        businessReviewsCount: listing.reviews || 0,
+        businessWebsite: listing.website || '',
+        businessUrl: listing.place_id || '',
+        businessHours,
+        createdAt: listing.created_at,
+        updatedAt: listing.updated_at
+      };
+    }
+    
+    // Fall back to the business_profiles table if no listing found
     const { data, error } = await supabase
       .from('business_profiles')
       .select('*')
-      .eq('report_id', reportId)
+      .eq('report_id', clientId)
       .maybeSingle();
       
     if (error) {
@@ -26,21 +86,21 @@ export const fetchBusinessProfile = async (reportId: string): Promise<BusinessPr
     }
     
     if (!data) {
-      console.log('No business profile found for report:', reportId);
+      console.log('No business profile found for report:', clientId);
       return null;
     }
     
     console.log('Business profile found:', data);
     
     // Parse business hours
-    let businessHours: Record<string, string> = {};
+    let businessHours = {};
     
     if (data.business_hours) {
       try {
         if (typeof data.business_hours === 'string') {
           businessHours = JSON.parse(data.business_hours);
         } else if (typeof data.business_hours === 'object') {
-          businessHours = data.business_hours as Record<string, string>;
+          businessHours = data.business_hours;
         }
       } catch (parseError) {
         console.error('Error parsing business hours:', parseError);

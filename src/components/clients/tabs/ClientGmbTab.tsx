@@ -10,10 +10,21 @@ import { BusinessProfile } from '@/types/report.types';
 interface ClientGmbTabProps {
   clientId: string;
   clientName: string;
+  businessProfile?: Partial<BusinessProfile> | null;
+  isRefreshingBusinessProfile?: boolean;
+  onRefreshBusinessProfile?: () => void;
+  onBusinessProfileUpdate?: (profile: Partial<BusinessProfile>) => void;
 }
 
-const ClientGmbTab: React.FC<ClientGmbTabProps> = ({ clientId, clientName }) => {
-  const [businessProfile, setBusinessProfile] = React.useState<BusinessProfile | null>(null);
+const ClientGmbTab: React.FC<ClientGmbTabProps> = ({ 
+  clientId, 
+  clientName,
+  businessProfile: propBusinessProfile,
+  isRefreshingBusinessProfile,
+  onRefreshBusinessProfile,
+  onBusinessProfileUpdate 
+}) => {
+  const [businessProfile, setBusinessProfile] = React.useState<BusinessProfile | null>(propBusinessProfile as BusinessProfile || null);
   const [isLoading, setIsLoading] = React.useState(false);
   
   const handleGetBusinessData = async () => {
@@ -26,6 +37,12 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({ clientId, clientName }) => 
       
       if (profile) {
         setBusinessProfile(profile);
+        
+        // Also notify parent component if callback is provided
+        if (onBusinessProfileUpdate) {
+          onBusinessProfileUpdate(profile);
+        }
+        
         toast.success('Datos de negocio actualizados correctamente');
       } else {
         toast.error('No se encontraron datos del negocio');
@@ -40,21 +57,65 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({ clientId, clientName }) => 
   
   // Format the business hours for display
   const renderBusinessHours = () => {
-    if (!businessProfile?.businessHours || !businessProfile.businessHours.Hours) {
+    if (!businessProfile?.businessHours) {
       return <p className="text-muted-foreground">No hay información de horarios disponible</p>;
     }
     
+    // Check if businessHours has an Hours property and it's an array
+    if (
+      businessProfile.businessHours.Hours && 
+      Array.isArray(businessProfile.businessHours.Hours)
+    ) {
+      return (
+        <div className="grid grid-cols-1 gap-1">
+          {businessProfile.businessHours.Hours.map((hour, index) => (
+            <div key={index} className="flex justify-between">
+              <span className="font-medium capitalize">{hour.name}:</span>
+              <span>{hour.value}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    // If businessHours is a string that looks like JSON, try to parse it
+    if (typeof businessProfile.businessHours === 'string') {
+      try {
+        const parsedHours = JSON.parse(businessProfile.businessHours);
+        if (parsedHours.Hours && Array.isArray(parsedHours.Hours)) {
+          return (
+            <div className="grid grid-cols-1 gap-1">
+              {parsedHours.Hours.map((hour, index) => (
+                <div key={index} className="flex justify-between">
+                  <span className="font-medium capitalize">{hour.name}:</span>
+                  <span>{hour.value}</span>
+                </div>
+              ))}
+            </div>
+          );
+        }
+      } catch (e) {
+        console.error('Error parsing business hours:', e);
+      }
+    }
+    
+    // Fallback for any other format - handle it as a simple object with key-value pairs
+    const hours = typeof businessProfile.businessHours === 'object' ? businessProfile.businessHours : {};
     return (
       <div className="grid grid-cols-1 gap-1">
-        {businessProfile.businessHours.Hours.map((hour, index) => (
+        {Object.entries(hours).map(([day, time], index) => (
           <div key={index} className="flex justify-between">
-            <span className="font-medium capitalize">{hour.name}:</span>
-            <span>{hour.value}</span>
+            <span className="font-medium capitalize">{day}:</span>
+            <span>{time}</span>
           </div>
         ))}
       </div>
     );
   };
+
+  // Determine which action should be taken when getting data
+  const handleAction = onRefreshBusinessProfile || handleGetBusinessData;
+  const isLoadingState = isRefreshingBusinessProfile || isLoading;
 
   return (
     <div className="space-y-8">
@@ -66,10 +127,11 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({ clientId, clientName }) => 
           </p>
         </div>
         <Button 
-          onClick={handleGetBusinessData} 
-          disabled={isLoading}
+          onClick={handleAction} 
+          disabled={isLoadingState}
+          className="bg-teal-600 hover:bg-teal-700"
         >
-          {isLoading ? (
+          {isLoadingState ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Cargando...
