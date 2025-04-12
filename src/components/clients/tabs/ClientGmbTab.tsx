@@ -122,10 +122,14 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
             return null;
           }
           
+          // Fix for TypeScript null checking errors
+          const dayDisplay = day || 'Día';
+          const timeDisplay = time !== null && time !== undefined ? String(time) : 'No disponible';
+          
           return (
             <div key={index} className="flex justify-between">
-              <span className="font-medium capitalize">{day}:</span>
-              <span>{time !== null ? String(time) : 'No disponible'}</span>
+              <span className="font-medium capitalize">{dayDisplay}:</span>
+              <span>{timeDisplay}</span>
             </div>
           );
         }).filter(Boolean)}
