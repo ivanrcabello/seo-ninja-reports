@@ -122,7 +122,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
             return null;
           }
           
-          // Fix for TypeScript null checking errors
+          // Safe handling of null/undefined values
           const dayDisplay = day || 'Día';
           const timeDisplay = time !== null && time !== undefined ? String(time) : 'No disponible';
           
