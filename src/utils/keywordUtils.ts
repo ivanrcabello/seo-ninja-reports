@@ -56,5 +56,20 @@ export function keywordsToJson(keywords: Keyword[]): any[] {
   }));
 }
 
+/**
+ * Convert JSON data from database to Keyword objects
+ */
+export function jsonToKeywords(jsonData: any[]): Keyword[] {
+  if (!jsonData || !Array.isArray(jsonData)) {
+    return [];
+  }
+  
+  return jsonData.map(item => ({
+    keyword: typeof item.keyword === 'string' ? item.keyword : '',
+    searchVolume: item.searchVolume !== undefined ? item.searchVolume : undefined,
+    difficulty: item.difficulty !== undefined ? item.difficulty : undefined
+  }));
+}
+
 // Add type import to avoid TypeScript error
 import { Keyword } from '@/types/report-hooks.types';

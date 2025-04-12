@@ -20,7 +20,7 @@ import {
   ReportsHookReturn
 } from '@/types/report-hooks.types';
 import { supabase } from '@/integrations/supabase/client';
-import { keywordsToJson } from '@/utils/keywordUtils';
+import { keywordsToJson, jsonToKeywords } from '@/utils/keywordUtils';
 
 // Create a standalone hook for direct use (not through context)
 export default function useReportsHook(): ReportsHookReturn {
@@ -266,7 +266,7 @@ export default function useReportsHook(): ReportsHookReturn {
         usePageSpeedData: data.use_page_speed_data,
         useGmbData: data.use_gmb_data,
         useKeywordsData: data.use_keywords_data,
-        keywords: Array.isArray(data.keywords) ? data.keywords : [],
+        keywords: Array.isArray(data.keywords) ? jsonToKeywords(data.keywords) : [],
         notes: data.notes,
         createdAt: data.created_at
       };
@@ -291,9 +291,10 @@ export default function useReportsHook(): ReportsHookReturn {
         try {
           // Handle both string JSON and already parsed JSON from Supabase
           if (typeof item.keywords === 'string') {
-            parsedKeywords = JSON.parse(item.keywords || '[]');
+            const parsed = JSON.parse(item.keywords || '[]');
+            parsedKeywords = jsonToKeywords(parsed);
           } else if (Array.isArray(item.keywords)) {
-            parsedKeywords = item.keywords;
+            parsedKeywords = jsonToKeywords(item.keywords);
           }
         } catch (e) {
           console.error('Error parsing keywords:', e);
