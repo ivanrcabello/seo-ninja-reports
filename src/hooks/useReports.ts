@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
@@ -19,6 +20,7 @@ import {
   ReportsHookReturn
 } from '@/types/report-hooks.types';
 import { supabase } from '@/integrations/supabase/client';
+import { keywordsToJson } from '@/utils/keywordUtils';
 
 // Create a standalone hook for direct use (not through context)
 export default function useReportsHook(): ReportsHookReturn {
@@ -66,13 +68,22 @@ export default function useReportsHook(): ReportsHookReturn {
     seoReport?: SeoReport | null
   ): Promise<Report> => {
     try {
+      // Convert keywords to a format that will work with the API
+      const processedKeywords = keywords ? keywords.map(k => ({
+        keyword: k.keyword,
+        searchVolume: typeof k.searchVolume === 'string' ? 
+          parseInt(k.searchVolume, 10) || undefined : k.searchVolume,
+        difficulty: typeof k.difficulty === 'string' ? 
+          parseInt(k.difficulty, 10) || undefined : k.difficulty
+      })) : [];
+
       const report = await generateSeoReport(
         clientId, 
         url, 
         files, 
         customPrompt, 
         pageSpeedData, 
-        keywords,
+        processedKeywords,
         notes,
         businessProfile,
         seoReport
@@ -228,8 +239,8 @@ export default function useReportsHook(): ReportsHookReturn {
   // Template management functions
   const saveReportTemplate = useCallback(async (template: Omit<ReportTemplate, 'id' | 'createdAt'>): Promise<ReportTemplate> => {
     try {
-      // Convert keywords to a valid JSON string for storage
-      const keywordsJson = JSON.stringify(template.keywords || []);
+      // Convert keywords to a JSON-safe format
+      const keywordsJson = keywordsToJson(template.keywords || []);
       
       const { data, error } = await supabase
         .from('report_templates')
@@ -255,7 +266,7 @@ export default function useReportsHook(): ReportsHookReturn {
         usePageSpeedData: data.use_page_speed_data,
         useGmbData: data.use_gmb_data,
         useKeywordsData: data.use_keywords_data,
-        keywords: JSON.parse(data.keywords || '[]'),
+        keywords: Array.isArray(data.keywords) ? data.keywords : [],
         notes: data.notes,
         createdAt: data.created_at
       };
@@ -276,7 +287,7 @@ export default function useReportsHook(): ReportsHookReturn {
       
       // Convert from database format to our app format with proper JSON parsing
       return (data || []).map(item => {
-        let parsedKeywords = [];
+        let parsedKeywords: Keyword[] = [];
         try {
           // Handle both string JSON and already parsed JSON from Supabase
           if (typeof item.keywords === 'string') {

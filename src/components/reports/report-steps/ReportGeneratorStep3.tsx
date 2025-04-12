@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Plus, Loader2, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Keyword } from '@/types/report-hooks.types';
+import KeywordsList from '../keywords/KeywordsList';
 
 interface ReportGeneratorStep3Props {
   keywords: Keyword[];
@@ -162,30 +164,11 @@ const ReportGeneratorStep3: React.FC<ReportGeneratorStep3Props> = ({
             
             <div className="space-y-2 mt-6">
               <Label>Palabras Clave Añadidas</Label>
-              {keywords.length === 0 ? (
-                <p className="text-sm text-muted-foreground mt-2">Aún no has añadido palabras clave.</p>
-              ) : (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {keywords.map((keyword, index) => (
-                    <div 
-                      key={index} 
-                      className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center gap-1"
-                    >
-                      <span>{keyword.keyword}</span>
-                      {keyword.searchVolume && (
-                        <span className="text-xs">({keyword.searchVolume})</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveKeyword(index)}
-                        className="ml-1 text-primary/70 hover:text-primary rounded-full"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <KeywordsList 
+                keywords={keywords} 
+                onRemove={handleRemoveKeyword} 
+                setKeywords={setKeywords}
+              />
             </div>
           </div>
         )}

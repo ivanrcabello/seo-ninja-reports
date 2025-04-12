@@ -3,7 +3,7 @@ import React from 'react';
 import { Keyword } from '@/types/report-hooks.types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { getKeywordDifficultyLabel } from '@/utils/keywordUtils';
+import { getKeywordDifficultyLabel, formatSearchVolume } from '@/utils/keywordUtils';
 
 interface KeywordsListProps {
   keywords: Keyword[];
@@ -45,7 +45,7 @@ const KeywordsList: React.FC<KeywordsListProps> = ({
           {keywords.map((keyword, index) => (
             <TableRow key={index}>
               <TableCell>{keyword.keyword}</TableCell>
-              <TableCell className="text-right">{keyword.searchVolume || '-'}</TableCell>
+              <TableCell className="text-right">{formatSearchVolume(keyword.searchVolume)}</TableCell>
               <TableCell className="text-right">
                 {keyword.difficulty !== undefined ? (
                   <Badge variant={getDifficultyVariant(keyword.difficulty)}>
@@ -78,6 +78,7 @@ const KeywordsList: React.FC<KeywordsListProps> = ({
 // Helper function to determine badge variant based on difficulty
 function getDifficultyVariant(difficulty: number | string): 'default' | 'success' | 'warning' | 'destructive' {
   const difficultyValue = typeof difficulty === 'string' ? parseInt(difficulty, 10) : difficulty;
+  if (isNaN(difficultyValue)) return 'default';
   if (difficultyValue < 30) return 'success';
   if (difficultyValue < 60) return 'warning';
   return 'destructive';
