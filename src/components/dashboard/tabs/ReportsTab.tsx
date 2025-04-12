@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useReports from '@/hooks/useReports'; 
@@ -28,19 +29,21 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
         setIsCrawlsLoading(true);
         const allCrawlResults: CrawlResult[] = [];
         
-        console.log("Loading crawler results for clients:", clients.length);
+        console.log("Loading crawler results for clients:", clients?.length || 0);
         
-        for (const client of clients) {
-          try {
-            console.log(`Fetching crawler results for client: ${client.id}`);
-            const clientCrawls = await getCrawlResults(client.id);
-            
-            if (clientCrawls && Array.isArray(clientCrawls)) {
-              console.log(`Found ${clientCrawls.length} crawls for client ${client.id}`);
-              allCrawlResults.push(...clientCrawls);
+        if (clients && clients.length > 0) {
+          for (const client of clients) {
+            try {
+              console.log(`Fetching crawler results for client: ${client.id}`);
+              const clientCrawls = await getCrawlResults(client.id);
+              
+              if (clientCrawls && Array.isArray(clientCrawls)) {
+                console.log(`Found ${clientCrawls.length} crawls for client ${client.id}`);
+                allCrawlResults.push(...clientCrawls);
+              }
+            } catch (error) {
+              console.error(`Error loading SEO crawler results for client ${client.id}:`, error);
             }
-          } catch (error) {
-            console.error(`Error loading SEO crawler results for client ${client.id}:`, error);
           }
         }
         
@@ -71,6 +74,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
   );
 
   const getClientName = (clientId: string) => {
+    if (!clients) return 'Cliente no encontrado';
     const client = clients.find(client => client.id === clientId);
     return client?.name || 'Cliente no encontrado';
   };
@@ -81,13 +85,22 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Informes</h1>
-        <Button asChild className="flex gap-2">
-          <Link to="/clients/new/reports/new">
-            <Plus size={16} />
-            <span className="hidden sm:inline">Nuevo Informe</span>
-            <span className="sm:hidden">Nuevo</span>
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild className="flex gap-2">
+            <Link to="/clients/new/reports/new">
+              <Plus size={16} />
+              <span className="hidden sm:inline">Nuevo Informe</span>
+              <span className="sm:hidden">Nuevo</span>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="flex gap-2">
+            <Link to="/clients/new/crawler/new">
+              <BarChart size={16} />
+              <span className="hidden sm:inline">Análisis SEO</span>
+              <span className="sm:hidden">Análisis</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card className="border border-border">
@@ -119,12 +132,20 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
           ) : ((!filteredReports || filteredReports.length === 0) && (!filteredCrawls || filteredCrawls.length === 0)) ? (
             <div className="py-8 text-center">
               <p className="text-muted-foreground mb-4">No se encontraron informes</p>
-              <Button asChild variant="outline" className="gap-2">
-                <Link to="/reports/new">
-                  <Plus size={16} />
-                  Añadir nuevo informe
-                </Link>
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button asChild variant="default" className="gap-2">
+                  <Link to="/clients/new/reports/new">
+                    <FileText size={16} />
+                    Crear informe SEO automático
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="gap-2">
+                  <Link to="/clients/new/crawler/new">
+                    <BarChart size={16} />
+                    Crear análisis SEO técnico
+                  </Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
@@ -140,7 +161,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
                           </CardHeader>
                           <CardContent>
                             <p className="text-xs text-muted-foreground">
-                              Cliente: {clients.find(client => client.id === report.clientId)?.name || 'N/A'}
+                              Cliente: {clients?.find(client => client.id === report.clientId)?.name || 'N/A'}
                             </p>
                           </CardContent>
                         </Card>
@@ -163,7 +184,7 @@ const ReportsTab: React.FC<ReportsTabProps> = (props) => {
                           <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                               <CardTitle className="text-sm font-medium truncate">
-                                {crawl.domain || new URL(crawl.url).hostname}
+                                {crawl.domain || (crawl.url ? new URL(crawl.url).hostname : 'Unknown')}
                               </CardTitle>
                               <div className={`px-2 py-1 text-xs rounded-full ${
                                 crawl.status === 'completed' ? 'bg-green-100 text-green-800' :

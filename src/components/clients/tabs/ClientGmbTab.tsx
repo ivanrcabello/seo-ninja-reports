@@ -68,7 +68,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
     ) {
       return (
         <div className="grid grid-cols-1 gap-1">
-          {businessProfile.businessHours.Hours.map((hour, index) => (
+          {businessProfile.businessHours.Hours.map((hour: any, index: number) => (
             <div key={index} className="flex justify-between">
               <span className="font-medium capitalize">{hour.name}:</span>
               <span>{hour.value}</span>
@@ -85,7 +85,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
         if (parsedHours.Hours && Array.isArray(parsedHours.Hours)) {
           return (
             <div className="grid grid-cols-1 gap-1">
-              {parsedHours.Hours.map((hour, index) => (
+              {parsedHours.Hours.map((hour: any, index: number) => (
                 <div key={index} className="flex justify-between">
                   <span className="font-medium capitalize">{hour.name}:</span>
                   <span>{hour.value}</span>
@@ -101,14 +101,34 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
     
     // Fallback for any other format - handle it as a simple object with key-value pairs
     const hours = typeof businessProfile.businessHours === 'object' ? businessProfile.businessHours : {};
+    
+    if (Object.keys(hours).length === 0) {
+      return <p className="text-muted-foreground">No hay información de horarios disponible</p>;
+    }
+    
     return (
       <div className="grid grid-cols-1 gap-1">
-        {Object.entries(hours).map(([day, time], index) => (
-          <div key={index} className="flex justify-between">
-            <span className="font-medium capitalize">{day}:</span>
-            <span>{time}</span>
-          </div>
-        ))}
+        {Object.entries(hours).map(([day, time], index) => {
+          // Skip rendering if it's not a direct key-value pair
+          if (typeof time === 'object' && time !== null) {
+            if (time.name && time.value) {
+              return (
+                <div key={index} className="flex justify-between">
+                  <span className="font-medium capitalize">{time.name}:</span>
+                  <span>{time.value}</span>
+                </div>
+              );
+            }
+            return null;
+          }
+          
+          return (
+            <div key={index} className="flex justify-between">
+              <span className="font-medium capitalize">{day}:</span>
+              <span>{String(time)}</span>
+            </div>
+          );
+        }).filter(Boolean)}
       </div>
     );
   };
