@@ -124,7 +124,9 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           
           // Safe handling of null/undefined values
           const dayDisplay = day || 'Día';
-          const timeDisplay = time !== null && time !== undefined ? String(time) : 'No disponible';
+          // Explicitly handle the potentially null time value
+          const timeValue = time !== null && time !== undefined ? time : null;
+          const timeDisplay = timeValue !== null ? String(timeValue) : 'No disponible';
           
           return (
             <div key={index} className="flex justify-between">
