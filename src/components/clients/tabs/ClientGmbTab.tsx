@@ -108,14 +108,14 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
     
     return (
       <div className="grid grid-cols-1 gap-1">
-        {Object.entries(hours).map(([day, time], index) => {
+        {Object.entries(hours).map(([day, timeObj], index) => {
           // Skip rendering if it's not a direct key-value pair
-          if (typeof time === 'object' && time !== null) {
-            if (time.name && time.value) {
+          if (typeof timeObj === 'object' && timeObj !== null) {
+            if (timeObj.name && timeObj.value) {
               return (
                 <div key={index} className="flex justify-between">
-                  <span className="font-medium capitalize">{time.name}:</span>
-                  <span>{time.value}</span>
+                  <span className="font-medium capitalize">{timeObj.name}:</span>
+                  <span>{timeObj.value}</span>
                 </div>
               );
             }
@@ -124,9 +124,8 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           
           // Safe handling of null/undefined values
           const dayDisplay = day || 'Día';
-          // Explicitly handle the potentially null time value
-          const timeValue = time !== null && time !== undefined ? time : null;
-          const timeDisplay = timeValue !== null ? String(timeValue) : 'No disponible';
+          // Fix: explicitly handle null or undefined time values
+          const timeDisplay = timeObj === null || timeObj === undefined ? 'No disponible' : String(timeObj);
           
           return (
             <div key={index} className="flex justify-between">
