@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -42,6 +41,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ClientReportsListProps {
   clientId: string;
+  showCreateButton?: boolean;
   onCreateReport: () => void;
 }
 
@@ -230,7 +230,7 @@ const ScheduledReportsList: React.FC<ScheduledReportsListProps> = ({ clientId })
   );
 };
 
-const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId, onCreateReport }) => {
+const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId, showCreateButton = false, onCreateReport }) => {
   const { reports: allReports, isLoading, deleteReport, retryReport } = useReports();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reportToDeleteId, setReportToDeleteId] = useState<string | null>(null);
@@ -317,6 +317,16 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId, onCreat
             onDelete={handleOpenDeleteDialog}
             onShare={handleShare}
           />
+          
+          {activeReports.length === 0 && showCreateButton && (
+            <div className="text-center p-6">
+              <p className="text-muted-foreground mb-4">No hay informes activos</p>
+              <Button onClick={onCreateReport}>
+                <FileText className="mr-2 h-4 w-4" />
+                Crear Informe
+              </Button>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="all">
@@ -327,6 +337,16 @@ const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId, onCreat
             onDelete={handleOpenDeleteDialog}
             onShare={handleShare}
           />
+          
+          {clientReports.length === 0 && showCreateButton && (
+            <div className="text-center p-6">
+              <p className="text-muted-foreground mb-4">No hay informes disponibles</p>
+              <Button onClick={onCreateReport}>
+                <FileText className="mr-2 h-4 w-4" />
+                Crear Informe
+              </Button>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="scheduled">

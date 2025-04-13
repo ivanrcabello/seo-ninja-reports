@@ -114,8 +114,8 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
             if ('name' in timeObj && 'value' in timeObj) {
               return (
                 <div key={index} className="flex justify-between">
-                  <span className="font-medium capitalize">{timeObj.name}:</span>
-                  <span>{timeObj.value}</span>
+                  <span className="font-medium capitalize">{timeObj.name || 'Día'}:</span>
+                  <span>{timeObj.value || 'No disponible'}</span>
                 </div>
               );
             }
@@ -125,10 +125,10 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           // Safe handling of null/undefined values
           const dayDisplay = day || 'Día';
           
-          // Fix: Add null check for timeObj before using it
-          const timeDisplay = timeObj === null || timeObj === undefined 
+          // Fix: Add comprehensive null checks for timeObj
+          const timeDisplay = (timeObj === null || timeObj === undefined) 
             ? 'No disponible' 
-            : String(timeObj);
+            : String(timeObj || '');
           
           return (
             <div key={index} className="flex justify-between">
