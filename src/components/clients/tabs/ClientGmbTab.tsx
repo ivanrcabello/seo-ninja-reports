@@ -111,7 +111,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
         {Object.entries(hours).map(([day, timeObj], index) => {
           // Skip rendering if it's not a direct key-value pair
           if (typeof timeObj === 'object' && timeObj !== null) {
-            if (timeObj.name && timeObj.value) {
+            if ('name' in timeObj && 'value' in timeObj) {
               return (
                 <div key={index} className="flex justify-between">
                   <span className="font-medium capitalize">{timeObj.name}:</span>
@@ -124,7 +124,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           
           // Safe handling of null/undefined values
           const dayDisplay = day || 'Día';
-          // Fix: explicitly handle null or undefined time values
+          // Fix: safely handle null or undefined values with type checking
           const timeDisplay = timeObj === null || timeObj === undefined ? 'No disponible' : String(timeObj);
           
           return (

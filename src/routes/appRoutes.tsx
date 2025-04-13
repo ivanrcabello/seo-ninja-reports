@@ -1,86 +1,66 @@
 
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { RouteObject } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
+import ClientList from '@/pages/ClientList';
 import ClientDetail from '@/pages/ClientDetail';
 import ReportDetail from '@/pages/ReportDetail';
-import Layout from '@/components/layout/Layout';
+import AllReports from '@/pages/AllReports';
+import ClientForm from '@/pages/ClientForm';
 import AuthGuard from '@/components/auth/AuthGuard';
-import Index from '@/pages/Index';
-import Servicios from '@/pages/Servicios';
-import Contacto from '@/pages/Contacto';
-import Paquetes from '@/pages/Paquetes';
-import Precios from '@/pages/Precios';
-import SeoTecnico from '@/pages/servicios/SeoTecnico';
-import ContenidoSeo from '@/pages/servicios/ContenidoSeo';
-import SeoLocal from '@/pages/servicios/SeoLocal';
-import AlquilerPaginas from '@/pages/servicios/AlquilerPaginas';
-import CrawlerDetailPage from '@/pages/CrawlerDetailPage';
-import ReportGeneratorWrapper from '@/components/reports/ReportGeneratorWrapper';
+import NotFoundPage from '@/pages/NotFoundPage';
+import GenerateReport from '@/pages/GenerateReport';
+import Settings from '@/pages/Settings';
 
-export const appRoutes = [
+export const appRoutes: RouteObject[] = [
   {
     path: '/',
-    element: <Index />,
-  },
-  {
-    path: '/servicios',
-    element: <Servicios />,
-  },
-  {
-    path: '/contacto',
-    element: <Contacto />,
-  },
-  {
-    path: '/paquetes',
-    element: <Paquetes />,
-  },
-  {
-    path: '/precios',
-    element: <Precios />,
-  },
-  {
-    path: '/servicios/seo-tecnico',
-    element: <SeoTecnico />,
-  },
-  {
-    path: '/servicios/contenido-seo',
-    element: <ContenidoSeo />,
-  },
-  {
-    path: '/servicios/seo-local',
-    element: <SeoLocal />,
-  },
-  {
-    path: '/servicios/alquiler-paginas',
-    element: <AlquilerPaginas />,
+    element: <AuthGuard><Dashboard /></AuthGuard>,
   },
   {
     path: '/dashboard',
     element: <AuthGuard><Dashboard /></AuthGuard>,
   },
   {
-    path: '/clients/:clientId',
+    path: '/clients',
+    element: <AuthGuard><ClientList /></AuthGuard>,
+  },
+  {
+    path: '/clients/new',
+    element: <AuthGuard><ClientForm /></AuthGuard>,
+  },
+  {
+    path: '/clients/:id',
     element: <AuthGuard><ClientDetail /></AuthGuard>,
   },
   {
-    path: '/clients/:clientId/reports/:id',
+    path: '/clients/:id/edit',
+    element: <AuthGuard><ClientForm /></AuthGuard>,
+  },
+  {
+    path: '/reports',
+    element: <AuthGuard><AllReports /></AuthGuard>,
+  },
+  {
+    path: '/reports/:id',
     element: <AuthGuard><ReportDetail /></AuthGuard>,
   },
+  // Agregamos la ruta para generar informes
   {
-    path: '/clients/:clientId/crawler/:crawlId',
-    element: <AuthGuard><CrawlerDetailPage /></AuthGuard>,
+    path: '/clients/:clientId/generate-report',
+    element: <AuthGuard><GenerateReport /></AuthGuard>,
   },
-  {
-    path: '/clients/new/reports/new',
-    element: <AuthGuard><ReportGeneratorWrapper clientId="new" /></AuthGuard>,
-  },
+  // Agrega también un alias para la ruta que estás usando
   {
     path: '/clients/:clientId/reports/new',
-    element: <AuthGuard><ReportGeneratorWrapper clientId="new" /></AuthGuard>,
+    element: <AuthGuard><GenerateReport /></AuthGuard>,
+  },
+  {
+    path: '/settings',
+    element: <AuthGuard><Settings /></AuthGuard>,
   },
   {
     path: '*',
-    element: <Navigate to="/" replace />,
+    element: <NotFoundPage />,
   },
 ];
