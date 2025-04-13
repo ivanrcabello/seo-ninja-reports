@@ -124,8 +124,11 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           
           // Safe handling of null/undefined values
           const dayDisplay = day || 'Día';
-          // Fix: safely handle null or undefined values with type checking
-          const timeDisplay = timeObj === null || timeObj === undefined ? 'No disponible' : String(timeObj);
+          
+          // Fix: Add null check for timeObj before using it
+          const timeDisplay = timeObj === null || timeObj === undefined 
+            ? 'No disponible' 
+            : String(timeObj);
           
           return (
             <div key={index} className="flex justify-between">

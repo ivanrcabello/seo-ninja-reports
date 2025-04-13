@@ -2,11 +2,9 @@
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
-import ClientList from '@/pages/ClientList';
 import ClientDetail from '@/pages/ClientDetail';
 import ReportDetail from '@/pages/ReportDetail';
 import AllReports from '@/pages/AllReports';
-import ClientForm from '@/pages/ClientForm';
 import AuthGuard from '@/components/auth/AuthGuard';
 import NotFoundPage from '@/pages/NotFoundPage';
 import GenerateReport from '@/pages/GenerateReport';
@@ -23,11 +21,11 @@ export const appRoutes: RouteObject[] = [
   },
   {
     path: '/clients',
-    element: <AuthGuard><ClientList /></AuthGuard>,
+    element: <AuthGuard><Dashboard /></AuthGuard>,
   },
   {
     path: '/clients/new',
-    element: <AuthGuard><ClientForm /></AuthGuard>,
+    element: <AuthGuard><Dashboard /></AuthGuard>,
   },
   {
     path: '/clients/:id',
@@ -35,7 +33,7 @@ export const appRoutes: RouteObject[] = [
   },
   {
     path: '/clients/:id/edit',
-    element: <AuthGuard><ClientForm /></AuthGuard>,
+    element: <AuthGuard><Dashboard /></AuthGuard>,
   },
   {
     path: '/reports',

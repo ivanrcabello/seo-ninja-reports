@@ -97,7 +97,6 @@ const ClientSummaryTab: React.FC<ClientSummaryTabProps> = ({
           </CardHeader>
           <CardContent>
             <ClientReportsList 
-              reports={reports.slice(0, 5)} 
               clientId={client.id}
               showCreateButton={reports.length === 0}
               onCreateReport={handleCreateReport}
