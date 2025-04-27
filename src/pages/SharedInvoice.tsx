@@ -141,27 +141,22 @@ const SharedInvoice = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <Button 
-          onClick={handleBackToHome} 
-          variant="ghost" 
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver al inicio
-        </Button>
+    <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 pb-8">
+      <InvoiceHeader 
+        invoice={invoice}
+        onPrint={handlePrint}
+      />
       
-        <div className="bg-background/80 backdrop-blur-sm rounded-lg shadow-lg border border-primary/10 overflow-hidden">
-          <InvoiceHeader 
-            invoice={invoice}
-            onPrint={handlePrint}
-          />
-          
+      <div className="container mx-auto px-4 pt-6 print:pt-0 print:px-0">
+        <div className="max-w-4xl mx-auto bg-white shadow-sm rounded-lg print:shadow-none print:rounded-none overflow-hidden">
           <InvoiceContent 
             invoice={invoice}
           />
-          
+        </div>
+      </div>
+      
+      <div className="container mx-auto px-4 print:hidden">
+        <div className="max-w-4xl mx-auto">
           <InvoiceActions 
             invoice={invoice}
             onPrint={handlePrint}

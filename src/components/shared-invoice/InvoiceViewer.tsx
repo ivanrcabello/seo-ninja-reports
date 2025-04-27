@@ -1,162 +1,176 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Calendar, Download, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SharedInvoice } from './types';
+import { useInvoiceData } from './useInvoiceData';
 
 interface InvoiceViewerProps {
   invoice: SharedInvoice;
   onPrint?: () => void;
 }
 
-const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice, onPrint }) => {
-  // Format the price as a currency
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
-  };
-
-  // Format the date
-  const formatDate = (dateString?: string): string => {
-    if (!dateString) return 'No especificada';
-    return format(new Date(dateString), 'PPP', { locale: es });
-  };
-
-  // Get status information
-  const getStatusInfo = (status: string): { label: string; className: string } => {
-    switch (status) {
-      case 'paid':
-        return { label: 'Pagada', className: 'bg-green-100 text-green-800' };
-      case 'overdue':
-        return { label: 'Vencida', className: 'bg-red-100 text-red-800' };
-      case 'cancelled':
-        return { label: 'Cancelada', className: 'bg-gray-100 text-gray-800' };
-      case 'pending':
-      default:
-        return { label: 'Pendiente', className: 'bg-yellow-100 text-yellow-800' };
-    }
-  };
-
-  const statusInfo = getStatusInfo(invoice.status);
+const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoice }) => {
+  const { formatCurrency, includesVat } = useInvoiceData(invoice);
 
   return (
     <div className="w-full max-w-4xl mx-auto print:shadow-none">
-      <Card className="shadow-md print:shadow-none print:border-none">
-        <CardHeader className="bg-muted/30 print:bg-transparent border-b flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+      <div className="bg-white border rounded-lg shadow-sm p-6 print:shadow-none print:border-none">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 mb-6">
           <div>
-            <h2 className="text-2xl font-bold">{invoice.title}</h2>
+            <h2 className="text-2xl font-bold">Factura: {invoice.title}</h2>
             {invoice.invoice_number && (
               <p className="text-sm text-muted-foreground">Nº: {invoice.invoice_number}</p>
             )}
-            <div className="text-sm text-muted-foreground">
-              Cliente: {invoice.client_name}
-              {invoice.client_website && (
-                <span> • <a href={invoice.client_website.startsWith('http') ? invoice.client_website : `https://${invoice.client_website}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{invoice.client_website}</a></span>
-              )}
+          </div>
+          
+          <div className="mt-2 sm:mt-0">
+            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+              invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+              invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {
+                invoice.status === 'paid' ? 'Pagada' :
+                invoice.status === 'pending' ? 'Pendiente' :
+                invoice.status === 'overdue' ? 'Vencida' :
+                'Cancelada'
+              }
             </div>
           </div>
-          <div className="flex flex-col items-end">
-            <Badge className={`${statusInfo.className} px-3 py-1 print:bg-transparent print:border print:border-current`}>
-              {statusInfo.label}
-            </Badge>
-            <div className="text-sm text-muted-foreground mt-1">
-              <Calendar className="inline h-3 w-3 mr-1" /> 
-              Emitida: {formatDate(invoice.created_at)}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6 space-y-8">
-          {/* Invoice details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Client details */}
-            <div className="space-y-3">
-              <h3 className="font-medium">Datos del cliente</h3>
-              <div className="space-y-1">
-                <p className="font-semibold">{invoice.client_name}</p>
-                {invoice.client_tax_id && <p className="text-sm">DNI/CIF: {invoice.client_tax_id}</p>}
-                {invoice.client_address && <p className="text-sm whitespace-pre-line">{invoice.client_address}</p>}
-              </div>
-            </div>
-            
-            {/* Billing entity details */}
-            {(invoice.billing_name || invoice.billing_tax_id || invoice.billing_address || invoice.billing_email) && (
-              <div className="space-y-3">
-                <h3 className="font-medium">Datos del emisor</h3>
-                <div className="space-y-1">
-                  {invoice.billing_name && <p className="font-semibold">{invoice.billing_name}</p>}
-                  {invoice.billing_tax_id && <p className="text-sm">DNI/CIF: {invoice.billing_tax_id}</p>}
-                  {invoice.billing_address && <p className="text-sm whitespace-pre-line">{invoice.billing_address}</p>}
-                  {invoice.billing_email && <p className="text-sm">{invoice.billing_email}</p>}
-                </div>
-              </div>
+        </div>
+
+        <div className="grid gap-8 sm:grid-cols-2 mb-8">
+          {/* Datos del cliente */}
+          <div className="space-y-2">
+            <h4 className="text-muted-foreground font-medium">Datos del cliente</h4>
+            <p className="font-semibold text-lg">{invoice.client_name}</p>
+            {invoice.client_website && (
+              <p className="text-sm text-blue-600">
+                <a href={invoice.client_website.startsWith('http') ? invoice.client_website : `https://${invoice.client_website}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:underline">
+                  {invoice.client_website}
+                </a>
+              </p>
+            )}
+            {invoice.client_tax_id && (
+              <p className="text-sm">NIF/CIF: {invoice.client_tax_id}</p>
+            )}
+            {invoice.client_address && (
+              <p className="text-sm whitespace-pre-line">{invoice.client_address}</p>
             )}
           </div>
           
-          <Separator />
-          
-          <div className="space-y-3">
-            <div>
-              <h3 className="font-medium text-sm text-muted-foreground mb-1">Descripción</h3>
-              <p className="whitespace-pre-line">{invoice.description || '—'}</p>
-            </div>
+          {/* Datos de la factura */}
+          <div className="space-y-2">
+            <h4 className="text-muted-foreground font-medium">Datos de la factura</h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div className="space-y-3">
-                <div>
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Fecha de vencimiento</h3>
-                  <p>{formatDate(invoice.due_date)}</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Estado de pago</h3>
-                  <Badge variant="outline" className={statusInfo.className.replace('bg-', 'text-')}>
-                    {statusInfo.label}
-                  </Badge>
-                </div>
-                
-                {invoice.status === 'paid' && invoice.payment_date && (
-                  <div>
-                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Fecha de pago</h3>
-                    <p>{formatDate(invoice.payment_date)}</p>
-                  </div>
+            <p className="font-medium">
+              Fecha de emisión: <span>{format(new Date(invoice.created_at), 'd MMMM yyyy', { locale: es })}</span>
+            </p>
+            
+            {invoice.due_date && (
+              <p className="font-medium">
+                Fecha de vencimiento: <span>{format(new Date(invoice.due_date), 'd MMMM yyyy', { locale: es })}</span>
+              </p>
+            )}
+            
+            {invoice.status === 'paid' && invoice.payment_date && (
+              <p className="font-medium">
+                Fecha de pago: <span>{format(new Date(invoice.payment_date), 'd MMMM yyyy', { locale: es })}</span>
+              </p>
+            )}
+            
+            {invoice.status === 'paid' && invoice.payment_method && (
+              <p className="font-medium">
+                Método de pago: <span>{invoice.payment_method}</span>
+              </p>
+            )}
+          </div>
+        </div>
+        
+        {/* Información del emisor */}
+        {(invoice.billing_name || invoice.billing_tax_id || invoice.billing_address) && (
+          <div className="mb-8">
+            <h4 className="text-muted-foreground font-medium mb-2">Datos del emisor</h4>
+            <div className="space-y-1">
+              {invoice.billing_name && <p className="font-semibold">{invoice.billing_name}</p>}
+              {invoice.billing_tax_id && <p className="text-sm">NIF/CIF: {invoice.billing_tax_id}</p>}
+              {invoice.billing_address && <p className="text-sm whitespace-pre-line">{invoice.billing_address}</p>}
+            </div>
+          </div>
+        )}
+        
+        {/* Concepto y detalles */}
+        <div className="mb-8">
+          <h4 className="text-muted-foreground font-medium mb-2">{invoice.description ? 'Descripción' : 'Concepto'}</h4>
+          <div className="border rounded-md overflow-hidden">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left p-3 border-b">Concepto</th>
+                  <th className="text-right p-3 border-b">Cantidad</th>
+                  <th className="text-right p-3 border-b">Precio</th>
+                  <th className="text-right p-3 border-b">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="p-3 border-b">
+                    {invoice.description || invoice.title}
+                  </td>
+                  <td className="text-right p-3 border-b">1</td>
+                  <td className="text-right p-3 border-b">
+                    {formatCurrency(invoice.amount)}
+                  </td>
+                  <td className="text-right p-3 border-b">
+                    {formatCurrency(invoice.amount)}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/20">
+                  <td colSpan={2} className="p-3"></td>
+                  <td className="text-right p-3 font-medium">Subtotal</td>
+                  <td className="text-right p-3 font-semibold">
+                    {includesVat
+                      ? formatCurrency(invoice.amount / 1.21)
+                      : formatCurrency(invoice.amount)
+                    }
+                  </td>
+                </tr>
+                {includesVat && (
+                  <tr className="bg-muted/20">
+                    <td colSpan={2} className="p-3"></td>
+                    <td className="text-right p-3 font-medium">IVA 21%</td>
+                    <td className="text-right p-3 font-semibold">
+                      {formatCurrency((invoice.amount / 1.21) * 0.21)}
+                    </td>
+                  </tr>
                 )}
-              </div>
-            </div>
+                <tr className="bg-muted/40">
+                  <td colSpan={2} className="p-3"></td>
+                  <td className="text-right p-3 font-semibold">Total {includesVat ? '(IVA incluido)' : ''}</td>
+                  <td className="text-right p-3 font-bold text-lg">
+                    {formatCurrency(invoice.amount)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-          
-          <Separator />
-          
-          {/* Payment instructions */}
-          {invoice.payment_instructions && (
-            <div>
-              <h3 className="font-medium mb-2">Instrucciones de pago</h3>
-              <div className="bg-muted/30 p-4 rounded-md whitespace-pre-line">
-                {invoice.payment_instructions}
-              </div>
-            </div>
-          )}
-          
-          {/* Payment method */}
-          {invoice.payment_method && (
-            <div>
-              <h3 className="font-medium mb-2">Método de pago</h3>
-              <p>{invoice.payment_method}</p>
-            </div>
-          )}
-          
-          <Separator />
-          
-          {/* Total amount */}
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">Importe total {invoice.includes_vat !== false ? '(IVA incluido)' : ''}</h3>
-            <div className="text-2xl font-bold">{formatCurrency(invoice.amount)}</div>
+        </div>
+        
+        {/* Instrucciones de pago */}
+        {invoice.payment_instructions && (
+          <div className="bg-blue-50 border border-blue-100 p-4 rounded-md mb-6">
+            <h4 className="font-medium text-blue-800 mb-1">Instrucciones de pago</h4>
+            <p className="text-blue-700 whitespace-pre-line">{invoice.payment_instructions}</p>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 };
