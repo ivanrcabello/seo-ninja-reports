@@ -114,8 +114,16 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
             // Add additional verifications for timeObj and its properties
             if (timeObj && typeof timeObj === 'object') {
               // Verificar si el objeto tiene las propiedades name y value usando 'in'
-              const hasName = 'name' in timeObj;
-              const hasValue = 'value' in timeObj;
+              let hasName = false;
+              let hasValue = false;
+              
+              if ('name' in timeObj) {
+                hasName = true;
+              }
+              
+              if ('value' in timeObj) {
+                hasValue = true;
+              }
               
               const name = hasName && timeObj.name ? String(timeObj.name) : 'Día';
               const value = hasValue && timeObj.value ? String(timeObj.value) : 'No disponible';

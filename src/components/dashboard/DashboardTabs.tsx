@@ -1,17 +1,14 @@
 
 import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
-
-import OverviewTab from './tabs/OverviewTab';
 import ClientsTab from './tabs/ClientsTab';
-import ReportsTab from './tabs/ReportsTab';
-import InvoicesTab from './InvoicesTab';
-import ActivityTab from './tabs/ActivityTab';
-import CalendarTab from './tabs/CalendarTab';
 import TasksTab from './tabs/TasksTab';
+import InvoicesTab from './tabs/InvoicesTab';
+import OverviewTab from './tabs/OverviewTab';
+import ProposalsTab from './tabs/ProposalsTab';
+import ContractsTab from './tabs/ContractsTab';
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -24,63 +21,39 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   activeTab,
   setActiveTab,
   clients,
-  reports
+  reports,
 }) => {
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-      <TabsList className="mb-4">
-        <TabsTrigger value="overview">Vista general</TabsTrigger>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
+      <TabsList className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-5 w-full">
+        <TabsTrigger value="overview">General</TabsTrigger>
         <TabsTrigger value="clients">Clientes</TabsTrigger>
-        <TabsTrigger value="reports">Informes</TabsTrigger>
         <TabsTrigger value="invoices">Facturas</TabsTrigger>
-        <TabsTrigger value="calendar">Calendario</TabsTrigger>
+        <TabsTrigger value="proposals">Propuestas</TabsTrigger>
         <TabsTrigger value="tasks">Tareas</TabsTrigger>
-        <TabsTrigger value="activity">Actividad</TabsTrigger>
       </TabsList>
+      
+      <div className="mt-6">
+        <TabsContent value="overview">
+          <OverviewTab clients={clients} />
+        </TabsContent>
+        
+        <TabsContent value="clients">
+          <ClientsTab clients={clients} />
+        </TabsContent>
+        
+        <TabsContent value="invoices">
+          <InvoicesTab />
+        </TabsContent>
+        
+        <TabsContent value="proposals">
+          <ProposalsTab />
+        </TabsContent>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.15 }}
-        >
-          <TabsContent value="overview">
-            <OverviewTab />
-          </TabsContent>
-
-          <TabsContent value="clients">
-            <ClientsTab clients={clients} reports={reports} />
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <ReportsTab reports={reports} />
-          </TabsContent>
-
-          <TabsContent value="invoices">
-            <AnimatePresence>
-              <InvoicesTab />
-            </AnimatePresence>
-          </TabsContent>
-
-          <TabsContent value="calendar">
-            <AnimatePresence>
-              <CalendarTab />
-            </AnimatePresence>
-          </TabsContent>
-
-          <TabsContent value="tasks">
-            <AnimatePresence>
-              <TasksTab />
-            </AnimatePresence>
-          </TabsContent>
-
-          <TabsContent value="activity">
-            <ActivityTab clients={clients} reports={reports} />
-          </TabsContent>
-        </motion.div>
-      </AnimatePresence>
+        <TabsContent value="tasks">
+          <TasksTab />
+        </TabsContent>
+      </div>
     </Tabs>
   );
 };

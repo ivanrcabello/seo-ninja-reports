@@ -1,10 +1,10 @@
+
 import React from 'react';
 import { Client } from '@/types/client.types';
-import { Report } from '@/types/report.types';
 import { TabsContent } from "@/components/ui/tabs";
 import ClientTabNavigation from './ClientTabNavigation';
 import ClientOverview from './ClientOverview';
-import ClientReportsList from './ClientReportsList';
+import ClientDocumentsList from './ClientDocumentsList';
 import ClientProposals from './proposals/ClientProposals';
 import ClientContracts from './contracts/ClientContracts';
 import ClientInvoices from './invoices/ClientInvoices';
@@ -13,7 +13,6 @@ import ClientPortalTab from './portal/ClientPortalTab';
 
 interface ClientDetailContentProps {
   client: Client;
-  reports: Report[];
   activeTab: string;
   setActiveTab: (tab: string) => void;
   clientId: string;
@@ -21,22 +20,10 @@ interface ClientDetailContentProps {
 
 const ClientDetailContent: React.FC<ClientDetailContentProps> = ({ 
   client, 
-  reports, 
   activeTab, 
   setActiveTab,
   clientId 
 }) => {
-  // Handler to view all reports for the client
-  const handleViewReports = () => {
-    setActiveTab('reports');
-  };
-  
-  // Handler to create a new report
-  const handleCreateReport = () => {
-    setActiveTab('reports');
-    // Any additional logic for report creation can be added here
-  };
-
   return (
     <div className="space-y-6">
       {/* Custom tab navigation component */}
@@ -47,14 +34,11 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         {activeTab === 'overview' && (
           <ClientOverview 
             client={client}
-            reports={reports}
-            onViewReports={handleViewReports}
-            onCreateReport={handleCreateReport}
           />
         )}
         
-        {activeTab === 'reports' && (
-          <ClientReportsList 
+        {activeTab === 'documents' && (
+          <ClientDocumentsList 
             clientId={client.id} 
           />
         )}

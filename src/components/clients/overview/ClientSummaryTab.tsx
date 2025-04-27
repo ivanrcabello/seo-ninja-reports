@@ -1,47 +1,29 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { Client } from '@/types/client.types';
-import { Report } from '@/types/report.types';
-import { FileText, Plus, BarChart } from 'lucide-react';
-import ClientReportsList from '../ClientReportsList';
+import { BarChart } from 'lucide-react';
 
 interface ClientSummaryTabProps {
   client: Client;
-  reports: Report[];
-  onViewReports: () => void;
-  onCreateReport: () => void;
 }
 
 const ClientSummaryTab: React.FC<ClientSummaryTabProps> = ({
-  client,
-  reports,
-  onViewReports,
-  onCreateReport
+  client
 }) => {
   const navigate = useNavigate();
-  
-  const handleCreateReport = () => {
-    navigate(`/clients/${client.id}/generate-report`);
-  };
-  
   
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold">Resumen del Cliente</h2>
         <div className="flex gap-2">
-          <Button onClick={handleCreateReport} className="flex gap-2">
-            <FileText size={16} />
-            <span className="hidden sm:inline">Crear Informe</span>
-            <span className="sm:hidden">Informe</span>
-          </Button>
           <Button variant="outline" asChild className="flex gap-2">
-            <Link to={`/clients/${client.id}/crawler/new`}>
+            <Link to={`/clients/${client.id}/documents`}>
               <BarChart size={16} />
-              <span className="hidden sm:inline">Análisis SEO</span>
-              <span className="sm:hidden">Análisis</span>
+              <span>Ver documentos</span>
             </Link>
           </Button>
         </div>
@@ -87,20 +69,15 @@ const ClientSummaryTab: React.FC<ClientSummaryTabProps> = ({
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Informes Recientes</CardTitle>
-            {reports.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={onViewReports}>
-                Ver Todos
-              </Button>
-            )}
+          <CardHeader>
+            <CardTitle>Actividad Reciente</CardTitle>
           </CardHeader>
           <CardContent>
-            <ClientReportsList 
-              clientId={client.id}
-              showCreateButton={reports.length === 0}
-              onCreateReport={handleCreateReport}
-            />
+            <div className="space-y-4">
+              <p className="text-muted-foreground">
+                No hay actividad reciente para mostrar.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

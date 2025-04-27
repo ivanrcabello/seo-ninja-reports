@@ -7,7 +7,6 @@ import ClientLoadingState from '@/components/clients/ClientLoadingState';
 import ClientNotFound from '@/components/clients/ClientNotFound';
 import { useAuth } from '@/context/AuthContext';
 import useClients from '@/hooks/useClients';
-import useReports from '@/hooks/useReports';
 import Layout from '@/components/layout/Layout';
 import { toast } from 'sonner';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
@@ -19,7 +18,6 @@ const ClientDetail = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { getClient, isLoading: clientsLoading, deleteClient } = useClients();
-  const { getClientReports, isLoading: reportsLoading } = useReports();
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const isMounted = useRef(true);
@@ -46,7 +44,7 @@ const ClientDetail = () => {
       try {
         const hash = window.location.hash.replace('#', '');
         
-        if (['reports', 'proposals', 'contracts', 'invoices'].includes(hash)) {
+        if (['documents', 'proposals', 'contracts', 'invoices', 'tasks', 'portal'].includes(hash)) {
           setActiveTab(hash);
         } else if (!hash) {
           setActiveTab('overview');
@@ -79,8 +77,7 @@ const ClientDetail = () => {
   }
 
   const client = getClient(id);
-  const reports = getClientReports(id);
-  const isLoading = authLoading || clientsLoading || reportsLoading;
+  const isLoading = authLoading || clientsLoading;
 
   const handleDeleteClient = async () => {
     if (!client) return;
@@ -153,7 +150,6 @@ const ClientDetail = () => {
               
               <ClientDetailContent 
                 client={client}
-                reports={reports}
                 activeTab={activeTab}
                 setActiveTab={handleTabChange}
                 clientId={id}
