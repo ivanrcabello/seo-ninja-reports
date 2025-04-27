@@ -60,7 +60,20 @@ export async function addClientToDb(
   }
 
   try {
-    const { name, website, industry, phone_number, active, wp_credentials, hosting_credentials } = data;
+    const { 
+      name, 
+      website, 
+      industry, 
+      phone_number, 
+      active, 
+      wp_credentials, 
+      hosting_credentials,
+      company_name,  // New field
+      address,       // New field
+      tax_id,        // New field
+      email,         // New field
+      notes          // New field
+    } = data;
     
     // Process wp_credentials to ensure URL field consistency
     let processedWpCredentials = null;
@@ -82,7 +95,12 @@ export async function addClientToDb(
         phone_number,
         active,
         wp_credentials: processedWpCredentials,
-        hosting_credentials: hosting_credentials || null
+        hosting_credentials: hosting_credentials || null,
+        company_name,   // New field
+        address,        // New field
+        tax_id,         // New field
+        email,          // New field
+        notes           // New field
       })
       .select()
       .single();

@@ -767,12 +767,17 @@ export type Database = {
       clients: {
         Row: {
           active: boolean
+          address: string | null
+          company_name: string | null
           created_at: string
+          email: string | null
           hosting_credentials: Json | null
           id: string
           industry: string | null
           name: string
+          notes: string | null
           phone_number: string | null
+          tax_id: string | null
           updated_at: string
           user_id: string
           website: string
@@ -780,12 +785,17 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          address?: string | null
+          company_name?: string | null
           created_at?: string
+          email?: string | null
           hosting_credentials?: Json | null
           id?: string
           industry?: string | null
           name: string
+          notes?: string | null
           phone_number?: string | null
+          tax_id?: string | null
           updated_at?: string
           user_id: string
           website: string
@@ -793,12 +803,17 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          address?: string | null
+          company_name?: string | null
           created_at?: string
+          email?: string | null
           hosting_credentials?: Json | null
           id?: string
           industry?: string | null
           name?: string
+          notes?: string | null
           phone_number?: string | null
+          tax_id?: string | null
           updated_at?: string
           user_id?: string
           website?: string

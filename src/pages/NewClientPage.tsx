@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from 'react-hook-form';
@@ -47,6 +47,11 @@ const formSchema = z.object({
     password: z.string().optional(),
     url: z.string().optional(),
   }).optional().nullable(),
+  company_name: z.string().optional(),
+  address: z.string().optional(),
+  tax_id: z.string().optional(),
+  email: z.string().email({ message: "Introduce un correo electrónico válido" }).optional(),
+  notes: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -66,13 +71,17 @@ const NewClientPage: React.FC = () => {
       active: true,
       wp_credentials: null,
       hosting_credentials: null,
+      company_name: '',
+      address: '',
+      tax_id: '',
+      email: '',
+      notes: '',
     },
   });
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
-      // Prepare WordPress credentials if provided
       let wpCredentials = null;
       if (data.wp_credentials && data.wp_credentials.username && data.wp_credentials.password) {
         wpCredentials = {
@@ -82,7 +91,6 @@ const NewClientPage: React.FC = () => {
         };
       }
 
-      // Prepare hosting credentials if provided
       let hostingCredentials = null;
       if (data.hosting_credentials && data.hosting_credentials.username && data.hosting_credentials.password) {
         hostingCredentials = {
@@ -93,7 +101,6 @@ const NewClientPage: React.FC = () => {
         };
       }
 
-      // Create the client data object
       const clientData: Omit<Client, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
         name: data.name,
         website: data.website,
@@ -102,15 +109,17 @@ const NewClientPage: React.FC = () => {
         active: data.active,
         wp_credentials: wpCredentials,
         hosting_credentials: hostingCredentials,
+        company_name: data.company_name,
+        address: data.address,
+        tax_id: data.tax_id,
+        email: data.email,
+        notes: data.notes,
       };
 
-      // Add the client to the database
       const newClient = await addClient(clientData);
       
-      // Show success message
       toast.success('Cliente creado correctamente');
       
-      // Navigate to the new client's detail page
       navigate(`/clients/${newClient.id}`);
     } catch (error: any) {
       console.error('Error creating client:', error);
@@ -145,6 +154,7 @@ const NewClientPage: React.FC = () => {
             <Tabs defaultValue="basic" className="w-full">
               <TabsList className="mb-4">
                 <TabsTrigger value="basic">Información Básica</TabsTrigger>
+                <TabsTrigger value="additional">Información Adicional</TabsTrigger>
                 <TabsTrigger value="credentials">Credenciales</TabsTrigger>
               </TabsList>
               
@@ -230,6 +240,86 @@ const NewClientPage: React.FC = () => {
                               Desmarca esta opción si el cliente está inactivo o ha sido archivado.
                             </FormDescription>
                           </div>
+                        </FormItem>
+                      )}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="additional" className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="company_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nombre de la Empresa</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Nombre de la empresa" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="tax_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>NIF/CIF</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Número de identificación fiscal" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Dirección</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Dirección completa" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Correo Electrónico</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Correo de contacto" type="email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notas</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Información adicional o notas sobre el cliente" 
+                              className="min-h-[120px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
