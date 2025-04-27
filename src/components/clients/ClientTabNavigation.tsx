@@ -2,7 +2,7 @@
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FileText, FileContract, Receipt, Calendar, Globe } from 'lucide-react';
+import { FileText, Receipt, Calendar, Globe } from 'lucide-react';
 
 interface ClientTabNavigationProps {
   activeTab: string;
@@ -19,7 +19,6 @@ const ClientTabNavigation: React.FC<ClientTabNavigationProps> = ({
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     
-    // Update URL with hash for direct navigation
     if (value === 'overview') {
       navigate(`/clients/${clientId}`);
     } else {
@@ -42,20 +41,6 @@ const ClientTabNavigation: React.FC<ClientTabNavigationProps> = ({
         >
           <FileText className="h-4 w-4" />
           <span className="hidden xs:inline">Documentos</span>
-        </TabsTrigger>
-        <TabsTrigger 
-          value="proposals" 
-          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2 rounded-md flex items-center gap-1.5"
-        >
-          <FileText className="h-4 w-4" />
-          <span className="hidden xs:inline">Propuestas</span>
-        </TabsTrigger>
-        <TabsTrigger 
-          value="contracts" 
-          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2 rounded-md flex items-center gap-1.5"
-        >
-          <FileContract className="h-4 w-4" />
-          <span className="hidden xs:inline">Contratos</span>
         </TabsTrigger>
         <TabsTrigger 
           value="invoices" 

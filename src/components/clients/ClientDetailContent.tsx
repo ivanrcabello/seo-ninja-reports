@@ -5,8 +5,6 @@ import { TabsContent } from "@/components/ui/tabs";
 import ClientTabNavigation from './ClientTabNavigation';
 import ClientOverview from './ClientOverview';
 import ClientDocumentsList from './ClientDocumentsList';
-import ClientProposals from './proposals/ClientProposals';
-import ClientContracts from './contracts/ClientContracts';
 import ClientInvoices from './invoices/ClientInvoices';
 import ClientTasks from './timeline/ClientTasks';
 import ClientPortalTab from './portal/ClientPortalTab';
@@ -26,10 +24,8 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
 }) => {
   return (
     <div className="space-y-6">
-      {/* Custom tab navigation component */}
       <ClientTabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      {/* Tab content sections */}
       <div className="mt-4">
         {activeTab === 'overview' && (
           <ClientOverview 
@@ -40,20 +36,6 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         {activeTab === 'documents' && (
           <ClientDocumentsList 
             clientId={client.id} 
-          />
-        )}
-        
-        {activeTab === 'proposals' && (
-          <ClientProposals 
-            clientId={client.id} 
-            clientName={client.name} 
-          />
-        )}
-        
-        {activeTab === 'contracts' && (
-          <ClientContracts 
-            clientId={client.id} 
-            clientName={client.name} 
           />
         )}
         

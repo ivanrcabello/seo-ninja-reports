@@ -171,6 +171,7 @@ export type Database = {
       }
       client_documents: {
         Row: {
+          category: string | null
           client_id: string
           created_at: string | null
           created_by: string
@@ -183,6 +184,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          category?: string | null
           client_id: string
           created_at?: string | null
           created_by: string
@@ -195,6 +197,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          category?: string | null
           client_id?: string
           created_at?: string | null
           created_by?: string

@@ -2,9 +2,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Client } from '@/types/client.types';
-import { BarChart } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 interface ClientSummaryTabProps {
   client: Client;
@@ -13,8 +13,6 @@ interface ClientSummaryTabProps {
 const ClientSummaryTab: React.FC<ClientSummaryTabProps> = ({
   client
 }) => {
-  const navigate = useNavigate();
-  
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -22,7 +20,7 @@ const ClientSummaryTab: React.FC<ClientSummaryTabProps> = ({
         <div className="flex gap-2">
           <Button variant="outline" asChild className="flex gap-2">
             <Link to={`/clients/${client.id}/documents`}>
-              <BarChart size={16} />
+              <FileText size={16} />
               <span>Ver documentos</span>
             </Link>
           </Button>
