@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,83 +12,134 @@ import { toast } from 'sonner';
 // Plantilla predeterminada para un nuevo contrato
 const DEFAULT_CONTRACT_TEMPLATE = `
 <h2 style="text-align: center;"><strong>CONTRATO DE SERVICIOS SEO</strong></h2>
-<p><strong>ENTRE LAS PARTES:</strong></p>
-<p>De una parte, <strong>[NOMBRE DE LA EMPRESA]</strong>, con domicilio en [DIRECCIÓN] y NIF [NÚMERO], representada por [NOMBRE DEL REPRESENTANTE], en adelante denominada "EL PROVEEDOR".</p>
-<p>Y de otra parte, <strong>[NOMBRE DEL CLIENTE]</strong>, con domicilio en [DIRECCIÓN DEL CLIENTE] y NIF [NÚMERO DEL CLIENTE], representado por [NOMBRE DEL REPRESENTANTE DEL CLIENTE], en adelante denominado "EL CLIENTE".</p>
-<p>Ambas partes, reconociéndose mutuamente la capacidad legal necesaria para contratar y obligarse por medio del presente documento.</p>
-<p><strong>EXPONEN:</strong></p>
+
+<h3>INTERVIENEN</h3>
+<p><strong>De una parte,</strong></p>
+<p>Iván Rodríguez Cabello, con NIF 52886386W, en nombre y representación propios y en calidad de representante de Posicionamiento-seo-local.es. En adelante, el PROFESIONAL.</p>
+
+<p><strong>Y de otra parte,</strong></p>
+<p>[NOMBRE DEL CLIENTE], con NIF [NIF CLIENTE] en nombre y representación propios y en calidad de representante de [EMPRESA CLIENTE] ([WEBSITE]). En adelante, el CLIENTE.</p>
+
+<h3>MANIFIESTAN</h3>
+<p>I. Que el PROFESIONAL está especializado en la prestación de servicios SEO de auditoría, consultoría y optimización de webs para el posicionamiento en Google y gestion de campañas en Google ADS</p>
+<p>II. Que el CLIENTE está interesado en contratar al PROFESIONAL para la realización de servicios SEO tal y como se describe en el presente documento.</p>
+<p>III. Que ambas partes han acordado realizar el presente contrato de prestación de servicios de acuerdo con los pactos definidos a continuación.</p>
+
+<h3>PACTAN</h3>
+
+<h4>1. Objeto del presente contrato</h4>
+<p>El PROFESIONAL prestará al CLIENTE los siguientes servicios:</p>
+<p><strong>Webs a posicionar:</strong></p>
+<p>1. [WEBSITE]</p>
+
+<p><strong>FASE 1: Auditoría SEO Completa</strong></p>
 <ol>
-<li>Que EL PROVEEDOR es una empresa especializada en la prestación de servicios de optimización para motores de búsqueda (SEO).</li>
-<li>Que EL CLIENTE está interesado en la contratación de los servicios de SEO para su sitio web.</li>
-<li>Que ambas partes han convenido la celebración del presente contrato de prestación de servicios, que se regirá por las siguientes:</li>
+  <li>Análisis de la competencia en Google.</li>
+  <li>Análisis del posicionamiento actual.</li>
+  <li>Investigación y clasificación de palabras clave.</li>
+  <li>Búsqueda de oportunidades de linkbuilding.</li>
+  <li>Elaboración y entrega del informe con los resultados de estos análisis.</li>
+  <li>Asesoramiento y consultoría posterior para la interpretación de los resultados y la toma de decisiones en función de los mismos.</li>
+  <li>Auditoría técnica de la web: identificación de errores.</li>
+  <li>Diseño de la estrategia de posicionamiento SEO.</li>
+  <li>Diseño e implementación de la arquitectura web.</li>
 </ol>
-<p><strong>CLÁUSULAS:</strong></p>
-<p><strong>PRIMERA. - OBJETO DEL CONTRATO</strong></p>
-<p>EL PROVEEDOR se compromete a prestar al CLIENTE los siguientes servicios de SEO:</p>
+
+<p><strong>FASE 2: Servicios SEO Mensuales por web</strong></p>
 <ul>
-<li>Análisis inicial y auditoría de la web.</li>
-<li>Investigación de palabras clave.</li>
-<li>Optimización on-page.</li>
-<li>Estrategia de contenidos.</li>
-<li>Construcción de enlaces (link building).</li>
-<li>Seguimiento y reportes mensuales de resultados.</li>
+  <li>Optimización de un número ilimitado de páginas para SEO y posicionamiento local.</li>
+  <li>Creación y gestión de contenido local (5 artículos al mes) por web.</li>
+  <li>Estrategias de construcción de enlaces avanzadas y personalizadas.</li>
+  <li>Análisis detallado de la competencia con acciones estratégicas.</li>
+  <li>Reuniones mensuales para revisar la estrategia.</li>
+  <li>Soporte dedicado 24/7.</li>
+  <li>Resultados garantizados por escrito.</li>
+  <li>Optimización de Google My Business.</li>
+  <li>Análisis de palabras clave locales y optimización.</li>
+  <li>Construcción de enlaces locales (linkbuilding).</li>
+  <li>Soporte prioritario por teléfono y correo electrónico.</li>
 </ul>
-<p><strong>SEGUNDA. - DURACIÓN DEL CONTRATO</strong></p>
-<p>El presente contrato tendrá una duración de [NÚMERO] meses, comenzando el día [FECHA DE INICIO] y finalizando el día [FECHA DE FINALIZACIÓN].</p>
-<p>El contrato se renovará automáticamente por períodos iguales, salvo que cualquiera de las partes comunique a la otra su voluntad de no renovarlo con al menos 30 días de antelación a la fecha de finalización.</p>
-<p><strong>TERCERA. - PRECIO Y FORMA DE PAGO</strong></p>
-<p>El precio por los servicios contratados será de [IMPORTE] euros mensuales, más el IVA correspondiente.</p>
-<p>El pago se realizará mediante transferencia bancaria a la cuenta que indique EL PROVEEDOR, dentro de los primeros 5 días de cada mes.</p>
-<p><strong>CUARTA. - OBLIGACIONES DEL PROVEEDOR</strong></p>
-<p>EL PROVEEDOR se obliga a:</p>
+
+<h4>2. Obligaciones del CLIENTE</h4>
+<p>Para la ejecución de los servicios contratados, el CLIENTE se compromete a:</p>
+<ol>
+  <li>Facilitar al PROFESIONAL la documentación o información necesaria para la adecuada prestación de los servicios, incluyendo:
+    <ul>
+      <li>Información relativa a la web que se va a auditar.</li>
+      <li>Relación de competidores en los mercados en los que se desarrollarán los servicios SEO.</li>
+      <li>Información sobre los productos y/o servicios que se ofrecen a través de la web y que se desean posicionar.</li>
+      <li>Cualquier otra información relevante: estudios de mercado, perfil de cliente, manual de identidad visual corporativa, políticas de la empresa, dossier comercial, etc.</li>
+      <li>Datos necesarios para facturar y declarar los servicios realizados.</li>
+    </ul>
+  </li>
+  <li>Suministrar al PROFESIONAL acceso a las herramientas y plataformas necesarias para la revisión y optimización de la web, incluyendo el gestor de contenidos de la web, la cuenta asociada de Google Analytics y la cuenta asociada de Google Search Console, y cualquier otra cuenta o plataforma de analítica o gestión de recursos web que se requiera.</li>
+  <li>Efectuar en plazo el pago de los honorarios acordados.</li>
+</ol>
+
+<h4>4. Duración del contrato</h4>
 <ul>
-<li>Prestar los servicios de SEO descritos en la cláusula primera con la máxima diligencia y profesionalidad.</li>
-<li>Mantener informado al CLIENTE sobre las acciones realizadas y los resultados obtenidos.</li>
-<li>Entregar un informe mensual detallando las actividades realizadas y los resultados obtenidos.</li>
-<li>Respetar la confidencialidad de la información proporcionada por EL CLIENTE.</li>
+  <li>Los servicios y funciones descritos en la FASE 1 se prestarán por un plazo de 15 días desde la firma del presente documento.</li>
+  <li>Los servicios descritos en la FASE 2 se prestarán por un plazo de 3 meses desde la finalización de la FASE 1.</li>
+  <li>Transcurridos estos 3 meses, el contrato se renovará automáticamente mensualmente, salvo que alguna de las partes comunique expresamente y por escrito la cancelación del mismo con una antelación de 15 días.</li>
 </ul>
-<p><strong>QUINTA. - OBLIGACIONES DEL CLIENTE</strong></p>
-<p>EL CLIENTE se obliga a:</p>
+
+<h4>4. Confidencialidad de los datos</h4>
+<p>El PROFESIONAL se compromete a tratar confidencialmente todos los datos, documentación e información suministrados por el CLIENTE durante la vigencia del presente contrato y a no comunicarlos a terceros, salvo a sus empleados y colaboradores en la medida necesaria para la correcta ejecución del contrato. Esta obligación de confidencialidad se mantendrá vigente durante la vigencia del contrato y por un periodo de 2 años después de su extinción.</p>
+
+<h4>5. Protección de datos personales</h4>
+<p>El PROFESIONAL informa al CLIENTE de que los datos personales contenidos en el presente contrato y los generados por la prestación de los servicios serán utilizados con la única finalidad de prestar el servicio contratado. La firma del presente contrato implica el consentimiento del CLIENTE para el tratamiento de sus datos.</p>
+
+<h4>6. Honorarios pactados</h4>
 <ul>
-<li>Proporcionar al PROVEEDOR toda la información y materiales necesarios para la correcta prestación de los servicios.</li>
-<li>Facilitar el acceso a las herramientas necesarias (Google Analytics, Search Console, CMS, etc.).</li>
-<li>Abonar el precio acordado en la forma y plazos establecidos.</li>
-<li>Colaborar activamente en la implementación de las recomendaciones realizadas por EL PROVEEDOR.</li>
+  <li>Servicios de auditoría (FASE 1): pago único de 0 euros más el IVA correspondiente.</li>
+  <li>Servicios mensuales (FASE 2): cuota mensual de 199 euros IVA INC</li>
+  <li>Hacen un total de 199€/Mensuales IVA INC</li>
+  <li>Los 2 primeros meses el cliente tendrá activa una oferta del 50% de descuento en el precio total.</li>
 </ul>
-<p><strong>SEXTA. - RESULTADOS</strong></p>
-<p>El CLIENTE reconoce y acepta que los resultados de los servicios SEO dependen de múltiples factores, muchos de ellos externos al control del PROVEEDOR, como los algoritmos de los buscadores, la competencia del sector, etc. Por ello, EL PROVEEDOR no garantiza posiciones específicas en los resultados de búsqueda, aunque se compromete a realizar sus mejores esfuerzos para mejorar el posicionamiento de la web.</p>
-<p><strong>SÉPTIMA. - CONFIDENCIALIDAD</strong></p>
-<p>Ambas partes se comprometen a mantener la más estricta confidencialidad respecto a toda la información a la que tengan acceso como consecuencia del presente contrato, no pudiendo revelarla a terceros sin el consentimiento expreso de la otra parte.</p>
-<p><strong>OCTAVA. - PROTECCIÓN DE DATOS</strong></p>
-<p>Las partes se comprometen a cumplir con la normativa vigente en materia de protección de datos personales, en particular con el Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales.</p>
-<p><strong>NOVENA. - CAUSAS DE RESOLUCIÓN DEL CONTRATO</strong></p>
-<p>Serán causas de resolución del presente contrato:</p>
-<ul>
-<li>El incumplimiento por cualquiera de las partes de las obligaciones asumidas en el presente contrato.</li>
-<li>El mutuo acuerdo entre las partes.</li>
-<li>La declaración de concurso o la insolvencia de cualquiera de las partes.</li>
-</ul>
-<p><strong>DÉCIMA. - LEY APLICABLE Y JURISDICCIÓN</strong></p>
-<p>El presente contrato se regirá por la legislación española. Para la resolución de cualquier controversia que pudiera surgir en relación con la interpretación o ejecución del presente contrato, las partes se someten a la jurisdicción de los Juzgados y Tribunales de [CIUDAD], con renuncia expresa a cualquier otro fuero que pudiera corresponderles.</p>
-<p>Y en prueba de conformidad, ambas partes firman el presente contrato por duplicado y a un solo efecto, en el lugar y fecha indicados en el encabezamiento.</p>
-<p>&nbsp;</p>
-<table style="width: 100%;">
-<tbody>
-<tr>
-<td style="width: 50%; text-align: center;"><strong>EL PROVEEDOR</strong></td>
-<td style="width: 50%; text-align: center;"><strong>EL CLIENTE</strong></td>
-</tr>
-<tr>
-<td style="height: 50px;">&nbsp;</td>
-<td style="height: 50px;">&nbsp;</td>
-</tr>
-<tr>
-<td style="text-align: center;">Fdo.: [NOMBRE DEL REPRESENTANTE]</td>
-<td style="text-align: center;">Fdo.: [NOMBRE DEL REPRESENTANTE DEL CLIENTE]</td>
-</tr>
-</tbody>
-</table>
-`;
+
+<h4>7. Forma de pago</h4>
+<p>El pago se realizará mediante domiciliación bancaria o ingreso o transferencia en la cuenta número ES65 0182 6161 1102 0155 3147 de la entidad BBVA cuyo titular es Iván Rodríguez Cabello. El pago se realizará en un plazo máximo de 7 días desde la emisión de las facturas.</p>
+
+<h4>8. Incumplimiento de los pagos</h4>
+<p>La falta de pago dará derecho al PROFESIONAL a resolver el contrato y a reclamar judicialmente las cantidades debidas, aplicándose desde la fecha de incumplimiento el interés de demora establecido por la ley.</p>
+
+<h4>9. Deficiencias en los servicios contratados</h4>
+<p>Si el CLIENTE encuentra defectos en los servicios contratados, deberá comunicarlo por escrito. El PROFESIONAL tendrá un plazo de 15 días para resolver dichas deficiencias. Si no se solucionan en dicho plazo, el CLIENTE podrá resolver el contrato.</p>
+
+<h4>10. Propiedad intelectual</h4>
+<p>El PROFESIONAL posee todos los derechos de propiedad intelectual necesarios para la comercialización del servicio contratado. El CLIENTE debe respetar los programas de uso de terceros puestos a su disposición por el PROFESIONAL. El CLIENTE no adquiere ningún derecho o licencia sobre el servicio contratado, salvo los necesarios para el cumplimiento del presente contrato y solo durante su duración. Cualquier actuación que exceda del cumplimiento de este contrato requerirá autorización por escrito del PROFESIONAL.</p>
+
+<h4>11. Garantías para el CLIENTE</h4>
+<p>El PROFESIONAL garantiza que los servicios prestados se realizarán con la diligencia y competencia profesionales adecuadas. Si después de 3 meses de servicios SEO mensuales (FASE 2) no se ha observado una mejora en los resultados en las gráficas de SEO, el PROFESIONAL se compromete a proporcionar 2 meses adicionales de servicios SEO sin costo para el CLIENTE con el objetivo de mejorar dichos resultados. En caso de que tras 5 meses no se haya logrado una mejora en los resultados, el CLIENTE tendrá derecho a resolver el contrato.</p>
+
+<h4>12. Rescisión del contrato</h4>
+<p>El presente contrato se considerará resuelto por el incumplimiento de cualquiera de las obligaciones contenidas en el mismo, incluido el impago de los honorarios.</p>
+
+<h4>13. Modificación del contrato</h4>
+<p>Cualquier modificación del presente contrato deberá realizarse por escrito e incorporarse al mismo como anexo.</p>
+
+<h4>14. Sometimiento al fuero</h4>
+<p>Las partes, con renuncia a su propio fuero, se someten a los Juzgados y Tribunales de Madrid para la resolución de cualquier conflicto derivado del presente contrato.</p>
+
+<h4>15. Régimen del contrato</h4>
+<p>Este contrato tiene carácter mercantil y se regirá por sus propias cláusulas y, en lo no previsto, por las disposiciones españolas contenidas en el Código de Comercio, leyes especiales y usos mercantiles.</p>
+
+<p style="margin-top: 40px;">En prueba de conformidad, firman el presente contrato, por duplicado ejemplar, en el lugar y fecha indicados en el encabezamiento.</p>
+
+<table style="width: 100%; margin-top: 40px;">
+  <tr>
+    <td style="width: 50%; text-align: center;"><strong>CLIENTE</strong></td>
+    <td style="width: 50%; text-align: center;"><strong>PROFESIONAL</strong></td>
+  </tr>
+  <tr>
+    <td style="height: 100px;"></td>
+    <td style="height: 100px;"></td>
+  </tr>
+  <tr>
+    <td style="text-align: center;">Fdo.: ______________________</td>
+    <td style="text-align: center;">Fdo.: Iván Rodríguez Cabello</td>
+  </tr>
+</table>`;
 
 interface ContractDialogProps {
   clientId: string;
@@ -111,16 +161,13 @@ const ContractDialog: React.FC<ContractDialogProps> = ({
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Inicializar el formulario cuando se abre para editar un contrato existente
   useEffect(() => {
     if (open) {
       if (editingContract) {
         setTitle(editingContract.title);
         setContent(editingContract.content);
       } else {
-        // Inicializar con valores por defecto para un nuevo contrato
         setTitle(`Contrato de Servicios SEO - ${clientName || 'Cliente'}`);
-        // Usar la plantilla por defecto y reemplazar los marcadores de posición
         let template = DEFAULT_CONTRACT_TEMPLATE;
         if (clientName) {
           template = template.replace(/\[NOMBRE DEL CLIENTE\]/g, clientName);
