@@ -7,7 +7,6 @@ import ReportDetail from '@/pages/ReportDetail';
 import AllReports from '@/pages/AllReports';
 import AuthGuard from '@/components/auth/AuthGuard';
 import NotFoundPage from '@/pages/NotFoundPage';
-import GenerateReport from '@/pages/GenerateReport';
 import Settings from '@/pages/Settings';
 
 export const appRoutes: RouteObject[] = [
@@ -42,16 +41,6 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/reports/:id',
     element: <AuthGuard><ReportDetail /></AuthGuard>,
-  },
-  // Agregamos la ruta para generar informes
-  {
-    path: '/clients/:clientId/generate-report',
-    element: <AuthGuard><GenerateReport /></AuthGuard>,
-  },
-  // Agrega también un alias para la ruta que estás usando
-  {
-    path: '/clients/:clientId/reports/new',
-    element: <AuthGuard><GenerateReport /></AuthGuard>,
   },
   {
     path: '/settings',
