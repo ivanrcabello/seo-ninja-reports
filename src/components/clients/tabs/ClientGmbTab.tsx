@@ -70,8 +70,8 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
         <div className="grid grid-cols-1 gap-1">
           {businessProfile.businessHours.Hours.map((hour: any, index: number) => (
             <div key={index} className="flex justify-between">
-              <span className="font-medium capitalize">{hour.name || 'Día'}:</span>
-              <span>{hour.value || 'No disponible'}</span>
+              <span className="font-medium capitalize">{hour?.name || 'Día'}:</span>
+              <span>{hour?.value || 'No disponible'}</span>
             </div>
           ))}
         </div>
@@ -87,8 +87,8 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
             <div className="grid grid-cols-1 gap-1">
               {parsedHours.Hours.map((hour: any, index: number) => (
                 <div key={index} className="flex justify-between">
-                  <span className="font-medium capitalize">{hour.name || 'Día'}:</span>
-                  <span>{hour.value || 'No disponible'}</span>
+                  <span className="font-medium capitalize">{hour?.name || 'Día'}:</span>
+                  <span>{hour?.value || 'No disponible'}</span>
                 </div>
               ))}
             </div>
@@ -111,10 +111,10 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
         {Object.entries(hours).map(([day, timeObj], index) => {
           // Skip rendering if it's not a direct key-value pair
           if (typeof timeObj === 'object' && timeObj !== null) {
-            // Añadimos verificaciones adicionales para timeObj y sus propiedades
+            // Add additional verifications for timeObj and its properties
             if (timeObj && 'name' in timeObj && 'value' in timeObj) {
-              const name = timeObj.name ? String(timeObj.name) : 'Día';
-              const value = timeObj.value ? String(timeObj.value) : 'No disponible';
+              const name = timeObj && timeObj.name ? String(timeObj.name) : 'Día';
+              const value = timeObj && timeObj.value ? String(timeObj.value) : 'No disponible';
               
               return (
                 <div key={index} className="flex justify-between">
@@ -129,7 +129,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           // Safe handling of null/undefined values
           const dayDisplay = day || 'Día';
           
-          // Aseguramos que timeObj sea convertido a string de manera segura
+          // Make sure timeObj is converted to string safely
           let timeDisplay = 'No disponible';
           if (timeObj !== null && timeObj !== undefined) {
             timeDisplay = String(timeObj);

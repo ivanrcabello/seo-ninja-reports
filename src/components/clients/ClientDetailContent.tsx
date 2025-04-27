@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Client } from '@/types/client.types';
 import { Report } from '@/types/report.types';
@@ -57,7 +56,6 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
         {activeTab === 'reports' && (
           <ClientReportsList 
             clientId={client.id} 
-            onCreateReport={handleCreateReport} 
           />
         )}
         

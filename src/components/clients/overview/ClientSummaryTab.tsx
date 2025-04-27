@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,7 @@ const ClientSummaryTab: React.FC<ClientSummaryTabProps> = ({
   const handleCreateReport = () => {
     navigate(`/clients/${client.id}/generate-report`);
   };
+  
   
   return (
     <div className="space-y-6">

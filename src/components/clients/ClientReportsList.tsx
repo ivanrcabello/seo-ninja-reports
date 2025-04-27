@@ -8,15 +8,27 @@ import ClientDocuments from './documents/ClientDocuments';
 
 interface ClientReportsListProps {
   clientId: string;
+  onCreateReport?: () => void;
+  showCreateButton?: boolean;
 }
 
-const ClientReportsList: React.FC<ClientReportsListProps> = ({ clientId }) => {
+const ClientReportsList: React.FC<ClientReportsListProps> = ({ 
+  clientId, 
+  onCreateReport,
+  showCreateButton = false
+}) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold tracking-tight">
           Informes y Documentos
         </h2>
+        {showCreateButton && onCreateReport && (
+          <Button onClick={onCreateReport}>
+            <FileText className="h-4 w-4 mr-2" />
+            Crear informe
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="documents" className="w-full">
