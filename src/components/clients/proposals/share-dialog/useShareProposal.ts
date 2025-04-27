@@ -76,6 +76,10 @@ export const useShareProposal = ({ open, proposalId, proposalTitle }: UseSharePr
             price: fullProposal.price
           };
           
+          // Access client information properly from proposalData.clients object
+          const clientName = proposalData.clients ? proposalData.clients.name : null;
+          const clientWebsite = proposalData.clients ? proposalData.clients.website : null;
+          
           const { error: insertError } = await supabase
             .from('shared_content')
             .insert([{
@@ -87,8 +91,8 @@ export const useShareProposal = ({ open, proposalId, proposalTitle }: UseSharePr
               password: fullProposal.password,
               status: fullProposal.status,
               shared_url: sharedUrl,
-              client_name: proposalData.clients?.name,
-              client_website: proposalData.clients?.website
+              client_name: clientName,
+              client_website: clientWebsite
             }]);
           
           if (insertError) {

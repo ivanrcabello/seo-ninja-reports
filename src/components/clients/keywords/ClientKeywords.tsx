@@ -15,10 +15,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ClientKeywordsProps {
   clientId: string;
-  reports: Report[];
+  reports?: Report[];
 }
 
-const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports }) => {
+const ClientKeywords: React.FC<ClientKeywordsProps> = ({ clientId, reports = [] }) => {
   const [keywordTab, setKeywordTab] = useState<'list' | 'import' | 'export'>('list');
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [isLoading, setIsLoading] = useState(false);

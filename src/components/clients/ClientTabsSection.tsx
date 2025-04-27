@@ -44,6 +44,9 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
   onRefreshBusinessProfile,
   onRefreshPageSpeed
 }) => {
+  // Create an empty array for reports as a temporary solution
+  const emptyReports = [];
+  
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
       <TabsList className="grid grid-cols-6 mb-4 bg-muted/80 rounded-lg p-1">
@@ -93,6 +96,7 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
           <TabsContent value="keywords">
             <ClientKeywords
               clientId={clientId}
+              reports={emptyReports}
             />
           </TabsContent>
           

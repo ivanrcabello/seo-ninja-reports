@@ -78,13 +78,13 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
               );
             }
             
-            const name = 'name' in hour ? hour.name : 'Día';
-            const value = 'value' in hour ? hour.value : 'No disponible';
+            const hourName = hour && typeof hour === 'object' && 'name' in hour ? String(hour.name) : 'Día';
+            const hourValue = hour && typeof hour === 'object' && 'value' in hour ? String(hour.value) : 'No disponible';
             
             return (
               <div key={index} className="flex justify-between">
-                <span className="font-medium capitalize">{name}:</span>
-                <span>{value}</span>
+                <span className="font-medium capitalize">{hourName}:</span>
+                <span>{hourValue}</span>
               </div>
             );
           })}
@@ -109,13 +109,13 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
                   );
                 }
                 
-                const name = 'name' in hour ? hour.name : 'Día';
-                const value = 'value' in hour ? hour.value : 'No disponible';
+                const hourName = hour && typeof hour === 'object' && 'name' in hour ? String(hour.name) : 'Día';
+                const hourValue = hour && typeof hour === 'object' && 'value' in hour ? String(hour.value) : 'No disponible';
                 
                 return (
                   <div key={index} className="flex justify-between">
-                    <span className="font-medium capitalize">{name}:</span>
-                    <span>{value}</span>
+                    <span className="font-medium capitalize">{hourName}:</span>
+                    <span>{hourValue}</span>
                   </div>
                 );
               })}
@@ -141,17 +141,9 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           if (typeof timeObj === 'object' && timeObj !== null) {
             // Add additional verifications for timeObj and its properties
             if (timeObj && typeof timeObj === 'object') {
-              // Verificar si el objeto tiene las propiedades name y value usando 'in'
-              let hasName = false;
-              let hasValue = false;
-              
-              if ('name' in timeObj) {
-                hasName = true;
-              }
-              
-              if ('value' in timeObj) {
-                hasValue = true;
-              }
+              // Safe property access with type checking
+              const hasName = timeObj && typeof timeObj === 'object' && 'name' in timeObj;
+              const hasValue = timeObj && typeof timeObj === 'object' && 'value' in timeObj;
               
               const name = hasName && timeObj.name ? String(timeObj.name) : 'Día';
               const value = hasValue && timeObj.value ? String(timeObj.value) : 'No disponible';
