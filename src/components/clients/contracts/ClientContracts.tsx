@@ -16,6 +16,7 @@ interface ClientContractsProps {
 }
 
 const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName }) => {
+  // Hooks y estados
   const { contracts, isLoading, error, fetchContracts, deleteContract } = useClientContracts(clientId);
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<ClientContract | null>(null);
@@ -23,40 +24,37 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isMounted = useRef(true);
 
-  console.log("ClientContracts rendered with clientId:", clientId);
-  console.log("Contracts data:", contracts);
-
-  // Set up the mounted ref and clean up on unmount
+  // Mejorar el seguimiento del ciclo de vida del componente
   useEffect(() => {
+    console.log("ClientContracts mounted with clientId:", clientId);
     isMounted.current = true;
     
-    // Initial data fetch
+    // Función asíncrona para cargar los datos iniciales
     const loadData = async () => {
       try {
-        console.log("Fetching contracts for clientId:", clientId);
-        await fetchContracts();
+        if (clientId) {
+          console.log("Inicializando carga de contratos para el cliente:", clientId);
+          await fetchContracts();
+        }
       } catch (error) {
-        console.error('Error loading contracts:', error);
+        console.error('Error al cargar los contratos:', error);
       }
     };
     
     loadData();
     
+    // Limpieza al desmontar
     return () => {
       console.log("ClientContracts unmounting");
       isMounted.current = false;
-      // Reset all state when unmounting to prevent state persistence issues
-      setIsContractDialogOpen(false);
-      setEditingContract(null);
-      setViewingContract(null);
     };
   }, [clientId, fetchContracts]);
 
-  // Handle browser back button with popstate event
+  // Manejar el botón de retroceso del navegador
   useEffect(() => {
     const handlePopState = () => {
       if (isMounted.current) {
-        console.log("Popstate event detected, resetting dialog states");
+        console.log("Evento popstate detectado, reiniciando estados de diálogo");
         setIsContractDialogOpen(false);
         setEditingContract(null);
         setViewingContract(null);
@@ -70,18 +68,20 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
     };
   }, []);
 
+  // Handlers con verificación de componente montado para evitar actualizaciones en componentes desmontados
   const handleRefresh = useCallback(async () => {
     if (!isMounted.current) return;
     
     try {
       setIsRefreshing(true);
-      console.log("Manually refreshing contracts for clientId:", clientId);
+      console.log("Actualizando manualmente los contratos para el cliente:", clientId);
       await fetchContracts();
+      
       if (isMounted.current) {
         toast.success('Contratos actualizados');
       }
     } catch (error) {
-      console.error('Error refreshing contracts:', error);
+      console.error('Error al actualizar los contratos:', error);
     } finally {
       if (isMounted.current) {
         setIsRefreshing(false);
@@ -109,36 +109,46 @@ const ClientContracts: React.FC<ClientContractsProps> = ({ clientId, clientName 
   const handleDeleteContract = useCallback(async (id: string) => {
     if (!isMounted.current) return;
     
-    if (window.confirm('¿Estás seguro de que quieres eliminar este contrato? Esta acción no se puede deshacer.')) {
-      try {
+    try {
+      const confirmed = window.confirm('¿Estás seguro de que quieres eliminar este contrato? Esta acción no se puede deshacer.');
+      if (confirmed) {
         await deleteContract(id);
-        // After deletion, refresh the contracts list
-        handleRefresh();
-      } catch (error) {
-        console.error('Error deleting contract:', error);
+        // Después de la eliminación, actualizar la lista de contratos
+        await handleRefresh();
       }
+    } catch (error) {
+      console.error('Error al eliminar el contrato:', error);
     }
   }, [deleteContract, handleRefresh]);
 
-  // Handler for closing the contract viewer
+  // Cerrar el visor de contratos
   const handleCloseViewer = useCallback(() => {
     if (!isMounted.current) return;
-    console.log("Closing contract viewer");
+    console.log("Cerrando el visor de contratos");
     setViewingContract(null);
   }, []);
 
-  // Handler for closing the contract dialog
+  // Cerrar el diálogo de contratos
   const handleCloseDialog = useCallback((open: boolean) => {
     if (!isMounted.current) return;
-    console.log("Contract dialog open state changed to:", open);
-    setIsContractDialogOpen(open);
+    console.log("Estado de apertura del diálogo de contrato cambiado a:", open);
+    
     if (!open) {
+      setIsContractDialogOpen(false);
       setEditingContract(null);
-      // Refresh contracts list when dialog closes
-      handleRefresh();
+      
+      // Actualizar la lista de contratos cuando se cierra el diálogo
+      setTimeout(() => {
+        if (isMounted.current) {
+          handleRefresh();
+        }
+      }, 100);
+    } else {
+      setIsContractDialogOpen(true);
     }
   }, [handleRefresh]);
 
+  // Manejo de errores
   if (error) {
     return (
       <div className="p-4 bg-destructive/10 border border-destructive rounded-md text-center">

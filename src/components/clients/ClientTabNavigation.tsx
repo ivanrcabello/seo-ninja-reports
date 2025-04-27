@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -18,10 +19,15 @@ const ClientTabNavigation: React.FC<ClientTabNavigationProps> = ({
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     
-    if (value === 'overview') {
-      navigate(`/clients/${clientId}`);
-    } else {
-      navigate(`/clients/${clientId}#${value}`);
+    // Uso de try/catch para manejar posibles errores en la navegación
+    try {
+      if (value === 'overview') {
+        navigate(`/clients/${clientId}`);
+      } else {
+        navigate(`/clients/${clientId}#${value}`);
+      }
+    } catch (error) {
+      console.error("Error en la navegación:", error);
     }
   };
 
