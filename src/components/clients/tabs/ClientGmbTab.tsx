@@ -7,6 +7,18 @@ import { toast } from 'sonner';
 import { Loader2, MapPin, Phone, Globe, Clock, Star } from 'lucide-react';
 import { BusinessProfile } from '@/types/report.types';
 
+// Define proper interface for hour object
+interface BusinessHour {
+  name?: string;
+  value?: string;
+  [key: string]: any; // Allow for additional properties
+}
+
+interface BusinessHours {
+  Hours?: BusinessHour[];
+  [key: string]: any; // Allow for additional properties like arbitrary day names
+}
+
 interface ClientGmbTabProps {
   clientId: string;
   clientName: string;
@@ -55,20 +67,19 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
     }
   };
   
-  // Format the business hours for display
+  // Format the business hours for display with improved type safety
   const renderBusinessHours = () => {
     if (!businessProfile?.businessHours) {
       return <p className="text-muted-foreground">No hay información de horarios disponible</p>;
     }
     
-    // Check if businessHours has an Hours property and it's an array
-    if (
-      businessProfile.businessHours.Hours && 
-      Array.isArray(businessProfile.businessHours.Hours)
-    ) {
+    // Handle the case when businessHours has Hours property and it's an array
+    const hoursData = businessProfile.businessHours as BusinessHours;
+    
+    if (hoursData.Hours && Array.isArray(hoursData.Hours)) {
       return (
         <div className="grid grid-cols-1 gap-1">
-          {businessProfile.businessHours.Hours.map((hour: any, index: number) => {
+          {hoursData.Hours.map((hour: BusinessHour, index: number) => {
             if (typeof hour !== 'object' || hour === null) {
               return (
                 <div key={index} className="flex justify-between">
@@ -78,8 +89,8 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
               );
             }
             
-            const hourName = hour && typeof hour === 'object' && 'name' in hour ? String(hour.name) : 'Día';
-            const hourValue = hour && typeof hour === 'object' && 'value' in hour ? String(hour.value) : 'No disponible';
+            const hourName = hour && 'name' in hour ? String(hour.name) : 'Día';
+            const hourValue = hour && 'value' in hour ? String(hour.value) : 'No disponible';
             
             return (
               <div key={index} className="flex justify-between">
@@ -95,11 +106,11 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
     // If businessHours is a string that looks like JSON, try to parse it
     if (typeof businessProfile.businessHours === 'string') {
       try {
-        const parsedHours = JSON.parse(businessProfile.businessHours);
+        const parsedHours: BusinessHours = JSON.parse(businessProfile.businessHours);
         if (parsedHours.Hours && Array.isArray(parsedHours.Hours)) {
           return (
             <div className="grid grid-cols-1 gap-1">
-              {parsedHours.Hours.map((hour: any, index: number) => {
+              {parsedHours.Hours.map((hour: BusinessHour, index: number) => {
                 if (typeof hour !== 'object' || hour === null) {
                   return (
                     <div key={index} className="flex justify-between">
@@ -109,8 +120,8 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
                   );
                 }
                 
-                const hourName = hour && typeof hour === 'object' && 'name' in hour ? String(hour.name) : 'Día';
-                const hourValue = hour && typeof hour === 'object' && 'value' in hour ? String(hour.value) : 'No disponible';
+                const hourName = hour && 'name' in hour ? String(hour.name) : 'Día';
+                const hourValue = hour && 'value' in hour ? String(hour.value) : 'No disponible';
                 
                 return (
                   <div key={index} className="flex justify-between">
@@ -128,7 +139,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
     }
     
     // Fallback for any other format - handle it as a simple object with key-value pairs
-    const hours = typeof businessProfile.businessHours === 'object' ? businessProfile.businessHours : {};
+    const hours = typeof businessProfile.businessHours === 'object' ? businessProfile.businessHours as Record<string, any> : {};
     
     if (Object.keys(hours).length === 0) {
       return <p className="text-muted-foreground">No hay información de horarios disponible</p>;
@@ -140,7 +151,7 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
           // Skip rendering if it's not a direct key-value pair
           if (typeof timeObj === 'object' && timeObj !== null) {
             // Add additional verifications for timeObj and its properties
-            if (timeObj && typeof timeObj === 'object') {
+            if (timeObj) {
               // Safe property access with type checking
               const hasName = timeObj && typeof timeObj === 'object' && 'name' in timeObj;
               const hasValue = timeObj && typeof timeObj === 'object' && 'value' in timeObj;
