@@ -1,5 +1,4 @@
-
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientContract } from '@/types/client.types';
 import { toast } from 'sonner';
@@ -26,6 +25,7 @@ export const useClientContracts = (clientId?: string) => {
   const [contracts, setContracts] = useState<ClientContract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
 
   const fetchContracts = useCallback(async () => {
     try {
