@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BusinessProfile } from '@/types/report.types';
 import { Client } from '@/types/client.types';
-import { Report } from '@/types/report.types';
 import ClientSummaryTab from './ClientSummaryTab';
 import ClientGmbTab from '../tabs/ClientGmbTab';
 import ClientPageSpeedTab from '../tabs/ClientPageSpeedTab';
@@ -16,9 +15,6 @@ interface ClientTabsSectionProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   client: Client;
-  reports: Report[];
-  onViewReports: () => void;
-  onCreateReport: () => void;
   onBusinessProfileUpdate: (profile: Partial<BusinessProfile>) => void;
   onPageSpeedUpdate: (score: number) => void;
   businessProfile: Partial<BusinessProfile> | null;
@@ -37,9 +33,6 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
   activeTab,
   setActiveTab,
   client,
-  reports,
-  onViewReports,
-  onCreateReport,
   onBusinessProfileUpdate,
   onPageSpeedUpdate,
   businessProfile,
@@ -74,9 +67,6 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
           <TabsContent value="summary">
             <ClientSummaryTab 
               client={client}
-              reports={reports}
-              onViewReports={onViewReports}
-              onCreateReport={onCreateReport}
             />
           </TabsContent>
           
@@ -104,7 +94,6 @@ const ClientTabsSection: React.FC<ClientTabsSectionProps> = ({
           <TabsContent value="keywords">
             <ClientKeywords
               clientId={clientId}
-              reports={reports}
             />
           </TabsContent>
           

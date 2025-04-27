@@ -68,12 +68,26 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
     ) {
       return (
         <div className="grid grid-cols-1 gap-1">
-          {businessProfile.businessHours.Hours.map((hour: any, index: number) => (
-            <div key={index} className="flex justify-between">
-              <span className="font-medium capitalize">{typeof hour === 'object' && hour !== null && 'name' in hour ? hour.name : 'Día'}:</span>
-              <span>{typeof hour === 'object' && hour !== null && 'value' in hour ? hour.value : 'No disponible'}</span>
-            </div>
-          ))}
+          {businessProfile.businessHours.Hours.map((hour: any, index: number) => {
+            if (typeof hour !== 'object' || hour === null) {
+              return (
+                <div key={index} className="flex justify-between">
+                  <span className="font-medium capitalize">Día:</span>
+                  <span>No disponible</span>
+                </div>
+              );
+            }
+            
+            const name = 'name' in hour ? hour.name : 'Día';
+            const value = 'value' in hour ? hour.value : 'No disponible';
+            
+            return (
+              <div key={index} className="flex justify-between">
+                <span className="font-medium capitalize">{name}:</span>
+                <span>{value}</span>
+              </div>
+            );
+          })}
         </div>
       );
     }
@@ -85,12 +99,26 @@ const ClientGmbTab: React.FC<ClientGmbTabProps> = ({
         if (parsedHours.Hours && Array.isArray(parsedHours.Hours)) {
           return (
             <div className="grid grid-cols-1 gap-1">
-              {parsedHours.Hours.map((hour: any, index: number) => (
-                <div key={index} className="flex justify-between">
-                  <span className="font-medium capitalize">{typeof hour === 'object' && hour !== null && 'name' in hour ? hour.name : 'Día'}:</span>
-                  <span>{typeof hour === 'object' && hour !== null && 'value' in hour ? hour.value : 'No disponible'}</span>
-                </div>
-              ))}
+              {parsedHours.Hours.map((hour: any, index: number) => {
+                if (typeof hour !== 'object' || hour === null) {
+                  return (
+                    <div key={index} className="flex justify-between">
+                      <span className="font-medium capitalize">Día:</span>
+                      <span>No disponible</span>
+                    </div>
+                  );
+                }
+                
+                const name = 'name' in hour ? hour.name : 'Día';
+                const value = 'value' in hour ? hour.value : 'No disponible';
+                
+                return (
+                  <div key={index} className="flex justify-between">
+                    <span className="font-medium capitalize">{name}:</span>
+                    <span>{value}</span>
+                  </div>
+                );
+              })}
             </div>
           );
         }

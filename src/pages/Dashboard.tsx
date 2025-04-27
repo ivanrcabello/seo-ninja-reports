@@ -5,7 +5,6 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import useClients from '@/hooks/useClients';
-import useReports from '@/hooks/useReports';
 import { Loader2 } from 'lucide-react';
 import usePersistentState from '@/hooks/usePersistentState';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -14,7 +13,6 @@ import DashboardTabs from '@/components/dashboard/DashboardTabs';
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const { clients, isLoading: clientsLoading } = useClients();
-  const { reports, isLoading: reportsLoading } = useReports();
   const [lastVisitedSection, setLastVisitedSection] = usePersistentState<string>('dashboard-section', '');
   const [activeTab, setActiveTab] = useState('overview');
   const [nextEvents, setNextEvents] = useState<any[]>([]);
@@ -26,7 +24,7 @@ const Dashboard = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  const isLoading = authLoading || clientsLoading || reportsLoading;
+  const isLoading = authLoading || clientsLoading;
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -108,7 +106,6 @@ const Dashboard = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 clients={clients}
-                reports={reports}
               />
             </>
           )}

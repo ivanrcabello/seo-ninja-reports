@@ -2,7 +2,6 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
 import { Client } from '@/types/client.types';
-import { Report } from '@/types/report.types';
 import ClientsTab from './tabs/ClientsTab';
 import TasksTab from './tabs/TasksTab';
 import OverviewTab from './tabs/OverviewTab';
@@ -28,7 +27,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
       
       <div className="mt-6">
         <TabsContent value="overview">
-          <OverviewTab clients={clients} />
+          <OverviewTab />
         </TabsContent>
         
         <TabsContent value="clients">
