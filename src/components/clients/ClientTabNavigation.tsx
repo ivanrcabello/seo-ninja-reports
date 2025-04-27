@@ -2,7 +2,7 @@
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FileText, Receipt, Calendar, Globe } from 'lucide-react';
+import { FileText, Receipt, Calendar, Globe, FileContract } from 'lucide-react';
 
 interface ClientTabNavigationProps {
   activeTab: string;
@@ -48,6 +48,13 @@ const ClientTabNavigation: React.FC<ClientTabNavigationProps> = ({
         >
           <Receipt className="h-4 w-4" />
           <span className="hidden xs:inline">Facturas</span>
+        </TabsTrigger>
+        <TabsTrigger 
+          value="contracts" 
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2 rounded-md flex items-center gap-1.5"
+        >
+          <FileContract className="h-4 w-4" />
+          <span className="hidden xs:inline">Contratos</span>
         </TabsTrigger>
         <TabsTrigger 
           value="tasks" 
