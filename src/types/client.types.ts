@@ -1,4 +1,3 @@
-
 export interface Client {
   id: string;
   name: string;
@@ -68,6 +67,7 @@ export interface ClientInvoice {
   billing_address?: string;
   billing_email?: string;
   password?: string;
+  client_website?: string;
 }
 
 export interface ClientProposal {
