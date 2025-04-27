@@ -79,7 +79,7 @@ const ClientDetailContent: React.FC<ClientDetailContentProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key={`tab-content-${activeTab}`}>
       <ClientTabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div className="mt-4">

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Brush, Save, RotateCcw } from 'lucide-react';
@@ -18,26 +18,35 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
   onOpenChange,
   onSign,
   title = "Firma",
-  description = "Dibuja tu firma en el área a continuación."
+  description = "Dibuja tu firma en el área a continuación.",
+  isAdmin
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
   
   // Set up canvas when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
-      setupCanvas();
+      console.log("SignatureDialog opened, setting up canvas");
+      setTimeout(() => {
+        setupCanvas();
+      }, 100); // Short delay to ensure canvas is available
     }
   }, [open]);
   
   const setupCanvas = () => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      console.warn("Canvas ref is not available");
+      return;
+    }
     
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
     
     if (context) {
+      console.log("Setting up canvas for signature");
+      
       // Clear canvas and set styles
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.lineWidth = 2;
@@ -51,6 +60,8 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
       context.stroke();
       
       setHasSignature(false);
+    } else {
+      console.error("Failed to get canvas context");
     }
   };
   
@@ -96,6 +107,7 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
     const rect = canvas.getBoundingClientRect();
     
     if ('touches' in e) {
+      e.preventDefault(); // Prevent scrolling when drawing
       const touch = e.touches[0];
       return {
         offsetX: touch.clientX - rect.left,
@@ -110,14 +122,20 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
   };
   
   const clearCanvas = () => {
+    console.log("Clearing signature canvas");
     setupCanvas();
   };
   
   const saveSignature = () => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      console.error("Cannot save signature - canvas not available");
+      return;
+    }
     
+    console.log("Saving signature");
     const canvas = canvasRef.current;
     const dataUrl = canvas.toDataURL('image/png');
+    console.log("Signature data URL generated successfully");
     
     onSign(dataUrl);
   };
@@ -148,6 +166,7 @@ const SignatureDialog: React.FC<SignatureDialogProps> = ({
               onTouchStart={startDrawing}
               onTouchMove={draw}
               onTouchEnd={stopDrawing}
+              onTouchCancel={stopDrawing}
               className="w-full cursor-crosshair bg-white"
             />
           </div>
