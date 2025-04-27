@@ -76,11 +76,15 @@ export const useShareProposal = ({ open, proposalId, proposalTitle }: UseSharePr
             price: fullProposal.price
           };
           
-          // Accedemos a clients como una propiedad de tipo objeto, no como un array
+          // Handle the clients data correctly, considering it might be an object or an array
           const clientsData = proposalData.clients;
-          // Asegurémonos de que clientsData exista antes de acceder a sus propiedades
-          const clientName = clientsData?.name || null;
-          const clientWebsite = clientsData?.website || null;
+          
+          // If it's an array, take the first item, otherwise use it directly
+          const clientInfo = Array.isArray(clientsData) ? clientsData[0] : clientsData;
+          
+          // Now access properties safely
+          const clientName = clientInfo?.name || null;
+          const clientWebsite = clientInfo?.website || null;
           
           const { error: insertError } = await supabase
             .from('shared_content')
