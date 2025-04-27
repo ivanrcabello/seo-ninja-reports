@@ -76,8 +76,7 @@ export const useShareProposal = ({ open, proposalId, proposalTitle }: UseSharePr
             price: fullProposal.price
           };
           
-          // Fix the type issues by properly accessing client data
-          // First ensure clients property exists and is properly typed
+          // Correctly access the clients property which is an object, not an array
           const clientsData = proposalData.clients;
           const clientName = clientsData ? clientsData.name : null;
           const clientWebsite = clientsData ? clientsData.website : null;
